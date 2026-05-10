@@ -1,0 +1,256 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
+import {
+  IconBook, IconCheck, IconClock, IconErr, IconFile,
+  IconFolder, IconPlus, IconSearch, IconSettings, IconStar, IconTrash, IconUpload,
+} from "../components/Icons";
+import { api } from "../lib/tauri";
+import { useProjectStore } from "../stores/project";
+import type { LatexInfo, RecentProject } from "../types";
+
+const S = {
+  root: { flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" } as const,
+  side: {
+    width: 220, flexShrink: 0,
+    borderRight: "1px solid var(--border-subtle)",
+    padding: "20px 14px", display: "flex", flexDirection: "column", gap: 4,
+    background: "var(--bg-chrome)",
+  } as const,
+  sideItem: (active: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", gap: 8,
+    padding: "7px 10px", borderRadius: "var(--r-md)",
+    fontSize: "var(--fs-base)", cursor: "pointer",
+    background: active ? "var(--bg-selected)" : "transparent",
+    color: active ? "var(--accent-deep)" : "var(--fg-default)",
+    fontWeight: active ? 500 : 400,
+  }),
+  main: { flex: 1, overflow: "auto", padding: "32px 48px 48px" } as const,
+  hero: { marginBottom: 28, paddingBottom: 24, borderBottom: "1px solid var(--border-subtle)" } as const,
+  greet: {
+    fontFamily: "var(--font-display)", fontSize: "var(--fs-3xl)", fontWeight: 400,
+    color: "var(--fg-strong)", margin: 0, letterSpacing: "-0.02em",
+  } as const,
+  greetItalic: { fontStyle: "italic", color: "var(--accent-deep)" } as const,
+  sub: { color: "var(--fg-muted)", marginTop: 6, fontSize: "var(--fs-md)" } as const,
+  actions: { display: "flex", gap: 8, marginTop: 18 } as const,
+  sectionTitle: {
+    fontSize: "var(--fs-xs)", fontWeight: 600, letterSpacing: "0.08em",
+    textTransform: "uppercase" as const, color: "var(--fg-faint)",
+    margin: "24px 0 12px", display: "flex", alignItems: "center", gap: 8,
+  },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } as const,
+  card: {
+    background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+    borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
+    transition: "border-color .15s, transform .15s",
+    display: "flex", flexDirection: "column" as const, gap: 10, minHeight: 132,
+    position: "relative" as const,
+  },
+  cardSpine: { width: 4, height: 28, borderRadius: 2, background: "var(--accent)", flexShrink: 0 } as const,
+  cardTitle: {
+    fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500,
+    color: "var(--fg-strong)", lineHeight: 1.3, letterSpacing: "-0.005em", margin: 0,
+  } as const,
+  cardMeta: { fontSize: "var(--fs-sm)", color: "var(--fg-muted)", display: "flex", gap: 10, alignItems: "center" } as const,
+  cardFooter: {
+    marginTop: "auto", paddingTop: 10, borderTop: "1px dashed var(--border-soft)",
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontFamily: "var(--font-mono)",
+  } as const,
+};
+
+function levelLabel(level: string): string {
+  const map: Record<string, string> = {
+    licenciatura: "Licenciatura",
+    maestria: "Maestría",
+    doctorado: "Doctorado",
+    bachillerato: "Bachillerato",
+    tecnico: "Técnico",
+  };
+  return map[level.toLowerCase()] ?? level;
+}
+
+export default function HomeView() {
+  const navigate = useNavigate();
+  const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
+  const [projects, setProjects] = useState<RecentProject[]>([]);
+  const [tab, setTab] = useState<"projects" | "favorites" | "recent" | "archived">("projects");
+
+  useEffect(() => {
+    // Detectar LaTeX en el sistema
+    api.detectLatex().then(setLatexInfo).catch(() => {});
+
+    // Cargar proyectos recientes (desde documentos del usuario)
+    const home = navigator.platform.startsWith("Win")
+      ? "C:\\Users"
+      : "/home";
+    api.listRecentProjects(home).then((p) => {
+      setProjects(p);
+      setRecentProjects(p);
+    }).catch(() => {
+      // En dev sin Tauri: lista vacía
+      setProjects([]);
+    });
+  }, [setLatexInfo, setRecentProjects]);
+
+  async function handleOpen(projectPath: string) {
+    try {
+      const model = await api.getProject(projectPath);
+      useProjectStore.getState().openProject(model, projectPath);
+      navigate(`/project/${encodeURIComponent(projectPath)}`);
+    } catch (e) {
+      console.error("Error abriendo proyecto:", e);
+    }
+  }
+
+  const latexStatus = latexInfo?.is_usable
+    ? { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" }
+    : { text: "LaTeX no detectado", dot: "var(--build-err)" };
+
+  return (
+    <>
+      <TxAppbar
+        left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v0.2.0</span></>}
+        center={null}
+        right={
+          <>
+            <button className="btn btn-ghost btn-sm">
+              <IconSearch size={13} /> Buscar <span className="kbd">⌘K</span>
+            </button>
+            <button className="btn btn-ghost btn-icon"><IconSettings size={14} /></button>
+          </>
+        }
+      />
+
+      <div style={S.root}>
+        <aside style={S.side}>
+          {(["projects", "favorites", "recent", "archived"] as const).map((t) => {
+            const icons = {
+              projects: <IconBook size={13} />,
+              favorites: <IconStar size={13} />,
+              recent: <IconClock size={13} />,
+              archived: <IconTrash size={13} />,
+            };
+            const labels = {
+              projects: "Proyectos",
+              favorites: "Favoritos",
+              recent: "Recientes",
+              archived: "Archivados",
+            };
+            return (
+              <div key={t} style={S.sideItem(tab === t)} onClick={() => setTab(t)}>
+                {icons[t]} {labels[t]}
+              </div>
+            );
+          })}
+
+          <div style={{ height: 1, background: "var(--border-subtle)", margin: "12px 4px" }} />
+          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>Biblioteca</div>
+          <div style={S.sideItem(false)} onClick={() => navigate("/library")}>
+            <IconFolder size={13} /> Perfiles
+          </div>
+          <div style={S.sideItem(false)}>
+            <IconFile size={13} /> Elementos
+          </div>
+
+          <div style={{
+            marginTop: "auto", padding: 8, borderTop: "1px solid var(--border-subtle)",
+            fontSize: "var(--fs-xs)", color: "var(--fg-faint)",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: latexStatus.dot }} />
+            {latexStatus.text}
+          </div>
+        </aside>
+
+        <main style={S.main} className="scroll">
+          <div style={S.hero}>
+            <h1 style={S.greet}>
+              Continúa <span style={S.greetItalic}>donde lo dejaste</span>.
+            </h1>
+            <p style={S.sub}>
+              {projects.length} proyecto{projects.length !== 1 ? "s" : ""}
+            </p>
+            <div style={S.actions}>
+              <button className="btn btn-accent" onClick={() => navigate("/new")}>
+                <IconPlus size={13} /> Nuevo proyecto
+              </button>
+              <button className="btn">
+                <IconUpload size={13} /> Importar .tex
+              </button>
+              <button className="btn btn-ghost">Abrir desde carpeta…</button>
+            </div>
+          </div>
+
+          <div style={S.sectionTitle}>
+            <span>Proyectos recientes</span>
+            <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+            <span style={{ color: "var(--fg-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
+              Ordenar por: <span style={{ color: "var(--fg-default)" }}>actualizado ↓</span>
+            </span>
+          </div>
+
+          <div style={S.grid}>
+            {projects.map((p, i) => (
+              <div
+                key={i}
+                style={S.card}
+                onClick={() => handleOpen(p.path)}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--accent)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-soft)"; }}
+              >
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={S.cardSpine} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={S.cardTitle}>{p.title}</h3>
+                  </div>
+                </div>
+                <div style={S.cardMeta}>
+                  <span className="chip">{levelLabel(p.academic_level)}</span>
+                  <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-faint)" }}>
+                    {p.profile_id}
+                  </span>
+                </div>
+                <div style={S.cardFooter}>
+                  <span>{p.path.split(/[/\\]/).pop()}</span>
+                  <span className="chip">activo</span>
+                </div>
+              </div>
+            ))}
+
+            {projects.length === 0 && (
+              <div
+                style={{
+                  background: "var(--bg-panel)", border: "1px dashed var(--border-firm)",
+                  borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
+                  display: "flex", flexDirection: "column", gap: 8, minHeight: 132,
+                }}
+                onClick={() => navigate("/new")}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-muted)" }}>
+                  <IconPlus size={14} />
+                  <span style={{ fontWeight: 500 }}>Crear primer proyecto</span>
+                </div>
+                <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                  Tesis, tesina, paper o reporte técnico. Empieza desde un perfil.
+                </p>
+                <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
+                  <span className="chip">Tesis</span>
+                  <span className="chip">Tesina</span>
+                  <span className="chip">+ más</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+
+      <TxStatusbar items={[
+        latexStatus,
+        { icon: <IconFolder size={11} />, text: "~/Documentos" },
+        { right: true, text: "TeXisStudio 0.2.0 · AGPL+CC" },
+      ]} />
+    </>
+  );
+}

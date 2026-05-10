@@ -2,6 +2,7 @@
 members = [
     "texis-core",
     "texis-cli",
+    "texis-app/src-tauri",
 ]
 resolver = "2"
 
