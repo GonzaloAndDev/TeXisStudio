@@ -2,12 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBook, IconCheck, IconClock, IconErr, IconFile,
-  IconFolder, IconPlus, IconSearch, IconSettings, IconStar, IconTrash, IconUpload,
+  IconBook, IconFile,
+  IconFolder, IconPlus, IconSearch, IconSettings, IconStar, IconClock, IconTrash, IconUpload,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { LatexInfo, RecentProject } from "../types";
+
+// Mock data visible en dev-browser (sin Tauri)
+const MOCK_PROJECTS: RecentProject[] = [
+  { path: "/proyectos/redes-neuronales", title: "Análisis de redes neuronales en clasificación de imágenes médicas", profile_id: "generic.thesis", academic_level: "maestria", updated_at: "hace 2 h" },
+  { path: "/proyectos/rezago-educativo", title: "Determinantes socioeconómicos del rezago educativo en Oaxaca", profile_id: "generic.thesis", academic_level: "licenciatura", updated_at: "hace 1 día" },
+  { path: "/proyectos/catalizadores", title: "Optimización de catalizadores Fischer-Tropsch con Pt/Al₂O₃", profile_id: "generic.thesis", academic_level: "doctorado", updated_at: "hace 4 días" },
+  { path: "/proyectos/epidemiologia", title: "Modelos predictivos en epidemiología hospitalaria", profile_id: "generic.thesis", academic_level: "maestria", updated_at: "la semana pasada" },
+  { path: "/proyectos/ia-derechos", title: "Tesina — Inteligencia artificial y derechos de autor", profile_id: "generic.tesina", academic_level: "licenciatura", updated_at: "hace 2 sem" },
+];
 
 const S = {
   root: { flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" } as const,
@@ -78,20 +87,20 @@ export default function HomeView() {
   const [tab, setTab] = useState<"projects" | "favorites" | "recent" | "archived">("projects");
 
   useEffect(() => {
-    // Detectar LaTeX en el sistema
     api.detectLatex().then(setLatexInfo).catch(() => {});
 
-    // Cargar proyectos recientes (desde documentos del usuario)
-    const home = navigator.platform.startsWith("Win")
-      ? "C:\\Users"
-      : "/home";
-    api.listRecentProjects(home).then((p) => {
-      setProjects(p);
-      setRecentProjects(p);
-    }).catch(() => {
-      // En dev sin Tauri: lista vacía
-      setProjects([]);
-    });
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (isTauriEnv) {
+      const home = navigator.platform.startsWith("Win") ? "C:\\Users" : "/home";
+      api.listRecentProjects(home).then((p) => {
+        setProjects(p);
+        setRecentProjects(p);
+      }).catch(() => setProjects([]));
+    } else {
+      // Dev en browser: mostrar mock data para revisar el diseño
+      setProjects(MOCK_PROJECTS);
+      setRecentProjects(MOCK_PROJECTS);
+    }
   }, [setLatexInfo, setRecentProjects]);
 
   async function handleOpen(projectPath: string) {

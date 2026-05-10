@@ -8,6 +8,16 @@ import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { ProfileInfo } from "../types";
 
+async function resolveDocumentsPath(): Promise<string> {
+  try {
+    // Tauri v2: @tauri-apps/api/path
+    const { documentDir } = await import("@tauri-apps/api/path");
+    return await documentDir();
+  } catch {
+    return "/tmp";
+  }
+}
+
 type StepState = "done" | "active" | "todo";
 
 const BUILTIN_PROFILES: ProfileInfo[] = [
@@ -266,10 +276,11 @@ export default function WizardView() {
     }
     setCreating(true);
     try {
-      const outputPath =
-        navigator.platform.startsWith("Win")
-          ? `C:\\Users\\${window.navigator.userAgent.includes("Win") ? "" : ""}Documents`
-          : `${window.location.href.includes("tauri") ? "/home/user/Documents" : "/tmp"}`;
+      // En Tauri usamos el home del usuario; en browser-dev usamos /tmp
+      const isTauriEnv = "__TAURI_INTERNALS__" in window;
+      const outputPath = isTauriEnv
+        ? await resolveDocumentsPath()
+        : "/tmp";
 
       const result = await api.createProject(form.title, profileId, outputPath);
       const model = await api.getProject(result.project_path);
