@@ -8,6 +8,7 @@ pub fn run() {
             commands::project::get_project,
             commands::project::list_recent_projects,
             commands::project::save_section,
+            commands::project::save_project,
             commands::project::validate_project,
             commands::compiler::compile_project,
             commands::system::get_profiles,

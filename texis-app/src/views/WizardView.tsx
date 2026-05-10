@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -262,6 +262,12 @@ export default function WizardView() {
   });
   const [creating, setCreating] = useState(false);
   const [profiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
+  const [outputPath, setOutputPath] = useState("");
+
+  // Resolver path por defecto al montar
+  useEffect(() => {
+    resolveDocumentsPath().then(setOutputPath).catch(() => setOutputPath("/tmp"));
+  }, []);
 
   const steps = [
     { name: "Tipo de documento", hint: docType ? docType : "Tesis · Tesina" },
@@ -274,21 +280,19 @@ export default function WizardView() {
       alert("Escribe un título para el proyecto.");
       return;
     }
+    if (!outputPath.trim()) {
+      alert("Escribe la carpeta donde guardar el proyecto.");
+      return;
+    }
     setCreating(true);
     try {
-      // En Tauri usamos el home del usuario; en browser-dev usamos /tmp
-      const isTauriEnv = "__TAURI_INTERNALS__" in window;
-      const outputPath = isTauriEnv
-        ? await resolveDocumentsPath()
-        : "/tmp";
-
       const result = await api.createProject(form.title, profileId, outputPath);
       const model = await api.getProject(result.project_path);
       useProjectStore.getState().openProject(model, result.project_path);
       navigate(`/project/${encodeURIComponent(result.project_path)}`);
     } catch (e) {
       console.error("Error creando proyecto:", e);
-      alert(`Error: ${e}`);
+      alert(`Error al crear proyecto: ${e}`);
       setCreating(false);
     }
   }
@@ -351,6 +355,31 @@ export default function WizardView() {
             <StepPerfil profiles={profiles} selected={profileId} onSelect={setProfileId} />
           )}
 
+          {/* Campo de carpeta de destino — visible solo en el último paso */}
+          {step === steps.length - 1 && (
+            <div style={{ maxWidth: 820, marginTop: 20, padding: "12px 16px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
+              <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "block", marginBottom: 6 }}>
+                Carpeta donde se creará el proyecto
+              </label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={outputPath}
+                  onChange={(e) => setOutputPath(e.target.value)}
+                  placeholder="/ruta/a/documentos"
+                  style={{
+                    flex: 1, padding: "7px 10px", borderRadius: "var(--r-md)",
+                    border: "1px solid var(--border-firm)", background: "var(--bg-app)",
+                    fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 5 }}>
+                Se creará una carpeta <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || "mi-tesis"}/</code> dentro de esta ruta.
+              </div>
+            </div>
+          )}
+
           <div style={S.footer}>
             {step > 0 ? (
               <button className="btn" onClick={() => setStep((s) => s - 1)}>
@@ -371,11 +400,9 @@ export default function WizardView() {
                 <button
                   className="btn btn-accent"
                   onClick={handleCreate}
-                  disabled={creating}
+                  disabled={creating || !form.title.trim()}
                 >
-                  {creating ? "Creando…" : <>
-                    <IconFile size={13} /> Crear proyecto
-                  </>}
+                  {creating ? "Creando…" : <><IconFile size={13} /> Crear proyecto</>}
                 </button>
               )}
             </div>

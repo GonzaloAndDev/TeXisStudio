@@ -131,6 +131,20 @@ pub fn save_section(
     Ok(())
 }
 
+/// Guarda el modelo completo del proyecto (metadatos + secciones) y regenera build/.
+#[tauri::command]
+pub fn save_project(project_path: String, project: Value) -> Result<(), String> {
+    let yaml_path = PathBuf::from(&project_path).join("tesis.project.yaml");
+    let model: ProjectModel = serde_json::from_value(project).map_err(err)?;
+    let saver = ProjectSaver;
+    saver.save_to_file(&model, &yaml_path).map_err(err)?;
+    // Regenerar build/ con metadatos actualizados
+    let build_dir = PathBuf::from(&project_path).join("build");
+    let latex_gen = LaTeXGenerator::new().map_err(err)?;
+    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    Ok(())
+}
+
 /// Valida el proyecto y devuelve el reporte de issues.
 #[tauri::command]
 pub fn validate_project(project_path: String) -> Result<Value, String> {

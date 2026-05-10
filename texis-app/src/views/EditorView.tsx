@@ -8,7 +8,7 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { ContentBlock, HeadingLevel, ProjectSection } from "../types";
+import type { ContentBlock, HeadingLevel, ProjectModel, ProjectSection } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -611,6 +611,180 @@ function BlockItem({
   );
 }
 
+// ── MetaPanel: panel derecho con metadatos editables ─────────────
+
+function MetaField({
+  label, value, onChange, multiline = false, mono = false, large = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+  mono?: boolean;
+  large?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const commit = () => {
+    setEditing(false);
+    if (draft !== value) onChange(draft);
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", border: "1px solid var(--accent-soft)", outline: "none",
+    borderRadius: "var(--r-xs)", padding: "4px 6px", resize: "none",
+    fontFamily: mono ? "var(--font-mono)" : large ? "var(--font-display)" : "var(--font-ui)",
+    fontSize: large ? "var(--fs-md)" : "var(--fs-sm)",
+    color: "var(--fg-strong)", background: "var(--bg-panel)",
+    lineHeight: large ? 1.3 : 1.5,
+  };
+
+  return (
+    <div>
+      <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 3, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {label}
+        {!editing && (
+          <span style={{ cursor: "pointer", color: "var(--accent)", fontSize: 9 }} onClick={() => { setDraft(value); setEditing(true); }}>
+            editar
+          </span>
+        )}
+      </div>
+      {editing ? (
+        multiline ? (
+          <textarea
+            autoFocus
+            value={draft}
+            rows={2}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === "Escape") { setDraft(value); setEditing(false); } if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); } }}
+            style={inputStyle}
+          />
+        ) : (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === "Escape") { setDraft(value); setEditing(false); } if (e.key === "Enter") commit(); }}
+            style={inputStyle}
+          />
+        )
+      ) : (
+        <div
+          style={{
+            color: value ? (large ? "var(--fg-strong)" : "var(--fg-default)") : "var(--fg-faint)",
+            fontFamily: mono ? "var(--font-mono)" : large ? "var(--font-display)" : undefined,
+            fontSize: large ? "var(--fs-md)" : "var(--fs-sm)",
+            lineHeight: large ? 1.3 : 1.5,
+            cursor: "text",
+          }}
+          onClick={() => { setDraft(value); setEditing(true); }}
+        >
+          {value || <em style={{ fontStyle: "normal", opacity: 0.5 }}>sin definir</em>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetaPanel({
+  project, wordCount, blockCount, onSave, onCompile,
+}: {
+  project: ProjectModel;
+  wordCount: number;
+  blockCount: number;
+  onSave: (updates: Record<string, unknown>) => void;
+  onCompile: () => void;
+}) {
+  return (
+    <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll">
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
+        Proyecto
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: "var(--fs-sm)" }}>
+        <MetaField
+          label="Título"
+          value={project.metadata.title}
+          onChange={(v) => onSave({ metadata: { ...project.metadata, title: v } })}
+          multiline large
+        />
+        <MetaField
+          label="Subtítulo"
+          value={project.metadata.subtitle ?? ""}
+          onChange={(v) => onSave({ metadata: { ...project.metadata, subtitle: v || undefined } })}
+        />
+        <MetaField
+          label="Autor"
+          value={project.student.full_name}
+          onChange={(v) => onSave({ student: { ...project.student, full_name: v } })}
+        />
+        <MetaField
+          label="Asesor(a)"
+          value={project.student.advisor ?? ""}
+          onChange={(v) => onSave({ student: { ...project.student, advisor: v || undefined } })}
+        />
+        <MetaField
+          label="Institución"
+          value={project.institution.name}
+          onChange={(v) => onSave({ institution: { ...project.institution, name: v } })}
+        />
+        <MetaField
+          label="Facultad"
+          value={project.institution.faculty ?? ""}
+          onChange={(v) => onSave({ institution: { ...project.institution, faculty: v || undefined } })}
+        />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Ciudad</div>
+            <MetaField label="" value={project.metadata.city} onChange={(v) => onSave({ metadata: { ...project.metadata, city: v } })} />
+          </div>
+          <div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Año</div>
+            <MetaField label="" value={String(project.metadata.year)} onChange={(v) => onSave({ metadata: { ...project.metadata, year: parseInt(v) || project.metadata.year } })} mono />
+          </div>
+        </div>
+
+        <div>
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Perfil</div>
+          <span className="chip tx-mono" style={{ fontSize: 11 }}>{project.profile_id}</span>
+        </div>
+
+        <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Palabras</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{wordCount.toLocaleString("es")}</div>
+          </div>
+          <div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Bloques</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{blockCount}</div>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
+
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 2 }}>Atajos</div>
+          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Ctrl+S</kbd> Guardar</div>
+          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Esc</kbd> Salir edición</div>
+          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Enter</kbd> Lista: nuevo ítem</div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: "auto", paddingTop: 12 }}>
+        <button className="btn btn-accent" style={{ width: "100%" }} onClick={onCompile}>
+          <IconBuild size={13} /> Compilar PDF
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── EditorView principal ──────────────────────────────────────────
 
 type SaveStatus = "saved" | "saving" | "unsaved";
@@ -692,6 +866,38 @@ export default function EditorView() {
     });
     setEditingId(null);
   }, [scheduleAutoSave]);
+
+  // Guardar metadatos del proyecto (título, autor, institución)
+  const saveMetadata = useCallback(async (updates: Record<string, unknown>) => {
+    if (!activeProject || !activeProjectPath) return;
+    const updated = { ...activeProject, ...updates };
+    useProjectStore.getState().updateProject(updates as Partial<import("../types").ProjectModel>);
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (isTauriEnv) {
+      try { await api.saveProject(activeProjectPath, updated); }
+      catch (e) { console.error("Error guardando metadatos:", e); }
+    }
+  }, [activeProject, activeProjectPath]);
+
+  // Atajos de teclado
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S → guardar inmediatamente
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (activeSectionId) {
+          if (saveTimer.current) clearTimeout(saveTimer.current);
+          doSave(localBlocks, activeSectionId);
+        }
+      }
+      // Esc → salir del modo edición del bloque activo
+      if (e.key === "Escape") {
+        setEditingId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeSectionId, localBlocks, doSave]);
 
   if (!activeProject || !activeProjectPath) {
     return (
@@ -852,53 +1058,14 @@ export default function EditorView() {
           </div>
         </div>
 
-        {/* ── Panel derecho: metadata ─────────────────────────────── */}
-        <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16 }}>
-          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-            Proyecto
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: "var(--fs-sm)" }}>
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Título</div>
-              <div style={{ color: "var(--fg-strong)", fontFamily: "var(--font-display)", lineHeight: 1.3 }}>{activeProject.metadata.title}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Autor</div>
-              <div>{activeProject.student.full_name}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Institución</div>
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{activeProject.institution.name}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Perfil</div>
-              <span className="chip tx-mono" style={{ fontSize: 11 }}>{activeProject.profile_id}</span>
-            </div>
-            <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Palabras</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-base)", fontWeight: 500 }}>
-                {bodyWordCount.toLocaleString("es")}
-              </div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Bloques en sección</div>
-              <div style={{ fontFamily: "var(--font-mono)" }}>{localBlocks.length}</div>
-            </div>
-            <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-              <div style={{ marginBottom: 4, fontWeight: 600, color: "var(--fg-muted)" }}>Atajos</div>
-              <div>Clic → editar bloque</div>
-              <div>Esc → salir de edición</div>
-              <div>Enter en lista → nuevo ítem</div>
-            </div>
-          </div>
-          <div style={{ marginTop: "auto" }}>
-            <button className="btn btn-accent" style={{ width: "100%" }} onClick={() => navigate(`/project/${encodedPath}/compile`)}>
-              <IconBuild size={13} /> Compilar PDF
-            </button>
-          </div>
-        </div>
+        {/* ── Panel derecho: metadata editable ───────────────────── */}
+        <MetaPanel
+          project={activeProject}
+          wordCount={bodyWordCount}
+          blockCount={localBlocks.length}
+          onSave={saveMetadata}
+          onCompile={() => navigate(`/project/${encodedPath}/compile`)}
+        />
       </div>
 
       <TxStatusbar items={[

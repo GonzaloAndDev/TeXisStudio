@@ -43,6 +43,9 @@ export const api = {
   ): Promise<void> =>
     call("save_section", { projectPath, sectionId, blocks }),
 
+  saveProject: (projectPath: string, project: unknown): Promise<void> =>
+    call("save_project", { projectPath, project }),
+
   validateProject: (projectPath: string): Promise<ValidationReport> =>
     call("validate_project", { projectPath }),
 
