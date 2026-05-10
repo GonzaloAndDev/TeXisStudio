@@ -226,6 +226,164 @@ function ListEditor({
   );
 }
 
+// ── FigureEditor ─────────────────────────────────────────────────
+
+function FigureEditor({
+  file, caption, width, label,
+  onChange,
+}: {
+  file: string; caption: string; width: string; label: string;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const input = (lbl: string, key: string, val: string, ph: string) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{lbl}</label>
+      <input
+        value={val}
+        onChange={(e) => onChange({ [key]: e.target.value })}
+        placeholder={ph}
+        style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none" }}
+      />
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {input("Archivo (en content/figures/)", "file", file, "diagrama.png")}
+      {input("Leyenda", "caption", caption, "Descripción de la figura")}
+      {input("Label LaTeX", "label", label, "fig:nombre")}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Ancho</label>
+        <div style={{ display: "flex", gap: 6 }}>
+          {(["half", "three_quarters", "full"] as const).map((w) => (
+            <button key={w} className={`btn btn-sm ${width === w ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ width: w })}>
+              {w === "half" ? "50%" : w === "three_quarters" ? "75%" : "100%"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TableEditor ───────────────────────────────────────────────────
+
+function TableEditor({
+  caption, label, headers, rows,
+  onChange,
+}: {
+  caption: string; label: string; headers: string[]; rows: string[][];
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const cellStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-xs)",
+    padding: "4px 8px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda</label>
+          <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Descripción de la tabla" style={cellStyle} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <input value={label} onChange={(e) => onChange({ label: e.target.value })} placeholder="tab:nombre" style={cellStyle} />
+        </div>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "var(--fs-sm)" }}>
+          <thead>
+            <tr>
+              {headers.map((h, ci) => (
+                <th key={ci} style={{ padding: 4 }}>
+                  <input value={h} onChange={(e) => { const nh = [...headers]; nh[ci] = e.target.value; onChange({ headers: nh }); }} placeholder={`Col ${ci + 1}`} style={{ ...cellStyle, fontWeight: 600 }} />
+                </th>
+              ))}
+              <th style={{ padding: 4 }}>
+                <button className="btn btn-ghost btn-icon" style={{ padding: 3 }}
+                  onClick={() => onChange({ headers: [...headers, ""], rows: rows.map((r) => [...r, ""]) })}>
+                  <IconPlus size={10} />
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((cell, ci) => (
+                  <td key={ci} style={{ padding: 4 }}>
+                    <input value={cell} onChange={(e) => { const nr = rows.map((r, i) => i === ri ? r.map((c, j) => j === ci ? e.target.value : c) : r); onChange({ rows: nr }); }} placeholder="…" style={cellStyle} />
+                  </td>
+                ))}
+                <td style={{ padding: 4 }}>
+                  <button className="btn btn-ghost btn-icon" style={{ padding: 3, opacity: 0.5 }}
+                    onClick={() => onChange({ rows: rows.filter((_, i) => i !== ri) })}>
+                    <IconX size={10} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button className="btn btn-ghost btn-sm" style={{ marginTop: 6, fontSize: "var(--fs-xs)" }}
+          onClick={() => onChange({ rows: [...rows, headers.map(() => "")] })}>
+          <IconPlus size={11} /> Agregar fila
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── CitationEditor ────────────────────────────────────────────────
+
+function CitationEditor({
+  citation_key, citation_type, page,
+  onChange,
+}: {
+  citation_key: string; citation_type: string; page?: string;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        {([
+          ["parenthetical", "\\parencite"],
+          ["narrative",     "\\textcite"],
+          ["footnote",      "\\footcite"],
+        ] as const).map(([t, cmd]) => (
+          <button key={t} className={`btn btn-sm ${citation_type === t ? "btn-accent" : "btn-ghost"}`}
+            onClick={() => onChange({ citation_type: t })}
+            style={{ fontSize: "var(--fs-xs)", fontFamily: "var(--font-mono)" }}>
+            {cmd}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Clave bibliográfica</label>
+          <input
+            autoFocus
+            value={citation_key}
+            onChange={(e) => onChange({ citation_key: e.target.value })}
+            placeholder="apellido2024"
+            style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none", fontFamily: "var(--font-mono)" }}
+          />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Página</label>
+          <input
+            value={page ?? ""}
+            onChange={(e) => onChange({ page: e.target.value })}
+            placeholder="42"
+            style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none" }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── BlockItem: combina preview + edición ──────────────────────────
 
 function BlockItem({
@@ -277,6 +435,35 @@ function BlockItem({
             onChange={(items) => onUpdate({ items } as Partial<ContentBlock>)}
             onTypeChange={(list_type) => onUpdate({ list_type } as Partial<ContentBlock>)}
             onBlur={() => {}}
+          />
+        );
+      case "figure":
+        return (
+          <FigureEditor
+            file={block.file}
+            caption={block.caption}
+            width={block.width}
+            label={block.label}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "table":
+        return (
+          <TableEditor
+            caption={block.caption}
+            label={block.label}
+            headers={block.headers}
+            rows={block.rows}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "citation":
+        return (
+          <CitationEditor
+            citation_key={block.citation_key}
+            citation_type={block.citation_type}
+            page={block.page}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
           />
         );
       case "raw_latex":
@@ -336,9 +523,39 @@ function BlockItem({
       case "figure":
         return (
           <div style={{ padding: "12px 16px", background: "var(--bg-app)", borderRadius: "var(--r-sm)", border: "1px dashed var(--border-firm)", textAlign: "center" }}>
-            <div style={{ color: "var(--fg-faint)", fontSize: 13 }}>📷 {block.file}</div>
-            <div style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 4 }}>{block.caption}</div>
+            <div style={{ color: "var(--fg-faint)", fontSize: 13 }}>📷 {block.file || "sin archivo — clic para editar"}</div>
+            {block.caption && <div style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 4 }}>{block.caption}</div>}
           </div>
+        );
+      case "table":
+        return block.headers.length > 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "var(--fs-sm)", fontFamily: "var(--font-display)" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--fg-strong)" }}>
+                  {block.headers.map((h, i) => <th key={i} style={{ textAlign: "left", padding: "5px 10px", fontWeight: 600 }}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {block.rows.map((row, ri) => (
+                  <tr key={ri} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    {row.map((cell, ci) => <td key={ci} style={{ padding: "4px 10px" }}>{cell || <span style={{ color: "var(--fg-faint)" }}>—</span>}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {block.caption && <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 5, textAlign: "center" }}>{block.caption}</div>}
+          </div>
+        ) : <div style={{ color: "var(--fg-faint)" }}>Tabla vacía — clic para editar</div>;
+      case "citation":
+        return (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--accent-deep)", background: "var(--accent-tint)", padding: "2px 8px", borderRadius: "var(--r-xs)" }}>
+            {block.citation_type === "narrative" ? "\\textcite" : block.citation_type === "footnote" ? "\\footcite" : "\\parencite"}
+            {"{"}
+            {block.citation_key || "?"}
+            {"}"}
+            {block.page ? `[p. ${block.page}]` : ""}
+          </span>
         );
       case "raw_latex":
         return (
@@ -454,6 +671,9 @@ export default function EditorView() {
       case "list":        block = { type, id, list_type: "itemize", items: [""] }; break;
       case "equation":    block = { type, id, latex_content: "", numbered: false }; break;
       case "raw_latex":   block = { type, id, content: "", user_confirmed: true }; break;
+      case "figure":      block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
+      case "table":       block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]], table_style: "booktabs" }; break;
+      case "citation":    block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
       default: return;
     }
     setLocalBlocks((prev) => {
@@ -549,11 +769,14 @@ export default function EditorView() {
           {/* Toolbar */}
           <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
             {([
-              ["paragraph", <IconText size={12} />, "Párrafo"],
-              ["heading",   <IconHeading size={12} />, "Título"],
-              ["list",      <IconList size={12} />, "Lista"],
-              ["equation",  <IconSigma size={12} />, "Ecuación"],
-              ["raw_latex", <IconCode size={12} />, "LaTeX"],
+              ["paragraph", <IconText size={12} />,    "Párrafo"],
+              ["heading",   <IconHeading size={12} />,  "Título"],
+              ["list",      <IconList size={12} />,     "Lista"],
+              ["equation",  <IconSigma size={12} />,   "Ecuación"],
+              ["figure",    <IconImage size={12} />,    "Figura"],
+              ["table",     <IconTable size={12} />,    "Tabla"],
+              ["citation",  <IconMore size={12} />,     "Cita"],
+              ["raw_latex", <IconCode size={12} />,     "LaTeX"],
             ] as [ContentBlock["type"], React.ReactNode, string][]).map(([type, icon, label]) => (
               <button
                 key={type}
@@ -565,13 +788,6 @@ export default function EditorView() {
                 {icon}<span>{label}</span>
               </button>
             ))}
-            <div style={{ width: 1, height: 20, background: "var(--border-subtle)", margin: "0 4px" }} />
-            <button className="btn btn-ghost btn-sm" title="Figura (próximamente)" style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9, opacity: 0.4 }}>
-              <IconImage size={12} /><span>Figura</span>
-            </button>
-            <button className="btn btn-ghost btn-sm" title="Tabla (próximamente)" style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9, opacity: 0.4 }}>
-              <IconTable size={12} /><span>Tabla</span>
-            </button>
             <div style={{ flex: 1 }} />
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />

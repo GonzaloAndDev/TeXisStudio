@@ -172,7 +172,7 @@ function StubView({ title }: { title: string }) {
 export default function App() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/new" element={<WizardView />} />
