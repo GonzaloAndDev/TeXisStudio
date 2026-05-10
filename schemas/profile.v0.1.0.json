@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GonzaloAndDev/TeXisStudio/schemas/profile.v0.1.0.json",
+  "title": "TeXisStudio Profile Schema v0.1.0",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "document_class", "latex_engine", "compiler", "bibliography_backend", "bibliography_style", "packages", "sections"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["0.1.0"] },
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "document_class": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "latex_engine": { "type": "string", "enum": ["xelatex", "pdflatex", "lualatex"] },
+    "compiler": { "type": "string", "enum": ["latexmk", "tectonic"] },
+    "bibliography_backend": { "type": "string", "enum": ["biber", "bibtex"] },
+    "bibliography_style": { "type": "string" },
+    "packages": { "type": "array", "items": { "type": "string" } },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "element_id", "placement", "required"],
+        "properties": {
+          "id": { "type": "string" },
+          "element_id": { "type": "string" },
+          "placement": { "type": "string", "enum": ["front_matter", "body", "back_matter", "appendix"] },
+          "required": { "type": "boolean" },
+          "title": { "type": "string" },
+          "label": { "type": "string" }
+        }
+      }
+    }
+  }
+}

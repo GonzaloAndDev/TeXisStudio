@@ -1,0 +1,19 @@
+# Rust build artifacts
+/target/
+
+# Cargo lock kept for binary distributions (section 2.9)
+# Cargo.lock IS versioned — do not add it here
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri (Release 0.2+)
+texis-app/node_modules/
+texis-app/dist/
+texis-app/src-tauri/target/

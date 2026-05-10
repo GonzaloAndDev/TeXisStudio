@@ -1,0 +1,12 @@
+schema_version: "0.1.0"
+id: "generic.tesina"
+name: "Tesina genérica"
+version: "0.1.0"
+description: "Perfil base para tesinas. Estructura simplificada respecto a la tesis."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - tesina
+  - licenciatura
+  - apa
+  - xelatex

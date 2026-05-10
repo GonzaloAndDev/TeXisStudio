@@ -1,0 +1,25 @@
+[workspace]
+members = [
+    "texis-core",
+    "texis-cli",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+
+[workspace.dependencies]
+serde        = { version = "1", features = ["derive"] }
+serde_yaml   = "0.9"
+serde_json   = "1"
+minijinja    = { version = "2", features = ["loader"] }
+jsonschema   = "0.18"
+thiserror    = "1"
+anyhow       = "1"
+walkdir      = "2"
+regex        = "1"
+chrono       = { version = "0.4", features = ["serde"] }
+clap         = { version = "4", features = ["derive"] }
+
+insta        = { version = "1", features = ["yaml"] }
+tempfile     = "3"

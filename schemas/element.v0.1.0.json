@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GonzaloAndDev/TeXisStudio/schemas/element.v0.1.0.json",
+  "title": "TeXisStudio Element Schema v0.1.0",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "placement"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["0.1.0"] },
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "placement": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["front_matter", "body", "back_matter", "appendix"] }
+    },
+    "template": { "type": "string" }
+  }
+}

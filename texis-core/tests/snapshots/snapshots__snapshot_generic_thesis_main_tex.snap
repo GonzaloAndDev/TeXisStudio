@@ -1,0 +1,41 @@
+---
+source: texis-core/tests/snapshots.rs
+assertion_line: 13
+expression: output
+---
+% ─────────────────────────────────────────────────────────────────
+% Generado por TeXisStudio
+% https://github.com/GonzaloAndDev/TeXisStudio
+% Autor original: Gonzalo Andrade Estrella
+%
+% Fuente de verdad: tesis.project.yaml + content/
+% Este archivo es output. No editar directamente.
+%
+% Compilar desde el directorio build/:
+%   cd build && latexmk -xelatex main.tex
+% ─────────────────────────────────────────────────────────────────
+
+\documentclass[12pt,letterpaper,oneside]{book}
+
+\input{configuracion/paquetes}
+\input{configuracion/estilo}
+\input{configuracion/datos_tesis}
+
+\begin{document}
+
+% ── Portada ──────────────────────────────────────────────────────
+\input{preliminares/title_page}
+
+\frontmatter
+
+\tableofcontents
+
+\mainmatter
+
+\input{capitulos/01_introduction}
+
+\backmatter
+
+\printbibliography[heading=bibintoc]
+
+\end{document}

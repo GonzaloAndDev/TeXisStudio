@@ -1,0 +1,227 @@
+// Genera build/main.tex y los archivos de configuracion/ a partir del ProjectModel.
+//
+// INVARIANTES (sección 11 del plan):
+// 1. main.tex legible por cualquier persona con LaTeX básico.
+// 2. Solo rutas relativas desde build/.
+// 3. La clase LaTeX viene del perfil/modelo, no está hardcodeada.
+// 4. Compila con: cd build && latexmk -xelatex main.tex
+
+use crate::error::{CoreError, CoreResult};
+use crate::project::model::{BibliographyBackend, ProjectModel, SectionPlacement};
+use crate::template::engine::TemplateEngine;
+use crate::template::escape::latex_escape;
+use std::path::Path;
+
+const HEADER_COMMENT: &str = "\
+% ─────────────────────────────────────────────────────────────────
+% Generado por TeXisStudio
+% https://github.com/GonzaloAndDev/TeXisStudio
+% Autor original: Gonzalo Andrade Estrella
+%
+% Fuente de verdad: tesis.project.yaml + content/
+% Este archivo es output. No editar directamente.
+%
+% Compilar desde el directorio build/:
+%   cd build && latexmk -xelatex main.tex
+% ─────────────────────────────────────────────────────────────────
+";
+
+pub fn generate(model: &ProjectModel, build_dir: &Path, engine: &TemplateEngine) -> CoreResult<()> {
+    let main = render_to_string(model, engine)?;
+    std::fs::write(build_dir.join("main.tex"), &main).map_err(CoreError::Io)?;
+
+    let paquetes = render_paquetes(model);
+    std::fs::write(build_dir.join("configuracion/paquetes.tex"), &paquetes).map_err(CoreError::Io)?;
+
+    let estilo = render_estilo(model);
+    std::fs::write(build_dir.join("configuracion/estilo.tex"), &estilo).map_err(CoreError::Io)?;
+
+    let datos = render_datos_tesis(model);
+    std::fs::write(build_dir.join("configuracion/datos_tesis.tex"), &datos).map_err(CoreError::Io)?;
+
+    Ok(())
+}
+
+pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreResult<String> {
+    let mut out = String::new();
+
+    out.push_str(HEADER_COMMENT);
+    out.push('\n');
+
+    // Clase del documento
+    let cls = &model.latex_config.document_class;
+    let options = cls.options.join(",");
+    out.push_str(&format!("\\documentclass[{}]{{{}}}\n\n", options, cls.name));
+
+    // Archivos de configuración
+    out.push_str("\\input{configuracion/paquetes}\n");
+    out.push_str("\\input{configuracion/estilo}\n");
+    out.push_str("\\input{configuracion/datos_tesis}\n\n");
+
+    out.push_str("\\begin{document}\n");
+
+    let mut body_idx = 0usize;
+    let mut in_frontmatter = false;
+    let mut in_mainmatter = false;
+    let mut in_backmatter = false;
+    let mut appendix_started = false;
+
+    for section in &model.sections {
+        if !section.enabled {
+            continue;
+        }
+
+        match section.placement {
+            SectionPlacement::FrontMatter => {
+                if section.element_id == "title_page" {
+                    out.push_str("\n% ── Portada ──────────────────────────────────────────────────────\n");
+                    out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id));
+                } else {
+                    if !in_frontmatter {
+                        out.push_str("\n\\frontmatter\n");
+                        in_frontmatter = true;
+                    }
+                    match section.element_id.as_str() {
+                        "table_of_contents" => out.push_str("\n\\tableofcontents\n"),
+                        "list_of_figures"   => out.push_str("\\listoffigures\n"),
+                        "list_of_tables"    => out.push_str("\\listoftables\n"),
+                        _ => out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id)),
+                    }
+                }
+            }
+
+            SectionPlacement::Body => {
+                if !in_mainmatter {
+                    if !in_frontmatter {
+                        // Sin secciones de frontmatter explícitas aún así va \frontmatter
+                        out.push_str("\n\\frontmatter\n\\tableofcontents\n");
+                        in_frontmatter = true;
+                    }
+                    out.push_str("\n\\mainmatter\n");
+                    in_mainmatter = true;
+                }
+                out.push_str(&format!("\n\\input{{capitulos/{:02}_{}}}\n", body_idx + 1, section.id));
+                body_idx += 1;
+            }
+
+            SectionPlacement::BackMatter => {
+                if !in_backmatter {
+                    out.push_str("\n\\backmatter\n");
+                    in_backmatter = true;
+                }
+                match section.element_id.as_str() {
+                    "references" => {
+                        let cmd = match model.latex_config.bibliography_backend {
+                            BibliographyBackend::Biber  => "\\printbibliography[heading=bibintoc]",
+                            BibliographyBackend::Bibtex => "\\bibliography{bibliografia/referencias}",
+                        };
+                        out.push_str(&format!("\n{}\n", cmd));
+                    }
+                    _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
+                }
+            }
+
+            SectionPlacement::Appendix => {
+                if !appendix_started {
+                    out.push_str("\n\\appendix\n");
+                    appendix_started = true;
+                }
+                out.push_str(&format!("\\input{{anexos/{}}}\n", section.id));
+            }
+        }
+    }
+
+    out.push_str("\n\\end{document}\n");
+    Ok(out)
+}
+
+fn render_paquetes(model: &ProjectModel) -> String {
+    let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
+
+    // Paquetes base según el motor
+    out.push_str("\\usepackage{fontspec}\n");
+    out.push_str("\\usepackage[margin=2.5cm]{geometry}\n");
+    out.push_str("\\usepackage{graphicx}\n");
+    out.push_str("\\usepackage{booktabs}\n");
+    out.push_str("\\usepackage{array}\n");
+    out.push_str("\\usepackage{longtable}\n");
+    out.push_str("\\usepackage{float}\n");
+    out.push_str("\\usepackage{caption}\n");
+    out.push_str("\\usepackage{setspace}\n");
+    out.push_str("\\usepackage{microtype}\n");
+    out.push_str("\\usepackage{csquotes}\n");
+
+    // Bibliografía
+    let bib_style = &model.latex_config.bibliography_style;
+    let bib_backend = match &model.latex_config.bibliography_backend {
+        BibliographyBackend::Biber  => "biber",
+        BibliographyBackend::Bibtex => "bibtex",
+    };
+    out.push_str(&format!(
+        "\\usepackage[style={},backend={}]{{biblatex}}\n",
+        bib_style, bib_backend
+    ));
+    out.push_str("\\addbibresource{../content/bibliography/references.bib}\n");
+
+    out.push_str("\\usepackage[hidelinks]{hyperref}\n");
+
+    // Paquetes adicionales del modelo
+    for pkg in &model.latex_config.packages_required {
+        out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
+    }
+
+    out
+}
+
+fn render_estilo(_model: &ProjectModel) -> String {
+    let mut out = String::from("% Estilo — generado automáticamente\n\n");
+    out.push_str("\\onehalfspacing\n");
+    out.push_str("\\setlength{\\parindent}{1.5em}\n");
+    out.push_str("\\setlength{\\parskip}{6pt}\n");
+    out
+}
+
+fn render_datos_tesis(model: &ProjectModel) -> String {
+    let mut out = String::from("% Datos de la tesis — generado automáticamente\n\n");
+
+    out.push_str(&format!(
+        "\\newcommand{{\\tesisTitulo}}{{{}}}\n",
+        latex_escape(&model.metadata.title)
+    ));
+    if let Some(sub) = &model.metadata.subtitle {
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisSubtitulo}}{{{}}}\n",
+            latex_escape(sub)
+        ));
+    }
+    out.push_str(&format!(
+        "\\newcommand{{\\tesisAutor}}{{{}}}\n",
+        latex_escape(&model.student.full_name)
+    ));
+    out.push_str(&format!(
+        "\\newcommand{{\\tesisInstitucion}}{{{}}}\n",
+        latex_escape(&model.institution.name)
+    ));
+    if let Some(fac) = &model.institution.faculty {
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisFacultad}}{{{}}}\n",
+            latex_escape(fac)
+        ));
+    }
+    if let Some(adv) = &model.student.advisor {
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisAsesor}}{{{}}}\n",
+            latex_escape(adv)
+        ));
+    }
+    out.push_str(&format!(
+        "\\newcommand{{\\tesisAnio}}{{{}}}\n",
+        model.metadata.year
+    ));
+    out.push_str(&format!(
+        "\\newcommand{{\\tesisCiudad}}{{{}}}\n",
+        latex_escape(&model.metadata.city)
+    ));
+
+    out
+}

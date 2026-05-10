@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GonzaloAndDev/TeXisStudio/schemas/block.v0.1.0.json",
+  "title": "TeXisStudio ContentBlock Schema v0.1.0",
+  "description": "Discriminated union de bloques de contenido",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["type", "id", "content"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "id": { "type": "string" },
+        "content": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "id", "level", "content"],
+      "properties": {
+        "type": { "const": "heading" },
+        "id": { "type": "string" },
+        "level": { "type": "string", "enum": ["section", "subsection", "subsubsection"] },
+        "content": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "id", "file", "caption", "width", "label", "include_in_list"],
+      "properties": {
+        "type": { "const": "figure" },
+        "id": { "type": "string" },
+        "file": { "type": "string" },
+        "caption": { "type": "string" },
+        "source": { "type": "string" },
+        "width": { "type": "string", "enum": ["half", "three_quarters", "full"] },
+        "label": { "type": "string" },
+        "include_in_list": { "type": "boolean" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "id", "latex_content", "numbered"],
+      "properties": {
+        "type": { "const": "equation" },
+        "id": { "type": "string" },
+        "latex_content": { "type": "string" },
+        "label": { "type": "string" },
+        "numbered": { "type": "boolean" }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "id", "list_type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "id": { "type": "string" },
+        "list_type": { "type": "string", "enum": ["itemize", "enumerate", "description"] },
+        "items": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["type", "id", "content", "user_confirmed"],
+      "properties": {
+        "type": { "const": "raw_latex" },
+        "id": { "type": "string" },
+        "content": { "type": "string" },
+        "user_confirmed": { "type": "boolean" }
+      }
+    }
+  ]
+}

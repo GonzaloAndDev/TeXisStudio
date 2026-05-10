@@ -1,0 +1,60 @@
+// INVARIANTES — nunca se violan:
+// 1. main.tex legible por cualquier persona con LaTeX básico.
+// 2. Cada capítulo en archivo separado bajo capitulos/.
+// 3. Solo rutas relativas desde build/. Nunca absolutas.
+// 4. Labels legibles: fig:nombre, tab:nombre, sec:nombre.
+// 5. Compila con: cd build && latexmk -xelatex main.tex
+// 6. Sin macros oscuras.
+// 7. La clase LaTeX viene del perfil, no está hardcodeada.
+// 8. Al crear proyecto: genera .gitignore y README-compilacion.txt.
+
+use crate::error::CoreResult;
+use crate::project::model::ProjectModel;
+use crate::template::engine::TemplateEngine;
+use std::path::Path;
+
+pub mod labels;
+pub mod main_tex;
+pub mod project;
+pub mod sections;
+
+pub struct LaTeXGenerator {
+    engine: TemplateEngine,
+}
+
+impl LaTeXGenerator {
+    pub fn new() -> CoreResult<Self> {
+        Ok(Self {
+            engine: TemplateEngine::new()?,
+        })
+    }
+
+    /// Genera todos los archivos .tex en build_dir.
+    /// build_dir es el directorio build/ del proyecto del usuario.
+    pub fn generate(&self, model: &ProjectModel, build_dir: &Path) -> CoreResult<()> {
+        project::create_structure(build_dir)?;
+        main_tex::generate(model, build_dir, &self.engine)?;
+        sections::generate_all(model, build_dir, &self.engine)?;
+        Ok(())
+    }
+
+    /// Solo para tests: retorna main.tex como String sin escribir a disco.
+    pub fn generate_main_tex_string(&self, model: &ProjectModel) -> CoreResult<String> {
+        main_tex::render_to_string(model, &self.engine)
+    }
+
+    /// Solo para tests: retorna una sección como String sin escribir a disco.
+    pub fn generate_section_string(
+        &self,
+        model: &ProjectModel,
+        section_id: &str,
+    ) -> CoreResult<String> {
+        sections::render_section_to_string(model, section_id, &self.engine)
+    }
+}
+
+impl Default for LaTeXGenerator {
+    fn default() -> Self {
+        Self::new().expect("TemplateEngine::new() no debe fallar")
+    }
+}

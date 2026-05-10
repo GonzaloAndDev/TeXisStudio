@@ -1,0 +1,59 @@
+schema_version: "0.1.0"
+id: "generic.tesina"
+name: "Tesina genérica"
+description: "Perfil base para tesinas. Estructura simplificada."
+
+document_class:
+  name: "book"
+  options:
+    - "11pt"
+    - "letterpaper"
+    - "oneside"
+
+latex_engine: "xelatex"
+compiler: "latexmk"
+bibliography_backend: "biber"
+bibliography_style: "apa"
+
+packages:
+  - "fontspec"
+  - "geometry"
+  - "graphicx"
+  - "booktabs"
+  - "csquotes"
+  - "setspace"
+  - "hyperref"
+
+sections:
+  - id: "title_page"
+    element_id: "title_page"
+    placement: "front_matter"
+    required: true
+
+  - id: "table_of_contents"
+    element_id: "table_of_contents"
+    placement: "front_matter"
+    required: true
+
+  - id: "introduction"
+    element_id: "introduction"
+    placement: "body"
+    required: true
+    title: "Introducción"
+
+  - id: "development"
+    element_id: "theoretical_framework"
+    placement: "body"
+    required: true
+    title: "Desarrollo"
+
+  - id: "conclusions"
+    element_id: "conclusions"
+    placement: "body"
+    required: true
+    title: "Conclusiones"
+
+  - id: "references"
+    element_id: "references"
+    placement: "back_matter"
+    required: true

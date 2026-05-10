@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GonzaloAndDev/TeXisStudio/schemas/project.v0.1.0.json",
+  "title": "TeXisStudio Project Schema v0.1.0",
+  "description": "Schema para tesis.project.yaml — fuente de verdad del proyecto",
+  "type": "object",
+  "required": ["id", "schema_version", "metadata", "institution", "student", "profile_id", "latex_config", "sections"],
+  "properties": {
+    "id": { "type": "string" },
+    "schema_version": { "type": "string", "enum": ["0.1.0"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "profile_id": { "type": "string" },
+    "metadata": {
+      "type": "object",
+      "required": ["title", "document_kind", "academic_level", "language", "city", "year"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "subtitle": { "type": "string" },
+        "document_kind": { "type": "string", "enum": ["tesis", "tesina"] },
+        "academic_level": {
+          "type": "string",
+          "enum": ["bachillerato", "tecnico", "licenciatura", "maestria", "doctorado"]
+        },
+        "language": { "type": "string" },
+        "city": { "type": "string" },
+        "year": { "type": "integer", "minimum": 1900, "maximum": 2100 },
+        "keywords": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "institution": {
+      "type": "object",
+      "required": ["name", "country"],
+      "properties": {
+        "name": { "type": "string" },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "logo_path": { "type": "string" },
+        "country": { "type": "string" }
+      }
+    },
+    "student": {
+      "type": "object",
+      "required": ["full_name"],
+      "properties": {
+        "full_name": { "type": "string" },
+        "student_id": { "type": "string" },
+        "email": { "type": "string" },
+        "advisor": { "type": "string" },
+        "co_advisor": { "type": "string" }
+      }
+    },
+    "latex_config": {
+      "type": "object",
+      "required": ["document_class", "engine", "compiler", "bibliography_backend", "bibliography_style"],
+      "properties": {
+        "document_class": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string" },
+            "options": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "engine": { "type": "string", "enum": ["xelatex", "pdflatex", "lualatex"] },
+        "compiler": { "type": "string", "enum": ["latexmk", "tectonic"] },
+        "bibliography_backend": { "type": "string", "enum": ["biber", "bibtex"] },
+        "bibliography_style": { "type": "string" },
+        "packages_required": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/ProjectSection" }
+    },
+    "file_states": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "enum": ["auto", "manual"] }
+    }
+  },
+  "definitions": {
+    "ProjectSection": {
+      "type": "object",
+      "required": ["id", "element_id", "placement", "required", "enabled"],
+      "properties": {
+        "id": { "type": "string" },
+        "element_id": { "type": "string" },
+        "title": { "type": "string" },
+        "placement": { "type": "string", "enum": ["front_matter", "body", "back_matter", "appendix"] },
+        "required": { "type": "boolean" },
+        "enabled": { "type": "boolean" },
+        "label": { "type": "string" },
+        "blocks": { "type": "array" },
+        "fields": { "type": "object" },
+        "children": { "type": "array" }
+      }
+    }
+  }
+}

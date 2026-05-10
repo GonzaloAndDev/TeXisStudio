@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/GonzaloAndDev/TeXisStudio/schemas/manifest.v0.1.0.json",
+  "title": "TeXisStudio Profile Manifest Schema v0.1.0",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "version"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["0.1.0"] },
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "license": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } }
+  }
+}

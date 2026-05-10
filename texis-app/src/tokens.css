@@ -1,0 +1,203 @@
+/* ─────────────────────────────────────────────────────────────────
+   TeXisStudio · Design Tokens
+   Híbrido: chrome técnico (productividad) + canvas de papel (edición)
+   ───────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ─── Paleta neutra (papel + tinta) ─── */
+  --paper-100: #FBF8F3;    /* Hoja                                    */
+  --paper-200: #F4EFE6;    /* Hoja con sombra                         */
+  --paper-300: #E9E2D4;    /* Borde de hoja                           */
+
+  --ink-50:   #F5F3EE;     /* UI surface light                        */
+  --ink-100:  #ECE9E2;
+  --ink-200:  #D9D4C8;
+  --ink-300:  #B8B1A1;
+  --ink-400:  #8A8474;
+  --ink-500:  #5C574B;
+  --ink-600:  #3F3B33;
+  --ink-700:  #292621;
+  --ink-800:  #1B1916;     /* Tinta                                   */
+  --ink-900:  #100F0D;
+
+  /* ─── Acentos ─── */
+  --accent:        #B5532D;   /* Sienna — encuadernación, cuero       */
+  --accent-soft:   #E9C9B7;
+  --accent-tint:   #FBEFE6;
+  --accent-deep:   #8A3E20;
+
+  --build-ok:      #4A7C5A;   /* Verde compilación exitosa            */
+  --build-ok-tint: #DCEAD9;
+  --build-warn:    #B7903C;
+  --build-warn-tint: #F4E8C8;
+  --build-err:     #B33A3A;
+  --build-err-tint:#F1D6D6;
+  --link:          #3D6B97;
+
+  /* ─── Roles semánticos (claro) ─── */
+  --bg-app:        var(--ink-50);
+  --bg-chrome:     #EFECE5;
+  --bg-panel:      #FFFFFF;
+  --bg-paper:      var(--paper-100);
+  --bg-paper-edge: var(--paper-300);
+  --bg-hover:      rgba(27, 25, 22, 0.04);
+  --bg-selected:   rgba(181, 83, 45, 0.10);
+
+  --fg-strong:     var(--ink-800);
+  --fg-default:    var(--ink-700);
+  --fg-muted:      var(--ink-500);
+  --fg-faint:      var(--ink-400);
+
+  --border-subtle: rgba(27, 25, 22, 0.06);
+  --border-soft:   rgba(27, 25, 22, 0.10);
+  --border-firm:   rgba(27, 25, 22, 0.18);
+
+  --shadow-card:   0 1px 0 rgba(27,25,22,0.04), 0 1px 2px rgba(27,25,22,0.06);
+  --shadow-pop:    0 8px 24px -8px rgba(27,25,22,0.18), 0 2px 4px rgba(27,25,22,0.06);
+  --shadow-paper:  0 1px 0 rgba(27,25,22,0.04), 0 12px 28px -12px rgba(27,25,22,0.18);
+
+  /* ─── Tipografía ─── */
+  --font-display: 'Newsreader', 'Source Serif 4', Georgia, serif;
+  --font-ui:      'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-base: 13px;
+  --fs-md:   14px;
+  --fs-lg:   16px;
+  --fs-xl:   20px;
+  --fs-2xl:  26px;
+  --fs-3xl:  34px;
+  --fs-display: 48px;
+
+  /* ─── Espaciado ─── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 56px;
+
+  /* ─── Radios ─── */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  /* ─── Chrome ─── */
+  --chrome-h:      40px;     /* barra superior */
+  --statusbar-h:   26px;
+  --sidebar-w:     260px;
+}
+
+[data-theme="dark"] {
+  --bg-app:        #14130F;
+  --bg-chrome:     #1B1A16;
+  --bg-panel:      #1F1D19;
+  --bg-paper:      #25221C;        /* Papel "ahumado" en oscuro */
+  --bg-paper-edge: #2E2A22;
+  --bg-hover:      rgba(255,255,255,0.04);
+  --bg-selected:   rgba(212, 122, 78, 0.14);
+
+  --fg-strong:     #F2EEE4;
+  --fg-default:    #DAD3C4;
+  --fg-muted:      #948D7E;
+  --fg-faint:      #6B6657;
+
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-soft:   rgba(255,255,255,0.09);
+  --border-firm:   rgba(255,255,255,0.16);
+
+  --accent:        #D47A4E;
+  --accent-soft:   #5A3823;
+  --accent-tint:   #2E1F15;
+  --accent-deep:   #E9986B;
+
+  --build-ok:      #6FB186;
+  --build-ok-tint: #1F2C24;
+  --build-warn:    #D4A95C;
+  --build-warn-tint: #2A2418;
+  --build-err:     #D86E6E;
+  --build-err-tint:#2A1A1A;
+
+  --shadow-card:   0 1px 0 rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-pop:    0 12px 28px -8px rgba(0,0,0,0.55);
+  --shadow-paper:  0 12px 32px -12px rgba(0,0,0,0.6);
+}
+
+/* ─── Reset ─── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  color: var(--fg-default);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+/* ─── Utilidades generales ─── */
+.tx-mono { font-family: var(--font-mono); }
+.tx-serif { font-family: var(--font-display); }
+.tx-tabular { font-variant-numeric: tabular-nums; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  font-family: var(--font-ui); font-size: var(--fs-base); font-weight: 500;
+  padding: 6px 12px; border-radius: var(--r-md);
+  border: 1px solid var(--border-firm); background: var(--bg-panel);
+  color: var(--fg-strong); cursor: pointer; line-height: 1;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: var(--bg-hover); }
+.btn-primary {
+  background: var(--ink-800); color: var(--paper-100);
+  border-color: var(--ink-800);
+}
+[data-theme="dark"] .btn-primary {
+  background: var(--fg-strong); color: var(--ink-800);
+  border-color: var(--fg-strong);
+}
+.btn-primary:hover { background: var(--ink-700); }
+.btn-accent {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+.btn-accent:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--bg-hover); }
+.btn-sm { padding: 4px 8px; font-size: var(--fs-sm); }
+.btn-icon { padding: 6px; aspect-ratio: 1; justify-content: center; }
+
+.kbd {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 5px; border-radius: 3px;
+  background: var(--bg-app); border: 1px solid var(--border-firm);
+  color: var(--fg-muted); line-height: 1;
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  font-size: var(--fs-xs); font-weight: 500;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--bg-app); color: var(--fg-muted);
+  border: 1px solid var(--border-soft);
+}
+.chip-accent { background: var(--accent-tint); color: var(--accent-deep); border-color: transparent; }
+.chip-ok { background: var(--build-ok-tint); color: var(--build-ok); border-color: transparent; }
+.chip-warn { background: var(--build-warn-tint); color: var(--build-warn); border-color: transparent; }
+.chip-err { background: var(--build-err-tint); color: var(--build-err); border-color: transparent; }
+
+[data-theme="dark"] .chip-accent { color: var(--accent-deep); }
+
+/* Scrollbars finos */
+.scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--border-firm); border-radius: 4px; }
+.scroll::-webkit-scrollbar-track { background: transparent; }
