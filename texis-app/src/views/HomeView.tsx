@@ -258,7 +258,7 @@ export default function HomeView() {
       <TxStatusbar items={[
         latexStatus,
         { icon: <IconFolder size={11} />, text: "~/Documentos" },
-        { right: true, text: "TeXisStudio 0.2.0 · AGPL+CC" },
+        { right: true, text: "TeXisStudio 0.2.0 · AGPL+CC", icon: <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")} /> },
       ]} />
     </>
   );

@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import AboutView from "./views/AboutView";
 import CompileView from "./views/CompileView";
 import EditorView from "./views/EditorView";
 import HomeView from "./views/HomeView";
+import LibraryView from "./views/LibraryView";
 import WizardView from "./views/WizardView";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
@@ -179,8 +181,8 @@ export default function App() {
           <Route path="/demo" element={<DemoLoader />} />
           <Route path="/project/:id" element={<EditorView />} />
           <Route path="/project/:id/compile" element={<CompileView />} />
-          <Route path="/library" element={<StubView title="Biblioteca" />} />
-          <Route path="/about" element={<StubView title="Acerca de TeXisStudio" />} />
+          <Route path="/library" element={<LibraryView />} />
+          <Route path="/about" element={<AboutView />} />
           <Route path="*" element={<HomeView />} />
         </Routes>
       </BrowserRouter>
