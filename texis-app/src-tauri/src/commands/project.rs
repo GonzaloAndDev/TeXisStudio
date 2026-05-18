@@ -316,15 +316,23 @@ fn chrono_now() -> String {
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
-        .as_secs();
-    // ISO 8601 básico
-    let d = secs / 86400;
-    let s = secs % 86400;
-    let h = s / 3600;
-    let m = (s % 3600) / 60;
-    let sec = s % 60;
-    let days_since_epoch = d;
-    // Simple: just return epoch-based timestamp string
-    let _ = (days_since_epoch, h, m, sec);
-    format!("{}", secs)
+        .as_secs() as i64;
+
+    let hh = (secs % 86400) / 3600;
+    let mm = (secs % 3600) / 60;
+    let ss = secs % 60;
+
+    // Civil date from Unix epoch (Euclidean affine algorithm)
+    let z = secs / 86400 + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y_raw = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = if month <= 2 { y_raw + 1 } else { y_raw };
+
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hh, mm, ss)
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { documentDir } from "@tauri-apps/api/path";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconFile,
@@ -8,6 +9,19 @@ import {
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { LatexInfo, RecentProject } from "../types";
+
+function formatUpdatedAt(raw: string): string {
+  const ts = /^\d+$/.test(raw) ? parseInt(raw, 10) * 1000 : Date.parse(raw);
+  if (isNaN(ts)) return raw;
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 120) return "hace un momento";
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+  if (diff < 172800) return "ayer";
+  if (diff < 604800) return `hace ${Math.floor(diff / 86400)} días`;
+  if (diff < 2592000) return `hace ${Math.floor(diff / 604800)} sem`;
+  return `hace ${Math.floor(diff / 2592000)} meses`;
+}
 
 // Mock data visible en dev-browser (sin Tauri)
 const MOCK_PROJECTS: RecentProject[] = [
@@ -69,6 +83,71 @@ const S = {
   } as const,
 };
 
+function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
+  const missing: string[] = [];
+  if (!info.has_latexmk) missing.push("latexmk");
+  if (!info.has_xelatex) missing.push("xelatex");
+  if (!info.has_biber)   missing.push("biber");
+
+  return (
+    <div style={{
+      margin: "0 0 20px",
+      padding: "16px 20px",
+      borderRadius: "var(--r-lg)",
+      background: "var(--accent-tint)",
+      border: "1px solid var(--accent-soft)",
+      display: "flex", gap: 16, alignItems: "flex-start",
+    }}>
+      <div style={{
+        width: 36, height: 36, flexShrink: 0, borderRadius: "var(--r-md)",
+        background: "var(--accent)", color: "white",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18,
+      }}>
+        ⚠
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-md)", marginBottom: 4 }}>
+          LaTeX no está instalado — no podrás compilar PDFs todavía
+        </div>
+        {missing.length > 0 && (
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 10 }}>
+            Faltan:{" "}
+            {missing.map((t) => (
+              <code key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-panel)", padding: "1px 5px", borderRadius: 3, marginRight: 4 }}>
+                {t}
+              </code>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px", maxWidth: 700 }}>
+          <div>
+            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-default)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Opción A · MiKTeX (recomendado en Windows)
+            </div>
+            <ol style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+              <li>Busca <strong>MiKTeX</strong> en el navegador y descarga el instalador</li>
+              <li>Instala con "Install packages on-the-fly: yes"</li>
+              <li>Busca <strong>Strawberry Perl</strong> e instálalo (necesario para latexmk)</li>
+              <li>Reinicia TeXisStudio</li>
+            </ol>
+          </div>
+          <div>
+            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-default)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Opción B · TeX Live 2024
+            </div>
+            <ol style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+              <li>Busca <strong>TeX Live 2024</strong> e instala el esquema <em>full</em></li>
+              <li>Instala también <strong>Strawberry Perl</strong></li>
+              <li>Reinicia TeXisStudio</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function levelLabel(level: string): string {
   const map: Record<string, string> = {
     licenciatura: "Licenciatura",
@@ -91,19 +170,24 @@ export default function HomeView() {
 
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
-      const home = navigator.platform.startsWith("Win") ? "C:\\Users" : "/home";
-      api.listRecentProjects(home).then((p) => {
-        setProjects(p);
-        setRecentProjects(p);
-      }).catch(() => setProjects([]));
+      documentDir().then((dir) =>
+        api.listRecentProjects(dir).then((p) => {
+          setProjects(p);
+          setRecentProjects(p);
+        }).catch(() => setProjects([]))
+      ).catch(() => setProjects([]));
     } else {
-      // Dev en browser: mostrar mock data para revisar el diseño
       setProjects(MOCK_PROJECTS);
       setRecentProjects(MOCK_PROJECTS);
     }
   }, [setLatexInfo, setRecentProjects]);
 
   async function handleOpen(projectPath: string) {
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv) {
+      navigate("/demo");
+      return;
+    }
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
@@ -192,6 +276,8 @@ export default function HomeView() {
             </div>
           </div>
 
+          {latexInfo && !latexInfo.is_usable && <LatexSetupBanner info={latexInfo} />}
+
           <div style={S.sectionTitle}>
             <span>Proyectos recientes</span>
             <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
@@ -223,7 +309,7 @@ export default function HomeView() {
                 </div>
                 <div style={S.cardFooter}>
                   <span>{p.path.split(/[/\\]/).pop()}</span>
-                  <span className="chip">activo</span>
+                  <span>{formatUpdatedAt(p.updated_at)}</span>
                 </div>
               </div>
             ))}

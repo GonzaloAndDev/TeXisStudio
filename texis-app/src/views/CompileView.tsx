@@ -68,6 +68,7 @@ export default function CompileView() {
   const navigate = useNavigate();
   const { activeProject, activeProjectPath } = useProjectStore();
 
+  const { latexInfo } = useProjectStore();
   const [state, setState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
   const [draft, setDraft] = useState(false);
@@ -151,7 +152,28 @@ export default function CompileView() {
           </div>
 
           <div style={{ flex: 1, overflow: "auto" }} className="scroll">
-            {state === "idle" && (
+            {state === "idle" && latexInfo && !latexInfo.is_usable && (
+              <div style={{ padding: "20px 16px" }}>
+                <div style={{
+                  padding: "14px 16px", borderRadius: "var(--r-md)",
+                  background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+                  display: "flex", gap: 12, alignItems: "flex-start",
+                }}>
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>⚠</span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)", marginBottom: 4 }}>
+                      LaTeX no detectado
+                    </div>
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                      Instala <strong>MiKTeX</strong> o <strong>TeX Live 2024</strong> junto con{" "}
+                      <strong>Strawberry Perl</strong> para poder compilar PDFs.
+                      Después reinicia TeXisStudio.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {state === "idle" && (!latexInfo || latexInfo.is_usable) && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ margin: 0 }}>Presiona <strong>Compilar</strong> para generar el PDF.</p>

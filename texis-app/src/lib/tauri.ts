@@ -14,9 +14,24 @@ import type {
 const isTauri = () =>
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+// Respuestas mock para desarrollo en browser sin Tauri
+const BROWSER_MOCKS: Record<string, unknown> = {
+  detect_latex: {
+    has_latexmk: false,
+    has_xelatex: false,
+    has_biber: false,
+    is_usable: false,
+    latexmk_version: undefined,
+    texlive_year: undefined,
+  },
+};
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
     return invoke<T>(cmd, args);
+  }
+  if (cmd in BROWSER_MOCKS) {
+    return BROWSER_MOCKS[cmd] as T;
   }
   // Fallback para desarrollo en browser sin Tauri
   throw new Error(`Tauri no disponible. Comando: ${cmd}`);
