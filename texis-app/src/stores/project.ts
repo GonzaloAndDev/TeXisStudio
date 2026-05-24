@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ContentBlock, LatexInfo, ProjectModel, RecentProject } from "../types";
+import type { ContentBlock, LatexInfo, ProjectModel, RecentProject, SectionStatus } from "../types";
 
 interface ProjectStore {
   // Proyectos recientes
@@ -13,6 +13,7 @@ interface ProjectStore {
   closeProject: () => void;
   updateProject: (model: Partial<ProjectModel>) => void;
   updateSectionBlocks: (sectionId: string, blocks: ContentBlock[]) => void;
+  updateSectionMeta: (sectionId: string, status: SectionStatus, notes?: string) => void;
 
   // Sección activa en el editor
   activeSectionId: string | null;
@@ -54,6 +55,14 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       if (!state.activeProject) return {};
       const sections = state.activeProject.sections.map((s) =>
         s.id === sectionId ? { ...s, blocks } : s
+      );
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  updateSectionMeta: (sectionId, status, notes) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = state.activeProject.sections.map((s) =>
+        s.id === sectionId ? { ...s, status, notes: notes ?? s.notes } : s
       );
       return { activeProject: { ...state.activeProject, sections } };
     }),

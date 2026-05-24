@@ -137,6 +137,23 @@ pub enum BibliographyBackend {
     Bibtex,
 }
 
+// ── SectionStatus ─────────────────────────────────────────────────
+
+/// Estado editorial de una sección: refleja el progreso de redacción.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SectionStatus {
+    /// Borrador inicial — trabajo en progreso.
+    #[default]
+    Draft,
+    /// En revisión — listo para que el asesor lo lea.
+    InReview,
+    /// Revisado — el asesor ya hizo observaciones, en corrección.
+    Revised,
+    /// Aprobado — sección finalizada y aceptada.
+    Approved,
+}
+
 // ── ProjectSection ────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,6 +165,12 @@ pub struct ProjectSection {
     pub required: bool,
     pub enabled: bool,
     pub label: Option<String>,
+    /// Estado editorial de la sección.
+    #[serde(default)]
+    pub status: SectionStatus,
+    /// Notas internas del autor (no se incluyen en el PDF).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
     /// Contenido narrativo. Para capítulos y texto largo.
     pub blocks: Vec<ContentBlock>,
     /// Campos de formulario. Para portada y metadata.

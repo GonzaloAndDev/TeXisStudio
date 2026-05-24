@@ -10,6 +10,6 @@ pub use model::{
     FieldValue, FileState, FigureBlock, FigureWidth, HeadingBlock, HeadingLevel,
     InstitutionData, LatexConfig, LatexEngine, ListBlock, ListType, ParagraphBlock,
     ProjectMetadata, ProjectModel, ProjectSection, RawLatexBlock, SectionPlacement,
-    StudentData, TableBlock, TableStyle,
+    SectionStatus, StudentData, TableBlock, TableStyle,
 };
 pub use saver::ProjectSaver;

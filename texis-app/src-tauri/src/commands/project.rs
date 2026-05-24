@@ -353,6 +353,50 @@ pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Resul
     Ok(())
 }
 
+/// Actualiza el estado editorial y las notas internas de una sección.
+/// No toca los bloques ni los campos; solo status y notes.
+#[tauri::command]
+pub fn update_section_meta(
+    project_path: String,
+    section_id: String,
+    status: String,
+    notes: Option<String>,
+) -> Result<(), String> {
+    use texis_core::project::model::SectionStatus;
+    use texis_core::project::model::ProjectSection;
+
+    fn apply(sections: &mut Vec<ProjectSection>, id: &str, status: &SectionStatus, notes: &Option<String>) -> bool {
+        for s in sections.iter_mut() {
+            if s.id == id {
+                s.status = status.clone();
+                s.notes  = notes.clone();
+                return true;
+            }
+            if apply(&mut s.children, id, status, notes) {
+                return true;
+            }
+        }
+        false
+    }
+
+    let new_status = match status.as_str() {
+        "in_review" => SectionStatus::InReview,
+        "revised"   => SectionStatus::Revised,
+        "approved"  => SectionStatus::Approved,
+        _           => SectionStatus::Draft,
+    };
+
+    let path = std::path::Path::new(&project_path);
+    let project_yaml = path.join("tesis.project.yaml");
+    let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+
+    if !apply(&mut model.sections, &section_id, &new_status, &notes) {
+        return Err(format!("Sección '{}' no encontrada", section_id));
+    }
+
+    ProjectSaver.save_to_file(&model, &project_yaml).map_err(err)
+}
+
 /// Sanitiza la etiqueta de un snapshot para usarla como parte del nombre de archivo.
 fn sanitize_snapshot_label(label: &str) -> String {
     label
@@ -432,6 +476,8 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             required:   s.required,
             enabled:    true,
             label:      s.label.clone(),
+            status:     SectionStatus::Draft,
+            notes:      None,
             blocks:     vec![],
             fields:     HashMap::new(),
             children:   vec![],

@@ -4,13 +4,13 @@ import "katex/dist/katex.min.css";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBuild, IconCheck, IconChevronD, IconCode, IconDoc, IconDrag, IconFile,
+  IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
   IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
   IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTrash, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, ContentBlock, HeadingLevel, ProjectModel, ProjectSection } from "../types";
+import type { BibReference, ContentBlock, HeadingLevel, ProjectModel, ProjectSection, SectionStatus } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -150,6 +150,128 @@ function KaTeXPreview({ latex, displayMode = true }: { latex: string; displayMod
       </div>
     );
   }
+}
+
+// ── SectionStatusBar ─────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<SectionStatus, { label: string; color: string; bg: string }> = {
+  draft:     { label: "Borrador",   color: "#888",    bg: "rgba(136,136,136,0.12)" },
+  in_review: { label: "En revisión",color: "#E09B2F", bg: "rgba(224,155,47,0.12)"  },
+  revised:   { label: "Revisado",   color: "#4A90E2", bg: "rgba(74,144,226,0.12)"  },
+  approved:  { label: "Aprobado",   color: "#52C41A", bg: "rgba(82,196,26,0.12)"   },
+};
+
+function SectionStatusBar({
+  section,
+  onChangeStatus,
+  onChangeNotes,
+}: {
+  section: ProjectSection;
+  onChangeStatus: (s: SectionStatus) => void;
+  onChangeNotes: (n: string) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(section.notes ?? "");
+  const status: SectionStatus = section.status ?? "draft";
+  const cfg = STATUS_CONFIG[status];
+
+  // Sincronizar draft cuando cambia la sección activa
+  useEffect(() => { setNotesDraft(section.notes ?? ""); }, [section.id, section.notes]);
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {/* Fila de estado */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+        {/* Badge clickable */}
+        <button
+          onClick={() => setMenuOpen((o) => !o)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "3px 10px", borderRadius: "var(--r-sm)",
+            border: `1px solid ${cfg.color}40`,
+            background: cfg.bg, color: cfg.color,
+            fontSize: "var(--fs-xs)", fontWeight: 500, cursor: "pointer",
+            fontFamily: "var(--font-ui)",
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
+          {cfg.label}
+          <IconChevronD size={9} />
+        </button>
+
+        {/* Botón notas */}
+        <button
+          onClick={() => setNotesOpen((o) => !o)}
+          title="Notas internas (no se incluyen en el PDF)"
+          style={{
+            fontSize: "var(--fs-xs)", color: notesOpen || section.notes ? "var(--accent)" : "var(--fg-faint)",
+            background: "none", border: "none", cursor: "pointer", padding: "3px 6px",
+            display: "flex", alignItems: "center", gap: 4,
+          }}
+        >
+          📝 {section.notes && !notesOpen ? "ver notas" : "notas"}
+        </button>
+
+        {/* Menú desplegable de estados */}
+        {menuOpen && (
+          <div
+            style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100,
+              background: "var(--bg-chrome)", border: "1px solid var(--border-firm)",
+              borderRadius: "var(--r-md)", boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
+              overflow: "hidden", minWidth: 150,
+            }}
+          >
+            {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, c]) => (
+              <button
+                key={s}
+                onClick={() => { onChangeStatus(s); setMenuOpen(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 14px", background: s === status ? "var(--bg-selected)" : "transparent",
+                  border: "none", cursor: "pointer", color: c.color, fontSize: "var(--fs-sm)",
+                  fontWeight: s === status ? 600 : 400, textAlign: "left",
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+                {c.label}
+                {s === status && <IconCheck size={11} sw={2.5} style={{ marginLeft: "auto", color: c.color }} />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Cerrar menú al hacer clic fuera */}
+        {menuOpen && (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 99 }}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+      </div>
+
+      {/* Panel de notas (collapsible) */}
+      {notesOpen && (
+        <div style={{ marginTop: 8 }}>
+          <textarea
+            value={notesDraft}
+            onChange={(e) => setNotesDraft(e.target.value)}
+            onBlur={() => { if (notesDraft !== (section.notes ?? "")) onChangeNotes(notesDraft); }}
+            rows={3}
+            placeholder="Notas internas para esta sección (no se incluyen en el PDF)…"
+            style={{
+              width: "100%", resize: "vertical",
+              border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+              padding: "8px 12px", fontSize: "var(--fs-sm)", lineHeight: 1.55,
+              color: "var(--fg-default)", background: "var(--bg-app)",
+              fontFamily: "var(--font-ui)", outline: "none",
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function EquationEditor({
@@ -1556,6 +1678,30 @@ export default function EditorView() {
     }
   }, [activeProject, activeProjectPath]);
 
+  // ── Estado / notas de sección ──────────────────────────────────
+  const handleSectionStatusChange = useCallback(async (sectionId: string, status: SectionStatus) => {
+    if (!activeProjectPath) return;
+    const section = activeProject?.sections.find((s) => s.id === sectionId);
+    useProjectStore.getState().updateSectionMeta(sectionId, status, section?.notes);
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (isTauriEnv) {
+      try { await api.updateSectionMeta(activeProjectPath, sectionId, status, section?.notes); }
+      catch (e) { console.error("Error actualizando estado:", e); }
+    }
+  }, [activeProjectPath, activeProject]);
+
+  const handleSectionNotesChange = useCallback(async (sectionId: string, notes: string) => {
+    if (!activeProjectPath) return;
+    const section = activeProject?.sections.find((s) => s.id === sectionId);
+    const status = section?.status ?? "draft";
+    useProjectStore.getState().updateSectionMeta(sectionId, status, notes || undefined);
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (isTauriEnv) {
+      try { await api.updateSectionMeta(activeProjectPath, sectionId, status, notes || undefined); }
+      catch (e) { console.error("Error actualizando notas:", e); }
+    }
+  }, [activeProjectPath, activeProject]);
+
   // Cargar referencias .bib cuando el proyecto cambia
   useEffect(() => {
     if (!activeProjectPath) return;
@@ -1667,19 +1813,24 @@ export default function EditorView() {
                 <div style={{ margin: "6px 8px 2px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--fg-faint)", display: "flex", alignItems: "center", gap: 6 }}>
                   <IconChevronD size={10} /> {groupLabel}
                 </div>
-                {secs.filter((s) => s.enabled).map((s) => (
-                  <div
-                    key={s.id}
-                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
-                    onClick={() => setActiveSectionId(s.id)}
-                  >
-                    <IconDoc size={11} />
-                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title ?? s.element_id}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
-                      {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
-                    </span>
-                  </div>
-                ))}
+                {secs.filter((s) => s.enabled).map((s) => {
+                  const sStatus = s.status ?? "draft";
+                  const dotColor = STATUS_CONFIG[sStatus as SectionStatus]?.color ?? "#888";
+                  return (
+                    <div
+                      key={s.id}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
+                      onClick={() => setActiveSectionId(s.id)}
+                      title={`${s.title ?? s.element_id} · ${STATUS_CONFIG[sStatus as SectionStatus]?.label ?? sStatus}`}
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title ?? s.element_id}</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
+                        {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -1764,9 +1915,15 @@ export default function EditorView() {
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", marginBottom: 4 }}>
                   {activeSection.element_id}
                 </div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--fg-strong)", margin: "4px 0 28px", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--fg-strong)", margin: "4px 0 16px", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
                   {activeSection.title ?? activeSection.element_id}
                 </div>
+
+                <SectionStatusBar
+                  section={activeSection}
+                  onChangeStatus={(s) => handleSectionStatusChange(activeSection.id, s)}
+                  onChangeNotes={(n) => handleSectionNotesChange(activeSection.id, n)}
+                />
 
                 {localBlocks.length === 0 ? (
                   <div

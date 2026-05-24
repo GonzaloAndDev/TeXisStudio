@@ -218,6 +218,8 @@ mod tests {
             required: false,
             enabled: true,
             label: None,
+            status: Default::default(),
+            notes: None,
             blocks,
             fields: HashMap::new(),
             children: vec![],

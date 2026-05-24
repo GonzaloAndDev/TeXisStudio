@@ -11,6 +11,8 @@ export type AcademicLevel =
 
 export type SectionPlacement = "front_matter" | "body" | "back_matter" | "appendix";
 
+export type SectionStatus = "draft" | "in_review" | "revised" | "approved";
+
 export type HeadingLevel = "section" | "subsection" | "subsubsection";
 
 export type FigureWidth = "half" | "three_quarters" | "full";
@@ -111,6 +113,10 @@ export interface ProjectSection {
   required: boolean;
   enabled: boolean;
   label?: string;
+  /** Estado editorial de la sección. Por defecto "draft". */
+  status?: SectionStatus;
+  /** Notas internas del autor (no se incluyen en el PDF). */
+  notes?: string;
   blocks: ContentBlock[];
   fields: Record<string, unknown>;
   children: ProjectSection[];

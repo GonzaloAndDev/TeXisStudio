@@ -156,6 +156,9 @@ export const api = {
   deleteSnapshot: (projectPath: string, snapshotFilename: string): Promise<void> =>
     call("delete_snapshot", { projectPath, snapshotFilename }),
 
+  updateSectionMeta: (projectPath: string, sectionId: string, status: string, notes?: string): Promise<void> =>
+    call("update_section_meta", { projectPath, sectionId, status, notes }),
+
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),
 
