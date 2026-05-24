@@ -4127,7 +4127,6 @@ dependencies = [
 name = "texis-core"
 version = "1.0.0"
 dependencies = [
- "anyhow",
  "chrono",
  "insta",
  "jsonschema",

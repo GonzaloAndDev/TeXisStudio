@@ -23,16 +23,3 @@ pub fn section_output_path(section: &ProjectSection, body_index: usize) -> Optio
         SectionPlacement::Appendix => Some(format!("anexos/{}.tex", section.id)),
     }
 }
-
-/// Construye el label LaTeX canónico para una sección.
-pub fn section_label(section: &ProjectSection) -> String {
-    if let Some(label) = &section.label {
-        return label.clone();
-    }
-    match section.placement {
-        SectionPlacement::FrontMatter => format!("front:{}", section.id),
-        SectionPlacement::Body => format!("sec:{}", section.id),
-        SectionPlacement::BackMatter => format!("back:{}", section.id),
-        SectionPlacement::Appendix => format!("apx:{}", section.id),
-    }
-}

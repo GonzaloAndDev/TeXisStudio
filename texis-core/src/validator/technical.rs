@@ -202,7 +202,7 @@ mod tests {
     use super::*;
     use crate::project::model::{
         AcademicLevel, BibliographyBackend, CitationBlock, CitationType, CompilerKind,
-        ContentBlock, DocumentClassConfig, DocumentKind, EquationBlock, FigureBlock,
+        ContentBlock, DocumentClassConfig, DocumentKind, FigureBlock,
         FigureWidth, InstitutionData, LatexConfig, LatexEngine, ProjectMetadata, ProjectModel,
         ProjectSection, RawLatexBlock, SectionPlacement, StudentData,
     };
