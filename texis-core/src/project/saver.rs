@@ -18,18 +18,31 @@ impl ProjectSaver {
             message: e.to_string(),
         })?;
 
-        // Paso 1: escribir en temporal junto al destino final
         let tmp_path = path.with_extension("yaml.tmp");
+        let bak_path = path.with_extension("yaml.bak");
+
+        // Paso 1: escribir contenido en archivo temporal
         std::fs::write(&tmp_path, &content).map_err(CoreError::Io)?;
 
-        // Paso 2: hacer backup del archivo existente antes de reemplazarlo
+        // Paso 2: mover el archivo actual a .bak (rename, no copy → no falla en Windows
+        //         porque el destino .bak no existe o lo sobreescribe en Unix)
         if path.exists() {
-            let bak_path = path.with_extension("yaml.bak");
-            std::fs::copy(path, &bak_path).map_err(CoreError::Io)?;
+            // En Windows rename sobre destino existente falla; eliminar .bak primero
+            if bak_path.exists() {
+                let _ = std::fs::remove_file(&bak_path);
+            }
+            std::fs::rename(path, &bak_path).map_err(CoreError::Io)?;
         }
 
-        // Paso 3: renombrar temporal → destino
-        std::fs::rename(&tmp_path, path).map_err(CoreError::Io)?;
+        // Paso 3: mover temporal al destino final (el destino ya no existe)
+        if let Err(e) = std::fs::rename(&tmp_path, path) {
+            // Rollback: restaurar .bak al nombre original
+            if bak_path.exists() {
+                let _ = std::fs::rename(&bak_path, path);
+            }
+            let _ = std::fs::remove_file(&tmp_path);
+            return Err(CoreError::Io(e));
+        }
 
         Ok(())
     }

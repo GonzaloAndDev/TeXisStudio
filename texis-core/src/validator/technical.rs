@@ -14,6 +14,7 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
     check_duplicate_labels(model, &mut issues);
     check_invalid_label_format(model, &mut issues);
     check_invalid_citation_keys(model, &mut issues);
+    check_unconfirmed_raw_latex(model, &mut issues);
 
     ValidationReport::new(issues)
 }
@@ -162,6 +163,31 @@ fn check_invalid_citation_keys(model: &ProjectModel, issues: &mut Vec<Validation
                         ),
                         suggestion: Some(
                             "Las citation keys solo pueden contener letras, números, '_', '-', '.' y ':' sin espacios.".to_string()
+                        ),
+                        section_id: Some(section.id.clone()),
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// Advierte cuando hay bloques RawLatex sin confirmar por el usuario.
+/// El generador los omite, pero el usuario puede no darse cuenta.
+fn check_unconfirmed_raw_latex(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
+    for section in &model.sections {
+        for block in &section.blocks {
+            if let ContentBlock::RawLatex(r) = block {
+                if !r.user_confirmed {
+                    issues.push(ValidationIssue {
+                        severity: IssueSeverity::Warning,
+                        code: "W_UNCONFIRMED_RAW_LATEX".to_string(),
+                        message: format!(
+                            "Bloque LaTeX directo en sección '{}' no ha sido confirmado y no se incluirá en la compilación.",
+                            section.id
+                        ),
+                        suggestion: Some(
+                            "Confirma el bloque desde el editor para que se incluya en el documento generado.".to_string()
                         ),
                         section_id: Some(section.id.clone()),
                     });

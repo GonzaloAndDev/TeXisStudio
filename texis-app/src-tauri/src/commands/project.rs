@@ -389,8 +389,8 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Valida que un profile_id solo contenga caracteres alfanuméricos, guiones y
-/// guiones bajos, sin separadores de ruta ni traversal.
+/// Valida que un profile_id sea seguro para usarse como nombre de directorio.
+/// Permite: letras, números, `_`, `-`, `.` — pero NO `..`, `/` ni `\`.
 fn validate_profile_id(id: &str) -> Result<(), String> {
     if id.is_empty() {
         return Err("El ID de perfil no puede estar vacío.".to_string());
@@ -398,9 +398,16 @@ fn validate_profile_id(id: &str) -> Result<(), String> {
     if id.len() > 100 {
         return Err("El ID de perfil es demasiado largo (máximo 100 caracteres).".to_string());
     }
-    if !id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+    // Rechazar traversal explícitamente antes del check de chars
+    if id.contains("..") || id.contains('/') || id.contains('\\') {
+        return Err("El ID de perfil no puede contener '..', '/' ni '\\'.".to_string());
+    }
+    if !id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false) {
+        return Err("El ID de perfil debe empezar con una letra o número.".to_string());
+    }
+    if !id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.')) {
         return Err(format!(
-            "El ID de perfil '{}' contiene caracteres no permitidos. Solo se permiten letras, números, '_' y '-'.",
+            "El ID de perfil '{}' contiene caracteres no permitidos. Solo se permiten letras, números, '_', '-' y '.'.",
             id
         ));
     }

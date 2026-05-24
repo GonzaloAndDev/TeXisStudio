@@ -197,7 +197,13 @@ fn render_block(block: &ContentBlock) -> String {
         }
 
         ContentBlock::RawLatex(r) => {
-            format!("{}\n\n", r.content)
+            if !r.user_confirmed {
+                // Bloque no confirmado: emitir comentario en lugar del contenido
+                // para que la compilación no falle silenciosamente con LaTeX arbitrario.
+                "% [TeXisStudio] Bloque LaTeX directo pendiente de confirmación — no incluido.\n\n".to_string()
+            } else {
+                format!("{}\n\n", r.content)
+            }
         }
     }
 }

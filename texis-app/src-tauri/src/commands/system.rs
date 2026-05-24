@@ -245,13 +245,16 @@ pub fn delete_profile(
     app: tauri::AppHandle,
     profile_id: String,
 ) -> Result<(), String> {
-    // Rechazar profile_id con separadores, traversal o caracteres extraños
-    if profile_id.is_empty()
+    // Rechazar profile_id con traversal, separadores de ruta o chars inválidos.
+    // Se permite '.' para IDs como "apa7.basic" o "generic.thesis".
+    let id_invalid = profile_id.is_empty()
+        || profile_id.len() > 100
         || profile_id.contains("..")
         || profile_id.contains('/')
         || profile_id.contains('\\')
-        || !profile_id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
-    {
+        || !profile_id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false)
+        || !profile_id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
+    if id_invalid {
         return Err(format!("ID de perfil inválido: '{}'.", profile_id));
     }
 
