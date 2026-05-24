@@ -18,6 +18,7 @@ pub fn run() {
             commands::project::restore_snapshot,
             commands::project::delete_snapshot,
             commands::project::update_section_meta,
+            commands::project::update_typography,
             commands::compiler::compile_project,
             commands::compiler::cancel_compile,
             commands::system::create_profile,

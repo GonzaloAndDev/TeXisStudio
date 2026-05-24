@@ -353,6 +353,30 @@ pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Resul
     Ok(())
 }
 
+/// Actualiza los ajustes tipográficos del proyecto (fuente, papel, interlineado, márgenes).
+#[tauri::command]
+pub fn update_typography(
+    project_path: String,
+    font_size:    Option<String>,
+    paper_size:   Option<String>,
+    line_spacing: Option<String>,
+    margin_cm:    Option<f32>,
+) -> Result<(), String> {
+    use texis_core::project::model::LatexTypography;
+
+    let project_yaml = std::path::Path::new(&project_path).join("tesis.project.yaml");
+    let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+
+    model.latex_config.typography = LatexTypography {
+        font_size,
+        paper_size,
+        line_spacing,
+        margin_cm,
+    };
+
+    ProjectSaver.save_to_file(&model, &project_yaml).map_err(err)
+}
+
 /// Actualiza el estado editorial y las notas internas de una sección.
 /// No toca los bloques ni los campos; solo status y notes.
 #[tauri::command]
@@ -526,6 +550,7 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             bibliography_backend: bib_backend,
             bibliography_style:   profile.bibliography_style.clone(),
             packages_required:    profile.packages.clone(),
+            typography:           Default::default(),
         },
         sections,
         file_states: HashMap::new(),

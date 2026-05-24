@@ -159,6 +159,15 @@ export const api = {
   updateSectionMeta: (projectPath: string, sectionId: string, status: string, notes?: string): Promise<void> =>
     call("update_section_meta", { projectPath, sectionId, status, notes }),
 
+  updateTypography: (
+    projectPath: string,
+    fontSize?: string,
+    paperSize?: string,
+    lineSpacing?: string,
+    marginCm?: number,
+  ): Promise<void> =>
+    call("update_typography", { projectPath, fontSize, paperSize, lineSpacing, marginCm }),
+
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),
 

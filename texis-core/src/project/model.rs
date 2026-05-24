@@ -106,6 +106,9 @@ pub struct LatexConfig {
     pub bibliography_backend: BibliographyBackend,
     pub bibliography_style: String,
     pub packages_required: Vec<String>,
+    /// Ajustes tipográficos del usuario. Tienen prioridad sobre los valores del perfil.
+    #[serde(default)]
+    pub typography: LatexTypography,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -113,6 +116,24 @@ pub struct DocumentClassConfig {
     /// "book" por defecto. Configurable por perfil.
     pub name: String,
     pub options: Vec<String>,
+}
+
+/// Ajustes tipográficos configurables por el usuario desde la UI.
+/// Todos los campos son opcionales; si no se especifican se usan los valores del perfil.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LatexTypography {
+    /// Tamaño de fuente base: "10pt" | "11pt" | "12pt".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<String>,
+    /// Tamaño de papel: "a4paper" | "letterpaper".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paper_size: Option<String>,
+    /// Interlineado: "single" | "onehalf" | "double".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line_spacing: Option<String>,
+    /// Margen uniforme en cm (p. ej. 2.5). Se aplica con el paquete geometry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub margin_cm: Option<f32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

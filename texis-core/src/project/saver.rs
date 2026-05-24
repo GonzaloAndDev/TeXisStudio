@@ -49,6 +49,7 @@ mod tests {
                 bibliography_backend: BibliographyBackend::Biber,
                 bibliography_style: "apa".to_string(),
                 packages_required: vec![],
+                typography: Default::default(),
             },
             sections: vec![],
             file_states: HashMap::new(),

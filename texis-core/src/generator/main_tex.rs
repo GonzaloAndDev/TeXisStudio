@@ -48,10 +48,25 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreR
     out.push_str(HEADER_COMMENT);
     out.push('\n');
 
-    // Clase del documento
+    // Clase del documento — aplicar overrides de tipografía del usuario
     let cls = &model.latex_config.document_class;
-    let options = cls.options.join(",");
-    out.push_str(&format!("\\documentclass[{}]{{{}}}\n\n", options, cls.name));
+    let typo = &model.latex_config.typography;
+    let mut options: Vec<String> = cls
+        .options
+        .iter()
+        .filter(|o| {
+            // Filtrar las opciones que el usuario puede sobreescribir
+            let o = o.as_str();
+            let is_font_size   = matches!(o, "10pt" | "11pt" | "12pt");
+            let is_paper_size  = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
+            !(is_font_size && typo.font_size.is_some())
+                && !(is_paper_size && typo.paper_size.is_some())
+        })
+        .cloned()
+        .collect();
+    if let Some(fs) = &typo.font_size  { options.push(fs.clone()); }
+    if let Some(ps) = &typo.paper_size { options.push(ps.clone()); }
+    out.push_str(&format!("\\documentclass[{}]{{{}}}\n\n", options.join(","), cls.name));
 
     // Archivos de configuración
     out.push_str("\\input{configuracion/paquetes}\n");
@@ -140,7 +155,8 @@ fn render_paquetes(model: &ProjectModel) -> String {
 
     // Paquetes base según el motor
     out.push_str("\\usepackage{fontspec}\n");
-    out.push_str("\\usepackage[margin=2.5cm]{geometry}\n");
+    let margin = model.latex_config.typography.margin_cm.unwrap_or(2.5);
+    out.push_str(&format!("\\usepackage[margin={}cm]{{geometry}}\n", margin));
     out.push_str("\\usepackage{graphicx}\n");
     out.push_str("\\usepackage{booktabs}\n");
     out.push_str("\\usepackage{array}\n");
@@ -173,9 +189,20 @@ fn render_paquetes(model: &ProjectModel) -> String {
     out
 }
 
-fn render_estilo(_model: &ProjectModel) -> String {
+fn render_estilo(model: &ProjectModel) -> String {
     let mut out = String::from("% Estilo — generado automáticamente\n\n");
-    out.push_str("\\onehalfspacing\n");
+    let spacing_cmd = match model
+        .latex_config
+        .typography
+        .line_spacing
+        .as_deref()
+        .unwrap_or("onehalf")
+    {
+        "single" => "\\singlespacing",
+        "double" => "\\doublespacing",
+        _        => "\\onehalfspacing",
+    };
+    out.push_str(&format!("{}\n", spacing_cmd));
     out.push_str("\\setlength{\\parindent}{1.5em}\n");
     out.push_str("\\setlength{\\parskip}{6pt}\n");
     out

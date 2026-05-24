@@ -159,6 +159,25 @@ export interface StudentData {
   co_authors?: CoAuthor[];
 }
 
+// ── LaTeX typography settings ────────────────────────────────────
+
+export interface LatexTypography {
+  /** "10pt" | "11pt" | "12pt" */
+  font_size?: string;
+  /** "a4paper" | "letterpaper" */
+  paper_size?: string;
+  /** "single" | "onehalf" | "double" */
+  line_spacing?: string;
+  /** Margen uniforme en cm, ej. 2.5 */
+  margin_cm?: number;
+}
+
+export interface LatexConfig {
+  document_class: { name: string; options: string[] };
+  bibliography_style: string;
+  typography: LatexTypography;
+}
+
 export interface ProjectModel {
   id: string;
   schema_version: string;
@@ -168,6 +187,7 @@ export interface ProjectModel {
   institution: InstitutionData;
   student: StudentData;
   profile_id: string;
+  latex_config?: LatexConfig;
   sections: ProjectSection[];
 }
 
