@@ -368,12 +368,22 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
     if name.len() > 200 {
         return Err("El nombre del proyecto es demasiado largo (máximo 200 caracteres).".to_string());
     }
+    // Windows trata mal los nombres que terminan en punto o espacio
+    if name.ends_with('.') {
+        return Err("El nombre del proyecto no puede terminar en punto.".to_string());
+    }
+    if name.ends_with(' ') {
+        return Err("El nombre del proyecto no puede terminar en espacio.".to_string());
+    }
     if name.contains("..") || name.contains('/') || name.contains('\\') {
         return Err("El nombre del proyecto no puede contener separadores de ruta ni '..'.".to_string());
     }
-    for c in &['<', '>', ':', '"', '|', '?', '*', '\0'] {
-        if name.contains(*c) {
-            return Err(format!("El nombre del proyecto contiene el carácter no permitido '{}'.", c));
+    // Caracteres inválidos en Windows y caracteres de control
+    for c in name.chars() {
+        if c.is_control() || matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*') {
+            return Err(format!(
+                "El nombre del proyecto contiene el carácter no permitido {:?}.", c
+            ));
         }
     }
     // Nombres reservados de Windows (CON, NUL, COM1…COM9, LPT1…LPT9, etc.)
@@ -387,6 +397,74 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
         return Err(format!("'{}' es un nombre reservado del sistema operativo.", name));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests_validation {
+    use super::*;
+
+    // ── validate_profile_id ───────────────────────────────────────
+    #[test]
+    fn profile_id_validos() {
+        for id in &["generic.thesis", "apa7.basic", "vancouver.health", "mx_unam_apa7", "a", "A1-b"] {
+            assert!(validate_profile_id(id).is_ok(), "debería ser válido: {}", id);
+        }
+    }
+
+    #[test]
+    fn profile_id_traversal_rechazado() {
+        for id in &["../x", "a/../b", "a..b"] {
+            assert!(validate_profile_id(id).is_err(), "debería ser inválido: {}", id);
+        }
+    }
+
+    #[test]
+    fn profile_id_separadores_rechazados() {
+        assert!(validate_profile_id("a/b").is_err());
+        assert!(validate_profile_id("a\\b").is_err());
+    }
+
+    #[test]
+    fn profile_id_empieza_con_punto_rechazado() {
+        assert!(validate_profile_id(".hidden").is_err());
+    }
+
+    #[test]
+    fn profile_id_vacio_rechazado() {
+        assert!(validate_profile_id("").is_err());
+    }
+
+    // ── validate_safe_name ────────────────────────────────────────
+    #[test]
+    fn name_validos() {
+        for name in &["Mi Tesis", "Tesis2026", "tesis-final", "proyecto.v2"] {
+            assert!(validate_safe_name(name).is_ok(), "debería ser válido: {}", name);
+        }
+    }
+
+    #[test]
+    fn name_trailing_punto_rechazado() {
+        assert!(validate_safe_name("tesis.").is_err());
+    }
+
+    #[test]
+    fn name_trailing_espacio_rechazado() {
+        assert!(validate_safe_name("tesis ").is_err());
+    }
+
+    #[test]
+    fn name_reservados_windows_rechazados() {
+        for name in &["CON", "NUL", "COM1", "LPT9", "con.txt", "nul.yaml"] {
+            assert!(validate_safe_name(name).is_err(), "reservado debería rechazarse: {}", name);
+        }
+    }
+
+    #[test]
+    fn name_chars_invalidos_rechazados() {
+        for name in &["tesis<v>", "my:project", "tesis|final", "test*"] {
+            assert!(validate_safe_name(name).is_err(), "char inválido debería rechazarse: {}", name);
+        }
+    }
 }
 
 /// Valida que un profile_id sea seguro para usarse como nombre de directorio.

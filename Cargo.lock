@@ -4107,6 +4107,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tempfile",
  "texis-core",
  "walkdir",
  "zip",

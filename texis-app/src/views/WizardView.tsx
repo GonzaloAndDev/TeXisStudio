@@ -8,10 +8,10 @@ import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { CloudFolder, ProfileInfo } from "../types";
 
+import { documentDir } from "@tauri-apps/api/path";
+
 async function resolveDocumentsPath(): Promise<string> {
   try {
-    // Tauri v2: @tauri-apps/api/path
-    const { documentDir } = await import("@tauri-apps/api/path");
     return await documentDir();
   } catch {
     return "/tmp";

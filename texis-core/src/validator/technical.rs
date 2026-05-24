@@ -1,7 +1,7 @@
 // Validaciones técnicas: archivos referenciados, labels duplicados, etc.
 
 use super::report::{IssueSeverity, ValidationIssue, ValidationReport};
-use crate::project::model::{ContentBlock, ProjectModel};
+use crate::project::model::{ContentBlock, ProjectModel, ProjectSection, SectionPlacement};
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -194,6 +194,193 @@ fn check_unconfirmed_raw_latex(model: &ProjectModel, issues: &mut Vec<Validation
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::model::*;
+    use std::collections::HashMap;
+
+    /// Construye una sección mínima con los bloques dados.
+    fn section_with(id: &str, blocks: Vec<ContentBlock>) -> ProjectSection {
+        ProjectSection {
+            id: id.to_string(),
+            element_id: id.to_string(),
+            title: None,
+            placement: SectionPlacement::Body,
+            required: false,
+            enabled: true,
+            label: None,
+            blocks,
+            fields: HashMap::new(),
+            children: vec![],
+        }
+    }
+
+    fn model_with_sections(sections: Vec<ProjectSection>) -> ProjectModel {
+        ProjectModel {
+            id: "t".to_string(),
+            schema_version: "1.0.0".to_string(),
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+            metadata: ProjectMetadata {
+                title: "T".to_string(), subtitle: None,
+                document_kind: DocumentKind::Tesis,
+                academic_level: AcademicLevel::Licenciatura,
+                language: "es".to_string(),
+                city: "x".to_string(), year: 2026, keywords: vec![],
+            },
+            institution: InstitutionData {
+                name: "U".to_string(), faculty: None, department: None,
+                logo_path: None, country: "MX".to_string(),
+            },
+            student: StudentData {
+                full_name: "A".to_string(), student_id: None, email: None,
+                advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
+            },
+            profile_id: "generic.thesis".to_string(),
+            latex_config: LatexConfig {
+                document_class: DocumentClassConfig { name: "book".to_string(), options: vec![] },
+                engine: LatexEngine::Xelatex,
+                compiler: CompilerKind::Latexmk,
+                bibliography_backend: BibliographyBackend::Biber,
+                bibliography_style: "apa".to_string(),
+                packages_required: vec![],
+            },
+            sections,
+            file_states: HashMap::new(),
+        }
+    }
+
+    fn fig(id: &str, file: &str, label: &str) -> ContentBlock {
+        ContentBlock::Figure(FigureBlock {
+            id: id.to_string(), file: file.to_string(),
+            caption: "".to_string(), source: None,
+            width: FigureWidth::Full, label: label.to_string(),
+            include_in_list: false,
+        })
+    }
+
+    fn citation(id: &str, key: &str) -> ContentBlock {
+        ContentBlock::Citation(CitationBlock {
+            id: id.to_string(), citation_key: key.to_string(),
+            citation_type: CitationType::Parenthetical,
+            page: None, prefix: None, suffix: None,
+        })
+    }
+
+    fn raw_latex(id: &str, confirmed: bool) -> ContentBlock {
+        ContentBlock::RawLatex(RawLatexBlock {
+            id: id.to_string(),
+            content: "\\textbf{x}".to_string(),
+            user_confirmed: confirmed,
+        })
+    }
+
+    // ── Rutas de figura ───────────────────────────────────────────
+    #[test]
+    fn figura_con_traversal_produce_error() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "../secret.png", "fig:ok")])
+        ]);
+        let mut issues = Vec::new();
+        check_unsafe_figure_paths(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "E_UNSAFE_FIGURE_PATH"), "debe detectar '../'");
+    }
+
+    #[test]
+    fn figura_con_ruta_absoluta_produce_error() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "/etc/passwd", "fig:ok")])
+        ]);
+        let mut issues = Vec::new();
+        check_unsafe_figure_paths(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "E_UNSAFE_FIGURE_PATH"));
+    }
+
+    #[test]
+    fn figura_con_ruta_segura_no_produce_error() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "grafica.png", "fig:g1")])
+        ]);
+        let mut issues = Vec::new();
+        check_unsafe_figure_paths(&model, &mut issues);
+        assert!(issues.is_empty());
+    }
+
+    // ── Formato de labels ─────────────────────────────────────────
+    #[test]
+    fn label_con_espacio_produce_warning() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "img.png", "fig mi figura")])
+        ]);
+        let mut issues = Vec::new();
+        check_invalid_label_format(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "W_INVALID_LABEL"));
+    }
+
+    #[test]
+    fn label_que_empieza_con_numero_produce_warning() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "img.png", "1fig")])
+        ]);
+        let mut issues = Vec::new();
+        check_invalid_label_format(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "W_INVALID_LABEL"));
+    }
+
+    #[test]
+    fn label_valido_no_produce_warning() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![fig("f1", "img.png", "fig:mi-grafica.1")])
+        ]);
+        let mut issues = Vec::new();
+        check_invalid_label_format(&model, &mut issues);
+        assert!(issues.is_empty());
+    }
+
+    // ── Citation keys ─────────────────────────────────────────────
+    #[test]
+    fn citation_key_con_espacio_produce_error() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![citation("c1", "smith 2020")])
+        ]);
+        let mut issues = Vec::new();
+        check_invalid_citation_keys(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "E_INVALID_CITATION_KEY"));
+    }
+
+    #[test]
+    fn citation_key_valida_no_produce_error() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![citation("c1", "smith2020")])
+        ]);
+        let mut issues = Vec::new();
+        check_invalid_citation_keys(&model, &mut issues);
+        assert!(issues.is_empty());
+    }
+
+    // ── raw_latex sin confirmar ───────────────────────────────────
+    #[test]
+    fn raw_latex_sin_confirmar_produce_warning() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![raw_latex("r1", false)])
+        ]);
+        let mut issues = Vec::new();
+        check_unconfirmed_raw_latex(&model, &mut issues);
+        assert!(issues.iter().any(|i| i.code == "W_UNCONFIRMED_RAW_LATEX"));
+    }
+
+    #[test]
+    fn raw_latex_confirmado_no_produce_warning() {
+        let model = model_with_sections(vec![
+            section_with("intro", vec![raw_latex("r1", true)])
+        ]);
+        let mut issues = Vec::new();
+        check_unconfirmed_raw_latex(&model, &mut issues);
+        assert!(issues.is_empty());
     }
 }
 

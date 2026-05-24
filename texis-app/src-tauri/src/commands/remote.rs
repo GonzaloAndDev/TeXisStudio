@@ -8,8 +8,12 @@ use std::time::Duration;
 use tauri::Manager;
 use texis_core::profile::ProfileLoader;
 
-/// Tamaño máximo permitido para un ZIP de perfil: 10 MB.
+/// Tamaño máximo del ZIP descargado: 10 MB.
 const MAX_ZIP_BYTES: usize = 10 * 1024 * 1024;
+/// Tamaño máximo total descomprimido: 50 MB.
+const MAX_UNCOMPRESSED_BYTES: u64 = 50 * 1024 * 1024;
+/// Número máximo de entradas en el ZIP.
+const MAX_ZIP_ENTRIES: usize = 200;
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -58,9 +62,14 @@ pub async fn fetch_remote_profile(
     app: tauri::AppHandle,
     url: String,
 ) -> Result<Value, String> {
-    // 0. Solo HTTPS
-    if !url.starts_with("https://") {
+    // 0. Validar URL con parser formal — exigir HTTPS y host presente
+    let parsed = reqwest::Url::parse(&url)
+        .map_err(|e| format!("URL inválida '{}': {}", url, e))?;
+    if parsed.scheme() != "https" {
         return Err("Solo se permiten descargas mediante HTTPS.".to_string());
+    }
+    if parsed.host().is_none() {
+        return Err("La URL no contiene un host válido.".to_string());
     }
 
     // 1. Descargar ZIP con timeout y límite de tamaño
@@ -69,7 +78,7 @@ pub async fn fetch_remote_profile(
         .build()
         .map_err(err)?;
 
-    let response = client.get(&url).send().await.map_err(|e| {
+    let response = client.get(parsed).send().await.map_err(|e| {
         format!("Error descargando desde '{}': {}", url, e)
     })?;
 
@@ -109,6 +118,14 @@ pub async fn fetch_remote_profile(
         format!("El archivo descargado no es un ZIP válido: {}", e)
     })?;
 
+    // Límite de número de entradas
+    if archive.len() > MAX_ZIP_ENTRIES {
+        return Err(format!(
+            "El ZIP contiene demasiadas entradas ({}, máximo {}).",
+            archive.len(), MAX_ZIP_ENTRIES
+        ));
+    }
+
     // 3. Coleccionar todos los nombres de archivo del ZIP
     let all_names: Vec<String> = (0..archive.len())
         .filter_map(|i| archive.by_index(i).ok().map(|f| f.name().to_string()))
@@ -128,11 +145,15 @@ pub async fn fetch_remote_profile(
             .unwrap_or_default()
     };
 
-    // 5. Extraer el perfil a un directorio temporal (reabrir el ZIP)
-    let temp_dir = std::env::temp_dir().join(format!("texis-remote-{}", uuid_short()));
-    std::fs::create_dir_all(&temp_dir).map_err(err)?;
+    // 5. Extraer el perfil a un directorio temporal con nombre único (TempDir)
+    let temp_guard = tempfile::Builder::new()
+        .prefix("texis-remote-")
+        .tempdir()
+        .map_err(err)?;
+    let temp_dir = temp_guard.path();
 
     let mut archive2 = zip::ZipArchive::new(Cursor::new(bytes)).map_err(err)?;
+    let mut uncompressed_total: u64 = 0;
 
     for i in 0..archive2.len() {
         let mut file = archive2.by_index(i).map_err(err)?;
@@ -151,9 +172,18 @@ pub async fn fetch_remote_profile(
             continue; // es un directorio
         }
 
-        // Rechazar rutas con path traversal (p.ej. "../../etc/passwd")
-        if relative.split('/').any(|seg| seg == "..") {
+        // Rechazar rutas vacías, absolutas o con path traversal
+        if relative.starts_with('/') || relative.split('/').any(|seg| seg == ".." || seg.is_empty()) {
             continue;
+        }
+
+        // Límite de tamaño descomprimido (defensa contra ZIP bombs)
+        uncompressed_total += file.size();
+        if uncompressed_total > MAX_UNCOMPRESSED_BYTES {
+            return Err(format!(
+                "El contenido descomprimido supera el límite de {} MB.",
+                MAX_UNCOMPRESSED_BYTES / 1024 / 1024
+            ));
         }
 
         let dest_file = temp_dir.join(&relative);
@@ -168,22 +198,18 @@ pub async fn fetch_remote_profile(
     // 6. Cargar y validar el perfil temporal
     let temp_yaml = temp_dir.join("profile.yaml");
     if !temp_yaml.exists() {
-        let _ = std::fs::remove_dir_all(&temp_dir);
         return Err("No se encontró profile.yaml en el ZIP descargado.".to_string());
     }
 
     let loader = ProfileLoader;
-    let profile = loader.load_from_file(&temp_yaml).map_err(|e| {
-        let _ = std::fs::remove_dir_all(&temp_dir);
-        format!("profile.yaml inválido: {}", e)
-    })?;
+    let profile = loader.load_from_file(&temp_yaml)
+        .map_err(|e| format!("profile.yaml inválido: {}", e))?;
 
     // 7. Verificar que el perfil no esté ya instalado
     let profiles_root = profiles_dir(&app);
     let dest_dir = profiles_root.join(&profile.id);
 
     if dest_dir.exists() {
-        let _ = std::fs::remove_dir_all(&temp_dir);
         return Err(format!(
             "El perfil '{}' ya está instalado. Elimínalo primero para reinstalarlo.",
             profile.id
@@ -192,12 +218,11 @@ pub async fn fetch_remote_profile(
 
     // 8. Copiar al directorio de perfiles (recursivo para subdirectorios)
     std::fs::create_dir_all(&dest_dir).map_err(err)?;
-    if let Err(e) = copy_dir_recursive(&temp_dir, &dest_dir) {
-        let _ = std::fs::remove_dir_all(&temp_dir);
+    if let Err(e) = copy_dir_recursive(temp_dir, &dest_dir) {
         let _ = std::fs::remove_dir_all(&dest_dir);
         return Err(e);
     }
-    let _ = std::fs::remove_dir_all(&temp_dir);
+    // temp_guard se limpia automáticamente al salir del scope
 
     Ok(profile_to_json(&profile))
 }
@@ -242,14 +267,4 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<()
         }
     }
     Ok(())
-}
-
-/// UUID corto para nombres de directorio temporal.
-fn uuid_short() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let t = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .subsec_nanos();
-    format!("{:08x}", t)
 }

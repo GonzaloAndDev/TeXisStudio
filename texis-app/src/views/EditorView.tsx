@@ -484,7 +484,7 @@ function BlockItem({
             <textarea
               autoFocus
               value={block.content}
-              onChange={(e) => onUpdate({ content: e.target.value } as Partial<ContentBlock>)}
+              onChange={(e) => onUpdate({ content: e.target.value, user_confirmed: false } as Partial<ContentBlock>)}
               rows={4}
               style={{
                 fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
@@ -492,6 +492,22 @@ function BlockItem({
                 padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
               }}
             />
+            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--fs-xs)", color: block.user_confirmed ? "var(--build-ok)" : "var(--fg-faint)" }}>
+                <input
+                  type="checkbox"
+                  checked={!!block.user_confirmed}
+                  onChange={(e) => onUpdate({ user_confirmed: e.target.checked } as Partial<ContentBlock>)}
+                  style={{ accentColor: "var(--build-ok)", cursor: "pointer" }}
+                />
+                Confirmo que este LaTeX manual puede afectar la compilación
+              </label>
+            </div>
+            {!block.user_confirmed && (
+              <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
+                No confirmado — este bloque no se incluirá en el PDF hasta que lo confirmes.
+              </div>
+            )}
           </div>
         );
       default:
@@ -568,8 +584,15 @@ function BlockItem({
         );
       case "raw_latex":
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)" }}>
-            {block.content || "(LaTeX vacío)"}
+          <div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)" }}>
+              {block.content || "(LaTeX vacío)"}
+            </div>
+            {!block.user_confirmed && (
+              <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
+                ⚠ No confirmado — no se incluirá en el PDF
+              </div>
+            )}
           </div>
         );
       default:
@@ -1275,7 +1298,7 @@ function MetaPanel({
 
 // ── EditorView principal ──────────────────────────────────────────
 
-type SaveStatus = "saved" | "saving" | "unsaved";
+type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
@@ -1313,7 +1336,7 @@ export default function EditorView() {
         await api.saveSection(activeProjectPath, sectionId, blocks);
       } catch (e) {
         console.error("Error guardando:", e);
-        setSaveStatus("unsaved");
+        setSaveStatus("error");
         return;
       }
     }
@@ -1475,8 +1498,16 @@ export default function EditorView() {
 
   const projectName = activeProject.metadata.title;
 
-  const saveLabel = saveStatus === "saving" ? "Guardando…" : saveStatus === "unsaved" ? "Sin guardar" : "Guardado";
-  const saveDot = saveStatus === "saving" ? "var(--build-warn)" : saveStatus === "unsaved" ? "var(--build-err)" : "var(--build-ok)";
+  const saveLabel =
+    saveStatus === "saving"  ? "Guardando…" :
+    saveStatus === "unsaved" ? "Sin guardar" :
+    saveStatus === "error"   ? "Error al guardar" :
+    "Guardado";
+  const saveDot =
+    saveStatus === "saving"  ? "var(--build-warn)" :
+    saveStatus === "unsaved" ? "var(--build-err)" :
+    saveStatus === "error"   ? "var(--build-err)" :
+    "var(--build-ok)";
 
   return (
     <>
@@ -1579,9 +1610,18 @@ export default function EditorView() {
 
             <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 6px", flexShrink: 0 }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: saveStatus === "error" ? "var(--build-err)" : "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
               <IconRefresh size={11} /> {saveLabel}
+              {saveStatus === "error" && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ fontSize: "var(--fs-xs)", padding: "1px 6px", marginLeft: 4 }}
+                  onClick={() => activeProjectPath && doSave(localBlocks, activeSectionId ?? "")}
+                >
+                  Reintentar
+                </button>
+              )}
             </div>
           </div>
 

@@ -88,7 +88,7 @@ fn chapter_command(section: &ProjectSection) -> &'static str {
     }
 }
 
-fn render_block(block: &ContentBlock) -> String {
+pub(crate) fn render_block(block: &ContentBlock) -> String {
     match block {
         ContentBlock::Paragraph(p) => {
             format!("{}\n\n", latex_escape(&p.content))
@@ -205,5 +205,35 @@ fn render_block(block: &ContentBlock) -> String {
                 format!("{}\n\n", r.content)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::model::{RawLatexBlock, ContentBlock};
+
+    #[test]
+    fn raw_latex_confirmado_genera_contenido() {
+        let block = ContentBlock::RawLatex(RawLatexBlock {
+            id: "r1".to_string(),
+            content: "\\textbf{hola}".to_string(),
+            user_confirmed: true,
+        });
+        let out = render_block(&block);
+        assert!(out.contains("\\textbf{hola}"), "debe incluir el contenido LaTeX");
+        assert!(!out.contains("pendiente"), "no debe tener advertencia");
+    }
+
+    #[test]
+    fn raw_latex_sin_confirmar_genera_comentario_no_contenido() {
+        let block = ContentBlock::RawLatex(RawLatexBlock {
+            id: "r2".to_string(),
+            content: "\\textbf{secreto}".to_string(),
+            user_confirmed: false,
+        });
+        let out = render_block(&block);
+        assert!(!out.contains("\\textbf{secreto}"), "NO debe incluir el contenido");
+        assert!(out.starts_with('%'), "debe comenzar con comentario LaTeX");
     }
 }
