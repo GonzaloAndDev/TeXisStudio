@@ -95,6 +95,116 @@
       },
       "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/hi/ui.json",
       "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/hi/latex.json"
+    },
+    {
+      "id": "nah",
+      "name": "Nahuatl",
+      "native_name": "Nāhuatl",
+      "flag": "🌵",
+      "status": "experimental",
+      "version": "1.0.0",
+      "maintainers": [
+        { "name": "TeXisStudio Community" }
+      ],
+      "capabilities": {
+        "ui": true,
+        "spelling": false,
+        "autocorrect": false,
+        "grammar_remote": false,
+        "grammar_local": false,
+        "latex_babel": false,
+        "latex_polyglossia": false
+      },
+      "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/nah/ui.json",
+      "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/nah/latex.json"
+    },
+    {
+      "id": "yua",
+      "name": "Yucatec Maya",
+      "native_name": "Maaya t'aan",
+      "flag": "🌿",
+      "status": "experimental",
+      "version": "1.0.0",
+      "maintainers": [
+        { "name": "TeXisStudio Community" }
+      ],
+      "capabilities": {
+        "ui": true,
+        "spelling": false,
+        "autocorrect": false,
+        "grammar_remote": false,
+        "grammar_local": false,
+        "latex_babel": false,
+        "latex_polyglossia": false
+      },
+      "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/yua/ui.json",
+      "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/yua/latex.json"
+    },
+    {
+      "id": "tzh",
+      "name": "Tzeltal",
+      "native_name": "Batz'il k'op",
+      "flag": "🌄",
+      "status": "experimental",
+      "version": "1.0.0",
+      "maintainers": [
+        { "name": "TeXisStudio Community" }
+      ],
+      "capabilities": {
+        "ui": true,
+        "spelling": false,
+        "autocorrect": false,
+        "grammar_remote": false,
+        "grammar_local": false,
+        "latex_babel": false,
+        "latex_polyglossia": false
+      },
+      "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/tzh/ui.json",
+      "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/tzh/latex.json"
+    },
+    {
+      "id": "mix",
+      "name": "Mixtec",
+      "native_name": "Tu'un Savi",
+      "flag": "🌧️",
+      "status": "experimental",
+      "version": "1.0.0",
+      "maintainers": [
+        { "name": "TeXisStudio Community" }
+      ],
+      "capabilities": {
+        "ui": true,
+        "spelling": false,
+        "autocorrect": false,
+        "grammar_remote": false,
+        "grammar_local": false,
+        "latex_babel": false,
+        "latex_polyglossia": false
+      },
+      "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/mix/ui.json",
+      "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/mix/latex.json"
+    },
+    {
+      "id": "zap",
+      "name": "Zapotec",
+      "native_name": "Diidxazá",
+      "flag": "🦋",
+      "status": "experimental",
+      "version": "1.0.0",
+      "maintainers": [
+        { "name": "TeXisStudio Community" }
+      ],
+      "capabilities": {
+        "ui": true,
+        "spelling": false,
+        "autocorrect": false,
+        "grammar_remote": false,
+        "grammar_local": false,
+        "latex_babel": false,
+        "latex_polyglossia": false
+      },
+      "ui_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/zap/ui.json",
+      "latex_url": "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/zap/latex.json"
     }
   ]
 }

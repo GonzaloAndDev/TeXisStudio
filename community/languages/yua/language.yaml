@@ -1,0 +1,37 @@
+id: yua
+name: Yucatec Maya
+native_name: "Maaya t'aan"
+flag: "🌿"
+status: experimental
+version: 1.0.0
+
+maintainers:
+  - name: TeXisStudio Community
+    note: "Seeking native Maya Yucatec speakers — contributions welcome"
+
+capabilities:
+  ui: true
+  spelling: false         # No Hunspell dictionary for Yucatec Maya exists yet.
+  autocorrect: false
+  grammar_remote: false   # LanguageTool does not support Yucatec Maya
+  grammar_local: false
+  latex_babel: false      # babel has no Yucatec Maya support
+  latex_polyglossia: false
+
+notes:
+  - Translations are experimental — native speaker review is strongly encouraged.
+  - Orthography follows the unified Maya alphabet (alfabeto maya unificado, INALI 2014).
+  - Uses Latin script; glottal stop written as apostrophe (').
+  - XeLaTeX recommended for correct rendering of special characters.
+  - No Hunspell dictionary available; no LanguageTool grammar support.
+
+latex:
+  engine: xelatex
+  font: "Noto Serif"
+  encoding: UTF-8
+  chapter_name: "Ts'íib"
+  bibliography_name: "U ts'íibil t'aano'ob"
+  figure_name: "Náajil"
+  table_name: "Ts'íibta'ab"
+  abstract_name: "U na'atil"
+  contents_name: "U náajil ts'íibo'ob"

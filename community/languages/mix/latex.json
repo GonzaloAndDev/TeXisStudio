@@ -1,0 +1,11 @@
+{
+  "engine": "xelatex",
+  "font": "Noto Serif",
+  "encoding": "UTF-8",
+  "chapter_name": "Ini tu'un",
+  "bibliography_name": "Tu'un ndikantivi",
+  "figure_name": "Tnu ndikantivi",
+  "table_name": "Ini ndikandivi",
+  "abstract_name": "Na'a tu'un",
+  "contents_name": "Nuu tu'un"
+}

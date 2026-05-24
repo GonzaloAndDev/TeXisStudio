@@ -1,0 +1,40 @@
+id: zap
+name: Zapotec
+native_name: "Diidxazá"
+flag: "🦋"
+status: experimental
+version: 1.0.0
+
+maintainers:
+  - name: TeXisStudio Community
+    note: "Seeking native Zapotec speakers — contributions welcome. This translation uses Isthmus Zapotec (Tehuantepec/Juchitán) as a base variety."
+
+capabilities:
+  ui: true
+  spelling: false         # No Hunspell dictionary for any Zapotec variety exists yet.
+  autocorrect: false
+  grammar_remote: false   # LanguageTool does not support Zapotec
+  grammar_local: false
+  latex_babel: false
+  latex_polyglossia: false
+
+notes:
+  - Translations are experimental — native speaker review strongly encouraged.
+  - "Diidxazá" = Zapotec language (Isthmus variety self-designation).
+  - "Binnizá" = Zapotec people.
+  - Isthmus Zapotec spoken in Tehuantepec and Juchitán de Zaragoza, Oaxaca.
+  - Many Zapotec varieties exist across the Sierra Juárez, Valles Centrales, etc.
+  - Uses Latin script with apostrophe for glottal stop, tonal diacritics.
+  - XeLaTeX recommended for proper Unicode rendering.
+  - No Hunspell dictionary or LanguageTool support available.
+
+latex:
+  engine: xelatex
+  font: "Noto Serif"
+  encoding: UTF-8
+  chapter_name: "Neza diidxa'"
+  bibliography_name: "Diidxa' guendanabani"
+  figure_name: "Guiropa"
+  table_name: "Diidxa' neza"
+  abstract_name: "Neza diidxa'"
+  contents_name: "Guendaranaxhii"

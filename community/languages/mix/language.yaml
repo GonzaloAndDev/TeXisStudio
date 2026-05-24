@@ -1,0 +1,40 @@
+id: mix
+name: Mixtec
+native_name: "Tu'un Savi"
+flag: "🌧️"
+status: experimental
+version: 1.0.0
+
+maintainers:
+  - name: TeXisStudio Community
+    note: "Seeking native Mixtec speakers — contributions welcome. Many Mixtec varieties exist; this translation uses a common Mixtec base."
+
+capabilities:
+  ui: true
+  spelling: false         # No Hunspell dictionary for any Mixtec variety exists yet.
+  autocorrect: false
+  grammar_remote: false   # LanguageTool does not support Mixtec
+  grammar_local: false
+  latex_babel: false
+  latex_polyglossia: false
+
+notes:
+  - Translations are experimental — native speaker review strongly encouraged.
+  - "Tu'un Savi" = language of the rain (Mixtec self-designation).
+  - Mixtec is an Oto-Manguean tonal language with many varieties (Oaxaca, Guerrero, Puebla).
+  - This translation uses a broadly intelligible Mixtec base; regional variants may differ.
+  - Orthography follows INALI recommendations; tone marks may vary by variety.
+  - Uses Latin script with glottal stops and tone diacritics.
+  - XeLaTeX recommended for Unicode support.
+  - Spoken across Oaxaca, Guerrero, Puebla and Mixtec diaspora communities.
+
+latex:
+  engine: xelatex
+  font: "Noto Serif"
+  encoding: UTF-8
+  chapter_name: "Ini tu'un"
+  bibliography_name: "Tu'un ndikantivi"
+  figure_name: "Tnu ndikantivi"
+  table_name: "Ts'ibajel ndikandivi"
+  abstract_name: "Na'a tu'un"
+  contents_name: "Nuu tu'un"

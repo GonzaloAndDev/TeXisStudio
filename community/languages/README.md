@@ -10,8 +10,19 @@ Downloadable language packs that extend TeXisStudio without inflating the instal
 | `pt-BR` | Português — Brasil | ✅ | ✅ | ✅ LT | stable |
 | `th` | ภาษาไทย (Thai) | ✅ | — | — | beta |
 | `hi` | हिन्दी (Hindi) | ✅ | — | — | beta |
+| `nah` | Nāhuatl | ✅ | — | — | experimental |
+| `yua` | Maaya t'aan (Yucatec Maya) | ✅ | — | — | experimental |
+| `tzh` | Batz'il k'op (Tzeltal) | ✅ | — | — | experimental |
+| `mix` | Tu'un Savi (Mixtec) | ✅ | — | — | experimental |
+| `zap` | Diidxazá (Zapotec) | ✅ | — | — | experimental |
 
 **Bundled in the app** (always available): `es`, `en`, `fr`, `de`, `zh`, `ja`
+
+> **Indigenous Mexican languages** — The five most-spoken indigenous languages of Mexico
+> (INEGI 2020 census). All translations are community-contributed and experimental.
+> Native speaker review is strongly encouraged. Spell-check and grammar-check require
+> Hunspell dictionaries and LanguageTool support respectively — neither exists yet for
+> these languages. Contributions welcome!
 
 ## Package structure
 
