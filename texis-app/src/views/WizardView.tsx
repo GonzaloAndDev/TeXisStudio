@@ -6,7 +6,7 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { ProfileInfo } from "../types";
+import type { CloudFolder, ProfileInfo } from "../types";
 
 async function resolveDocumentsPath(): Promise<string> {
   try {
@@ -142,15 +142,15 @@ function StepTipo({
   );
 }
 
-// Paso 2: datos de la institución y alumno
-function StepDatos({
-  form,
-  onChange,
+// ── Helpers ──────────────────────────────────────────────────────
+
+function InputField({
+  label, value, onChange, placeholder, mono = false,
 }: {
-  form: Record<string, string>;
-  onChange: (key: string, val: string) => void;
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; mono?: boolean;
 }) {
-  const field = (label: string, key: string, placeholder?: string) => (
+  return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>{label}</label>
       <input
@@ -158,14 +158,104 @@ function StepDatos({
           padding: "8px 12px", borderRadius: "var(--r-md)",
           border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
           fontSize: "var(--fs-base)", color: "var(--fg-strong)",
-          outline: "none",
+          outline: "none", fontFamily: mono ? "var(--font-mono)" : undefined,
         }}
-        value={form[key] ?? ""}
-        onChange={(e) => onChange(key, e.target.value)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
     </div>
   );
+}
+
+/** Lista dinámica de strings con botón + para agregar y × para eliminar */
+function DynamicList({
+  label, sublabel, items, onChange, placeholder,
+}: {
+  label: string; sublabel?: string;
+  items: string[]; onChange: (items: string[]) => void; placeholder?: string;
+}) {
+  const addItem = () => onChange([...items, ""]);
+  const setItem = (i: number, v: string) => {
+    const next = [...items]; next[i] = v; onChange(next);
+  };
+  const removeItem = (i: number) => onChange(items.filter((_, idx) => idx !== i));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>
+          {label}
+          {sublabel && (
+            <span style={{ fontWeight: 400, color: "var(--fg-faint)", marginLeft: 6 }}>{sublabel}</span>
+          )}
+        </label>
+        <button
+          type="button"
+          className="btn btn-sm"
+          style={{ padding: "2px 10px", fontSize: "var(--fs-xs)" }}
+          onClick={addItem}
+        >
+          + Agregar
+        </button>
+      </div>
+      {items.length === 0 && (
+        <div style={{
+          padding: "8px 12px", borderRadius: "var(--r-md)",
+          border: "1px dashed var(--border-soft)", background: "var(--bg-app)",
+          fontSize: "var(--fs-sm)", color: "var(--fg-faint)", textAlign: "center",
+        }}>
+          Ninguno — haz clic en «+ Agregar»
+        </div>
+      )}
+      {items.map((item, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            style={{
+              flex: 1, padding: "7px 12px", borderRadius: "var(--r-md)",
+              border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+              fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
+            }}
+            value={item}
+            onChange={(e) => setItem(i, e.target.value)}
+            placeholder={placeholder ?? ""}
+          />
+          <button
+            type="button"
+            onClick={() => removeItem(i)}
+            title="Eliminar"
+            style={{
+              width: 28, height: 28, flexShrink: 0,
+              border: "1px solid var(--border-firm)", borderRadius: "var(--r-md)",
+              background: "var(--bg-panel)", color: "var(--fg-muted)",
+              cursor: "pointer", fontSize: 14, lineHeight: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Paso 2: datos de la institución y alumno
+function StepDatos({
+  form,
+  onChange,
+  advisors,
+  onAdvisors,
+  coAuthors,
+  onCoAuthors,
+}: {
+  form: Record<string, string>;
+  onChange: (key: string, val: string) => void;
+  advisors: string[];
+  onAdvisors: (v: string[]) => void;
+  coAuthors: string[];
+  onCoAuthors: (v: string[]) => void;
+}) {
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
@@ -175,12 +265,34 @@ function StepDatos({
         Datos básicos. Se usan para la portada y los metadatos del PDF.
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820 }}>
-        {field("Título del trabajo", "title", "Análisis de…")}
-        {field("Tu nombre completo", "full_name", "María García López")}
-        {field("Universidad / Institución", "institution", "UNAM")}
-        {field("Facultad / Departamento", "faculty", "Facultad de Ingeniería")}
-        {field("Asesor(a)", "advisor", "Dr. Juan Pérez")}
-        {field("Ciudad", "city", "Ciudad de México")}
+        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
+        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
+        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM" />
+        <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
+        <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
+        <div /> {/* grid spacer */}
+      </div>
+
+      {/* Asesores */}
+      <div style={{ maxWidth: 820, marginTop: 20 }}>
+        <DynamicList
+          label="Asesores"
+          sublabel="(Director, Codirector, Sinodales…)"
+          items={advisors}
+          onChange={onAdvisors}
+          placeholder="Dra. Ana Torres"
+        />
+      </div>
+
+      {/* Co-autores */}
+      <div style={{ maxWidth: 820, marginTop: 16 }}>
+        <DynamicList
+          label="Co-autores"
+          sublabel="(para trabajos grupales)"
+          items={coAuthors}
+          onChange={onCoAuthors}
+          placeholder="Luis Hernández"
+        />
       </div>
     </>
   );
@@ -258,16 +370,25 @@ export default function WizardView() {
   const [docType, setDocType] = useState("tesis");
   const [profileId, setProfileId] = useState("generic.thesis");
   const [form, setForm] = useState<Record<string, string>>({
-    title: "", full_name: "", institution: "", faculty: "", advisor: "", city: "Ciudad de México",
+    title: "", full_name: "", institution: "", faculty: "", city: "Ciudad de México",
   });
+  const [advisors, setAdvisors] = useState<string[]>([""]);
+  const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [profiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
   const [outputPath, setOutputPath] = useState("");
+  const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
 
   // Resolver path por defecto al montar
   useEffect(() => {
     resolveDocumentsPath().then(setOutputPath).catch(() => setOutputPath("/tmp"));
+    api.getCloudFolders().then(setCloudFolders).catch(() => {});
   }, []);
+
+  async function handlePickFolder() {
+    const picked = await api.pickFolder();
+    if (picked) setOutputPath(picked);
+  }
 
   const steps = [
     { name: "Tipo de documento", hint: docType ? docType : "Tesis · Tesina" },
@@ -287,8 +408,35 @@ export default function WizardView() {
     setCreating(true);
     try {
       const result = await api.createProject(form.title, profileId, outputPath);
+      // Cargar modelo y enriquecer con datos del wizard
       const model = await api.getProject(result.project_path);
-      useProjectStore.getState().openProject(model, result.project_path);
+      const filledAdvisors = advisors.filter((a) => a.trim());
+      const filledCoAuthors = coAuthors
+        .filter((c) => c.trim())
+        .map((c) => ({ full_name: c.trim() }));
+
+      const enriched = {
+        ...model,
+        metadata: {
+          ...model.metadata,
+          title: form.title.trim(),
+          city: form.city.trim() || "Ciudad de México",
+        },
+        institution: {
+          ...model.institution,
+          name: form.institution.trim() || "Universidad",
+          faculty: form.faculty.trim() || undefined,
+        },
+        student: {
+          ...model.student,
+          full_name: form.full_name.trim() || "Autor",
+          advisors: filledAdvisors,
+          co_authors: filledCoAuthors,
+        },
+      };
+      await api.saveProject(result.project_path, enriched);
+      const saved = await api.getProject(result.project_path);
+      useProjectStore.getState().openProject(saved, result.project_path);
       navigate(`/project/${encodeURIComponent(result.project_path)}`);
     } catch (e) {
       console.error("Error creando proyecto:", e);
@@ -349,7 +497,14 @@ export default function WizardView() {
             <StepTipo selected={docType} onSelect={setDocType} />
           )}
           {step === 1 && (
-            <StepDatos form={form} onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))} />
+            <StepDatos
+              form={form}
+              onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+              advisors={advisors}
+              onAdvisors={setAdvisors}
+              coAuthors={coAuthors}
+              onCoAuthors={setCoAuthors}
+            />
           )}
           {step === 2 && (
             <StepPerfil profiles={profiles} selected={profileId} onSelect={setProfileId} />
@@ -357,26 +512,108 @@ export default function WizardView() {
 
           {/* Campo de carpeta de destino — visible solo en el último paso */}
           {step === steps.length - 1 && (
-            <div style={{ maxWidth: 820, marginTop: 20, padding: "12px 16px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
-              <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "block", marginBottom: 6 }}>
-                Carpeta donde se creará el proyecto
-              </label>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  value={outputPath}
-                  onChange={(e) => setOutputPath(e.target.value)}
-                  placeholder="/ruta/a/documentos"
-                  style={{
-                    flex: 1, padding: "7px 10px", borderRadius: "var(--r-md)",
-                    border: "1px solid var(--border-firm)", background: "var(--bg-app)",
-                    fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
-                    fontFamily: "var(--font-mono)",
-                  }}
-                />
+            <div style={{ maxWidth: 820, marginTop: 20 }}>
+              {/* Selector de carpeta */}
+              <div style={{ padding: "12px 16px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "block", marginBottom: 6 }}>
+                  Carpeta donde se creará el proyecto
+                </label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    value={outputPath}
+                    onChange={(e) => setOutputPath(e.target.value)}
+                    placeholder="/ruta/a/documentos"
+                    style={{
+                      flex: 1, padding: "7px 10px", borderRadius: "var(--r-md)",
+                      border: "1px solid var(--border-firm)", background: "var(--bg-app)",
+                      fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={handlePickFolder}
+                    title="Explorar carpetas"
+                    style={{ flexShrink: 0, padding: "6px 14px" }}
+                  >
+                    📁 Explorar…
+                  </button>
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 5 }}>
+                  Se creará una carpeta{" "}
+                  <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || "mi-tesis"}/</code>{" "}
+                  dentro de esta ruta.
+                </div>
               </div>
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 5 }}>
-                Se creará una carpeta <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || "mi-tesis"}/</code> dentro de esta ruta.
-              </div>
+
+              {/* Sugerencia de nube — si hay carpetas detectadas */}
+              {cloudFolders.length > 0 && (
+                <div style={{
+                  marginTop: 12, padding: "12px 16px", borderRadius: "var(--r-md)",
+                  background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+                }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 16 }}>☁</span>
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--accent-deep)" }}>
+                      Guarda en la nube para tener respaldo automático
+                    </span>
+                  </div>
+                  <p style={{ margin: "0 0 10px", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                    Detectamos las siguientes carpetas de sincronización en tu equipo.
+                    Haz clic para usarla como destino.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {cloudFolders.map((cf) => (
+                      <button
+                        key={cf.path}
+                        type="button"
+                        onClick={() => setOutputPath(cf.path)}
+                        style={{
+                          textAlign: "left", padding: "8px 12px",
+                          borderRadius: "var(--r-md)",
+                          border: `1px solid ${outputPath === cf.path ? "var(--accent)" : "var(--border-firm)"}`,
+                          background: outputPath === cf.path ? "var(--accent-tint)" : "var(--bg-panel)",
+                          cursor: "pointer",
+                          display: "flex", flexDirection: "column", gap: 2,
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span style={{ fontWeight: 500, fontSize: "var(--fs-sm)", color: "var(--fg-strong)" }}>
+                            {cf.icon} {cf.service}
+                          </span>
+                          {outputPath === cf.path && (
+                            <span className="chip chip-accent" style={{ fontSize: 10, padding: "1px 6px" }}>
+                              <IconCheck size={8} sw={2.5} /> seleccionado
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>
+                          {cf.path}
+                        </span>
+                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{cf.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Instructivo si NO hay nube detectada */}
+              {cloudFolders.length === 0 && (
+                <div style={{
+                  marginTop: 12, padding: "10px 14px", borderRadius: "var(--r-md)",
+                  background: "var(--bg-panel)", border: "1px dashed var(--border-soft)",
+                  fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5,
+                }}>
+                  <strong style={{ color: "var(--fg-default)" }}>💡 Tip: guarda en la nube</strong>
+                  <br />
+                  No detectamos OneDrive ni Google Drive en tu equipo. Para tener respaldo automático
+                  puedes instalar{" "}
+                  <em>OneDrive</em> (incluido en Windows) o{" "}
+                  <em>Google Drive para escritorio</em>{" "}
+                  y luego usar esa carpeta como destino. Tu tesis se sincronizará sola.
+                </div>
+              )}
             </div>
           )}
 

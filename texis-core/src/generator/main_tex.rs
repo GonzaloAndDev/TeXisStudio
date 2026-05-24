@@ -208,10 +208,43 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
             latex_escape(fac)
         ));
     }
-    if let Some(adv) = &model.student.advisor {
+    // Asesores: usar lista `advisors` si existe, sino campo legacy `advisor`
+    let all_advisors: Vec<&str> = if !model.student.advisors.is_empty() {
+        model.student.advisors.iter().map(|s| s.as_str()).collect()
+    } else {
+        let mut v: Vec<&str> = model.student.advisor.as_deref().into_iter().collect();
+        if let Some(co) = model.student.co_advisor.as_deref() {
+            v.push(co);
+        }
+        v
+    };
+    if !all_advisors.is_empty() {
+        // \tesisAsesor → primer asesor (compatibilidad portadas clásicas)
         out.push_str(&format!(
             "\\newcommand{{\\tesisAsesor}}{{{}}}\n",
-            latex_escape(adv)
+            latex_escape(all_advisors[0])
+        ));
+        // \tesisAsesores → todos, separados por \\ para listados de portada
+        let joined = all_advisors
+            .iter()
+            .map(|a| latex_escape(a))
+            .collect::<Vec<_>>()
+            .join(" \\\\ ");
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisAsesores}}{{{}}}\n",
+            joined
+        ));
+    }
+    // Co-autores (trabajos grupales)
+    if !model.student.co_authors.is_empty() {
+        let co = model.student.co_authors
+            .iter()
+            .map(|a| latex_escape(&a.full_name))
+            .collect::<Vec<_>>()
+            .join(", ");
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisCoAutores}}{{{}}}\n",
+            co
         ));
     }
     out.push_str(&format!(

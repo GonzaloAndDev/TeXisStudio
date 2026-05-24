@@ -34,8 +34,10 @@ pub fn generic_thesis_model() -> ProjectModel {
             full_name: "Juan Pérez García".to_string(),
             student_id: Some("123456789".to_string()),
             email: None,
-            advisor: Some("Dr. María López".to_string()),
+            advisor: None,
             co_advisor: None,
+            advisors: vec!["Dr. María López".to_string()],
+            co_authors: vec![],
         },
         profile_id: "generic.thesis".to_string(),
         latex_config: LatexConfig {

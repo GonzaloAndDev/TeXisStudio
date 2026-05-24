@@ -717,15 +717,119 @@ function MetaPanel({
           onChange={(v) => onSave({ metadata: { ...project.metadata, subtitle: v || undefined } })}
         />
         <MetaField
-          label="Autor"
+          label="Autor principal"
           value={project.student.full_name}
           onChange={(v) => onSave({ student: { ...project.student, full_name: v } })}
         />
-        <MetaField
-          label="Asesor(a)"
-          value={project.student.advisor ?? ""}
-          onChange={(v) => onSave({ student: { ...project.student, advisor: v || undefined } })}
-        />
+
+        {/* Asesores dinámicos */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Asesores</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = [...(project.student.advisors ?? []), ""];
+                onSave({ student: { ...project.student, advisors: next } });
+              }}
+              style={{
+                fontSize: 11, padding: "1px 7px",
+                border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+                background: "var(--bg-app)", color: "var(--fg-muted)", cursor: "pointer",
+              }}
+            >
+              + Agregar
+            </button>
+          </div>
+          {(project.student.advisors ?? []).length === 0 && (
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic", padding: "4px 0" }}>
+              Sin asesores — haz clic en + Agregar
+            </div>
+          )}
+          {(project.student.advisors ?? []).map((adv, i) => (
+            <div key={i} style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 4 }}>
+              <input
+                value={adv}
+                onChange={(e) => {
+                  const next = [...(project.student.advisors ?? [])];
+                  next[i] = e.target.value;
+                  onSave({ student: { ...project.student, advisors: next } });
+                }}
+                style={{
+                  flex: 1, padding: "5px 8px", borderRadius: "var(--r-sm)",
+                  border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+                  fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none",
+                }}
+                placeholder="Dra. Ana Torres"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const next = (project.student.advisors ?? []).filter((_, idx) => idx !== i);
+                  onSave({ student: { ...project.student, advisors: next } });
+                }}
+                style={{
+                  width: 22, height: 22, flexShrink: 0,
+                  border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+                  background: "var(--bg-panel)", color: "var(--fg-faint)", cursor: "pointer",
+                  fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Co-autores dinámicos */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Co-autores</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = [...(project.student.co_authors ?? []), { full_name: "" }];
+                onSave({ student: { ...project.student, co_authors: next } });
+              }}
+              style={{
+                fontSize: 11, padding: "1px 7px",
+                border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+                background: "var(--bg-app)", color: "var(--fg-muted)", cursor: "pointer",
+              }}
+            >
+              + Agregar
+            </button>
+          </div>
+          {(project.student.co_authors ?? []).map((ca, i) => (
+            <div key={i} style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 4 }}>
+              <input
+                value={ca.full_name}
+                onChange={(e) => {
+                  const next = [...(project.student.co_authors ?? [])];
+                  next[i] = { ...next[i], full_name: e.target.value };
+                  onSave({ student: { ...project.student, co_authors: next } });
+                }}
+                style={{
+                  flex: 1, padding: "5px 8px", borderRadius: "var(--r-sm)",
+                  border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+                  fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none",
+                }}
+                placeholder="Luis Hernández"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const next = (project.student.co_authors ?? []).filter((_, idx) => idx !== i);
+                  onSave({ student: { ...project.student, co_authors: next } });
+                }}
+                style={{
+                  width: 22, height: 22, flexShrink: 0,
+                  border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+                  background: "var(--bg-panel)", color: "var(--fg-faint)", cursor: "pointer",
+                  fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >×</button>
+            </div>
+          ))}
+        </div>
         <MetaField
           label="Institución"
           value={project.institution.name}

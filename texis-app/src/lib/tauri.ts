@@ -3,6 +3,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  CloudFolder,
   CompilationResult,
   LatexInfo,
   ProfileInfo,
@@ -24,6 +25,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     latexmk_version: undefined,
     texlive_year: undefined,
   },
+  get_cloud_folders: [] as CloudFolder[],
 };
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -76,4 +78,20 @@ export const api = {
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),
+
+  getCloudFolders: (): Promise<CloudFolder[]> =>
+    call("get_cloud_folders"),
+
+  /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */
+  pickFolder: async (): Promise<string | null> => {
+    if (!isTauri()) return null;
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const result = await open({ directory: true, multiple: false });
+      if (Array.isArray(result)) return result[0] ?? null;
+      return result ?? null;
+    } catch {
+      return null;
+    }
+  },
 };

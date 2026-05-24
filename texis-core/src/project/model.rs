@@ -68,12 +68,33 @@ pub struct InstitutionData {
     pub country: String,
 }
 
+/// Co-autor de un trabajo grupal.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CoAuthor {
+    pub full_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub student_id: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StudentData {
     pub full_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub student_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    /// Asesor principal (campo legacy — se mantiene para compatibilidad).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advisor: Option<String>,
+    /// Lista completa de asesores (sustituye a advisor + co_advisor).
+    /// Si no está vacía, tiene prioridad sobre `advisor`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub advisors: Vec<String>,
+    /// Co-autores en trabajos grupales.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub co_authors: Vec<CoAuthor>,
+    /// @deprecated — usar `advisors` en proyectos nuevos.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub co_advisor: Option<String>,
 }
 
@@ -204,17 +225,20 @@ pub enum FigureWidth {
 pub struct TableBlock {
     pub id: String,
     pub caption: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
     pub label: String,
     pub include_in_list: bool,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
+    #[serde(default)]
     pub table_style: TableStyle,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TableStyle {
+    #[default]
     Simple,
     Wide,
     Long,

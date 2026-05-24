@@ -21,7 +21,10 @@ pub fn create_project(
     let project_dir = output.join(&name);
 
     if project_dir.exists() {
-        return Err(format!("El directorio '{}' ya existe.", project_dir.display()));
+        return Err(format!(
+            "El directorio '{}' ya existe.",
+            project_dir.display()
+        ));
     }
 
     // Crear estructura
@@ -99,11 +102,7 @@ pub fn list_recent_projects(search_dir: String) -> Result<Value, String> {
 
 /// Guarda los bloques de contenido de una sección.
 #[tauri::command]
-pub fn save_section(
-    project_path: String,
-    section_id: String,
-    blocks: Value,
-) -> Result<(), String> {
+pub fn save_section(project_path: String, section_id: String, blocks: Value) -> Result<(), String> {
     let yaml_path = PathBuf::from(&project_path).join("tesis.project.yaml");
     let loader = ProjectLoader;
     let mut model = loader.load_from_file(&yaml_path).map_err(err)?;
@@ -208,12 +207,18 @@ fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
             email: None,
             advisor: None,
             co_advisor: None,
+            advisors: vec![],
+            co_authors: vec![],
         },
         profile_id: profile_id.to_string(),
         latex_config: LatexConfig {
             document_class: DocumentClassConfig {
                 name: "book".to_string(),
-                options: vec!["12pt".to_string(), "letterpaper".to_string(), "oneside".to_string()],
+                options: vec![
+                    "12pt".to_string(),
+                    "letterpaper".to_string(),
+                    "oneside".to_string(),
+                ],
             },
             engine: LatexEngine::Xelatex,
             compiler: CompilerKind::Latexmk,
@@ -334,5 +339,8 @@ fn chrono_now() -> String {
     let month = if mp < 10 { mp + 3 } else { mp - 9 };
     let year = if month <= 2 { y_raw + 1 } else { y_raw };
 
-    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hh, mm, ss)
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        year, month, day, hh, mm, ss
+    )
 }

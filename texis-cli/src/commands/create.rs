@@ -75,6 +75,8 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
             email: None,
             advisor: None,
             co_advisor: None,
+            advisors: vec![],
+            co_authors: vec![],
         },
         profile_id: profile_id.to_string(),
         latex_config: LatexConfig {

@@ -45,6 +45,8 @@ export interface FigureBlock {
   include_in_list: boolean;
 }
 
+export type TableStyle = "simple" | "wide" | "long" | "booktabs";
+
 export interface TableBlock {
   type: "table";
   id: string;
@@ -54,6 +56,7 @@ export interface TableBlock {
   include_in_list: boolean;
   headers: string[];
   rows: string[][];
+  table_style?: TableStyle;
 }
 
 export interface CitationBlock {
@@ -131,12 +134,23 @@ export interface InstitutionData {
   country: string;
 }
 
+export interface CoAuthor {
+  full_name: string;
+  student_id?: string;
+}
+
 export interface StudentData {
   full_name: string;
   student_id?: string;
   email?: string;
+  /** @deprecated usar advisors[] en proyectos nuevos */
   advisor?: string;
+  /** @deprecated usar advisors[] en proyectos nuevos */
   co_advisor?: string;
+  /** Lista completa de asesores. Tiene prioridad sobre advisor. */
+  advisors?: string[];
+  /** Co-autores en trabajos grupales. */
+  co_authors?: CoAuthor[];
 }
 
 export interface ProjectModel {
@@ -203,6 +217,15 @@ export interface LatexInfo {
   is_usable: boolean;
   latexmk_version?: string;
   texlive_year?: number;
+}
+
+// ── Cloud Folders (from get_cloud_folders) ───────────────────────
+
+export interface CloudFolder {
+  service: string;   // "OneDrive" | "Google Drive" | "Dropbox"
+  path: string;
+  icon: string;
+  hint: string;
 }
 
 // ── Recent project entry (from list_recent_projects) ────────────
