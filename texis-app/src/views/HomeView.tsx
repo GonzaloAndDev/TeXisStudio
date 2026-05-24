@@ -1,29 +1,30 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconFile,
   IconFolder, IconPlus, IconSearch, IconSettings, IconStar, IconClock, IconTrash, IconUpload,
 } from "../components/Icons";
+import { LanguagePicker } from "../components/LanguagePicker";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { RecentProject } from "../types";
 
-function formatUpdatedAt(raw: string): string {
+function formatUpdatedAt(raw: string, t: (k: string, opts?: Record<string, unknown>) => string): string {
   const ts = /^\d+$/.test(raw) ? parseInt(raw, 10) * 1000 : Date.parse(raw);
   if (isNaN(ts)) return raw;
   const diff = (Date.now() - ts) / 1000;
-  if (diff < 120) return "hace un momento";
-  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
-  if (diff < 172800) return "ayer";
-  if (diff < 604800) return `hace ${Math.floor(diff / 86400)} días`;
-  if (diff < 2592000) return `hace ${Math.floor(diff / 604800)} sem`;
-  return `hace ${Math.floor(diff / 2592000)} meses`;
+  if (diff < 120) return t("home.time_just_now");
+  if (diff < 3600) return t("home.time_minutes", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("home.time_hours", { n: Math.floor(diff / 3600) });
+  if (diff < 172800) return t("home.time_yesterday");
+  if (diff < 604800) return t("home.time_days", { n: Math.floor(diff / 86400) });
+  if (diff < 2592000) return t("home.time_weeks", { n: Math.floor(diff / 604800) });
+  return t("home.time_months", { n: Math.floor(diff / 2592000) });
 }
 
-// Mock data visible en dev-browser (sin Tauri)
 const MOCK_PROJECTS: RecentProject[] = [
   { path: "/proyectos/redes-neuronales", title: "Análisis de redes neuronales en clasificación de imágenes médicas", profile_id: "generic.thesis", academic_level: "maestria", updated_at: "hace 2 h" },
   { path: "/proyectos/rezago-educativo", title: "Determinantes socioeconómicos del rezago educativo en Oaxaca", profile_id: "generic.thesis", academic_level: "licenciatura", updated_at: "hace 1 día" },
@@ -83,8 +84,11 @@ const S = {
   } as const,
 };
 
+import React from "react";
+
 function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const available = info.available_backends ?? [];
 
   return (
@@ -98,11 +102,11 @@ function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
       <div style={{ flex: 1 }}>
         <span style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)" }}>
           {available.length === 0
-            ? "No hay compilador LaTeX instalado — los PDFs no se podrán generar."
-            : `LaTeX parcialmente instalado (${available.join(", ")} disponible).`}
+            ? t("home.latex_missing")
+            : t("home.latex_partial", { backends: available.join(", ") })}
         </span>
         <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginLeft: 8 }}>
-          Instala Tectonic, MiKTeX o TeX Live para compilar.
+          {t("home.latex_install_hint")}
         </span>
       </div>
       <button
@@ -110,25 +114,15 @@ function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
         onClick={() => navigate("/setup-latex")}
         style={{ flexShrink: 0 }}
       >
-        Ver guía →
+        {t("home.latex_guide")}
       </button>
     </div>
   );
 }
 
-function levelLabel(level: string): string {
-  const map: Record<string, string> = {
-    licenciatura: "Licenciatura",
-    maestria: "Maestría",
-    doctorado: "Doctorado",
-    bachillerato: "Bachillerato",
-    tecnico: "Técnico",
-  };
-  return map[level.toLowerCase()] ?? level;
-}
-
 export default function HomeView() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
   const [tab, setTab] = useState<"projects" | "favorites" | "recent" | "archived">("projects");
@@ -152,10 +146,7 @@ export default function HomeView() {
 
   async function handleOpen(projectPath: string) {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
-    if (!isTauriEnv) {
-      navigate("/demo");
-      return;
-    }
+    if (!isTauriEnv) { navigate("/demo"); return; }
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
@@ -165,9 +156,21 @@ export default function HomeView() {
     }
   }
 
+  function levelLabel(level: string): string {
+    const key = `home.level_${level.toLowerCase()}` as const;
+    return t(key as Parameters<typeof t>[0]) ?? level;
+  }
+
   const latexStatus = latexInfo?.is_usable
     ? { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" }
-    : { text: "LaTeX no detectado", dot: "var(--build-err)" };
+    : { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
+
+  const navItems = [
+    { key: "projects", icon: <IconBook size={13} />, label: t("home.nav_projects") },
+    { key: "favorites", icon: <IconStar size={13} />, label: t("home.nav_favorites") },
+    { key: "recent", icon: <IconClock size={13} />, label: t("home.nav_recent") },
+    { key: "archived", icon: <IconTrash size={13} />, label: t("home.nav_archived") },
+  ] as const;
 
   return (
     <>
@@ -176,8 +179,9 @@ export default function HomeView() {
         center={null}
         right={
           <>
+            <LanguagePicker />
             <button className="btn btn-ghost btn-sm">
-              <IconSearch size={13} /> Buscar <span className="kbd">⌘K</span>
+              <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
             <button className="btn btn-ghost btn-icon"><IconSettings size={14} /></button>
           </>
@@ -186,33 +190,19 @@ export default function HomeView() {
 
       <div style={S.root}>
         <aside style={S.side}>
-          {(["projects", "favorites", "recent", "archived"] as const).map((t) => {
-            const icons = {
-              projects: <IconBook size={13} />,
-              favorites: <IconStar size={13} />,
-              recent: <IconClock size={13} />,
-              archived: <IconTrash size={13} />,
-            };
-            const labels = {
-              projects: "Proyectos",
-              favorites: "Favoritos",
-              recent: "Recientes",
-              archived: "Archivados",
-            };
-            return (
-              <div key={t} style={S.sideItem(tab === t)} onClick={() => setTab(t)}>
-                {icons[t]} {labels[t]}
-              </div>
-            );
-          })}
+          {navItems.map(({ key, icon, label }) => (
+            <div key={key} style={S.sideItem(tab === key)} onClick={() => setTab(key)}>
+              {icon} {label}
+            </div>
+          ))}
 
           <div style={{ height: 1, background: "var(--border-subtle)", margin: "12px 4px" }} />
-          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>Biblioteca</div>
+          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.nav_library")}</div>
           <div style={S.sideItem(false)} onClick={() => navigate("/library")}>
-            <IconFolder size={13} /> Perfiles
+            <IconFolder size={13} /> {t("home.nav_profiles")}
           </div>
           <div style={S.sideItem(false)}>
-            <IconFile size={13} /> Elementos
+            <IconFile size={13} /> {t("home.nav_elements")}
           </div>
 
           <div style={{
@@ -228,29 +218,33 @@ export default function HomeView() {
         <main style={S.main} className="scroll">
           <div style={S.hero}>
             <h1 style={S.greet}>
-              Continúa <span style={S.greetItalic}>donde lo dejaste</span>.
+              {t("home.greeting").split(t("home.greeting_italic")).map((part, i, arr) =>
+                i < arr.length - 1
+                  ? [part, <span key={i} style={S.greetItalic}>{t("home.greeting_italic")}</span>]
+                  : part
+              )}
             </h1>
             <p style={S.sub}>
-              {projects.length} proyecto{projects.length !== 1 ? "s" : ""}
+              {t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
             <div style={S.actions}>
               <button className="btn btn-accent" onClick={() => navigate("/new")}>
-                <IconPlus size={13} /> Nuevo proyecto
+                <IconPlus size={13} /> {t("home.new_project")}
               </button>
               <button className="btn">
-                <IconUpload size={13} /> Importar .tex
+                <IconUpload size={13} /> {t("home.import_tex")}
               </button>
-              <button className="btn btn-ghost">Abrir desde carpeta…</button>
+              <button className="btn btn-ghost">{t("home.open_folder")}</button>
             </div>
           </div>
 
           {latexInfo && !latexInfo.is_usable && <LatexSetupBanner info={latexInfo} />}
 
           <div style={S.sectionTitle}>
-            <span>Proyectos recientes</span>
+            <span>{t("home.recent_projects")}</span>
             <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
             <span style={{ color: "var(--fg-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
-              Ordenar por: <span style={{ color: "var(--fg-default)" }}>actualizado ↓</span>
+              {t("home.sort_by")} <span style={{ color: "var(--fg-default)" }}>{t("home.sort_updated")}</span>
             </span>
           </div>
 
@@ -271,13 +265,11 @@ export default function HomeView() {
                 </div>
                 <div style={S.cardMeta}>
                   <span className="chip">{levelLabel(p.academic_level)}</span>
-                  <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-faint)" }}>
-                    {p.profile_id}
-                  </span>
+                  <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-faint)" }}>{p.profile_id}</span>
                 </div>
                 <div style={S.cardFooter}>
                   <span>{p.path.split(/[/\\]/).pop()}</span>
-                  <span>{formatUpdatedAt(p.updated_at)}</span>
+                  <span>{formatUpdatedAt(p.updated_at, t)}</span>
                 </div>
               </div>
             ))}
@@ -293,10 +285,10 @@ export default function HomeView() {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-muted)" }}>
                   <IconPlus size={14} />
-                  <span style={{ fontWeight: 500 }}>Crear primer proyecto</span>
+                  <span style={{ fontWeight: 500 }}>{t("home.create_first")}</span>
                 </div>
                 <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                  Tesis, tesina, paper o reporte técnico. Empieza desde un perfil.
+                  {t("home.create_first_desc")}
                 </p>
                 <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
                   <span className="chip">Tesis</span>

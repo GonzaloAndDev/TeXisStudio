@@ -2,29 +2,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
   IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
   IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
+import { LanguagePicker } from "../components/LanguagePicker";
+import { SpellPanel } from "../components/SpellPanel";
+import { GrammarPanel } from "../components/GrammarPanel";
+import { applyAutocorrect } from "../services/autocorrect";
+import { applyReplacement } from "../services/grammar";
+import type { GrammarMatch } from "../services/grammar";
+import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
-const PLACEMENT_LABELS: Record<string, string> = {
-  front_matter: "Portada y preliminares",
-  body: "Cuerpo principal",
-  back_matter: "Material final",
-  appendix: "Anexos",
+const PLACEMENT_KEYS: Record<string, string> = {
+  front_matter: "editor.placement_front",
+  body: "editor.placement_body",
+  back_matter: "editor.placement_back",
+  appendix: "editor.placement_appendix",
 };
 
-function placementGroup(sections: ProjectSection[]) {
+function usePlacementGroup(sections: ProjectSection[]) {
+  const { t } = useTranslation();
   const groups: Record<string, ProjectSection[]> = {};
   for (const s of sections) {
-    const g = PLACEMENT_LABELS[s.placement] ?? s.placement;
+    const key = PLACEMENT_KEYS[s.placement];
+    const g = key ? t(key as Parameters<typeof t>[0]) : s.placement;
     if (!groups[g]) groups[g] = [];
     groups[g].push(s);
   }
@@ -52,7 +62,10 @@ function ParagraphEditor({
   onChange: (v: string) => void;
   onBlur: () => void;
 }) {
+  const { t } = useTranslation();
+  const { autocorrectEnabled, spellLang } = useSettingsStore();
   const ref = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     ref.current?.focus();
     if (ref.current) {
@@ -60,24 +73,48 @@ function ParagraphEditor({
       ref.current.style.height = ref.current.scrollHeight + "px";
     }
   }, []);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Escape") { onBlur(); return; }
+    if (autocorrectEnabled && spellLang && (e.key === " " || e.key === "Enter")) {
+      const el = e.currentTarget;
+      const result = applyAutocorrect(el.value, el.selectionStart ?? el.value.length, spellLang);
+      if (result) {
+        e.preventDefault();
+        const { newText, newCursor } = result;
+        onChange(newText + (e.key === " " ? " " : "\n"));
+        requestAnimationFrame(() => {
+          if (ref.current) {
+            const pos = newCursor + 1;
+            ref.current.setSelectionRange(pos, pos);
+            ref.current.style.height = "auto";
+            ref.current.style.height = ref.current.scrollHeight + "px";
+          }
+        });
+      }
+    }
+  }
+
   return (
     <textarea
       ref={ref}
       value={content}
+      spellCheck={!!spellLang}
+      lang={spellLang ?? undefined}
       onChange={(e) => {
         onChange(e.target.value);
         e.target.style.height = "auto";
         e.target.style.height = e.target.scrollHeight + "px";
       }}
       onBlur={onBlur}
-      onKeyDown={(e) => { if (e.key === "Escape") onBlur(); }}
+      onKeyDown={handleKeyDown}
       style={{
         width: "100%", border: "none", outline: "none", resize: "none",
         fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65,
         color: "var(--fg-default)", background: "transparent",
         padding: 0, minHeight: 50,
       }}
-      placeholder="Escribe aquí el contenido del párrafo…"
+      placeholder={t("editor.placeholder_paragraph")}
     />
   );
 }
@@ -2001,6 +2038,7 @@ type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
 
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>([]);
@@ -2029,6 +2067,10 @@ export default function EditorView() {
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen] = useState(false);
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
+
+  // Paneles de revisión de texto
+  const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
+  const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
 
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {
@@ -2328,7 +2370,7 @@ export default function EditorView() {
     );
   }
 
-  const groups = placementGroup(activeProject.sections);
+  const groups = usePlacementGroup(activeProject.sections);
   const activeSection = activeProject.sections.find((s) => s.id === activeSectionId)
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
@@ -2340,10 +2382,10 @@ export default function EditorView() {
   const projectName = activeProject.metadata.title;
 
   const saveLabel =
-    saveStatus === "saving"  ? "Guardando…" :
-    saveStatus === "unsaved" ? "Sin guardar" :
-    saveStatus === "error"   ? "Error al guardar" :
-    "Guardado";
+    saveStatus === "saving"  ? t("editor.saving") :
+    saveStatus === "unsaved" ? t("editor.unsaved_changes") :
+    saveStatus === "error"   ? t("common.error") :
+    t("editor.autosaved");
   const saveDot =
     saveStatus === "saving"  ? "var(--build-warn)" :
     saveStatus === "unsaved" ? "var(--build-err)" :
@@ -2366,7 +2408,7 @@ export default function EditorView() {
               <IconRefresh size={13} /> Versiones
             </button>
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
-              <IconBuild size={13} /> Compilar
+              <IconBuild size={13} /> {t("editor.compile")}
             </button>
             <button
               className={`btn btn-ghost btn-icon${docOptionsOpen ? " btn-active" : ""}`}
@@ -2375,11 +2417,13 @@ export default function EditorView() {
             >
               <IconSettings size={14} />
             </button>
+            <LanguagePicker />
           </>
         }
       />
 
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0, background: "var(--bg-app)" }}>
+      <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0 }}>
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -2459,6 +2503,27 @@ export default function EditorView() {
             </button>
 
             <div style={{ flex: 1 }} />
+
+            {/* Botones de revisión */}
+            <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 4px", flexShrink: 0 }} />
+            <button
+              className={`btn btn-sm ${spellPanelOpen ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => { setSpellPanelOpen((v) => !v); if (grammarPanelOpen) setGrammarPanelOpen(false); }}
+              title={t("spell.panel_title")}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+            >
+              ABC✓
+            </button>
+            <button
+              className={`btn btn-sm ${grammarPanelOpen ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => { setGrammarPanelOpen((v) => !v); if (spellPanelOpen) setSpellPanelOpen(false); }}
+              title={t("grammar.panel_title")}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+            >
+              LT
+            </button>
+
+            <div style={{ display: "none" }} />
 
             {/* Paleta de comandos */}
             <button
@@ -2567,6 +2632,47 @@ export default function EditorView() {
           onSave={saveMetadata}
           onCompile={() => navigate(`/project/${encodedPath}/compile`)}
         />
+      </div>
+
+      {/* Paneles de revisión ortográfica / gramatical */}
+      {spellPanelOpen && (
+        <SpellPanel
+          text={localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join(" ")}
+          onReplace={(original, replacement) => {
+            setLocalBlocks((prev) => {
+              const next = prev.map((b) => {
+                if (b.type !== "paragraph") return b;
+                return { ...b, content: b.content.split(original).join(replacement) };
+              });
+              scheduleAutoSave(next);
+              return next;
+            });
+          }}
+          onClose={() => setSpellPanelOpen(false)}
+        />
+      )}
+      {grammarPanelOpen && (
+        <GrammarPanel
+          text={localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join("\n\n")}
+          onAccept={(match: GrammarMatch, replacement: string) => {
+            const fullText = localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join("\n\n");
+            const corrected = applyReplacement(fullText, match, replacement);
+            const paragraphs = corrected.split("\n\n");
+            let pIdx = 0;
+            setLocalBlocks((prev) => {
+              const next = prev.map((b) => {
+                if (b.type !== "paragraph") return b;
+                const content = paragraphs[pIdx] ?? b.content;
+                pIdx++;
+                return { ...b, content };
+              });
+              scheduleAutoSave(next);
+              return next;
+            });
+          }}
+          onClose={() => setGrammarPanelOpen(false)}
+        />
+      )}
       </div>
 
       {/* Paleta de comandos (Ctrl+K) */}
@@ -2757,7 +2863,7 @@ export default function EditorView() {
       <TxStatusbar items={[
         { text: saveLabel, dot: saveDot },
         { icon: <IconFile size={11} />, text: projectName },
-        { text: `${bodyWordCount.toLocaleString("es")} palabras` },
+        { text: t("editor.words", { n: bodyWordCount.toLocaleString() }) },
         {
           right: true,
           text: bibRefs.length > 0 ? `${bibRefs.length} refs en .bib` : "sin .bib",
