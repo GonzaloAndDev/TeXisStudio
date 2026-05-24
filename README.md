@@ -114,6 +114,31 @@ En CI/CD (GitHub Actions) se construyen automáticamente al publicar un tag `v*`
 
 ### Build local
 
+### Uso desde VS Code
+
+El repositorio incluye tareas en `.vscode/tasks.json` para trabajar sin salir de VS Code.
+Abre la carpeta **TeXisStudio** como raíz del workspace para que `Ctrl+Shift+B`
+use estas tareas y no las tareas sugeridas por extensiones externas.
+
+| Acción | VS Code | Comando equivalente |
+|---|---|---|
+| Ejecutar la app en modo desarrollo | `Terminal → Run Task → TeXisStudio: Run app` | `cd texis-app && npm run tauri dev` |
+| Compilar para el sistema operativo actual | `Terminal → Run Task → TeXisStudio: Build current OS` | `node scripts/texis.mjs build` |
+| Validar solo el frontend | `Terminal → Run Task → TeXisStudio: Build frontend only` | `cd texis-app && npm run build` |
+
+El comando `build` detecta el sistema operativo automáticamente:
+
+- Windows → `scripts/build-windows.ps1`
+- Linux → `scripts/build-linux.sh`
+- macOS → `scripts/build-mac.sh`
+
+El helper imprime en terminal el contexto de compilación, la hora de inicio,
+la hora de finalización y la duración total del build.
+
+> Para abrir rápido la tarea por defecto en VS Code usa `Ctrl+Shift+B`.
+> Si VS Code pide instalar OpenJDK/Red Hat, cancela: TeXisStudio no usa Java.
+> Ese aviso viene de una extensión Java, no del build de la app.
+
 ```powershell
 # Windows → genera MSI + NSIS + portable ZIP en target\release\bundle\
 .\scripts\build-windows.ps1

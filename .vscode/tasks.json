@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TeXisStudio: Run app",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/texis.mjs",
+        "dev"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": false
+      }
+    },
+    {
+      "label": "TeXisStudio: Build current OS",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/texis.mjs",
+        "build"
+      ],
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "TeXisStudio: Build frontend only",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/texis-app"
+      },
+      "windows": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "npm run build"
+        ]
+      },
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    }
+  ]
+}

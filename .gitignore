@@ -5,7 +5,9 @@
 # Cargo.lock IS versioned — do not add it here
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json
 .idea/
 *.iml
 

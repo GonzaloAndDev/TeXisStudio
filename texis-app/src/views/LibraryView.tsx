@@ -1245,7 +1245,7 @@ export default function LibraryView() {
           <div style={{ flex: 1 }} />
 
           <div style={{ padding: "10px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 0.5</div>
+            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 1.0</div>
             {profiles.length} perfiles · {BLOCK_CATALOG.length} elementos
           </div>
         </div>
@@ -1361,7 +1361,7 @@ export default function LibraryView() {
       <TxStatusbar items={[
         { text: `${profiles.length} perfiles instalados` },
         { icon: <IconUpload size={11} />, text: "Importar" },
-        { right: true, text: "TeXisStudio 0.5.0" },
+        { right: true, text: "TeXisStudio 1.0.0" },
       ]} />
     </>
   );
