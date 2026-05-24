@@ -196,6 +196,7 @@ export interface CompilationResult {
   user_errors: UserError[];
   warnings: string[];
   log_preview: string;
+  backend_used?: string;
 }
 
 // ── Profiles ────────────────────────────────────────────────────
@@ -232,8 +233,13 @@ export interface LatexInfo {
   has_xelatex: boolean;
   has_biber: boolean;
   is_usable: boolean;
+  latexmk_usable: boolean;
   latexmk_version?: string;
   texlive_year?: number;
+  has_tectonic: boolean;
+  tectonic_version?: string;
+  available_backends: string[];
+  preferred_backend?: string;
 }
 
 // ── Cloud Folders (from get_cloud_folders) ───────────────────────

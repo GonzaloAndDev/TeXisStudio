@@ -295,11 +295,16 @@ pub fn get_cloud_folders() -> Result<Value, String> {
 pub fn detect_latex() -> Result<Value, String> {
     let info = LatexInstallation::detect();
     Ok(serde_json::json!({
-        "has_latexmk": info.has_latexmk,
-        "has_xelatex": info.has_xelatex,
-        "has_biber": info.has_biber,
-        "is_usable": info.is_usable(),
-        "latexmk_version": info.latexmk_version,
-        "texlive_year": info.texlive_year,
+        "has_latexmk":       info.has_latexmk,
+        "has_xelatex":       info.has_xelatex,
+        "has_biber":         info.has_biber,
+        "is_usable":         info.is_usable(),
+        "latexmk_usable":    info.latexmk_usable(),
+        "latexmk_version":   info.latexmk_version,
+        "texlive_year":      info.texlive_year,
+        "has_tectonic":      info.has_tectonic,
+        "tectonic_version":  info.tectonic_version,
+        "available_backends": info.available_backends(),
+        "preferred_backend": info.preferred_backend(),
     }))
 }

@@ -25,8 +25,13 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     has_xelatex: false,
     has_biber: false,
     is_usable: false,
+    latexmk_usable: false,
     latexmk_version: undefined,
     texlive_year: undefined,
+    has_tectonic: false,
+    tectonic_version: undefined,
+    available_backends: [],
+    preferred_backend: undefined,
   } satisfies LatexInfo,
   get_cloud_folders: [] as CloudFolder[],
   get_profiles: [

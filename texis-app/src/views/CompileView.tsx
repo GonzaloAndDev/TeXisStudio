@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -10,20 +10,21 @@ import { useProjectStore } from "../stores/project";
 import type { CompilationResult, UserError } from "../types";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
+type Backend = "auto" | "latexmk" | "tectonic";
 
 const LOG_COLORS: Record<string, string> = {
-  err: "#E89090",
-  warn: "#E5C97A",
-  ok: "#A8D49C",
-  cmd: "#9DBEDC",
+  err:     "#E89090",
+  warn:    "#E5C97A",
+  ok:      "#A8D49C",
+  cmd:     "#9DBEDC",
   default: "#9C9685",
 };
 
 function logColor(line: string): string {
-  if (line.startsWith("!") || line.toLowerCase().includes("error")) return LOG_COLORS.err;
-  if (line.toLowerCase().includes("warning")) return LOG_COLORS.warn;
-  if (line.startsWith("Output written") || line.includes("pdf")) return LOG_COLORS.ok;
-  if (line.startsWith(">") || line.startsWith("latexmk") || line.startsWith("Running")) return LOG_COLORS.cmd;
+  if (line.startsWith("!") || line.toLowerCase().includes("error"))   return LOG_COLORS.err;
+  if (line.toLowerCase().includes("warning"))                          return LOG_COLORS.warn;
+  if (line.startsWith("Output written") || line.includes("pdf"))      return LOG_COLORS.ok;
+  if (line.startsWith(">") || line.startsWith("latexmk") || line.startsWith("Running") || line.startsWith("tectonic")) return LOG_COLORS.cmd;
   return LOG_COLORS.default;
 }
 
@@ -33,7 +34,7 @@ function ErrorCard({ error, sev }: { error: UserError; sev: "err" | "warn" }) {
       padding: "14px 16px",
       borderBottom: "1px solid var(--border-subtle)",
       borderLeft: `3px solid ${sev === "err" ? "var(--build-err)" : "var(--build-warn)"}`,
-      background: "var(--bg-panel)", cursor: "pointer",
+      background: "var(--bg-panel)",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         {sev === "err"
@@ -63,30 +64,75 @@ function ErrorCard({ error, sev }: { error: UserError; sev: "err" | "warn" }) {
   );
 }
 
+// ── Chip de estado para un backend ────────────────────────────────
+function BackendChip({
+  label, available, version, selected, onClick,
+}: {
+  id?: Backend; label: string; available: boolean | null;
+  version?: string; selected: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={available === false}
+      title={available === false ? `${label} no está instalado` : version ?? label}
+      style={{
+        padding: "5px 12px",
+        borderRadius: "var(--r-md)",
+        border: `1px solid ${selected ? "var(--accent)" : "var(--border-firm)"}`,
+        background: selected ? "var(--accent-tint)" : "var(--bg-panel)",
+        color: available === false ? "var(--fg-faint)" : selected ? "var(--accent-deep)" : "var(--fg-default)",
+        cursor: available === false ? "not-allowed" : "pointer",
+        fontSize: "var(--fs-xs)", fontWeight: selected ? 600 : 400,
+        display: "flex", gap: 5, alignItems: "center",
+        opacity: available === false ? 0.5 : 1,
+      }}
+    >
+      {selected && <IconCheck size={9} sw={2.5} />}
+      {label}
+      {available === true && (
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--build-ok)", flexShrink: 0 }} />
+      )}
+    </button>
+  );
+}
+
 export default function CompileView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { activeProject, activeProjectPath } = useProjectStore();
+  const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
 
-  const { latexInfo } = useProjectStore();
   const [state, setState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
   const [draft, setDraft] = useState(false);
+  const [backend, setBackend] = useState<Backend>("auto");
 
   const projectName = activeProject?.metadata.title ?? "Proyecto";
+
+  // Detectar el backend preferido al montar
+  useEffect(() => {
+    if (latexInfo?.preferred_backend) {
+      setBackend(latexInfo.preferred_backend as Backend);
+    }
+  }, [latexInfo]);
+
+  const latexmkOk  = latexInfo?.latexmk_usable ?? null;
+  const tectonicOk = latexInfo?.has_tectonic ?? null;
+  const nothingInstalled = latexInfo && !latexInfo.is_usable;
 
   async function handleCompile() {
     if (!activeProjectPath) return;
     setState("compiling");
     setResult(null);
     try {
-      const res = await api.compileProject(activeProjectPath, "latexmk", draft);
+      const res = await api.compileProject(activeProjectPath, backend, draft);
       setResult(res);
       setState(res.success ? "success" : "error");
     } catch (e) {
       setResult({
         success: false,
-        user_errors: [{ message: String(e), suggestion: "Verifica que latexmk y xelatex estén instalados." }],
+        user_errors: [{ message: String(e), suggestion: "Verifica que el compilador LaTeX esté instalado y en el PATH." }],
         warnings: [],
         log_preview: String(e),
       });
@@ -103,7 +149,15 @@ export default function CompileView() {
             <TxBreadcrumb parts={[projectName, "Compilar"]} />
           </>
         }
-        center={null}
+        center={
+          /* Selector de backend */
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Motor:</span>
+            <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
+            <BackendChip id="latexmk"  label="latexmk"  available={latexmkOk}  version={latexInfo?.latexmk_version}  selected={backend === "latexmk"}  onClick={() => setBackend("latexmk")} />
+            <BackendChip id="tectonic" label="Tectonic" available={tectonicOk} version={latexInfo?.tectonic_version} selected={backend === "tectonic"} onClick={() => setBackend("tectonic")} />
+          </div>
+        }
         right={
           <>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/project/${encodedPath}`)}>
@@ -121,7 +175,8 @@ export default function CompileView() {
             <button
               className={`btn ${state === "compiling" ? "" : "btn-accent"}`}
               onClick={handleCompile}
-              disabled={state === "compiling"}
+              disabled={state === "compiling" || !!nothingInstalled}
+              title={nothingInstalled ? "Instala LaTeX primero" : undefined}
             >
               {state === "compiling"
                 ? <><IconRefresh size={13} /> Compilando…</>
@@ -134,57 +189,76 @@ export default function CompileView() {
 
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 0, background: "var(--bg-app)" }}>
 
-        {/* ── Panel izquierdo: errores ──────────────────────────── */}
+        {/* ── Panel izquierdo: estado + errores ──────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, borderRight: "1px solid var(--border-subtle)" }}>
           <div style={{
             height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
             display: "flex", alignItems: "center", gap: 8,
             background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
           }}>
-            {state === "success" && <IconCheckCircle size={14} style={{ color: "var(--build-ok)" }} />}
-            {state === "error"   && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
-            {state === "idle"    && <IconBuild size={14} />}
+            {state === "success"   && <IconCheckCircle size={14} style={{ color: "var(--build-ok)" }} />}
+            {state === "error"     && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
+            {state === "idle"      && <IconBuild size={14} />}
             {state === "compiling" && <IconRefresh size={14} />}
-            {state === "idle" && "Listo para compilar"}
+            {state === "idle"      && "Listo para compilar"}
             {state === "compiling" && "Compilando…"}
-            {state === "success" && "Compilación exitosa"}
-            {state === "error" && `${result?.user_errors.length ?? 0} error(es)`}
+            {state === "success"   && "Compilación exitosa"}
+            {state === "error"     && `${result?.user_errors.length ?? 0} error(es)`}
+            {result?.backend_used && (
+              <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", fontWeight: 400 }}>
+                via {result.backend_used}
+              </span>
+            )}
           </div>
 
           <div style={{ flex: 1, overflow: "auto" }} className="scroll">
-            {state === "idle" && latexInfo && !latexInfo.is_usable && (
+            {/* LaTeX no instalado */}
+            {state === "idle" && nothingInstalled && (
               <div style={{ padding: "20px 16px" }}>
                 <div style={{
                   padding: "14px 16px", borderRadius: "var(--r-md)",
                   background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
                   display: "flex", gap: 12, alignItems: "flex-start",
                 }}>
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>⚠</span>
+                  <span style={{ fontSize: 20, lineHeight: 1 }}>⚠</span>
                   <div>
-                    <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)", marginBottom: 4 }}>
-                      LaTeX no detectado
+                    <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)", marginBottom: 6 }}>
+                      No hay compilador LaTeX instalado
                     </div>
-                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-                      Instala <strong>MiKTeX</strong> o <strong>TeX Live 2024</strong> junto con{" "}
-                      <strong>Strawberry Perl</strong> para poder compilar PDFs.
-                      Después reinicia TeXisStudio.
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7, marginBottom: 10 }}>
+                      Necesitas al menos uno de estos:
                     </div>
+                    <ul style={{ margin: "0 0 10px", paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 2 }}>
+                      <li><strong>Tectonic</strong> — recomendado, minimal, no necesita Perl</li>
+                      <li><strong>MiKTeX</strong> — fácil en Windows, descarga paquetes bajo demanda</li>
+                      <li><strong>TeX Live 2024</strong> — instalación completa</li>
+                    </ul>
+                    <button
+                      className="btn btn-accent btn-sm"
+                      onClick={() => navigate("/setup-latex")}
+                    >
+                      Ver guía de instalación →
+                    </button>
                   </div>
                 </div>
               </div>
             )}
-            {state === "idle" && (!latexInfo || latexInfo.is_usable) && (
+
+            {/* Estado idle normal */}
+            {state === "idle" && !nothingInstalled && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ margin: 0 }}>Presiona <strong>Compilar</strong> para generar el PDF.</p>
                 <p style={{ fontSize: "var(--fs-xs)", marginTop: 8 }}>
-                  Se regenerarán los archivos LaTeX y se ejecutará latexmk.
+                  Se regenerarán los archivos LaTeX y se ejecutará{" "}
+                  {backend === "auto" ? (latexInfo?.preferred_backend ?? "el motor disponible") : backend}.
                 </p>
               </div>
             )}
 
             {state === "compiling" && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-muted)" }}>
+                <IconRefresh size={24} style={{ opacity: 0.4, marginBottom: 12 }} />
                 <p>Generando LaTeX y compilando…</p>
               </div>
             )}
@@ -239,7 +313,7 @@ export default function CompileView() {
             {result?.log_preview
               ? result.log_preview.split("\n").map((line, i) => (
                   <div key={i} style={{ color: logColor(line), whiteSpace: "pre" }}>
-                    {line || " "}
+                    {line || " "}
                   </div>
                 ))
               : (
@@ -261,7 +335,12 @@ export default function CompileView() {
           ? { text: "Compilando…", dot: "var(--build-warn)" }
           : { text: "Listo", dot: "var(--fg-faint)" },
         { icon: <IconFile size={11} />, text: projectName },
-        { right: true, text: draft ? "Modo borrador activado" : "Compilación completa" },
+        {
+          right: true,
+          text: latexInfo?.is_usable
+            ? `${latexInfo.available_backends.join(" · ")} disponibles`
+            : "⚠ LaTeX no instalado",
+        },
       ]} />
     </>
   );

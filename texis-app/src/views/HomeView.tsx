@@ -84,66 +84,34 @@ const S = {
 };
 
 function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
-  const missing: string[] = [];
-  if (!info.has_latexmk) missing.push("latexmk");
-  if (!info.has_xelatex) missing.push("xelatex");
-  if (!info.has_biber)   missing.push("biber");
+  const navigate = useNavigate();
+  const available = info.available_backends ?? [];
 
   return (
     <div style={{
-      margin: "0 0 20px",
-      padding: "16px 20px",
+      margin: "0 0 20px", padding: "14px 18px",
       borderRadius: "var(--r-lg)",
-      background: "var(--accent-tint)",
-      border: "1px solid var(--accent-soft)",
-      display: "flex", gap: 16, alignItems: "flex-start",
+      background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+      display: "flex", gap: 14, alignItems: "center",
     }}>
-      <div style={{
-        width: 36, height: 36, flexShrink: 0, borderRadius: "var(--r-md)",
-        background: "var(--accent)", color: "white",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 18,
-      }}>
-        ⚠
+      <span style={{ fontSize: 20, flexShrink: 0 }}>⚠</span>
+      <div style={{ flex: 1 }}>
+        <span style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)" }}>
+          {available.length === 0
+            ? "No hay compilador LaTeX instalado — los PDFs no se podrán generar."
+            : `LaTeX parcialmente instalado (${available.join(", ")} disponible).`}
+        </span>
+        <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginLeft: 8 }}>
+          Instala Tectonic, MiKTeX o TeX Live para compilar.
+        </span>
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-md)", marginBottom: 4 }}>
-          LaTeX no está instalado — no podrás compilar PDFs todavía
-        </div>
-        {missing.length > 0 && (
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 10 }}>
-            Faltan:{" "}
-            {missing.map((t) => (
-              <code key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-panel)", padding: "1px 5px", borderRadius: 3, marginRight: 4 }}>
-                {t}
-              </code>
-            ))}
-          </div>
-        )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px", maxWidth: 700 }}>
-          <div>
-            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-default)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Opción A · MiKTeX (recomendado en Windows)
-            </div>
-            <ol style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-              <li>Busca <strong>MiKTeX</strong> en el navegador y descarga el instalador</li>
-              <li>Instala con "Install packages on-the-fly: yes"</li>
-              <li>Busca <strong>Strawberry Perl</strong> e instálalo (necesario para latexmk)</li>
-              <li>Reinicia TeXisStudio</li>
-            </ol>
-          </div>
-          <div>
-            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-default)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Opción B · TeX Live 2024
-            </div>
-            <ol style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-              <li>Busca <strong>TeX Live 2024</strong> e instala el esquema <em>full</em></li>
-              <li>Instala también <strong>Strawberry Perl</strong></li>
-              <li>Reinicia TeXisStudio</li>
-            </ol>
-          </div>
-        </div>
-      </div>
+      <button
+        className="btn btn-sm btn-accent"
+        onClick={() => navigate("/setup-latex")}
+        style={{ flexShrink: 0 }}
+      >
+        Ver guía →
+      </button>
     </div>
   );
 }

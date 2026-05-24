@@ -1,7 +1,11 @@
 use serde_json::Value;
 use std::path::PathBuf;
 use texis_core::{
-    compiler::{latexmk::LatexmkBackend, CompilationBackend, CompilationOptions},
+    compiler::{
+        latexmk::LatexmkBackend,
+        tectonic::TectonicBackend,
+        CompilationBackend, CompilationOptions,
+    },
     project::loader::ProjectLoader,
     LaTeXGenerator,
 };
@@ -11,6 +15,7 @@ fn err(e: impl std::fmt::Display) -> String {
 }
 
 /// Compila el proyecto y devuelve resultado con errores traducidos.
+/// backend_name: "latexmk" | "tectonic" | "auto" (elige el mejor disponible)
 #[tauri::command]
 pub fn compile_project(
     project_path: String,
@@ -36,19 +41,47 @@ pub fn compile_project(
         max_runs: None,
     };
 
-    let result = match backend_name.as_str() {
+    // Selección de backend
+    let backend: Box<dyn CompilationBackend> = match backend_name.as_str() {
         "latexmk" => {
-            let backend = LatexmkBackend::new();
-            if !backend.is_available() {
+            let b = LatexmkBackend::new();
+            if !b.is_available() {
                 return Err(
-                    "latexmk no está instalado. Instala TeX Live o MiKTeX para compilar."
+                    "latexmk no está instalado. Instala TeX Live, MiKTeX, o usa Tectonic."
                         .to_string(),
                 );
             }
-            backend.compile(&build_dir, &options).map_err(err)?
+            Box::new(b)
         }
-        other => return Err(format!("Backend '{}' no reconocido.", other)),
+        "tectonic" => {
+            let b = TectonicBackend::new();
+            if !b.is_available() {
+                return Err(
+                    "Tectonic no está instalado. Visita https://tectonic-typesetting.github.io para instalarlo.".to_string()
+                );
+            }
+            Box::new(b)
+        }
+        "auto" => {
+            // Preferir latexmk si está disponible, sino tectonic
+            let lmk = LatexmkBackend::new();
+            if lmk.is_available() {
+                Box::new(lmk)
+            } else {
+                let tec = TectonicBackend::new();
+                if tec.is_available() {
+                    Box::new(tec)
+                } else {
+                    return Err(
+                        "No se encontró ningún compilador LaTeX. Instala latexmk (TeX Live/MiKTeX) o Tectonic.".to_string()
+                    );
+                }
+            }
+        }
+        other => return Err(format!("Backend '{}' no reconocido. Usa: latexmk, tectonic o auto.", other)),
     };
+
+    let result = backend.compile(&build_dir, &options).map_err(err)?;
 
     let user_errors: Vec<Value> = result
         .user_errors
@@ -67,6 +100,7 @@ pub fn compile_project(
         "pdf_path": result.pdf_path.map(|p| p.to_string_lossy().to_string()),
         "user_errors": user_errors,
         "warnings": result.warnings,
-        "log_preview": &result.log[..result.log.len().min(4000)],
+        "log_preview": &result.log[..result.log.len().min(6000)],
+        "backend_used": backend.name(),
     }))
 }
