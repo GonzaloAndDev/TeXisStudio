@@ -353,6 +353,142 @@ pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Resul
     Ok(())
 }
 
+/// Genera un paquete ZIP de entrega final con el PDF, las fuentes LaTeX,
+/// el contenido (bib, figuras) y un informe de validación en texto.
+/// Devuelve la ruta al archivo ZIP creado.
+#[tauri::command]
+pub fn export_delivery(project_path: String, output_path: String) -> Result<String, String> {
+    use std::fs::File;
+    use std::io::{BufWriter, Write};
+    use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
+
+    let project_dir = PathBuf::from(&project_path);
+    let project_yaml = project_dir.join("tesis.project.yaml");
+
+    // ── Cargar modelo y validar ───────────────────────────────────
+    let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+    let validation = Validator::new()
+        .validate(&model, &project_dir)
+        .map_err(err)?;
+
+    // ── Construir el nombre del ZIP ───────────────────────────────
+    let slug = model
+        .metadata
+        .title
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' { c.to_ascii_lowercase() } else { '_' })
+        .take(40)
+        .collect::<String>()
+        .trim_matches('_')
+        .to_string();
+    let zip_name = format!("{}_entrega.zip", if slug.is_empty() { "tesis".to_string() } else { slug });
+    let zip_path = PathBuf::from(&output_path).join(&zip_name);
+
+    // ── Crear ZIP ────────────────────────────────────────────────
+    let file = File::create(&zip_path).map_err(err)?;
+    let writer = BufWriter::new(file);
+    let mut zip = ZipWriter::new(writer);
+    let opts = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    // 1. PDF compilado (si existe)
+    let pdf_path = project_dir.join("build").join("main.pdf");
+    if pdf_path.exists() {
+        zip.start_file("tesis.pdf", opts).map_err(err)?;
+        let bytes = std::fs::read(&pdf_path).map_err(err)?;
+        zip.write_all(&bytes).map_err(err)?;
+    }
+
+    // 2. Fuentes LaTeX desde build/
+    let build_dir = project_dir.join("build");
+    if build_dir.exists() {
+        add_dir_to_zip(&mut zip, &build_dir, "sources", opts, &["main.pdf", "main.aux", "main.log", "main.bbl", "main.bcf", "main.blg", "main.run.xml", "main.toc", "main.out", "main.fls", "main.fdb_latexmk"])?;
+    }
+
+    // 3. Contenido (bibliografía, figuras)
+    let content_dir = project_dir.join("content");
+    if content_dir.exists() {
+        add_dir_to_zip(&mut zip, &content_dir, "content", opts, &[])?;
+    }
+
+    // 4. Informe de validación
+    {
+        zip.start_file("informe_validacion.txt", opts).map_err(err)?;
+        let mut report = format!(
+            "INFORME DE VALIDACIÓN — TeXisStudio\n{}\n\nProyecto: {}\nTotal de issues: {}\n\n",
+            "=".repeat(60),
+            model.metadata.title,
+            validation.issues.len()
+        );
+        if validation.issues.is_empty() {
+            report.push_str("✓ Sin problemas encontrados.\n");
+        } else {
+            for issue in &validation.issues {
+                let prefix = match issue.severity {
+                    texis_core::validator::IssueSeverity::Error      => "[ERROR]  ",
+                    texis_core::validator::IssueSeverity::Warning     => "[AVISO]  ",
+                    texis_core::validator::IssueSeverity::Suggestion  => "[SUGER.] ",
+                };
+                report.push_str(&format!("{}{}\n", prefix, issue.message));
+                if let Some(sug) = &issue.suggestion {
+                    report.push_str(&format!("         → {}\n", sug));
+                }
+            }
+        }
+        zip.write_all(report.as_bytes()).map_err(err)?;
+    }
+
+    // 5. README
+    {
+        zip.start_file("README.txt", opts).map_err(err)?;
+        let readme = format!(
+            "TeXisStudio — Paquete de entrega\n{}\n\nTítulo:   {}\nAutor:    {}\nPerfil:   {}\n\nContenido del ZIP:\n  tesis.pdf            → PDF compilado\n  sources/             → Archivos fuente LaTeX\n  content/             → Bibliografía e imágenes\n  informe_validacion.txt → Reporte de validación\n\nGenerado por TeXisStudio el {}.\n",
+            "=".repeat(60),
+            model.metadata.title,
+            model.student.full_name,
+            model.profile_id,
+            chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
+        );
+        zip.write_all(readme.as_bytes()).map_err(err)?;
+    }
+
+    zip.finish().map_err(err)?;
+
+    Ok(zip_path.to_string_lossy().to_string())
+}
+
+/// Agrega recursivamente un directorio al ZIP, excluyendo archivos por nombre.
+fn add_dir_to_zip(
+    zip: &mut zip::ZipWriter<impl std::io::Write + std::io::Seek>,
+    dir: &std::path::Path,
+    prefix: &str,
+    opts: zip::write::SimpleFileOptions,
+    exclude_names: &[&str],
+) -> Result<(), String> {
+    use std::io::Write;
+    let walker = walkdir::WalkDir::new(dir).into_iter().filter_map(|e| e.ok());
+    for entry in walker {
+        let path = entry.path();
+        let rel = path.strip_prefix(dir).map_err(err)?;
+        let zip_name = format!("{}/{}", prefix, rel.to_string_lossy().replace('\\', "/"));
+
+        if path.is_dir() {
+            continue; // WalkDir creates files implicitly
+        }
+
+        let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if exclude_names.contains(&filename) {
+            continue;
+        }
+
+        zip.start_file(&zip_name, opts).map_err(err)?;
+        let bytes = std::fs::read(path).map_err(err)?;
+        zip.write_all(&bytes).map_err(err)?;
+    }
+    Ok(())
+}
+
 /// Actualiza los ajustes tipográficos del proyecto (fuente, papel, interlineado, márgenes).
 #[tauri::command]
 pub fn update_typography(

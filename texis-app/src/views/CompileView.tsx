@@ -5,7 +5,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBuild, IconCheck, IconChevronL, IconCheckCircle, IconErr,
-  IconFile, IconPlay, IconRefresh, IconWarn, IconX,
+  IconFile, IconPlay, IconRefresh, IconWarn, IconX, IconMore,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
@@ -144,6 +144,8 @@ export default function CompileView() {
   const [backend, setBackend] = useState<Backend>("auto");
   const [liveLog, setLiveLog] = useState<string[]>([]);
   const [showPdf, setShowPdf] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportedZip, setExportedZip] = useState<string | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -202,6 +204,22 @@ export default function CompileView() {
       }
     } finally {
       unlistenLog();
+    }
+  }
+
+  async function handleExportDelivery() {
+    if (!activeProjectPath) return;
+    const folder = await api.pickFolder();
+    if (!folder) return;
+    setExportBusy(true);
+    setExportedZip(null);
+    try {
+      const zipPath = await api.exportDelivery(activeProjectPath, folder);
+      setExportedZip(zipPath);
+    } catch (e) {
+      alert(`Error al exportar: ${e}`);
+    } finally {
+      setExportBusy(false);
     }
   }
 
@@ -386,6 +404,42 @@ export default function CompileView() {
                     </button>
                   )}
                 </div>
+
+                {/* Botón de entrega final */}
+                <div style={{
+                  padding: "14px 16px", borderRadius: "var(--r-md)",
+                  background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
+                  marginBottom: 12,
+                }}>
+                  <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 4 }}>
+                    Paquete de entrega
+                  </div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10, lineHeight: 1.6 }}>
+                    Genera un ZIP con el PDF, las fuentes LaTeX, el contenido y un informe de validación.
+                  </div>
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: "var(--accent)", color: "#fff", border: "none" }}
+                    disabled={exportBusy}
+                    onClick={handleExportDelivery}
+                  >
+                    <IconMore size={12} />
+                    {exportBusy ? "Generando…" : "Exportar entrega (.zip)"}
+                  </button>
+                  {exportedZip && (
+                    <div style={{
+                      marginTop: 10, padding: "8px 12px",
+                      background: "var(--build-ok-tint)", borderRadius: "var(--r-sm)",
+                      fontSize: "var(--fs-xs)", color: "var(--build-ok)",
+                      fontFamily: "var(--font-mono)", wordBreak: "break-all",
+                      display: "flex", alignItems: "flex-start", gap: 6,
+                    }}>
+                      <IconCheckCircle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                      {exportedZip}
+                    </div>
+                  )}
+                </div>
+
                 {result.warnings.map((w, i) => (
                   <ErrorCard key={i} error={{ message: w }} sev="warn" />
                 ))}

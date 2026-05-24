@@ -159,6 +159,9 @@ export const api = {
   updateSectionMeta: (projectPath: string, sectionId: string, status: string, notes?: string): Promise<void> =>
     call("update_section_meta", { projectPath, sectionId, status, notes }),
 
+  exportDelivery: (projectPath: string, outputPath: string): Promise<string> =>
+    call("export_delivery", { projectPath, outputPath }),
+
   updateTypography: (
     projectPath: string,
     fontSize?: string,
