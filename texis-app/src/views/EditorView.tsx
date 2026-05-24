@@ -846,7 +846,7 @@ export default function EditorView() {
       case "equation":    block = { type, id, latex_content: "", numbered: false }; break;
       case "raw_latex":   block = { type, id, content: "", user_confirmed: true }; break;
       case "figure":      block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
-      case "table":       block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]], table_style: "booktabs" }; break;
+      case "table":       block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]] }; break;
       case "citation":    block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
       default: return;
     }

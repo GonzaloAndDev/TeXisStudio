@@ -145,7 +145,6 @@ const DEMO_PROJECT: ProjectModel = {
       children: [],
     },
   ],
-  file_states: {},
 };
 
 // Carga el proyecto demo al navegar a /demo
@@ -159,17 +158,6 @@ function DemoLoader() {
   return null;
 }
 
-function StubView({ title }: { title: string }) {
-  return (
-    <div style={{
-      flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-      background: "var(--bg-app)", color: "var(--fg-muted)", flexDirection: "column", gap: 8,
-    }}>
-      <span style={{ fontSize: "var(--fs-2xl)", fontFamily: "var(--font-display)" }}>{title}</span>
-      <span style={{ fontSize: "var(--fs-sm)" }}>Disponible en el próximo release</span>
-    </div>
-  );
-}
 
 export default function App() {
   return (

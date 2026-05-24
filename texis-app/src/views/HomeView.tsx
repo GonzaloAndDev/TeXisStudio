@@ -8,7 +8,7 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { LatexInfo, RecentProject } from "../types";
+import type { RecentProject } from "../types";
 
 function formatUpdatedAt(raw: string): string {
   const ts = /^\d+$/.test(raw) ? parseInt(raw, 10) * 1000 : Date.parse(raw);
