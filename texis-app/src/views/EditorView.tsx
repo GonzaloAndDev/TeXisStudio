@@ -388,12 +388,21 @@ function CitationEditor({
 
 function BlockItem({
   block, isEditing, onStartEdit, onUpdate, onDelete,
+  dragging, dragOver,
+  onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
 }: {
   block: ContentBlock;
   isEditing: boolean;
   onStartEdit: () => void;
   onUpdate: (updates: Partial<ContentBlock>) => void;
   onDelete: () => void;
+  dragging?: boolean;
+  dragOver?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: () => void;
+  onDrop?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -570,19 +579,39 @@ function BlockItem({
 
   return (
     <div
+      draggable
       style={{
         position: "relative", margin: "4px -32px", padding: "6px 32px 6px 44px",
         borderRadius: 6,
         background: isEditing ? "var(--accent-tint)" : hovered ? "var(--bg-hover)" : "transparent",
-        border: isEditing ? "1px solid var(--accent-soft)" : "1px solid transparent",
+        border: dragOver
+          ? "1px solid var(--accent)"
+          : isEditing
+          ? "1px solid var(--accent-soft)"
+          : "1px solid transparent",
+        opacity: dragging ? 0.35 : 1,
+        boxShadow: dragOver ? "0 -2px 0 var(--accent)" : "none",
         cursor: isEditing ? "default" : "text",
+        transition: "opacity 0.12s",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => { if (!isEditing) onStartEdit(); }}
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(); }}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver?.(e); }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => { e.preventDefault(); onDrop?.(); }}
     >
       {/* Drag handle */}
-      <div style={{ position: "absolute", left: 8, top: 12, color: "var(--fg-faint)", opacity: hovered ? 0.7 : 0 }}>
+      <div
+        style={{
+          position: "absolute", left: 8, top: 12,
+          color: "var(--fg-faint)", opacity: hovered ? 0.8 : 0,
+          cursor: "grab",
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <IconDrag size={12} />
       </div>
 
@@ -903,6 +932,10 @@ export default function EditorView() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Drag & drop state
+  const [dragId, setDragId]   = useState<string | null>(null);
+  const [dropId, setDropId]   = useState<string | null>(null);
+
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {
     const section = activeProject?.sections.find((s) => s.id === activeSectionId);
@@ -970,6 +1003,23 @@ export default function EditorView() {
     });
     setEditingId(null);
   }, [scheduleAutoSave]);
+
+  // Reordenar bloques al soltar (dragId → antes de dropId)
+  const handleDrop = useCallback((targetId: string) => {
+    if (!dragId || dragId === targetId) { setDragId(null); setDropId(null); return; }
+    setLocalBlocks((prev) => {
+      const src = prev.find((b) => b.id === dragId);
+      if (!src) return prev;
+      const without = prev.filter((b) => b.id !== dragId);
+      const targetIdx = without.findIndex((b) => b.id === targetId);
+      if (targetIdx === -1) return prev;
+      const next = [...without.slice(0, targetIdx), src, ...without.slice(targetIdx)];
+      scheduleAutoSave(next);
+      return next;
+    });
+    setDragId(null);
+    setDropId(null);
+  }, [dragId, scheduleAutoSave]);
 
   // Guardar metadatos del proyecto (título, autor, institución)
   const saveMetadata = useCallback(async (updates: Record<string, unknown>) => {
@@ -1140,6 +1190,13 @@ export default function EditorView() {
                         onStartEdit={() => setEditingId(block.id)}
                         onUpdate={(updates) => updateBlock(block.id, updates as Record<string, unknown>)}
                         onDelete={() => deleteBlock(block.id)}
+                        dragging={dragId === block.id}
+                        dragOver={dropId === block.id}
+                        onDragStart={() => { setDragId(block.id); setEditingId(null); }}
+                        onDragEnd={() => { setDragId(null); setDropId(null); }}
+                        onDragOver={() => { if (dragId && dragId !== block.id) setDropId(block.id); }}
+                        onDragLeave={() => setDropId((prev) => prev === block.id ? null : prev)}
+                        onDrop={() => handleDrop(block.id)}
                       />
                     ))}
                     {/* Zona de click al final para agregar párrafo */}
