@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBuild, IconCheck, IconChevronL, IconCheckCircle, IconErr,
-  IconFile, IconPlay, IconRefresh, IconWarn,
+  IconFile, IconPlay, IconRefresh, IconWarn, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
@@ -24,7 +26,7 @@ function logColor(line: string): string {
   if (line.startsWith("!") || line.toLowerCase().includes("error"))   return LOG_COLORS.err;
   if (line.toLowerCase().includes("warning"))                          return LOG_COLORS.warn;
   if (line.startsWith("Output written") || line.includes("pdf"))      return LOG_COLORS.ok;
-  if (line.startsWith(">") || line.startsWith("latexmk") || line.startsWith("Running") || line.startsWith("tectonic")) return LOG_COLORS.cmd;
+  if (line.startsWith(">") || line.startsWith("latexmk") || line.startsWith("Running") || line.startsWith("→") || line.startsWith("tectonic")) return LOG_COLORS.cmd;
   return LOG_COLORS.default;
 }
 
@@ -64,7 +66,6 @@ function ErrorCard({ error, sev }: { error: UserError; sev: "err" | "warn" }) {
   );
 }
 
-// ── Chip de estado para un backend ────────────────────────────────
 function BackendChip({
   label, available, version, selected, onClick,
 }: {
@@ -98,24 +99,69 @@ function BackendChip({
   );
 }
 
+// ── Visor de PDF embebido ─────────────────────────────────────────
+
+function PdfViewer({ pdfPath }: { pdfPath: string }) {
+  const [assetUrl, setAssetUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // convertFileSrc convierte una ruta nativa a una URL asset:// que el webview
+    // puede cargar aunque el archivo esté fuera del recurso bundle.
+    try {
+      setAssetUrl(convertFileSrc(pdfPath));
+    } catch {
+      setAssetUrl(null);
+    }
+  }, [pdfPath]);
+
+  if (!assetUrl) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
+        No se pudo cargar el visor de PDF.
+      </div>
+    );
+  }
+
+  return (
+    <iframe
+      src={assetUrl}
+      title="Vista previa del PDF"
+      style={{ flex: 1, border: "none", width: "100%", height: "100%", background: "#404040" }}
+    />
+  );
+}
+
+// ── Vista principal ───────────────────────────────────────────────
+
 export default function CompileView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
 
-  const [state, setState] = useState<CompileState>("idle");
+  const [compileState, setCompileState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
   const [draft, setDraft] = useState(false);
   const [backend, setBackend] = useState<Backend>("auto");
+  const [liveLog, setLiveLog] = useState<string[]>([]);
+  const [showPdf, setShowPdf] = useState(false);
+
+  const logRef = useRef<HTMLDivElement>(null);
 
   const projectName = activeProject?.metadata.title ?? "Proyecto";
 
-  // Detectar el backend preferido al montar
+  // Detectar backend preferido al montar
   useEffect(() => {
     if (latexInfo?.preferred_backend) {
       setBackend(latexInfo.preferred_backend as Backend);
     }
   }, [latexInfo]);
+
+  // Auto-scroll del log
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [liveLog]);
 
   const latexmkOk  = latexInfo?.latexmk_usable ?? null;
   const tectonicOk = latexInfo?.has_tectonic ?? null;
@@ -123,22 +169,57 @@ export default function CompileView() {
 
   async function handleCompile() {
     if (!activeProjectPath) return;
-    setState("compiling");
+    setCompileState("compiling");
     setResult(null);
+    setLiveLog([]);
+    setShowPdf(false);
+
+    // Escuchar eventos de log en tiempo real
+    const unlistenLog = await listen<string>("compile://log", (event) => {
+      setLiveLog((prev) => [...prev, event.payload]);
+    });
+
     try {
       const res = await api.compileProject(activeProjectPath, backend, draft);
       setResult(res);
-      setState(res.success ? "success" : "error");
+      setCompileState(res.success ? "success" : "error");
+      // Abrir automáticamente el PDF si la compilación fue exitosa
+      if (res.success && res.pdf_path) {
+        setShowPdf(true);
+      }
     } catch (e) {
-      setResult({
-        success: false,
-        user_errors: [{ message: String(e), suggestion: "Verifica que el compilador LaTeX esté instalado y en el PATH." }],
-        warnings: [],
-        log_preview: String(e),
-      });
-      setState("error");
+      const errMsg = String(e);
+      if (errMsg.includes("cancelad")) {
+        setCompileState("idle");
+      } else {
+        setResult({
+          success: false,
+          user_errors: [{ message: errMsg, suggestion: "Verifica que el compilador LaTeX esté instalado y en el PATH." }],
+          warnings: [],
+          log_preview: errMsg,
+        });
+        setCompileState("error");
+      }
+    } finally {
+      unlistenLog();
     }
   }
+
+  async function handleCancel() {
+    try {
+      await api.cancelCompile();
+    } catch {
+      // ignorar
+    }
+  }
+
+  // El log que se muestra: mientras compila = liveLog; terminado = log_preview del result
+  const displayLog =
+    compileState === "compiling"
+      ? liveLog
+      : result?.log_preview
+        ? result.log_preview.split("\n")
+        : liveLog;
 
   return (
     <>
@@ -150,7 +231,6 @@ export default function CompileView() {
           </>
         }
         center={
-          /* Selector de backend */
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Motor:</span>
             <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
@@ -172,22 +252,32 @@ export default function CompileView() {
               />
               Borrador
             </label>
-            <button
-              className={`btn ${state === "compiling" ? "" : "btn-accent"}`}
-              onClick={handleCompile}
-              disabled={state === "compiling" || !!nothingInstalled}
-              title={nothingInstalled ? "Instala LaTeX primero" : undefined}
-            >
-              {state === "compiling"
-                ? <><IconRefresh size={13} /> Compilando…</>
-                : <><IconPlay size={13} /> Compilar</>
-              }
-            </button>
+            {compileState === "compiling" ? (
+              <button className="btn btn-ghost btn-sm" onClick={handleCancel} style={{ color: "var(--build-err)" }}>
+                <IconX size={13} /> Cancelar
+              </button>
+            ) : (
+              <button
+                className="btn btn-accent"
+                onClick={handleCompile}
+                disabled={!!nothingInstalled}
+                title={nothingInstalled ? "Instala LaTeX primero" : undefined}
+              >
+                <IconPlay size={13} /> Compilar
+              </button>
+            )}
           </>
         }
       />
 
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 0, background: "var(--bg-app)" }}>
+      {/* ── Layout principal: 3 columnas cuando hay PDF ─────────── */}
+      <div style={{
+        flex: 1,
+        display: "grid",
+        gridTemplateColumns: showPdf ? "280px 1fr 1fr" : "1fr 1fr",
+        minHeight: 0,
+        background: "var(--bg-app)",
+      }}>
 
         {/* ── Panel izquierdo: estado + errores ──────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, borderRight: "1px solid var(--border-subtle)" }}>
@@ -196,14 +286,14 @@ export default function CompileView() {
             display: "flex", alignItems: "center", gap: 8,
             background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
           }}>
-            {state === "success"   && <IconCheckCircle size={14} style={{ color: "var(--build-ok)" }} />}
-            {state === "error"     && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
-            {state === "idle"      && <IconBuild size={14} />}
-            {state === "compiling" && <IconRefresh size={14} />}
-            {state === "idle"      && "Listo para compilar"}
-            {state === "compiling" && "Compilando…"}
-            {state === "success"   && "Compilación exitosa"}
-            {state === "error"     && `${result?.user_errors.length ?? 0} error(es)`}
+            {compileState === "success"   && <IconCheckCircle size={14} style={{ color: "var(--build-ok)" }} />}
+            {compileState === "error"     && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
+            {compileState === "idle"      && <IconBuild size={14} />}
+            {compileState === "compiling" && <IconRefresh size={14} />}
+            {compileState === "idle"      && "Listo para compilar"}
+            {compileState === "compiling" && "Compilando…"}
+            {compileState === "success"   && "Compilación exitosa"}
+            {compileState === "error"     && `${result?.user_errors.length ?? 0} error(es)`}
             {result?.backend_used && (
               <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", fontWeight: 400 }}>
                 via {result.backend_used}
@@ -213,7 +303,7 @@ export default function CompileView() {
 
           <div style={{ flex: 1, overflow: "auto" }} className="scroll">
             {/* LaTeX no instalado */}
-            {state === "idle" && nothingInstalled && (
+            {compileState === "idle" && nothingInstalled && (
               <div style={{ padding: "20px 16px" }}>
                 <div style={{
                   padding: "14px 16px", borderRadius: "var(--r-md)",
@@ -245,7 +335,7 @@ export default function CompileView() {
             )}
 
             {/* Estado idle normal */}
-            {state === "idle" && !nothingInstalled && (
+            {compileState === "idle" && !nothingInstalled && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ margin: 0 }}>Presiona <strong>Compilar</strong> para generar el PDF.</p>
@@ -256,14 +346,21 @@ export default function CompileView() {
               </div>
             )}
 
-            {state === "compiling" && (
+            {compileState === "compiling" && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-muted)" }}>
                 <IconRefresh size={24} style={{ opacity: 0.4, marginBottom: 12 }} />
-                <p>Generando LaTeX y compilando…</p>
+                <p>Compilando — {liveLog.length} líneas recibidas…</p>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleCancel}
+                  style={{ marginTop: 12, color: "var(--build-err)" }}
+                >
+                  <IconX size={11} /> Cancelar compilación
+                </button>
               </div>
             )}
 
-            {state === "success" && result && (
+            {compileState === "success" && result && (
               <div style={{ padding: "20px 16px" }}>
                 <div style={{
                   background: "var(--build-ok-tint)", color: "var(--build-ok)",
@@ -279,6 +376,15 @@ export default function CompileView() {
                       </div>
                     )}
                   </div>
+                  {result.pdf_path && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ marginLeft: "auto" }}
+                      onClick={() => setShowPdf((v) => !v)}
+                    >
+                      {showPdf ? "Ocultar PDF" : "Ver PDF"}
+                    </button>
+                  )}
                 </div>
                 {result.warnings.map((w, i) => (
                   <ErrorCard key={i} error={{ message: w }} sev="warn" />
@@ -286,22 +392,29 @@ export default function CompileView() {
               </div>
             )}
 
-            {state === "error" && result && result.user_errors.map((e, i) => (
+            {compileState === "error" && result && result.user_errors.map((e, i) => (
               <ErrorCard key={i} error={e} sev="err" />
             ))}
           </div>
         </div>
 
-        {/* ── Panel derecho: log crudo ──────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        {/* ── Panel central: log de compilación ────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, borderRight: showPdf ? "1px solid var(--border-subtle)" : undefined }}>
           <div style={{
             height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
             display: "flex", alignItems: "center", gap: 8,
             background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
           }}>
-            <IconFile size={14} /> Log de compilación
+            <IconFile size={14} />
+            Log de compilación
+            {compileState === "compiling" && (
+              <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--fg-faint)", fontWeight: 400 }}>
+                {liveLog.length} líneas
+              </span>
+            )}
           </div>
           <div
+            ref={logRef}
             style={{
               flex: 1, overflow: "auto",
               fontFamily: "var(--font-mono)", fontSize: 11,
@@ -310,29 +423,51 @@ export default function CompileView() {
             }}
             className="scroll"
           >
-            {result?.log_preview
-              ? result.log_preview.split("\n").map((line, i) => (
+            {displayLog.length > 0
+              ? displayLog.map((line, i) => (
                   <div key={i} style={{ color: logColor(line), whiteSpace: "pre" }}>
                     {line || " "}
                   </div>
                 ))
               : (
                 <div style={{ color: "#9C9685" }}>
-                  {state === "idle" ? "— esperando compilación —" : state === "compiling" ? "compilando…" : "sin log"}
+                  {compileState === "idle" ? "— esperando compilación —" : compileState === "compiling" ? "iniciando…" : "sin log"}
                 </div>
               )
             }
           </div>
         </div>
+
+        {/* ── Panel derecho: visor PDF (solo cuando showPdf) ────── */}
+        {showPdf && result?.pdf_path && (
+          <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+            <div style={{
+              height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
+              display: "flex", alignItems: "center", gap: 8,
+              background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
+            }}>
+              <IconFile size={14} />
+              Vista previa PDF
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ marginLeft: "auto", fontSize: 10 }}
+                onClick={() => setShowPdf(false)}
+              >
+                <IconX size={11} /> Cerrar
+              </button>
+            </div>
+            <PdfViewer pdfPath={result.pdf_path} />
+          </div>
+        )}
       </div>
 
       <TxStatusbar items={[
-        state === "success"
+        compileState === "success"
           ? { text: "PDF listo", dot: "var(--build-ok)" }
-          : state === "error"
+          : compileState === "error"
           ? { text: "Error de compilación", dot: "var(--build-err)" }
-          : state === "compiling"
-          ? { text: "Compilando…", dot: "var(--build-warn)" }
+          : compileState === "compiling"
+          ? { text: `Compilando… (${liveLog.length} líneas)`, dot: "var(--build-warn)" }
           : { text: "Listo", dot: "var(--fg-faint)" },
         { icon: <IconFile size={11} />, text: projectName },
         {

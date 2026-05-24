@@ -281,6 +281,82 @@ pub fn delete_profile(
     Ok(())
 }
 
+/// Crea un perfil nuevo desde cero y lo guarda en el directorio de perfiles.
+#[tauri::command]
+pub fn create_profile(
+    app: tauri::AppHandle,
+    profile_id: String,
+    payload: ProfileUpdatePayload,
+) -> Result<Value, String> {
+    use texis_core::profile::model::{Profile, ProfileDocumentClass, ProfileSectionDef};
+
+    // Validar profile_id (mismas reglas que delete_profile)
+    let id_invalid = profile_id.is_empty()
+        || profile_id.len() > 100
+        || profile_id.contains("..")
+        || profile_id.contains('/')
+        || profile_id.contains('\\')
+        || !profile_id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false)
+        || !profile_id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
+    if id_invalid {
+        return Err(format!("ID de perfil inválido: '{}'.", profile_id));
+    }
+
+    let profiles_root = profiles_dir(&app);
+    let profile_dir = profiles_root.join(&profile_id);
+
+    if profile_dir.exists() {
+        return Err(format!(
+            "El perfil '{}' ya existe. Usa 'Editar perfil' para modificarlo o elimínalo primero.",
+            profile_id
+        ));
+    }
+
+    std::fs::create_dir_all(&profile_dir).map_err(err)?;
+
+    let profile = Profile {
+        schema_version: texis_core::schema::versions::CURRENT_SCHEMA_VERSION.to_string(),
+        id: profile_id.clone(),
+        name: payload.name,
+        description: payload.description,
+        author: payload.author,
+        version: Some(payload.version.unwrap_or_else(|| "0.1.0".to_string())),
+        license: payload.license,
+        tags: payload.tags,
+        document_class: ProfileDocumentClass {
+            name: payload.document_class,
+            options: vec![
+                "12pt".to_string(),
+                "letterpaper".to_string(),
+                "oneside".to_string(),
+            ],
+        },
+        latex_engine: payload.latex_engine,
+        compiler: "latexmk".to_string(),
+        bibliography_backend: payload.bibliography_backend,
+        bibliography_style: payload.bibliography_style,
+        packages: vec![],
+        sections: payload
+            .sections
+            .iter()
+            .map(|s| ProfileSectionDef {
+                id: s.id.clone(),
+                element_id: s.element_id.clone(),
+                placement: s.placement.clone(),
+                required: s.required,
+                title: s.title.clone(),
+                label: s.label.clone(),
+            })
+            .collect(),
+    };
+
+    let yaml_path = profile_dir.join("profile.yaml");
+    let loader = ProfileLoader;
+    loader.save_to_file(&profile, &yaml_path).map_err(err)?;
+
+    Ok(profile_to_json(&profile))
+}
+
 // ── Helpers ──────────────────────────────────────────────────────
 
 fn profile_to_json(p: &texis_core::profile::Profile) -> Value {

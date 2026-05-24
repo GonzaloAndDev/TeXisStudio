@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -120,6 +122,36 @@ function HeadingEditor({
   );
 }
 
+/** Renderiza LaTeX con KaTeX. Muestra un mensaje de error si la sintaxis es inválida. */
+function KaTeXPreview({ latex, displayMode = true }: { latex: string; displayMode?: boolean }) {
+  if (!latex.trim()) return null;
+  try {
+    const html = katex.renderToString(latex, {
+      displayMode,
+      throwOnError: true,
+      output: "html",
+    });
+    return (
+      <div
+        // biome-ignore lint: KaTeX genera HTML de confianza propio
+        dangerouslySetInnerHTML={{ __html: html }}
+        style={{ textAlign: "center", padding: "8px 0", color: "var(--fg-strong)", overflowX: "auto" }}
+      />
+    );
+  } catch {
+    // KaTeX parse error — mostrar la expresión cruda en rojo
+    return (
+      <div style={{
+        fontFamily: "var(--font-mono)", fontSize: 12, color: "#E07070",
+        padding: "6px 10px", background: "rgba(224,80,80,0.08)",
+        borderRadius: "var(--r-sm)", textAlign: "center",
+      }}>
+        {latex}
+      </div>
+    );
+  }
+}
+
 function EquationEditor({
   latex_content, numbered, onChange, onNumberedChange, onBlur,
 }: {
@@ -152,6 +184,8 @@ function EquationEditor({
         }}
         placeholder="\frac{d}{dx} f(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}"
       />
+      {/* Preview en tiempo real */}
+      <KaTeXPreview latex={latex_content} displayMode />
     </div>
   );
 }
@@ -532,9 +566,13 @@ function BlockItem({
         );
       }
       case "equation":
-        return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg-muted)", padding: "10px 16px", background: "var(--bg-app)", borderRadius: "var(--r-sm)", textAlign: "center" }}>
-            {block.latex_content || "Ecuación vacía — clic para editar"}
+        return block.latex_content ? (
+          <div style={{ padding: "8px 16px", background: "var(--bg-app)", borderRadius: "var(--r-sm)" }}>
+            <KaTeXPreview latex={block.latex_content} displayMode />
+          </div>
+        ) : (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg-faint)", padding: "10px 16px", textAlign: "center" }}>
+            Ecuación vacía — clic para editar
           </div>
         );
       case "list":

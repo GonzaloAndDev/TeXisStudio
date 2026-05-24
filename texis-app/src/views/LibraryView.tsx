@@ -1246,6 +1246,7 @@ export default function LibraryView() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn btn-sm" onClick={handleImport} disabled={importing} title="Importar perfil desde directorio"><IconUpload size={13} /> {importing ? "Importando…" : "Importar"}</button>
+                  <button className="btn btn-sm" onClick={() => navigate("/new-profile")} title="Crear un perfil propio"><IconPlus size={13} /> Crear perfil</button>
                   <button className="btn btn-accent btn-sm" onClick={() => navigate("/new")}><IconPlus size={13} /> Nuevo proyecto</button>
                 </div>
               </div>

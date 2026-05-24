@@ -4,6 +4,7 @@ mod commands;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(commands::compiler::CompileState::new())
         .invoke_handler(tauri::generate_handler![
             commands::project::create_project,
             commands::project::get_project,
@@ -13,6 +14,8 @@ pub fn run() {
             commands::project::validate_project,
             commands::project::list_references,
             commands::compiler::compile_project,
+            commands::compiler::cancel_compile,
+            commands::system::create_profile,
             commands::system::get_profiles,
             commands::system::get_profile_detail,
             commands::system::import_profile,

@@ -113,6 +113,12 @@ export const api = {
   ): Promise<CompilationResult> =>
     call("compile_project", { projectPath, backendName, draft }),
 
+  cancelCompile: (): Promise<void> =>
+    call("cancel_compile"),
+
+  createProfile: (profileId: string, payload: ProfileUpdatePayload): Promise<ProfileInfo> =>
+    call("create_profile", { profileId, payload }),
+
   getProfiles: (): Promise<ProfileInfo[]> =>
     call("get_profiles"),
 

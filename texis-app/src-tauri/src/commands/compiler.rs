@@ -1,11 +1,12 @@
 use serde_json::Value;
-use std::path::PathBuf;
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tauri::{Emitter, Manager};
 use texis_core::{
-    compiler::{
-        latexmk::LatexmkBackend,
-        tectonic::TectonicBackend,
-        CompilationBackend, CompilationOptions,
-    },
+    compiler::error_translator,
     project::loader::ProjectLoader,
     LaTeXGenerator,
 };
@@ -14,77 +15,212 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// Compila el proyecto y devuelve resultado con errores traducidos.
-/// backend_name: "latexmk" | "tectonic" | "auto" (elige el mejor disponible)
+// ── Estado global de compilación ──────────────────────────────────
+
+/// Compartido a través de Tauri managed state para cancelación.
+pub struct CompileState {
+    pub cancel_flag: Arc<AtomicBool>,
+}
+
+impl CompileState {
+    pub fn new() -> Self {
+        Self {
+            cancel_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+
+impl Default for CompileState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ── Comandos Tauri ────────────────────────────────────────────────
+
+/// Compila el proyecto con streaming de log vía eventos Tauri.
+///
+/// Emite:
+///   - `compile://log`  { line: String }  — una línea de log cada vez
+///   - `compile://done` { success, pdf_path, user_errors, warnings, log_preview, backend_used }
+///
+/// La función también devuelve el resultado final para que el frontend
+/// pueda consumirlo directamente via `invoke` si lo prefiere.
+///
+/// `backend_name`: "latexmk" | "tectonic" | "auto"
 #[tauri::command]
-pub fn compile_project(
+pub async fn compile_project(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, CompileState>,
     project_path: String,
     backend_name: String,
     draft: bool,
 ) -> Result<Value, String> {
+    // Reiniciar bandera de cancelación
+    let cancel = state.cancel_flag.clone();
+    cancel.store(false, Ordering::SeqCst);
+
     let path = PathBuf::from(&project_path);
     let yaml_path = path.join("tesis.project.yaml");
-
-    let loader = ProjectLoader;
-    let model = loader.load_from_file(&yaml_path).map_err(err)?;
-
     let build_dir = path.join("build");
 
-    // Regenerar LaTeX antes de compilar
-    // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
+    // ── Paso 1: generar LaTeX (síncrono, rápido) ──────────────────
+    let _ = app.emit("compile://log", "→ Generando archivos LaTeX…");
+    let loader = ProjectLoader;
+    let model = loader.load_from_file(&yaml_path).map_err(err)?;
     let latex_gen = LaTeXGenerator::new().map_err(err)?;
     latex_gen.generate(&model, &build_dir).map_err(err)?;
 
-    let options = CompilationOptions {
-        draft,
-        clean_temp: false,
-        max_runs: None,
-    };
+    // ── Paso 2: seleccionar backend ───────────────────────────────
+    let resolved_backend = resolve_backend(&backend_name)?;
+    let _ = app.emit("compile://log", format!("→ Iniciando {resolved_backend}…"));
 
-    // Selección de backend
-    let backend: Box<dyn CompilationBackend> = match backend_name.as_str() {
+    // ── Paso 3: compilar con streaming y timeout de 5 min ─────────
+    let app2 = app.clone();
+    let build_dir2 = build_dir.clone();
+    let backend2 = resolved_backend.to_string();
+
+    let task = tokio::task::spawn_blocking(move || {
+        run_compiler_streaming(&app2, &build_dir2, &backend2, draft, cancel)
+    });
+
+    let result = tokio::time::timeout(std::time::Duration::from_secs(300), task)
+        .await
+        .map_err(|_| {
+            "Compilación interrumpida: el tiempo límite de 5 minutos fue superado.".to_string()
+        })?
+        .map_err(|e| format!("Error interno: {e}"))?;
+
+    result
+}
+
+/// Cancela la compilación en curso.
+#[tauri::command]
+pub fn cancel_compile(state: tauri::State<'_, CompileState>) {
+    state.cancel_flag.store(true, Ordering::SeqCst);
+}
+
+// ── Lógica interna ────────────────────────────────────────────────
+
+/// Elige el backend disponible: devuelve el nombre del binario a usar.
+fn resolve_backend(name: &str) -> Result<&'static str, String> {
+    use std::process::Command;
+    let latexmk_ok  = Command::new("latexmk").arg("--version").output().is_ok();
+    let tectonic_ok = Command::new("tectonic").arg("--version").output().is_ok();
+
+    match name {
         "latexmk" => {
-            let b = LatexmkBackend::new();
-            if !b.is_available() {
-                return Err(
-                    "latexmk no está instalado. Instala TeX Live, MiKTeX, o usa Tectonic."
-                        .to_string(),
-                );
-            }
-            Box::new(b)
+            if latexmk_ok { Ok("latexmk") }
+            else { Err("latexmk no está instalado. Instala TeX Live, MiKTeX, o usa Tectonic.".to_string()) }
         }
         "tectonic" => {
-            let b = TectonicBackend::new();
-            if !b.is_available() {
-                return Err(
-                    "Tectonic no está instalado. Visita https://tectonic-typesetting.github.io para instalarlo.".to_string()
-                );
-            }
-            Box::new(b)
+            if tectonic_ok { Ok("tectonic") }
+            else { Err("Tectonic no está instalado. Visita https://tectonic-typesetting.github.io".to_string()) }
         }
         "auto" => {
-            // Preferir latexmk si está disponible, sino tectonic
-            let lmk = LatexmkBackend::new();
-            if lmk.is_available() {
-                Box::new(lmk)
-            } else {
-                let tec = TectonicBackend::new();
-                if tec.is_available() {
-                    Box::new(tec)
-                } else {
-                    return Err(
-                        "No se encontró ningún compilador LaTeX. Instala latexmk (TeX Live/MiKTeX) o Tectonic.".to_string()
-                    );
-                }
+            if latexmk_ok  { Ok("latexmk")  }
+            else if tectonic_ok { Ok("tectonic") }
+            else { Err("No se encontró ningún compilador LaTeX. Instala latexmk (TeX Live/MiKTeX) o Tectonic.".to_string()) }
+        }
+        other => Err(format!("Backend '{other}' no reconocido. Usa: latexmk, tectonic o auto.")),
+    }
+}
+
+/// Ejecuta el compilador en modo streaming.
+/// Se llama desde `spawn_blocking`; emite eventos Tauri en cada línea.
+fn run_compiler_streaming(
+    app: &tauri::AppHandle,
+    build_dir: &Path,
+    backend: &str,
+    draft: bool,
+    cancel: Arc<AtomicBool>,
+) -> Result<Value, String> {
+    // Construir el comando
+    let mut cmd = std::process::Command::new(backend);
+    cmd.current_dir(build_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    match backend {
+        "latexmk" => {
+            cmd.arg("-xelatex")
+                .arg("-interaction=nonstopmode")
+                .arg("-file-line-error");
+            if draft {
+                cmd.arg("-draftmode");
+            }
+            cmd.arg("main.tex");
+        }
+        "tectonic" => {
+            if draft {
+                cmd.arg("--only-cached");
+            }
+            cmd.arg("main.tex");
+        }
+        _ => return Err(format!("Backend '{backend}' no soportado.")),
+    }
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("No se pudo iniciar '{backend}': {e}"))?;
+
+    let stdout = child.stdout.take().expect("stdout piped");
+    let stderr = child.stderr.take().expect("stderr piped");
+
+    // Leer stderr en un hilo separado para no bloquear stdout
+    let app_err = app.clone();
+    let cancel_err = cancel.clone();
+    let stderr_thread = std::thread::spawn(move || {
+        let mut lines = Vec::new();
+        for line in BufReader::new(stderr).lines() {
+            if cancel_err.load(Ordering::Relaxed) {
+                break;
+            }
+            if let Ok(l) = line {
+                let _ = app_err.emit("compile://log", &l);
+                lines.push(l);
             }
         }
-        other => return Err(format!("Backend '{}' no reconocido. Usa: latexmk, tectonic o auto.", other)),
+        lines.join("\n")
+    });
+
+    // Leer stdout línea a línea y emitir eventos
+    let mut log = String::new();
+    for line in BufReader::new(stdout).lines() {
+        if cancel.load(Ordering::Relaxed) {
+            let _ = child.kill();
+            return Err("Compilación cancelada por el usuario.".to_string());
+        }
+        if let Ok(l) = line {
+            let _ = app.emit("compile://log", &l);
+            log.push_str(&l);
+            log.push('\n');
+        }
+    }
+
+    // Recoger stderr
+    let stderr_output = stderr_thread.join().unwrap_or_default();
+    if !stderr_output.is_empty() {
+        log.push_str(&stderr_output);
+    }
+
+    let status = child.wait().map_err(err)?;
+    let success = status.success();
+
+    let user_errors = error_translator::translate_log(&log);
+
+    let pdf_path: Option<String> = if success {
+        let pdf = build_dir.join("main.pdf");
+        if pdf.exists() {
+            Some(pdf.to_string_lossy().to_string())
+        } else {
+            None
+        }
+    } else {
+        None
     };
 
-    let result = backend.compile(&build_dir, &options).map_err(err)?;
-
-    let user_errors: Vec<Value> = result
-        .user_errors
+    let user_errors_json: Vec<Value> = user_errors
         .iter()
         .map(|e| {
             serde_json::json!({
@@ -95,12 +231,17 @@ pub fn compile_project(
         })
         .collect();
 
-    Ok(serde_json::json!({
-        "success": result.success,
-        "pdf_path": result.pdf_path.map(|p| p.to_string_lossy().to_string()),
-        "user_errors": user_errors,
-        "warnings": result.warnings,
-        "log_preview": &result.log[..result.log.len().min(6000)],
-        "backend_used": backend.name(),
-    }))
+    let payload = serde_json::json!({
+        "success": success,
+        "pdf_path": pdf_path,
+        "user_errors": user_errors_json,
+        "warnings": Vec::<String>::new(),
+        "log_preview": &log[..log.len().min(8000)],
+        "backend_used": backend,
+    });
+
+    // Emitir evento de finalización para listeners no-await
+    let _ = app.emit("compile://done", &payload);
+
+    Ok(payload)
 }

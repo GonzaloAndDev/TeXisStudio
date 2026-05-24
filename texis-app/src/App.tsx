@@ -5,6 +5,7 @@ import CompileView from "./views/CompileView";
 import EditorView from "./views/EditorView";
 import HomeView from "./views/HomeView";
 import LibraryView from "./views/LibraryView";
+import ProfileWizardView from "./views/ProfileWizardView";
 import SetupLatexView from "./views/SetupLatexView";
 import WizardView from "./views/WizardView";
 import { useProjectStore } from "./stores/project";
@@ -171,6 +172,8 @@ export default function App() {
           <Route path="/project/:id" element={<EditorView />} />
           <Route path="/project/:id/compile" element={<CompileView />} />
           <Route path="/library" element={<LibraryView />} />
+          <Route path="/new-profile" element={<ProfileWizardView />} />
+          <Route path="/new-profile/:id" element={<ProfileWizardView />} />
           <Route path="/about" element={<AboutView />} />
           <Route path="/setup-latex" element={<SetupLatexView />} />
           <Route path="*" element={<HomeView />} />

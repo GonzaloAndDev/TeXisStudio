@@ -1,6 +1,8 @@
 use serde_json::Value;
 use std::path::PathBuf;
+use tauri::Manager;
 use texis_core::{
+    profile::{model::Profile, ProfileRegistry},
     project::{loader::ProjectLoader, model::ProjectModel, saver::ProjectSaver},
     validator::Validator,
     LaTeXGenerator,
@@ -10,9 +12,10 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// Crea un nuevo proyecto con perfil dado en la ruta indicada.
+/// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
 #[tauri::command]
 pub fn create_project(
+    app: tauri::AppHandle,
     name: String,
     profile_id: String,
     output_path: String,
@@ -30,12 +33,25 @@ pub fn create_project(
         ));
     }
 
-    // Crear estructura
+    // Cargar el perfil real desde el directorio de perfiles
+    let prof_dir = profiles_dir_for_app(&app);
+    let mut registry = ProfileRegistry::new();
+    registry.load_from_dir(&prof_dir).map_err(err)?;
+    let profile = registry
+        .get(&profile_id)
+        .ok_or_else(|| format!(
+            "Perfil '{}' no encontrado en {}.",
+            profile_id,
+            prof_dir.display()
+        ))?
+        .clone();
+
+    // Crear estructura de directorios
     std::fs::create_dir_all(project_dir.join("content").join("sections")).map_err(err)?;
     std::fs::create_dir_all(project_dir.join("content").join("bibliography")).map_err(err)?;
     std::fs::create_dir_all(project_dir.join("content").join("figures")).map_err(err)?;
 
-    let model = build_default_model(&name, &profile_id);
+    let model = build_model_from_profile(&name, &profile);
     let saver = ProjectSaver;
     saver
         .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
@@ -50,6 +66,7 @@ pub fn create_project(
         "project_path": project_dir.to_string_lossy(),
         "name": name,
         "profile_id": profile_id,
+        "sections_count": model.sections.len(),
     }))
 }
 
@@ -213,9 +230,70 @@ pub fn list_references(project_path: String) -> Result<Value, String> {
     Ok(serde_json::json!(result))
 }
 
-fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
+/// Construye el directorio de perfiles para una app handle dada.
+/// (Misma lógica que system.rs — producción primero, luego dev.)
+fn profiles_dir_for_app(app: &tauri::AppHandle) -> PathBuf {
+    if let Ok(res) = app.path().resource_dir() {
+        let p = res.join("profiles");
+        if p.exists() {
+            return p;
+        }
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("profiles"))
+        .unwrap_or_else(|| PathBuf::from("profiles"))
+}
+
+/// Construye un ProjectModel con los datos del perfil real.
+/// Metadatos del estudiante/institución se dejan con valores por defecto
+/// para que el usuario los rellene después desde la UI.
+fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
     use std::collections::HashMap;
     use texis_core::project::model::*;
+
+    let map_placement = |s: &str| -> SectionPlacement {
+        match s {
+            "front_matter" => SectionPlacement::FrontMatter,
+            "back_matter"  => SectionPlacement::BackMatter,
+            "appendix"     => SectionPlacement::Appendix,
+            _              => SectionPlacement::Body,
+        }
+    };
+
+    let engine = match profile.latex_engine.as_str() {
+        "pdflatex" => LatexEngine::Pdflatex,
+        "lualatex" => LatexEngine::Lualatex,
+        _          => LatexEngine::Xelatex,
+    };
+
+    let compiler = match profile.compiler.as_str() {
+        "tectonic" => CompilerKind::Tectonic,
+        _          => CompilerKind::Latexmk,
+    };
+
+    let bib_backend = match profile.bibliography_backend.as_str() {
+        "bibtex" => BibliographyBackend::Bibtex,
+        _        => BibliographyBackend::Biber,
+    };
+
+    let sections = profile
+        .sections
+        .iter()
+        .map(|s| ProjectSection {
+            id:         s.id.clone(),
+            element_id: s.element_id.clone(),
+            title:      s.title.clone(),
+            placement:  map_placement(&s.placement),
+            required:   s.required,
+            enabled:    true,
+            label:      s.label.clone(),
+            blocks:     vec![],
+            fields:     HashMap::new(),
+            children:   vec![],
+        })
+        .collect();
 
     ProjectModel {
         id: format!("{}-001", name.to_lowercase().replace(' ', "-")),
@@ -223,133 +301,44 @@ fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
         created_at: now_iso8601(),
         updated_at: now_iso8601(),
         metadata: ProjectMetadata {
-            title: name.to_string(),
-            subtitle: None,
-            document_kind: DocumentKind::Tesis,
+            title:          name.to_string(),
+            subtitle:       None,
+            document_kind:  DocumentKind::Tesis,
             academic_level: AcademicLevel::Licenciatura,
-            language: "es".to_string(),
-            city: "Ciudad de México".to_string(),
-            year: 2026,
-            keywords: vec![],
+            language:       "es".to_string(),
+            city:           "Ciudad de México".to_string(),
+            year:           chrono::Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
+            keywords:       vec![],
         },
         institution: InstitutionData {
-            name: "Universidad".to_string(),
-            faculty: None,
+            name:       "Universidad".to_string(),
+            faculty:    None,
             department: None,
-            logo_path: None,
-            country: "México".to_string(),
+            logo_path:  None,
+            country:    "México".to_string(),
         },
         student: StudentData {
-            full_name: "Autor".to_string(),
+            full_name:  "Autor".to_string(),
             student_id: None,
-            email: None,
-            advisor: None,
+            email:      None,
+            advisor:    None,
             co_advisor: None,
-            advisors: vec![],
+            advisors:   vec![],
             co_authors: vec![],
         },
-        profile_id: profile_id.to_string(),
+        profile_id: profile.id.clone(),
         latex_config: LatexConfig {
             document_class: DocumentClassConfig {
-                name: "book".to_string(),
-                options: vec![
-                    "12pt".to_string(),
-                    "letterpaper".to_string(),
-                    "oneside".to_string(),
-                ],
+                name:    profile.document_class.name.clone(),
+                options: profile.document_class.options.clone(),
             },
-            engine: LatexEngine::Xelatex,
-            compiler: CompilerKind::Latexmk,
-            bibliography_backend: BibliographyBackend::Biber,
-            bibliography_style: "apa".to_string(),
-            packages_required: vec![],
+            engine,
+            compiler,
+            bibliography_backend: bib_backend,
+            bibliography_style:   profile.bibliography_style.clone(),
+            packages_required:    profile.packages.clone(),
         },
-        sections: vec![
-            ProjectSection {
-                id: "title_page".to_string(),
-                element_id: "title_page".to_string(),
-                title: None,
-                placement: SectionPlacement::FrontMatter,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "table_of_contents".to_string(),
-                element_id: "table_of_contents".to_string(),
-                title: None,
-                placement: SectionPlacement::FrontMatter,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "introduction".to_string(),
-                element_id: "introduction".to_string(),
-                title: Some("Introducción".to_string()),
-                placement: SectionPlacement::Body,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "methodology".to_string(),
-                element_id: "methodology".to_string(),
-                title: Some("Metodología".to_string()),
-                placement: SectionPlacement::Body,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "results".to_string(),
-                element_id: "results".to_string(),
-                title: Some("Resultados".to_string()),
-                placement: SectionPlacement::Body,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "conclusions".to_string(),
-                element_id: "conclusions".to_string(),
-                title: Some("Conclusiones".to_string()),
-                placement: SectionPlacement::Body,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-            ProjectSection {
-                id: "references".to_string(),
-                element_id: "references".to_string(),
-                title: Some("Referencias".to_string()),
-                placement: SectionPlacement::BackMatter,
-                required: true,
-                enabled: true,
-                label: None,
-                blocks: vec![],
-                fields: HashMap::new(),
-                children: vec![],
-            },
-        ],
+        sections,
         file_states: HashMap::new(),
     }
 }
