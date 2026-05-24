@@ -172,7 +172,7 @@ export default function HomeView() {
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v0.2.0</span></>}
+        left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v1.0.0</span></>}
         center={null}
         right={
           <>
@@ -312,7 +312,7 @@ export default function HomeView() {
       <TxStatusbar items={[
         latexStatus,
         { icon: <IconFolder size={11} />, text: "~/Documentos" },
-        { right: true, text: "TeXisStudio 0.2.0 · AGPL+CC", icon: <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")} /> },
+        { right: true, text: "TeXisStudio 1.0.0 · AGPL+CC", icon: <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")} /> },
       ]} />
     </>
   );

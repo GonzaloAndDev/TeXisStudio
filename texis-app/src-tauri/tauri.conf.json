@@ -1,6 +1,6 @@
 {
   "productName": "TeXisStudio",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "identifier": "dev.gonzaloand.texisstudio",
   "build": {
     "frontendDist": "../dist",
