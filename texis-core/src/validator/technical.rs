@@ -1,7 +1,7 @@
 // Validaciones técnicas: archivos referenciados, labels duplicados, etc.
 
 use super::report::{IssueSeverity, ValidationIssue, ValidationReport};
-use crate::project::model::{ContentBlock, ProjectModel, ProjectSection, SectionPlacement};
+use crate::project::model::{ContentBlock, ProjectModel};
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -200,7 +200,12 @@ fn check_unconfirmed_raw_latex(model: &ProjectModel, issues: &mut Vec<Validation
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::project::model::*;
+    use crate::project::model::{
+        AcademicLevel, BibliographyBackend, CitationBlock, CitationType, CompilerKind,
+        ContentBlock, DocumentClassConfig, DocumentKind, EquationBlock, FigureBlock,
+        FigureWidth, InstitutionData, LatexConfig, LatexEngine, ProjectMetadata, ProjectModel,
+        ProjectSection, RawLatexBlock, SectionPlacement, StudentData,
+    };
     use std::collections::HashMap;
 
     /// Construye una sección mínima con los bloques dados.
