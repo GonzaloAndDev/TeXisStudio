@@ -4,7 +4,7 @@ Editor profesional de tesis con LaTeX — sin necesitar aprender LaTeX directame
 
 **Autor:** Gonzalo Andrade Estrella · [@GonzaloAndDev](https://github.com/GonzaloAndDev)  
 **Licencia:** AGPL v3 + Commons Clause  
-**Estado:** v1.0.0 — Release oficial  
+**Estado:** v0.2.0 en desarrollo activo
 
 ---
 
@@ -33,6 +33,7 @@ El PDF es portable — compilable sin la app
 | Serialización | serde_yaml (aislado en `loader.rs`) |
 | Red | reqwest 0.12 · rustls-tls · zip 2 |
 | Estado UI | Zustand 5 |
+| Matemáticas | KaTeX (renderizado en tiempo real) |
 | Fuentes | Newsreader · Geist · JetBrains Mono |
 
 ---
@@ -55,32 +56,71 @@ TeXisStudio/
 
 ---
 
-## Lo que está implementado — v1.0.0
+## Lo que está implementado
 
-### Core Rust (`texis-core`)
+### Core Rust (`texis-core`) — 56 tests verdes
+
 - **`ProjectModel`** — modelo de datos completo con round-trip serde YAML verificado
+- **`SectionStatus`** — estado editorial por sección: `draft | in_review | revised | approved`
+- **`LatexTypography`** — ajustes tipográficos opcionales: fuente base, papel, interlineado, márgenes
 - **`latex_escape`** — escaping explícito de contenido de usuario (13 unit tests)
 - **`TemplateEngine`** — MiniJinja v2 con filtros `latex_escape` y `raw`
 - **`CompilationBackend`** — trait con `LatexmkBackend` y `TectonicBackend`; modo `auto`
-- **`Validator`** — validaciones académicas y técnicas (imágenes, bib, labels duplicados)
+- **`Validator`** — validaciones académicas, técnicas y bibliográficas cruzadas (E_CITATION_KEY_NOT_IN_BIB, W_UNUSED_REFERENCE)
 - **`BibParser`** — parser BibTeX con extracción balanceada de llaves/comillas
 - **`ProfileLoader` / `ProfileSaver`** — perfiles YAML con serialización completa
 - **`schema/versions`** — schema 1.0.0 congelado; política de breaking changes documentada
 - **`schema/migrator`** — migración automática `0.1.0 → 1.0.0` al cargar proyectos legacy
-- **30 tests verdes** · snapshot tests con `insta` (main.tex + secciones)
+- **Snapshot tests** con `insta` (main.tex + secciones)
 
 ### CLI (`texis-cli`)
+
 - Subcomandos: `new`, `compile`, `validate`, `export`, `import`, `list-profiles`
 
 ### App de escritorio (`texis-app`)
-- **HomeView** — proyectos recientes, sidebar, banner de advertencia si no hay LaTeX
-- **EditorView** — 8 tipos de bloque, drag & drop, autoguardado, `Ctrl+S`
+
+#### Editor
+- **EditorView** — 8 tipos de bloque (párrafo, título, lista, ecuación, figura, tabla, cita, LaTeX directo), drag & drop, autoguardado, `Ctrl+S`
+- **KaTeX** — previsualización de ecuaciones LaTeX en tiempo real dentro del editor
 - **CommandPalette** (`Ctrl+K`) — insertar bloques y saltar secciones con búsqueda fuzzy
-- **CitationPicker** (`Ctrl+[`) — insertar citas desde `.bib` con toggle parenthetical/narrative
-- **WizardView** — asistente de 4 pasos para crear proyecto con selección de perfil
+- **CitationPicker** (`Ctrl+[`) — insertar citas desde `.bib` con toggle parenthetical/narrative/footnote
+- **Estado editorial por sección** — badge `Borrador → En revisión → Revisado → Aprobado` con punto de color en el árbol y notas internas no incluidas en el PDF
+- **Navigation guard** — modal de confirmación al navegar con cambios sin guardar; `beforeunload` protege el cierre accidental
+- **Versiones (snapshots)** — panel lateral para crear, restaurar y eliminar snapshots nombrados; backup automático antes de restaurar
+- **Opciones tipográficas** — panel ⚙ para fuente base (10/11/12pt), tamaño de papel (A4/Carta), interlineado (1x/1.5x/2x) y márgenes (1.5–4.0 cm slider)
+
+#### Compilación y entrega
+- **CompileView** — compilación con streaming de log en tiempo real, cancelación, visor de PDF embebido, selección de backend (latexmk / tectonic / auto)
+- **Timeout de 5 min** con `tokio::time::timeout` + `AtomicBool` para cancelación limpia
+- **Validación bibliográfica cruzada** — citas contra `.bib` antes de compilar
+- **Paquete de entrega final** — genera un ZIP con PDF + fuentes LaTeX + contenido + informe de validación + README
+
+#### Gestión de perfiles y proyectos
+- **WizardView** — asistente de 4 pasos para crear proyecto desde un perfil real
+- **ProfileWizardView** — asistente para crear perfiles personalizados con catálogo de secciones
 - **LibraryView** — editor de perfiles (CRUD), catálogo de elementos, instalación remota desde URL/ZIP
+- **HomeView** — proyectos recientes, cloud folders (OneDrive/Google Drive/Dropbox), banner de advertencia si no hay LaTeX
 - **SetupLatexView** — detección automática de backends y guía de instalación
-- **AboutView** — autoría, licencia, stack, roadmap completo
+
+---
+
+## Comandos Tauri disponibles
+
+| Comando | Descripción |
+|---|---|
+| `create_project` | Crea proyecto desde perfil real |
+| `get_project` / `save_project` / `save_section` | CRUD de proyectos |
+| `list_recent_projects` | Lista proyectos recientes |
+| `validate_project` | Validación académica + técnica + bibliográfica |
+| `compile_project` / `cancel_compile` | Compilación con streaming y cancelación |
+| `create_snapshot` / `list_snapshots` / `restore_snapshot` / `delete_snapshot` | Control de versiones |
+| `update_section_meta` | Actualiza estado y notas de una sección |
+| `update_typography` | Actualiza ajustes tipográficos del proyecto |
+| `export_delivery` | Genera ZIP de entrega final |
+| `get_profiles` / `get_profile_detail` / `create_profile` / `update_profile` / `delete_profile` | Gestión de perfiles |
+| `import_profile` / `export_profile` / `fetch_remote_profile` | Intercambio de perfiles |
+| `list_references` | Extrae referencias del `.bib` del proyecto |
+| `detect_latex` / `get_cloud_folders` | Información del sistema |
 
 ---
 
@@ -114,7 +154,7 @@ En CI/CD (GitHub Actions) se construyen automáticamente al publicar un tag `v*`
 
 ### Build local
 
-### Uso desde VS Code
+#### Uso desde VS Code
 
 El repositorio incluye tareas en `.vscode/tasks.json` para trabajar sin salir de VS Code.
 Abre la carpeta **TeXisStudio** como raíz del workspace para que `Ctrl+Shift+B`
@@ -132,12 +172,7 @@ El comando `build` detecta el sistema operativo automáticamente:
 - Linux → `scripts/build-linux.sh`
 - macOS → `scripts/build-mac.sh`
 
-El helper imprime en terminal el contexto de compilación, la hora de inicio,
-la hora de finalización y la duración total del build.
-
 > Para abrir rápido la tarea por defecto en VS Code usa `Ctrl+Shift+B`.
-> Si VS Code pide instalar OpenJDK/Red Hat, cancela: TeXisStudio no usa Java.
-> Ese aviso viene de una extensión Java, no del build de la app.
 
 ```powershell
 # Windows → genera MSI + NSIS + portable ZIP en target\release\bundle\
@@ -146,11 +181,9 @@ la hora de finalización y la duración total del build.
 
 ```bash
 # Linux → genera .deb + .rpm + .AppImage en target/release/bundle/
-# Detecta automáticamente apt (Debian/Ubuntu), dnf (Fedora), pacman (Arch)
 bash scripts/build-linux.sh
 
-# macOS → genera DMG universal (Intel + Apple Silicon) en
-# target/universal-apple-darwin/release/bundle/dmg/
+# macOS → genera DMG universal (Intel + Apple Silicon)
 bash scripts/build-mac.sh
 ```
 
@@ -209,6 +242,7 @@ npm run dev   # → http://localhost:1420
 7. Tauri commands son thin wrappers — toda la lógica vive en `texis-core`.
 8. Un cambio al generador que altera el output LaTeX falla en snapshot tests.
 9. Schema congelado en 1.0.0 — cambios breaking requieren versión Major + migrador explícito.
+10. Campos nuevos en modelos persistidos usan `#[serde(default)]` para retrocompatibilidad.
 
 ---
 
