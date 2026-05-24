@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBook, IconCheck, IconCode, IconDoc, IconDownload, IconFile,
+  IconBook, IconCheck, IconCode, IconDoc, IconDownload, IconEdit, IconFile,
   IconHeading, IconImage, IconList, IconPlus, IconSearch, IconSigma,
-  IconTable, IconText, IconUpload, IconX,
+  IconTable, IconText, IconTrash, IconUpload, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
-import type { ProfileInfo, ProfileSectionInfo } from "../types";
+import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../types";
 
 // ── Catálogo de elementos (bloques de contenido) ────────────────
 
@@ -92,6 +92,24 @@ const PLACEMENT_COLOR: Record<string, string> = {
   appendix:     "var(--fg-muted)",
 };
 
+// IDs de secciones disponibles para añadir a un perfil
+const KNOWN_SECTION_ELEMENTS = [
+  { id: "title_page",       label: "Portada",              placement: "front_matter" },
+  { id: "abstract",         label: "Resumen",              placement: "front_matter" },
+  { id: "acknowledgements", label: "Agradecimientos",      placement: "front_matter" },
+  { id: "table_of_contents",label: "Tabla de contenidos",  placement: "front_matter" },
+  { id: "list_of_figures",  label: "Lista de figuras",     placement: "front_matter" },
+  { id: "list_of_tables",   label: "Lista de tablas",      placement: "front_matter" },
+  { id: "introduction",     label: "Introducción",         placement: "body" },
+  { id: "theoretical_framework", label: "Marco teórico",  placement: "body" },
+  { id: "methodology",      label: "Metodología",          placement: "body" },
+  { id: "results",          label: "Resultados",           placement: "body" },
+  { id: "discussion",       label: "Discusión",            placement: "body" },
+  { id: "conclusions",      label: "Conclusiones",         placement: "body" },
+  { id: "references",       label: "Referencias",          placement: "back_matter" },
+  { id: "appendix",         label: "Anexo",                placement: "appendix" },
+];
+
 // ── ProfileCard ──────────────────────────────────────────────────
 
 function ProfileCard({
@@ -167,12 +185,14 @@ function ProfileCard({
 // ── ProfileDetailPanel ───────────────────────────────────────────
 
 function ProfileDetailPanel({
-  profile, onClose, onUse, onExport,
+  profile, onClose, onEdit, onUse, onExport, onDelete,
 }: {
   profile: ProfileInfo;
   onClose: () => void;
+  onEdit: () => void;
   onUse: () => void;
   onExport: () => void;
+  onDelete: () => void;
 }) {
   const sectionsByPlacement = (profile.sections ?? []).reduce<Record<string, ProfileSectionInfo[]>>(
     (acc, s) => {
@@ -193,25 +213,31 @@ function ProfileDetailPanel({
     }}>
       {/* Header */}
       <div style={{
-        padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)",
+        padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>
           Detalle del perfil
         </span>
-        <button
-          onClick={onClose}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "var(--fg-faint)", padding: 2,
-          }}
-        >
-          <IconX size={14} />
-        </button>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            onClick={onEdit}
+            className="btn btn-ghost btn-sm"
+            title="Editar perfil"
+            style={{ padding: "3px 8px" }}
+          >
+            <IconEdit size={12} /> Editar
+          </button>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}
+          >
+            <IconX size={14} />
+          </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }} className="scroll">
-        {/* Cabecera */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500, color: "var(--fg-strong)" }}>
             {profile.name}
@@ -258,8 +284,7 @@ function ProfileDetailPanel({
             <div key={placement} style={{ marginBottom: 12 }}>
               <div style={{
                 fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em",
-                color: PLACEMENT_COLOR[placement] ?? "var(--fg-faint)",
-                marginBottom: 6,
+                color: PLACEMENT_COLOR[placement] ?? "var(--fg-faint)", marginBottom: 6,
               }}>
                 {PLACEMENT_LABEL[placement] ?? placement}
               </div>
@@ -273,11 +298,10 @@ function ProfileDetailPanel({
                   <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)" }}>
                     {s.title ?? s.id}
                   </span>
-                  {s.required ? (
-                    <span style={{ fontSize: 9, color: "var(--accent-deep)", fontWeight: 600 }}>requerida</span>
-                  ) : (
-                    <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>opcional</span>
-                  )}
+                  {s.required
+                    ? <span style={{ fontSize: 9, color: "var(--accent-deep)", fontWeight: 600 }}>requerida</span>
+                    : <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>opcional</span>
+                  }
                 </div>
               ))}
             </div>
@@ -292,15 +316,382 @@ function ProfileDetailPanel({
       </div>
 
       {/* Acciones */}
-      <div style={{
-        padding: 14, borderTop: "1px solid var(--border-subtle)",
-        display: "flex", flexDirection: "column", gap: 8,
-      }}>
+      <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", flexDirection: "column", gap: 8 }}>
         <button className="btn btn-accent" style={{ width: "100%" }} onClick={onUse}>
           <IconPlus size={13} /> Nuevo proyecto con este perfil
         </button>
-        <button className="btn" style={{ width: "100%" }} onClick={onExport}>
-          <IconDownload size={13} /> Exportar .texisprofile
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="btn" style={{ flex: 1 }} onClick={onExport}>
+            <IconDownload size={13} /> Exportar
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: "6px 10px", color: "var(--build-err)" }}
+            onClick={onDelete}
+            title="Eliminar perfil"
+          >
+            <IconTrash size={13} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ProfileEditorPanel ────────────────────────────────────────────
+
+function ProfileEditorPanel({
+  profile,
+  onSave,
+  onCancel,
+}: {
+  profile: ProfileInfo;
+  onSave: (updated: ProfileInfo) => void;
+  onCancel: () => void;
+}) {
+  // Metadatos editables
+  const [name, setName]               = useState(profile.name);
+  const [description, setDescription] = useState(profile.description ?? "");
+  const [author, setAuthor]           = useState(profile.author ?? "");
+  const [version, setVersion]         = useState(profile.version ?? "0.1.0");
+  const [license, setLicense]         = useState(profile.license ?? "");
+  const [latexEngine, setLatexEngine] = useState(profile.latex_engine ?? "xelatex");
+  const [docClass, setDocClass]       = useState(profile.document_class ?? "book");
+  const [bibStyle, setBibStyle]       = useState(profile.bibliography_style ?? "apa");
+  const [tagsRaw, setTagsRaw]         = useState((profile.tags ?? []).join(", "));
+
+  // Secciones
+  const [sections, setSections]       = useState<ProfileSectionInfo[]>(profile.sections ?? []);
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+
+  // Añadir sección desde lista preset
+  const [addingSection, setAddingSection] = useState(false);
+  const [newSectionEl, setNewSectionEl]   = useState(KNOWN_SECTION_ELEMENTS[0].id);
+
+  function moveSection(index: number, dir: -1 | 1) {
+    const next = index + dir;
+    if (next < 0 || next >= sections.length) return;
+    const arr = [...sections];
+    [arr[index], arr[next]] = [arr[next], arr[index]];
+    setSections(arr);
+  }
+
+  function toggleRequired(index: number) {
+    setSections(sections.map((s, i) => i === index ? { ...s, required: !s.required } : s));
+  }
+
+  function changePlacement(index: number, placement: string) {
+    setSections(sections.map((s, i) => i === index ? { ...s, placement } : s));
+  }
+
+  function removeSection(index: number) {
+    setSections(sections.filter((_, i) => i !== index));
+  }
+
+  function addSection() {
+    const el = KNOWN_SECTION_ELEMENTS.find((e) => e.id === newSectionEl);
+    if (!el) return;
+    const newSec: ProfileSectionInfo = {
+      id: el.id,
+      element_id: el.id,
+      placement: el.placement,
+      required: false,
+    };
+    setSections([...sections, newSec]);
+    setAddingSection(false);
+  }
+
+  async function handleSave() {
+    if (!name.trim()) { setError("El nombre del perfil es requerido."); return; }
+    setSaving(true);
+    setError(null);
+    const payload: ProfileUpdatePayload = {
+      name: name.trim(),
+      description: description.trim() || undefined,
+      author: author.trim() || undefined,
+      version: version.trim() || undefined,
+      license: license.trim() || undefined,
+      latex_engine: latexEngine,
+      document_class: docClass,
+      bibliography_style: bibStyle,
+      bibliography_backend: bibStyle === "vancouver" ? "bibtex" : "biber",
+      tags: tagsRaw.split(",").map((t) => t.trim()).filter(Boolean),
+      sections,
+    };
+    try {
+      const updated = await api.updateProfile(profile.id, payload);
+      onSave(updated);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const fieldStyle: React.CSSProperties = {
+    width: "100%", padding: "6px 10px", borderRadius: "var(--r-sm)",
+    border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+    fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
+    boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontWeight: 500,
+    textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4, display: "block",
+  };
+
+  return (
+    <div style={{
+      width: 380, flexShrink: 0,
+      borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)",
+      display: "flex", flexDirection: "column", overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <div>
+          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
+            Editar perfil
+          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", marginLeft: 8 }}>
+            {profile.id}
+          </span>
+        </div>
+        <button
+          onClick={onCancel}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}
+        >
+          <IconX size={14} />
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: 16 }} className="scroll">
+
+        {/* ── Metadatos ── */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-deep)", marginBottom: 12 }}>
+            Metadatos
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>Nombre *</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>Descripción</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              style={{ ...fieldStyle, resize: "vertical" }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div>
+              <label style={labelStyle}>Autor</label>
+              <input value={author} onChange={(e) => setAuthor(e.target.value)} style={fieldStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Versión</label>
+              <input value={version} onChange={(e) => setVersion(e.target.value)} style={fieldStyle} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>Licencia</label>
+            <input value={license} onChange={(e) => setLicense(e.target.value)} placeholder="p.ej. CC BY 4.0" style={fieldStyle} />
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>Etiquetas (separadas por coma)</label>
+            <input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="tesis, licenciatura, apa" style={fieldStyle} />
+          </div>
+        </div>
+
+        {/* ── Técnico ── */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-deep)", marginBottom: 12 }}>
+            Configuración técnica
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div>
+              <label style={labelStyle}>Motor LaTeX</label>
+              <select value={latexEngine} onChange={(e) => setLatexEngine(e.target.value)} style={fieldStyle}>
+                <option value="xelatex">XeLaTeX</option>
+                <option value="pdflatex">pdfLaTeX</option>
+                <option value="lualatex">LuaLaTeX</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Clase de documento</label>
+              <select value={docClass} onChange={(e) => setDocClass(e.target.value)} style={fieldStyle}>
+                <option value="book">book</option>
+                <option value="article">article</option>
+                <option value="report">report</option>
+                <option value="memoir">memoir</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Estilo bibliográfico</label>
+            <select value={bibStyle} onChange={(e) => setBibStyle(e.target.value)} style={fieldStyle}>
+              <option value="apa">APA 7</option>
+              <option value="vancouver">Vancouver</option>
+              <option value="ieee">IEEE</option>
+              <option value="chicago">Chicago</option>
+              <option value="mla">MLA</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ── Secciones ── */}
+        <div>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            marginBottom: 10,
+          }}>
+            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-deep)" }}>
+              Secciones ({sections.length})
+            </div>
+            <button
+              className="btn btn-sm"
+              onClick={() => setAddingSection(!addingSection)}
+              style={{ fontSize: 11, padding: "3px 8px" }}
+            >
+              <IconPlus size={11} /> Añadir
+            </button>
+          </div>
+
+          {/* Formulario para añadir sección */}
+          {addingSection && (
+            <div style={{
+              padding: "10px 12px", borderRadius: "var(--r-md)",
+              background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+              marginBottom: 10, display: "flex", flexDirection: "column", gap: 8,
+            }}>
+              <label style={labelStyle}>Tipo de sección</label>
+              <select
+                value={newSectionEl}
+                onChange={(e) => setNewSectionEl(e.target.value)}
+                style={fieldStyle}
+              >
+                {KNOWN_SECTION_ELEMENTS.map((el) => (
+                  <option key={el.id} value={el.id}>
+                    {el.label} ({PLACEMENT_LABEL[el.placement] ?? el.placement})
+                  </option>
+                ))}
+              </select>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={addSection}>
+                  <IconCheck size={11} sw={2.5} /> Añadir sección
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setAddingSection(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de secciones */}
+          {sections.map((sec, i) => (
+            <div
+              key={`${sec.id}-${i}`}
+              style={{
+                padding: "8px 10px", borderRadius: "var(--r-sm)",
+                background: "var(--bg-panel)", border: "1px solid var(--border-subtle)",
+                marginBottom: 5, display: "flex", flexDirection: "column", gap: 6,
+              }}
+            >
+              {/* Fila superior: id + controles de orden */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: PLACEMENT_COLOR[sec.placement] ?? "var(--fg-faint)",
+                }} />
+                <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--fg-strong)", fontFamily: "var(--font-mono)" }}>
+                  {sec.id}
+                </span>
+                <button
+                  onClick={() => moveSection(i, -1)}
+                  disabled={i === 0}
+                  style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }}
+                  title="Subir"
+                >▲</button>
+                <button
+                  onClick={() => moveSection(i, 1)}
+                  disabled={i === sections.length - 1}
+                  style={{ background: "none", border: "none", cursor: i === sections.length - 1 ? "default" : "pointer", color: i === sections.length - 1 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }}
+                  title="Bajar"
+                >▼</button>
+                <button
+                  onClick={() => removeSection(i)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--build-err)", padding: "0 2px" }}
+                  title="Eliminar sección"
+                >
+                  <IconX size={11} />
+                </button>
+              </div>
+
+              {/* Fila inferior: placement + required */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <select
+                  value={sec.placement}
+                  onChange={(e) => changePlacement(i, e.target.value)}
+                  style={{ ...fieldStyle, padding: "3px 6px", fontSize: 11, flex: 1 }}
+                >
+                  {["front_matter", "body", "back_matter", "appendix"].map((p) => (
+                    <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>
+                  ))}
+                </select>
+                <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--fg-muted)", cursor: "pointer", flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={sec.required}
+                    onChange={() => toggleRequired(i)}
+                    style={{ accentColor: "var(--accent)" }}
+                  />
+                  requerida
+                </label>
+              </div>
+            </div>
+          ))}
+
+          {sections.length === 0 && (
+            <div style={{ padding: "16px 0", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-xs)" }}>
+              Sin secciones. Añade al menos una.
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div style={{
+            marginTop: 12, padding: "8px 12px", borderRadius: "var(--r-sm)",
+            background: "var(--build-err-tint, #ffeded)", color: "var(--build-err)",
+            fontSize: "var(--fs-xs)", border: "1px solid var(--build-err)",
+          }}>
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Footer acciones */}
+      <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8 }}>
+        <button
+          className="btn btn-accent"
+          style={{ flex: 1 }}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "Guardando…" : <><IconCheck size={13} sw={2} /> Guardar cambios</>}
+        </button>
+        <button className="btn btn-ghost" onClick={onCancel} disabled={saving}>
+          Cancelar
         </button>
       </div>
     </div>
@@ -422,12 +813,14 @@ function ElementsTab() {
 
 export default function LibraryView() {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState<ProfileInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"profiles" | "elements">("profiles");
-  const [selected, setSelected] = useState<ProfileInfo | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [profiles, setProfiles]       = useState<ProfileInfo[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState("");
+  const [tab, setTab]                 = useState<"profiles" | "elements">("profiles");
+  const [selected, setSelected]       = useState<ProfileInfo | null>(null);
+  const [editing, setEditing]         = useState(false);
+  const [importing, setImporting]     = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<ProfileInfo | null>(null);
 
   useEffect(() => {
     api.getProfiles()
@@ -446,8 +839,7 @@ export default function LibraryView() {
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const result = await open({
-        directory: true,
-        multiple: false,
+        directory: true, multiple: false,
         title: "Selecciona el directorio del perfil (.texisprofile)",
       });
       const src = Array.isArray(result) ? result[0] : result;
@@ -476,6 +868,23 @@ export default function LibraryView() {
     }
   }
 
+  async function handleDelete(profile: ProfileInfo) {
+    setConfirmDelete(null);
+    try {
+      await api.deleteProfile(profile.id);
+      setProfiles((prev) => prev.filter((p) => p.id !== profile.id));
+      if (selected?.id === profile.id) setSelected(null);
+    } catch (e) {
+      alert(`Error al eliminar: ${e}`);
+    }
+  }
+
+  function handleSaveEdit(updated: ProfileInfo) {
+    setProfiles((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+    setSelected(updated);
+    setEditing(false);
+  }
+
   function handleUseProfile(profile: ProfileInfo) {
     navigate(`/new?profile=${encodeURIComponent(profile.id)}`);
   }
@@ -491,6 +900,40 @@ export default function LibraryView() {
           </button>
         }
       />
+
+      {/* Confirmación de eliminación */}
+      {confirmDelete && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div style={{
+            background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
+            padding: 24, maxWidth: 380, width: "90%",
+            border: "1px solid var(--border-firm)",
+            display: "flex", flexDirection: "column", gap: 14,
+          }}>
+            <div style={{ fontWeight: 600, color: "var(--fg-strong)" }}>
+              ¿Eliminar perfil?
+            </div>
+            <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+              Se eliminará <strong>{confirmDelete.name}</strong> ({confirmDelete.id}) del directorio de perfiles. Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>
+                Cancelar
+              </button>
+              <button
+                className="btn"
+                style={{ background: "var(--build-err)", color: "white", border: "none" }}
+                onClick={() => handleDelete(confirmDelete)}
+              >
+                <IconTrash size={13} /> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
         {/* Sidebar */}
@@ -521,8 +964,8 @@ export default function LibraryView() {
           <div style={{ flex: 1 }} />
 
           <div style={{ padding: "10px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 0.3</div>
-            {profiles.length} perfiles instalados · {BLOCK_CATALOG.length} tipos de bloque
+            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 0.5</div>
+            {profiles.length} perfiles · {BLOCK_CATALOG.length} elementos
           </div>
         </div>
 
@@ -548,7 +991,7 @@ export default function LibraryView() {
                     disabled={importing}
                     title="Importar perfil desde directorio .texisprofile"
                   >
-                    <IconUpload size={13} /> {importing ? "Importando…" : "Importar perfil"}
+                    <IconUpload size={13} /> {importing ? "Importando…" : "Importar"}
                   </button>
                   <button className="btn btn-accent btn-sm" onClick={() => navigate("/new")}>
                     <IconPlus size={13} /> Nuevo proyecto
@@ -587,20 +1030,33 @@ export default function LibraryView() {
                       key={p.id}
                       profile={p}
                       selected={selected?.id === p.id}
-                      onClick={() => setSelected(selected?.id === p.id ? null : p)}
+                      onClick={() => {
+                        if (editing && selected?.id === p.id) return;
+                        setEditing(false);
+                        setSelected(selected?.id === p.id ? null : p);
+                      }}
                     />
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Panel de detalle */}
-            {selected && (
+            {/* Panel lateral: detalle o editor */}
+            {selected && !editing && (
               <ProfileDetailPanel
                 profile={selected}
                 onClose={() => setSelected(null)}
+                onEdit={() => setEditing(true)}
                 onUse={() => handleUseProfile(selected)}
                 onExport={() => handleExport(selected)}
+                onDelete={() => setConfirmDelete(selected)}
+              />
+            )}
+            {selected && editing && (
+              <ProfileEditorPanel
+                profile={selected}
+                onSave={handleSaveEdit}
+                onCancel={() => setEditing(false)}
               />
             )}
           </div>
@@ -611,8 +1067,8 @@ export default function LibraryView() {
 
       <TxStatusbar items={[
         { text: `${profiles.length} perfiles instalados` },
-        { icon: <IconUpload size={11} />, text: "Importar · Ctrl+I" },
-        { right: true, text: "TeXisStudio 0.3.0" },
+        { icon: <IconUpload size={11} />, text: "Importar" },
+        { right: true, text: "TeXisStudio 0.5.0" },
       ]} />
     </>
   );

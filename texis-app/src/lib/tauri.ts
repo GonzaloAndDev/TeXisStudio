@@ -7,6 +7,7 @@ import type {
   CompilationResult,
   LatexInfo,
   ProfileInfo,
+  ProfileUpdatePayload,
   ProjectModel,
   RecentProject,
   ValidationReport,
@@ -116,6 +117,12 @@ export const api = {
 
   exportProfile: (profileId: string, destPath: string): Promise<{ exported_to: string; profile_id: string }> =>
     call("export_profile", { profileId, destPath }),
+
+  updateProfile: (profileId: string, payload: ProfileUpdatePayload): Promise<ProfileInfo> =>
+    call("update_profile", { profileId, payload }),
+
+  deleteProfile: (profileId: string): Promise<void> =>
+    call("delete_profile", { profileId }),
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),

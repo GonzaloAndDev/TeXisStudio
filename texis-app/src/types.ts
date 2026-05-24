@@ -251,6 +251,22 @@ export interface CloudFolder {
   hint: string;
 }
 
+// ── Profile update payload (for update_profile command) ─────────
+
+export interface ProfileUpdatePayload {
+  name: string;
+  description?: string;
+  author?: string;
+  version?: string;
+  license?: string;
+  latex_engine: string;
+  document_class: string;
+  bibliography_style: string;
+  bibliography_backend: string;
+  tags: string[];
+  sections: ProfileSectionInfo[];
+}
+
 // ── Recent project entry (from list_recent_projects) ────────────
 
 export interface RecentProject {

@@ -30,4 +30,14 @@ impl ProfileLoader {
 
         Ok(profile)
     }
+
+    /// Serializa un perfil a YAML y lo escribe en `path`.
+    pub fn save_to_file(&self, profile: &Profile, path: &Path) -> CoreResult<()> {
+        let yaml = serde_yaml::to_string(profile).map_err(|e| CoreError::YamlParse {
+            path: path.to_string_lossy().to_string(),
+            message: e.to_string(),
+        })?;
+        std::fs::write(path, yaml).map_err(CoreError::Io)?;
+        Ok(())
+    }
 }

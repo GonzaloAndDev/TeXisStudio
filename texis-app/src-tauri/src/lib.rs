@@ -16,6 +16,8 @@ pub fn run() {
             commands::system::get_profile_detail,
             commands::system::import_profile,
             commands::system::export_profile,
+            commands::system::update_profile,
+            commands::system::delete_profile,
             commands::system::detect_latex,
             commands::system::get_cloud_folders,
         ])

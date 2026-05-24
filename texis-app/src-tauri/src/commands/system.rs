@@ -1,8 +1,35 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
 use tauri::Manager;
 use texis_core::compiler::detector::LatexInstallation;
-use texis_core::profile::ProfileRegistry;
+use texis_core::profile::{ProfileLoader, ProfileRegistry};
+
+/// Payload de actualización de perfil enviado desde el frontend.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProfileUpdatePayload {
+    pub name: String,
+    pub description: Option<String>,
+    pub author: Option<String>,
+    pub version: Option<String>,
+    pub license: Option<String>,
+    pub latex_engine: String,
+    pub document_class: String,
+    pub bibliography_style: String,
+    pub bibliography_backend: String,
+    pub tags: Vec<String>,
+    pub sections: Vec<SectionUpdateEntry>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SectionUpdateEntry {
+    pub id: String,
+    pub element_id: String,
+    pub placement: String,
+    pub required: bool,
+    pub title: Option<String>,
+    pub label: Option<String>,
+}
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -170,6 +197,76 @@ pub fn export_profile(
         "exported_to": dest.to_string_lossy(),
         "profile_id": profile_id,
     }))
+}
+
+/// Actualiza los metadatos y secciones de un perfil instalado y guarda el profile.yaml.
+#[tauri::command]
+pub fn update_profile(
+    app: tauri::AppHandle,
+    profile_id: String,
+    payload: ProfileUpdatePayload,
+) -> Result<Value, String> {
+    use texis_core::profile::model::{ProfileDocumentClass, ProfileSectionDef};
+
+    let profiles_root = profiles_dir(&app);
+    let yaml_path = profiles_root.join(&profile_id).join("profile.yaml");
+
+    if !yaml_path.exists() {
+        return Err(format!("No se encontró el perfil '{}' en '{}'.", profile_id, yaml_path.display()));
+    }
+
+    // Cargar el perfil actual para preservar campos que el editor no toca
+    let loader = ProfileLoader;
+    let mut profile = loader.load_from_file(&yaml_path).map_err(err)?;
+
+    // Aplicar updates del payload
+    profile.name = payload.name;
+    profile.description = payload.description;
+    profile.author = payload.author;
+    profile.version = payload.version;
+    profile.license = payload.license;
+    profile.latex_engine = payload.latex_engine;
+    profile.bibliography_style = payload.bibliography_style;
+    profile.bibliography_backend = payload.bibliography_backend;
+    profile.tags = payload.tags;
+    profile.document_class = ProfileDocumentClass {
+        name: payload.document_class,
+        options: profile.document_class.options.clone(), // conservar opciones existentes
+    };
+    profile.sections = payload.sections.iter().map(|s| ProfileSectionDef {
+        id: s.id.clone(),
+        element_id: s.element_id.clone(),
+        placement: s.placement.clone(),
+        required: s.required,
+        title: s.title.clone(),
+        label: s.label.clone(),
+    }).collect();
+
+    loader.save_to_file(&profile, &yaml_path).map_err(err)?;
+
+    Ok(profile_to_json(&profile))
+}
+
+/// Elimina un perfil instalado del directorio de perfiles.
+#[tauri::command]
+pub fn delete_profile(
+    app: tauri::AppHandle,
+    profile_id: String,
+) -> Result<(), String> {
+    let profiles_root = profiles_dir(&app);
+    let profile_dir = profiles_root.join(&profile_id);
+
+    if !profile_dir.exists() {
+        return Err(format!("El perfil '{}' no está instalado.", profile_id));
+    }
+
+    // Verificar que es un directorio de perfil válido (tiene profile.yaml)
+    if !profile_dir.join("profile.yaml").exists() {
+        return Err("El directorio no contiene un profile.yaml válido.".to_string());
+    }
+
+    std::fs::remove_dir_all(&profile_dir).map_err(err)?;
+    Ok(())
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
