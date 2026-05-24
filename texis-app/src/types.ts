@@ -370,6 +370,66 @@ export interface ProfileUpdatePayload {
   sections: ProfileSectionInfo[];
 }
 
+// ── Language packs ──────────────────────────────────────────────
+
+export interface LangCapabilities {
+  /** UI translation available */
+  ui: boolean;
+  /** Hunspell spell-check dictionary available */
+  spelling: boolean;
+  /** Per-language autocorrect table available */
+  autocorrect: boolean;
+  /** Grammar via LanguageTool remote API */
+  grammar_remote: boolean;
+  /** Local grammar checker (offline) */
+  grammar_local: boolean;
+  /** LaTeX babel package support */
+  latex_babel: boolean;
+  /** LaTeX polyglossia package support */
+  latex_polyglossia: boolean;
+}
+
+export type LangStatus = "stable" | "beta" | "experimental";
+
+export interface LangPackMaintainer {
+  name: string;
+  contact?: string;
+}
+
+/** Entry in catalog.json — describes one downloadable language pack */
+export interface LangPackEntry {
+  id: string;             // BCP-47 e.g. "ru", "pt-BR", "th", "hi"
+  name: string;           // English name
+  native_name: string;    // e.g. "Русский"
+  flag: string;           // emoji
+  status: LangStatus;
+  version: string;
+  maintainers: LangPackMaintainer[];
+  capabilities: LangCapabilities;
+  // Download URLs — can be GitHub raw or npm CDN
+  ui_url: string;
+  spelling_aff_url?: string;
+  spelling_dic_url?: string;
+  autocorrect_url?: string;
+  latex_url?: string;
+}
+
+/** What gets persisted to localStorage after installation */
+export interface InstalledLangPack {
+  id: string;
+  version: string;
+  installed_at: string;
+  entry: LangPackEntry;
+  /** Full locale JSON, stored so it survives offline */
+  ui_data?: Record<string, unknown>;
+}
+
+export interface LangCatalog {
+  schema_version: string;
+  updated_at: string;
+  packages: LangPackEntry[];
+}
+
 // ── Recent project entry (from list_recent_projects) ────────────
 
 export interface RecentProject {

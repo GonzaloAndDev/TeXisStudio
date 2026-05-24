@@ -9,11 +9,28 @@ import de from "./locales/de.json";
 import zh from "./locales/zh.json";
 import ja from "./locales/ja.json";
 
+import { getInstalledLocales } from "../services/languagePacks";
+
+// Build initial resources from bundled + already-installed language packs
+const bundled: Record<string, { t: Record<string, unknown> }> = {
+  es: { t: es as Record<string, unknown> },
+  en: { t: en as Record<string, unknown> },
+  fr: { t: fr as Record<string, unknown> },
+  de: { t: de as Record<string, unknown> },
+  zh: { t: zh as Record<string, unknown> },
+  ja: { t: ja as Record<string, unknown> },
+};
+
+const installed = getInstalledLocales();
+for (const { id, data } of installed) {
+  bundled[id] = { t: data };
+}
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: { es: { t: es }, en: { t: en }, fr: { t: fr }, de: { t: de }, zh: { t: zh }, ja: { t: ja } },
+    resources: bundled,
     ns: ["t"],
     defaultNS: "t",
     fallbackLng: "es",
@@ -27,15 +44,25 @@ i18n
 
 export default i18n;
 
+/** Register a locale at runtime (called after installing a language pack). */
+export function registerDynamicLocale(id: string, data: Record<string, unknown>): void {
+  if (!i18n.hasResourceBundle(id, "t")) {
+    i18n.addResourceBundle(id, "t", data, true, true);
+  }
+}
+
+// ── Bundled language catalogue ───────────────────────────────────
+
 export const SUPPORTED_LANGUAGES = [
-  { code: "es", label: "Español", flag: "🇲🇽" },
-  { code: "en", label: "English", flag: "🇺🇸" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "de", label: "Deutsch", flag: "🇩🇪" },
-  { code: "zh", label: "中文", flag: "🇨🇳" },
-  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "es", label: "Español",   flag: "🇲🇽", bundled: true  },
+  { code: "en", label: "English",   flag: "🇺🇸", bundled: true  },
+  { code: "fr", label: "Français",  flag: "🇫🇷", bundled: true  },
+  { code: "de", label: "Deutsch",   flag: "🇩🇪", bundled: true  },
+  { code: "zh", label: "中文",      flag: "🇨🇳", bundled: true  },
+  { code: "ja", label: "日本語",    flag: "🇯🇵", bundled: true  },
 ];
 
+// Spell-check language codes (null = no Hunspell dict bundled)
 export const SPELL_CHECK_LANGS: Record<string, string | null> = {
   es: "es",
   en: "en",
@@ -43,6 +70,11 @@ export const SPELL_CHECK_LANGS: Record<string, string | null> = {
   de: "de",
   zh: null,
   ja: null,
+  // Community packs — populated at runtime by the spell-check service
+  ru: "ru",
+  "pt-BR": "pt-BR",
+  th: null,
+  hi: null,
 };
 
 export const LT_LANG_CODES: Record<string, string> = {
@@ -52,4 +84,8 @@ export const LT_LANG_CODES: Record<string, string> = {
   de: "de-DE",
   zh: "zh-CN",
   ja: "ja-JP",
+  ru: "ru-RU",
+  "pt-BR": "pt-BR",
+  th: "th",
+  hi: "hi-IN",
 };

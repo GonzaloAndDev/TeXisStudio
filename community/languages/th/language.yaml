@@ -1,0 +1,37 @@
+id: th
+name: Thai
+native_name: ภาษาไทย
+flag: "🇹🇭"
+status: beta
+version: 1.0.0
+
+maintainers:
+  - name: TeXisStudio Community
+
+capabilities:
+  ui: true
+  spelling: false         # No standard Hunspell Thai dictionary available.
+                          # Thai word segmentation requires specialized tools (e.g. libthai).
+  autocorrect: false      # Requires tokenization
+  grammar_remote: false   # LanguageTool Thai support is limited
+  grammar_local: false
+  latex_babel: true       # \usepackage[thai]{babel} + ThaiFont
+  latex_polyglossia: true # \setmainlanguage{thai}
+
+notes:
+  - Thai script does not use spaces between words; spell check requires specialized tokenization.
+  - XeLaTeX is required for Thai rendering (pdflatex is not supported).
+  - Recommended font: TH Sarabun New or Garuda.
+  - Browser spell-check (HTML spellcheck attribute) also does not work for Thai.
+
+latex:
+  babel_name: thai
+  polyglossia_name: thai
+  engine: xelatex        # Required
+  font: "TH Sarabun New"
+  chapter_name: "บทที่"
+  bibliography_name: "บรรณานุกรม"
+  figure_name: "ภาพที่"
+  table_name: "ตารางที่"
+  abstract_name: "บทคัดย่อ"
+  contents_name: "สารบัญ"

@@ -1,14 +1,29 @@
 import nspell from "nspell";
+import { getSpellingUrls } from "./languagePacks";
 
 type NSpell = ReturnType<typeof nspell>;
 
 const cache: Record<string, Promise<NSpell>> = {};
 
+// Bundled dicts live at /dictionaries/{lang}/index.{aff,dic}
+const BUNDLED_LANGS = new Set(["en", "es", "fr", "de"]);
+
 async function loadDictionary(lang: string): Promise<NSpell> {
-  const [affRes, dicRes] = await Promise.all([
-    fetch(`/dictionaries/${lang}/index.aff`),
-    fetch(`/dictionaries/${lang}/index.dic`),
-  ]);
+  let affUrl: string;
+  let dicUrl: string;
+
+  if (BUNDLED_LANGS.has(lang)) {
+    affUrl = `/dictionaries/${lang}/index.aff`;
+    dicUrl = `/dictionaries/${lang}/index.dic`;
+  } else {
+    // Community pack — URLs come from installed pack metadata
+    const urls = getSpellingUrls(lang);
+    if (!urls) throw new Error(`No spelling dictionary installed for lang: ${lang}`);
+    affUrl = urls.aff;
+    dicUrl = urls.dic;
+  }
+
+  const [affRes, dicRes] = await Promise.all([fetch(affUrl), fetch(dicUrl)]);
   if (!affRes.ok || !dicRes.ok) throw new Error(`Dictionary ${lang} not found`);
   const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
   return nspell({ aff, dic });
@@ -17,6 +32,11 @@ async function loadDictionary(lang: string): Promise<NSpell> {
 export function getSpeller(lang: string): Promise<NSpell> {
   if (!cache[lang]) cache[lang] = loadDictionary(lang);
   return cache[lang];
+}
+
+/** Bust the cache for a language — call after installing/uninstalling a pack. */
+export function invalidateSpeller(lang: string): void {
+  delete cache[lang];
 }
 
 function tokenize(text: string): { word: string; start: number; end: number }[] {

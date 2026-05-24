@@ -1,25 +1,13 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
-import { IconSettings, IconBook, IconFolder } from "../components/Icons";
+import { IconSettings, IconBook, IconFolder, IconDownload } from "../components/Icons";
 import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
-import i18n from "../i18n/index";
+import i18n, { registerDynamicLocale } from "../i18n/index";
 import { useSettingsStore } from "../stores/settings";
-
-// ── Community package registry (points to repo community/ directory) ──────
-interface CommunityPkg {
-  id: string;
-  type: "dictionary" | "locale";
-  lang: string;
-  label: string;
-  description: string;
-  repoPath: string;
-}
-
-const COMMUNITY_PACKAGES: CommunityPkg[] = [
-  // placeholder — real entries come from community/dictionaries/index.json in the repo
-];
+import { useLangPacksStore } from "../stores/languagePacks";
+import type { LangPackEntry } from "../types";
 
 // ── Layout constants ──────────────────────────────────────────────────────
 
@@ -120,15 +108,44 @@ export default function SettingsView() {
     setUserName, setUserInstitution, setUserEmail, setProjectDir,
   } = useSettingsStore();
 
+  const {
+    catalog, catalogLoading, catalogError,
+    installed: installedPacks,
+    installing, installProgress,
+    loadCatalog, install: installPack, uninstall: uninstallPack, isInstalled,
+  } = useLangPacksStore();
+
   const validParam = SECTIONS.includes(sectionParam as Section) ? (sectionParam as Section) : "language";
   const [activeSection, setActiveSection] = useState<Section>(validParam);
   const [newWord, setNewWord] = useState("");
   const [userSaved, setUserSaved] = useState(false);
+  const [installError, setInstallError] = useState<string | null>(null);
   const [localName, setLocalName] = useState(userName);
   const [localInstitution, setLocalInstitution] = useState(userInstitution);
   const [localEmail, setLocalEmail] = useState(userEmail);
   const [localProjectDir, setLocalProjectDir] = useState(projectDir);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load catalog when entering community section
+  useEffect(() => {
+    if (activeSection === "community" && !catalog && !catalogLoading) {
+      loadCatalog();
+    }
+  }, [activeSection, catalog, catalogLoading, loadCatalog]);
+
+  async function handleInstall(entry: LangPackEntry) {
+    setInstallError(null);
+    try {
+      await installPack(entry);
+      // Register locale immediately so language picker reflects it
+      if (entry.capabilities.ui) {
+        const raw = localStorage.getItem(`tx-lang-pack-ui:${entry.id}`);
+        if (raw) registerDynamicLocale(entry.id, JSON.parse(raw));
+      }
+    } catch (e) {
+      setInstallError(String(e));
+    }
+  }
 
   function pickLang(code: string) {
     setLang(code);
@@ -229,6 +246,7 @@ export default function SettingsView() {
             <div>
               <SectionHeading>{t("settings.section_language")}</SectionHeading>
 
+              {/* UI Language — bundled + installed community packs */}
               <Card style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
                   {t("settings.ui_language")}
@@ -246,35 +264,65 @@ export default function SettingsView() {
                       {lang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
                     </button>
                   ))}
+                  {/* Community-installed UI packs */}
+                  {installedPacks.filter((p) => p.entry.capabilities.ui).map((p) => (
+                    <button
+                      key={p.id}
+                      className={`btn ${lang === p.id ? "btn-accent" : "btn-ghost"}`}
+                      style={{ gap: 6 }}
+                      onClick={() => pickLang(p.id)}
+                    >
+                      <span style={{ fontSize: 18 }}>{p.entry.flag}</span>
+                      <span>{p.entry.native_name}</span>
+                      {lang === p.id && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
+                      <span style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>↓</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 10 }}>
+                  {t("settings.community_contribute").split("?")[0]}? →{" "}
+                  <span
+                    style={{ color: "var(--link)", cursor: "pointer" }}
+                    onClick={() => setActiveSection("community")}
+                  >
+                    {t("settings.section_community")}
+                  </span>
                 </div>
               </Card>
 
+              {/* Spell-check language — bundled + installed dicts */}
               <Card>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
                   {t("settings.spell_language")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SUPPORTED_LANGUAGES.map((l) => {
-                    const hasSpell = SPELL_CHECK_LANGS[l.code] !== null;
+                  {[
+                    ...SUPPORTED_LANGUAGES,
+                    ...installedPacks.filter((p) => p.entry.capabilities.ui).map((p) => ({
+                      code: p.id, label: p.entry.native_name, flag: p.entry.flag, bundled: false,
+                    })),
+                  ].map((l) => {
+                    const hasSpell = SPELL_CHECK_LANGS[l.code] !== null ||
+                      installedPacks.some((p) => p.id === l.code && p.entry.capabilities.spelling);
                     return (
                       <button
                         key={l.code}
                         className={`btn ${spellLang === l.code ? "btn-accent" : hasSpell ? "btn-ghost" : ""}`}
-                        style={{ gap: 6, opacity: hasSpell ? 1 : 0.4, cursor: hasSpell ? "pointer" : "not-allowed" }}
-                        onClick={() => hasSpell && setSpellLang(SPELL_CHECK_LANGS[l.code])}
+                        style={{ gap: 6, opacity: hasSpell ? 1 : 0.35, cursor: hasSpell ? "pointer" : "default" }}
+                        onClick={() => hasSpell && setSpellLang(l.code)}
                         title={hasSpell ? l.label : t("settings.spell_not_supported")}
                         disabled={!hasSpell}
                       >
                         <span style={{ fontSize: 18 }}>{l.flag}</span>
-                        <span>{l.code.toUpperCase()}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>{l.code.toUpperCase()}</span>
                         {spellLang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-                        {!hasSpell && <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>—</span>}
+                        {!hasSpell && <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>×</span>}
                       </button>
                     );
                   })}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 10 }}>
-                  {t("settings.spell_not_supported")} (中文, 日本語)
+                  × = {t("settings.spell_not_supported")}
                 </div>
               </Card>
             </div>
@@ -381,40 +429,126 @@ export default function SettingsView() {
             <div>
               <SectionHeading>{t("settings.section_community")}</SectionHeading>
 
+              {/* Language packs */}
               <Card style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)", marginBottom: 6 }}>
-                  {t("settings.community_title")}
-                </div>
-                <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 16, lineHeight: 1.6 }}>
-                  {t("settings.community_subtitle")}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)" }}>
+                      {t("settings.community_title")}
+                    </div>
+                    <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
+                      {t("settings.community_subtitle")}
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => loadCatalog(true)}
+                    disabled={catalogLoading}
+                    title="Refresh catalog"
+                  >
+                    {catalogLoading ? "…" : "↻"}
+                  </button>
                 </div>
 
-                {COMMUNITY_PACKAGES.length === 0 ? (
-                  <div style={{
-                    textAlign: "center", padding: "32px 16px",
-                    border: "1px dashed var(--border-firm)", borderRadius: "var(--r-md)",
-                    color: "var(--fg-muted)", fontSize: "var(--fs-sm)",
-                  }}>
+                {catalogError && (
+                  <div style={{ color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
+                    {catalogError}
+                  </div>
+                )}
+                {installError && (
+                  <div style={{ color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
+                    {installError}
+                  </div>
+                )}
+
+                {catalogLoading && !catalog && (
+                  <div style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", padding: "16px 0" }}>
+                    {t("common.loading")}
+                  </div>
+                )}
+
+                {!catalogLoading && !catalog && !catalogError && (
+                  <div style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", padding: "16px 0" }}>
                     {t("settings.community_none")}
                   </div>
-                ) : (
-                  COMMUNITY_PACKAGES.map((pkg) => (
+                )}
+
+                {catalog?.packages.map((pkg) => {
+                  const installed = isInstalled(pkg.id);
+                  const isInstalling = installing.has(pkg.id);
+                  const progress = installProgress[pkg.id];
+
+                  return (
                     <div key={pkg.id} style={{
                       display: "flex", alignItems: "center", gap: 12,
-                      padding: "10px 0", borderBottom: "1px solid var(--border-subtle)",
+                      padding: "12px 0", borderBottom: "1px solid var(--border-subtle)",
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 500, fontSize: "var(--fs-sm)", color: "var(--fg-default)" }}>
-                          {pkg.label}
+                      {/* Flag + info */}
+                      <span style={{ fontSize: 24, flexShrink: 0 }}>{pkg.flag}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                          <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)" }}>
+                            {pkg.native_name}
+                          </span>
+                          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{pkg.name}</span>
+                          {/* Status badge */}
+                          <span style={{
+                            fontSize: 10, padding: "1px 5px", borderRadius: 3,
+                            background: pkg.status === "stable" ? "var(--build-ok-tint, #e6f4ea)"
+                              : pkg.status === "beta" ? "var(--accent-tint)" : "var(--bg-chrome)",
+                            color: pkg.status === "stable" ? "var(--build-ok)" : "var(--accent-deep)",
+                            fontFamily: "var(--font-mono)",
+                          }}>
+                            {pkg.status}
+                          </span>
                         </div>
-                        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-                          {pkg.description}
+                        {/* Capability pills */}
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                          {pkg.capabilities.ui && <span className="chip" style={{ fontSize: 10 }}>UI</span>}
+                          {pkg.capabilities.spelling && <span className="chip" style={{ fontSize: 10 }}>Spell</span>}
+                          {pkg.capabilities.autocorrect && <span className="chip" style={{ fontSize: 10 }}>Auto</span>}
+                          {pkg.capabilities.grammar_remote && <span className="chip" style={{ fontSize: 10 }}>Grammar</span>}
+                          {pkg.capabilities.latex_babel && <span className="chip" style={{ fontSize: 10 }}>babel</span>}
+                          {pkg.capabilities.latex_polyglossia && <span className="chip" style={{ fontSize: 10 }}>polyglossia</span>}
+                          {!pkg.capabilities.spelling && (
+                            <span className="chip" style={{ fontSize: 10, opacity: 0.5 }}>no spell</span>
+                          )}
                         </div>
+                        {isInstalling && progress && (
+                          <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent)", marginTop: 4 }}>
+                            {progress === "ui" ? "↓ UI…" : progress === "spelling" ? "↓ Dict…" : progress === "autocorrect" ? "↓ Rules…" : "✓"}
+                          </div>
+                        )}
                       </div>
-                      <button className="btn btn-ghost btn-sm">{t("settings.community_download")}</button>
+
+                      {/* Action button */}
+                      {installed ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                          <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-ok)", fontWeight: 500 }}>
+                            ✓ {t("settings.community_installed")}
+                          </span>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}
+                            onClick={() => uninstallPack(pkg.id)}
+                          >
+                            {t("settings.community_remove")}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="btn btn-accent btn-sm"
+                          style={{ flexShrink: 0, gap: 5 }}
+                          onClick={() => handleInstall(pkg)}
+                          disabled={isInstalling}
+                        >
+                          <IconDownload size={11} />
+                          {isInstalling ? "…" : t("settings.community_download")}
+                        </button>
+                      )}
                     </div>
-                  ))
-                )}
+                  );
+                })}
               </Card>
 
               <Card style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-soft)" }}>
@@ -423,11 +557,11 @@ export default function SettingsView() {
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <a
-                    href="https://github.com/GonzaloAndDev/TeXisStudio/tree/main/community"
+                    href="https://github.com/GonzaloAndDev/TeXisStudio/tree/main/community/languages"
                     style={{ fontSize: "var(--fs-sm)", color: "var(--accent)", fontFamily: "var(--font-mono)", textDecoration: "none" }}
                     target="_blank" rel="noreferrer"
                   >
-                    github.com/GonzaloAndDev/TeXisStudio/community →
+                    github.com/…/TeXisStudio/community/languages →
                   </a>
                 </div>
               </Card>
