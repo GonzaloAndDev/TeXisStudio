@@ -17,3 +17,13 @@ Thumbs.db
 texis-app/node_modules/
 texis-app/dist/
 texis-app/src-tauri/target/
+
+# Tauri — schemas generados automáticamente en cada build
+texis-app/src-tauri/gen/
+
+# Íconos móviles — TeXisStudio es app de escritorio únicamente
+texis-app/src-tauri/icons/android/
+texis-app/src-tauri/icons/ios/
+
+# Claude Code — configuración local del IDE, no pertenece al repo
+.claude/
