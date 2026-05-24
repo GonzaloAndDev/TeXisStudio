@@ -245,6 +245,16 @@ pub fn delete_profile(
     app: tauri::AppHandle,
     profile_id: String,
 ) -> Result<(), String> {
+    // Rechazar profile_id con separadores, traversal o caracteres extraños
+    if profile_id.is_empty()
+        || profile_id.contains("..")
+        || profile_id.contains('/')
+        || profile_id.contains('\\')
+        || !profile_id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(format!("ID de perfil inválido: '{}'.", profile_id));
+    }
+
     let profiles_root = profiles_dir(&app);
     let profile_dir = profiles_root.join(&profile_id);
 
@@ -255,6 +265,13 @@ pub fn delete_profile(
     // Verificar que es un directorio de perfil válido (tiene profile.yaml)
     if !profile_dir.join("profile.yaml").exists() {
         return Err("El directorio no contiene un profile.yaml válido.".to_string());
+    }
+
+    // Canonicalizar ambas rutas para detectar symlinks que salgan del sandbox
+    let canon_root = profiles_root.canonicalize().map_err(err)?;
+    let canon_dir  = profile_dir.canonicalize().map_err(err)?;
+    if !canon_dir.starts_with(&canon_root) {
+        return Err("Operación denegada: la ruta resuelta queda fuera del directorio de perfiles.".to_string());
     }
 
     std::fs::remove_dir_all(&profile_dir).map_err(err)?;

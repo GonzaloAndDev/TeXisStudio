@@ -58,6 +58,11 @@ pub async fn fetch_remote_profile(
     app: tauri::AppHandle,
     url: String,
 ) -> Result<Value, String> {
+    // 0. Solo HTTPS
+    if !url.starts_with("https://") {
+        return Err("Solo se permiten descargas mediante HTTPS.".to_string());
+    }
+
     // 1. Descargar ZIP con timeout y límite de tamaño
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(30))
@@ -144,6 +149,11 @@ pub async fn fetch_remote_profile(
 
         if relative.is_empty() || relative.ends_with('/') {
             continue; // es un directorio
+        }
+
+        // Rechazar rutas con path traversal (p.ej. "../../etc/passwd")
+        if relative.split('/').any(|seg| seg == "..") {
+            continue;
         }
 
         let dest_file = temp_dir.join(&relative);

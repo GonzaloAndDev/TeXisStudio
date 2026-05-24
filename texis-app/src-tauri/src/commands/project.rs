@@ -17,6 +17,9 @@ pub fn create_project(
     profile_id: String,
     output_path: String,
 ) -> Result<Value, String> {
+    validate_safe_name(&name)?;
+    validate_profile_id(&profile_id)?;
+
     let output = PathBuf::from(&output_path);
     let project_dir = output.join(&name);
 
@@ -353,4 +356,53 @@ fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
 
 fn now_iso8601() -> String {
     chrono::Utc::now().to_rfc3339()
+}
+
+/// Valida que un nombre de proyecto sea seguro para usarse como carpeta.
+/// Rechaza: vacío, demasiado largo, separadores de ruta, `..`,
+/// caracteres inválidos en Windows y nombres reservados del sistema.
+fn validate_safe_name(name: &str) -> Result<(), String> {
+    if name.trim().is_empty() {
+        return Err("El nombre del proyecto no puede estar vacío.".to_string());
+    }
+    if name.len() > 200 {
+        return Err("El nombre del proyecto es demasiado largo (máximo 200 caracteres).".to_string());
+    }
+    if name.contains("..") || name.contains('/') || name.contains('\\') {
+        return Err("El nombre del proyecto no puede contener separadores de ruta ni '..'.".to_string());
+    }
+    for c in &['<', '>', ':', '"', '|', '?', '*', '\0'] {
+        if name.contains(*c) {
+            return Err(format!("El nombre del proyecto contiene el carácter no permitido '{}'.", c));
+        }
+    }
+    // Nombres reservados de Windows (CON, NUL, COM1…COM9, LPT1…LPT9, etc.)
+    let stem = name.split('.').next().unwrap_or(name).to_uppercase();
+    let reserved = [
+        "CON", "PRN", "AUX", "NUL",
+        "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+        "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9",
+    ];
+    if reserved.contains(&stem.as_str()) {
+        return Err(format!("'{}' es un nombre reservado del sistema operativo.", name));
+    }
+    Ok(())
+}
+
+/// Valida que un profile_id solo contenga caracteres alfanuméricos, guiones y
+/// guiones bajos, sin separadores de ruta ni traversal.
+fn validate_profile_id(id: &str) -> Result<(), String> {
+    if id.is_empty() {
+        return Err("El ID de perfil no puede estar vacío.".to_string());
+    }
+    if id.len() > 100 {
+        return Err("El ID de perfil es demasiado largo (máximo 100 caracteres).".to_string());
+    }
+    if !id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Err(format!(
+            "El ID de perfil '{}' contiene caracteres no permitidos. Solo se permiten letras, números, '_' y '-'.",
+            id
+        ));
+    }
+    Ok(())
 }
