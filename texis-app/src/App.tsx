@@ -7,6 +7,7 @@ import HomeView from "./views/HomeView";
 import LibraryView from "./views/LibraryView";
 import ProfileWizardView from "./views/ProfileWizardView";
 import SetupLatexView from "./views/SetupLatexView";
+import SettingsView from "./views/SettingsView";
 import WizardView from "./views/WizardView";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
@@ -176,6 +177,8 @@ export default function App() {
           <Route path="/new-profile/:id" element={<ProfileWizardView />} />
           <Route path="/about" element={<AboutView />} />
           <Route path="/setup-latex" element={<SetupLatexView />} />
+          <Route path="/settings" element={<SettingsView />} />
+          <Route path="/settings/:section" element={<SettingsView />} />
           <Route path="*" element={<HomeView />} />
         </Routes>
       </BrowserRouter>

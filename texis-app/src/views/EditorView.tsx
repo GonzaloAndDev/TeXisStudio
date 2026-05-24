@@ -7,7 +7,7 @@ import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrom
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
   IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
-  IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTheorem, IconTrash, IconX,
+  IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { SpellPanel } from "../components/SpellPanel";
@@ -2418,6 +2418,13 @@ export default function EditorView() {
               <IconSettings size={14} />
             </button>
             <LanguagePicker />
+            <button
+              className="btn btn-ghost btn-icon"
+              title={t("common.settings")}
+              onClick={() => navigate("/settings")}
+            >
+              <IconSliders size={14} />
+            </button>
           </>
         }
       />

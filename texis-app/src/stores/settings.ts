@@ -7,6 +7,10 @@ interface SettingsState {
   grammarAutoCheck: boolean;
   grammarEnabled: boolean;
   customDictionary: string[];
+  userName: string;
+  userInstitution: string;
+  userEmail: string;
+  projectDir: string;
 
   setLang: (lang: string) => void;
   setSpellLang: (lang: string | null) => void;
@@ -15,6 +19,10 @@ interface SettingsState {
   setGrammarEnabled: (v: boolean) => void;
   addToCustomDictionary: (word: string) => void;
   removeFromCustomDictionary: (word: string) => void;
+  setUserName: (v: string) => void;
+  setUserInstitution: (v: string) => void;
+  setUserEmail: (v: string) => void;
+  setProjectDir: (v: string) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -37,6 +45,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   grammarAutoCheck: load("tx-grammar-auto", false),
   grammarEnabled: load("tx-grammar", true),
   customDictionary: load("tx-custom-dict", []),
+  userName: load("tx-user-name", ""),
+  userInstitution: load("tx-user-institution", ""),
+  userEmail: load("tx-user-email", ""),
+  projectDir: load("tx-project-dir", ""),
 
   setLang: (lang) => {
     save("tx-lang", lang);
@@ -71,4 +83,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       save("tx-custom-dict", next);
       return { customDictionary: next };
     }),
+  setUserName: (v) => { save("tx-user-name", v); set({ userName: v }); },
+  setUserInstitution: (v) => { save("tx-user-institution", v); set({ userInstitution: v }); },
+  setUserEmail: (v) => { save("tx-user-email", v); set({ userEmail: v }); },
+  setProjectDir: (v) => { save("tx-project-dir", v); set({ projectDir: v }); },
 }));

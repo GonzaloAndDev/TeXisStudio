@@ -183,7 +183,7 @@ export default function HomeView() {
             <button className="btn btn-ghost btn-sm">
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
-            <button className="btn btn-ghost btn-icon"><IconSettings size={14} /></button>
+            <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} title={t("common.settings")}><IconSettings size={14} /></button>
           </>
         }
       />
