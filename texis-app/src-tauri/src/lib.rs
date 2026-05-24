@@ -21,6 +21,7 @@ pub fn run() {
             commands::system::delete_profile,
             commands::system::detect_latex,
             commands::system::get_cloud_folders,
+            commands::remote::fetch_remote_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar TeXisStudio");

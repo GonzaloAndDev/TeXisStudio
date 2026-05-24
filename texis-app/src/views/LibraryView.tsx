@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconCheck, IconCode, IconDoc, IconDownload, IconEdit, IconFile,
-  IconHeading, IconImage, IconList, IconPlus, IconSearch, IconSigma,
+  IconHeading, IconImage, IconList, IconPlus, IconRefresh, IconSearch, IconSigma,
   IconTable, IconText, IconTrash, IconUpload, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
@@ -809,6 +809,268 @@ function ElementsTab() {
   );
 }
 
+// ── Catálogo curado de perfiles de comunidad ──────────────────────
+
+interface CommunityProfile {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  tags: string[];
+  meta: string;
+  downloadUrl: string;
+  stars?: number;
+  verified?: boolean;
+}
+
+const COMMUNITY_PROFILES: CommunityProfile[] = [
+  {
+    id: "apa.basic",
+    name: "Tesis APA 7 básica",
+    description: "Estructura estándar para trabajos académicos con estilo APA 7. Incluye portada, resumen, capítulos IMRyD y referencias.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["tesis", "APA", "licenciatura", "maestría"],
+    meta: "XeLaTeX · biber · APA 7",
+    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
+    stars: 24,
+    verified: true,
+  },
+  {
+    id: "vancouver.health",
+    name: "Tesis Ciencias de la Salud (Vancouver)",
+    description: "Perfil IMRyD completo con estilo Vancouver para ciencias médicas y de la salud.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["tesis", "salud", "Vancouver", "doctorado"],
+    meta: "XeLaTeX · biber · Vancouver",
+    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
+    stars: 17,
+    verified: true,
+  },
+  {
+    id: "engineering.basic",
+    name: "Reporte de Ingeniería (IEEE)",
+    description: "Para proyectos de ingeniería, memorias técnicas y reportes de laboratorio con estilo IEEE.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["reporte", "ingeniería", "IEEE"],
+    meta: "XeLaTeX · biber · IEEE",
+    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
+    stars: 12,
+    verified: true,
+  },
+  {
+    id: "company.internship",
+    name: "Reporte de Prácticas Profesionales",
+    description: "Formato para memoria de estadía o prácticas profesionales en empresa.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["prácticas", "empresa", "APA"],
+    meta: "XeLaTeX · biber · APA 7",
+    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
+    stars: 9,
+    verified: true,
+  },
+];
+
+// ── CommunityTab ──────────────────────────────────────────────────
+
+function CommunityTab({
+  installedIds,
+  onInstalled,
+}: {
+  installedIds: Set<string>;
+  onInstalled: (profile: ProfileInfo) => void;
+}) {
+  const [downloading, setDownloading]   = useState<string | null>(null);
+  const [error, setError]               = useState<string | null>(null);
+  const [success, setSuccess]           = useState<string | null>(null);
+  const [customUrl, setCustomUrl]       = useState("");
+  const [fetchingCustom, setFetchingCustom] = useState(false);
+  const urlRef = useRef<HTMLInputElement>(null);
+
+  async function handleInstall(profile: CommunityProfile) {
+    setDownloading(profile.id);
+    setError(null);
+    setSuccess(null);
+    try {
+      const installed = await api.fetchRemoteProfile(profile.downloadUrl);
+      onInstalled(installed);
+      setSuccess(`✓ "${installed.name}" instalado correctamente.`);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setDownloading(null);
+    }
+  }
+
+  async function handleCustomUrl() {
+    const url = customUrl.trim();
+    if (!url) return;
+    setFetchingCustom(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const installed = await api.fetchRemoteProfile(url);
+      onInstalled(installed);
+      setSuccess(`✓ "${installed.name}" instalado correctamente.`);
+      setCustomUrl("");
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setFetchingCustom(false);
+    }
+  }
+
+  const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: "32px 48px" }} className="scroll">
+      <div style={{ maxWidth: 720 }}>
+        {/* Header */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>
+            Biblioteca de comunidad
+          </h1>
+          <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>
+            Perfiles verificados listos para descargar e instalar. Requiere conexión a internet.
+          </p>
+        </div>
+
+        {!isTauri && (
+          <div style={{ padding: "12px 16px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", fontSize: "var(--fs-sm)", color: "var(--accent-deep)", marginBottom: 20 }}>
+            ℹ La descarga real solo funciona en la app de escritorio (Tauri). En el navegador se simula.
+          </div>
+        )}
+
+        {/* Feedback */}
+        {error && (
+          <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--build-err-tint, #ffeded)", border: "1px solid var(--build-err)", color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+        {success && (
+          <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--build-ok-tint, #edfff3)", border: "1px solid var(--build-ok)", color: "var(--build-ok)", fontSize: "var(--fs-sm)", marginBottom: 16 }}>
+            {success}
+          </div>
+        )}
+
+        {/* Lista curada */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+          {COMMUNITY_PROFILES.map((cp) => {
+            const isInstalled = installedIds.has(cp.id);
+            const isDownloading = downloading === cp.id;
+            return (
+              <div
+                key={cp.id}
+                style={{
+                  background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+                  borderRadius: "var(--r-lg)", padding: "16px 18px",
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                }}
+              >
+                {/* Ícono */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: "var(--r-md)", flexShrink: 0,
+                  background: isInstalled ? "var(--build-ok-tint, #edfff3)" : "var(--ink-100)",
+                  color: isInstalled ? "var(--build-ok)" : "var(--fg-muted)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {isInstalled ? <IconCheck size={18} sw={2.5} /> : <IconBook size={18} />}
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>
+                      {cp.name}
+                    </span>
+                    {cp.verified && (
+                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: "var(--r-xs)", background: "var(--accent-tint)", color: "var(--accent-deep)", fontWeight: 600 }}>
+                        VERIFICADO
+                      </span>
+                    )}
+                    {cp.stars !== undefined && (
+                      <span style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: 2 }}>
+                        ★ {cp.stars}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: "0 0 8px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                    {cp.description}
+                  </p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>{cp.meta}</span>
+                    {cp.tags.map((t) => (
+                      <span key={t} className="chip" style={{ fontSize: 9 }}>{t}</span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 6 }}>
+                    por {cp.author}
+                  </div>
+                </div>
+
+                {/* Acción */}
+                <div style={{ flexShrink: 0, alignSelf: "center" }}>
+                  {isInstalled ? (
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-ok)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                      <IconCheck size={12} sw={2.5} /> Instalado
+                    </span>
+                  ) : (
+                    <button
+                      className="btn btn-sm btn-accent"
+                      onClick={() => handleInstall(cp)}
+                      disabled={isDownloading}
+                      style={{ minWidth: 100 }}
+                    >
+                      {isDownloading
+                        ? <><IconRefresh size={12} /> Instalando…</>
+                        : <><IconDownload size={12} /> Instalar</>
+                      }
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* URL personalizada */}
+        <div style={{
+          padding: "20px 22px", borderRadius: "var(--r-lg)",
+          border: "1px dashed var(--border-firm)", background: "var(--bg-panel)",
+        }}>
+          <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 6 }}>
+            Instalar desde URL
+          </div>
+          <p style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", margin: "0 0 12px", lineHeight: 1.6 }}>
+            Pega la URL de un archivo <code style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-app)", padding: "1px 4px", borderRadius: 3 }}>.zip</code> que contenga un <code style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-app)", padding: "1px 4px", borderRadius: 3 }}>profile.yaml</code> válido.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              ref={urlRef}
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              placeholder="https://github.com/.../archive/main.zip"
+              style={{
+                flex: 1, padding: "7px 12px", borderRadius: "var(--r-md)",
+                border: "1px solid var(--border-firm)", background: "var(--bg-app)",
+                fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
+                fontFamily: "var(--font-mono)",
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleCustomUrl(); }}
+            />
+            <button
+              className="btn btn-accent btn-sm"
+              onClick={handleCustomUrl}
+              disabled={!customUrl.trim() || fetchingCustom}
+            >
+              {fetchingCustom ? <><IconRefresh size={12} /> …</> : <><IconDownload size={12} /> Instalar</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── LibraryView principal ─────────────────────────────────────────
 
 export default function LibraryView() {
@@ -816,7 +1078,7 @@ export default function LibraryView() {
   const [profiles, setProfiles]       = useState<ProfileInfo[]>([]);
   const [loading, setLoading]         = useState(true);
   const [search, setSearch]           = useState("");
-  const [tab, setTab]                 = useState<"profiles" | "elements">("profiles");
+  const [tab, setTab]                 = useState<"profiles" | "community" | "elements">("profiles");
   const [selected, setSelected]       = useState<ProfileInfo | null>(null);
   const [editing, setEditing]         = useState(false);
   const [importing, setImporting]     = useState(false);
@@ -943,8 +1205,9 @@ export default function LibraryView() {
           padding: "20px 12px", display: "flex", flexDirection: "column", gap: 4,
         }}>
           {[
-            { id: "profiles", label: "Perfiles", icon: <IconBook size={13} /> },
-            { id: "elements", label: "Elementos", icon: <IconFile size={13} /> },
+            { id: "profiles",  label: "Perfiles",   icon: <IconBook size={13} /> },
+            { id: "community", label: "Comunidad",  icon: <IconDownload size={13} /> },
+            { id: "elements",  label: "Elementos",  icon: <IconFile size={13} /> },
           ].map(({ id, label, icon }) => (
             <div
               key={id}
@@ -955,7 +1218,7 @@ export default function LibraryView() {
                 color: tab === id ? "var(--accent-deep)" : "var(--fg-default)",
                 fontWeight: tab === id ? 500 : 400,
               }}
-              onClick={() => setTab(id as "profiles" | "elements")}
+              onClick={() => setTab(id as "profiles" | "community" | "elements")}
             >
               {icon} {label}
             </div>
@@ -1060,6 +1323,18 @@ export default function LibraryView() {
               />
             )}
           </div>
+        )}
+
+        {tab === "community" && (
+          <CommunityTab
+            installedIds={new Set(profiles.map((p) => p.id))}
+            onInstalled={(p) => {
+              setProfiles((prev) => {
+                const exists = prev.some((x) => x.id === p.id);
+                return exists ? prev : [...prev, p];
+              });
+            }}
+          />
         )}
 
         {tab === "elements" && <ElementsTab />}

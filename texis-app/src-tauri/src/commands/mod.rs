@@ -3,4 +3,5 @@
 
 pub mod compiler;
 pub mod project;
+pub mod remote;
 pub mod system;

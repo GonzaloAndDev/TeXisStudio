@@ -128,6 +128,9 @@ export const api = {
   updateProfile: (profileId: string, payload: ProfileUpdatePayload): Promise<ProfileInfo> =>
     call("update_profile", { profileId, payload }),
 
+  fetchRemoteProfile: (url: string): Promise<ProfileInfo> =>
+    call("fetch_remote_profile", { url }),
+
   deleteProfile: (profileId: string): Promise<void> =>
     call("delete_profile", { profileId }),
 
