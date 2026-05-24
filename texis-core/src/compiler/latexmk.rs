@@ -64,7 +64,7 @@ impl CompilationBackend for LatexmkBackend {
         };
 
         Ok(CompilationResult {
-            success: output.status.success(),
+            success,
             pdf_path,
             log,
             user_errors,

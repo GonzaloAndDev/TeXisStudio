@@ -119,6 +119,8 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
     section.blocks = new_blocks;
     section.enabled = true;
 
+    model.updated_at = now_iso8601();
+
     let saver = ProjectSaver;
     saver.save_to_file(&model, &yaml_path).map_err(err)?;
 
@@ -134,7 +136,8 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
 #[tauri::command]
 pub fn save_project(project_path: String, project: Value) -> Result<(), String> {
     let yaml_path = PathBuf::from(&project_path).join("tesis.project.yaml");
-    let model: ProjectModel = serde_json::from_value(project).map_err(err)?;
+    let mut model: ProjectModel = serde_json::from_value(project).map_err(err)?;
+    model.updated_at = now_iso8601();
     let saver = ProjectSaver;
     saver.save_to_file(&model, &yaml_path).map_err(err)?;
     // Regenerar build/ con metadatos actualizados
@@ -213,9 +216,9 @@ fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
 
     ProjectModel {
         id: format!("{}-001", name.to_lowercase().replace(' ', "-")),
-        schema_version: "0.1.0".to_string(),
-        created_at: chrono_now(),
-        updated_at: chrono_now(),
+        schema_version: texis_core::schema::versions::CURRENT_SCHEMA_VERSION.to_string(),
+        created_at: now_iso8601(),
+        updated_at: now_iso8601(),
         metadata: ProjectMetadata {
             title: name.to_string(),
             subtitle: None,
@@ -348,31 +351,6 @@ fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
     }
 }
 
-fn chrono_now() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
-
-    let hh = (secs % 86400) / 3600;
-    let mm = (secs % 3600) / 60;
-    let ss = secs % 60;
-
-    // Civil date from Unix epoch (Euclidean affine algorithm)
-    let z = secs / 86400 + 719468;
-    let era = if z >= 0 { z } else { z - 146096 } / 146097;
-    let doe = z - era * 146097;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let y_raw = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = doy - (153 * mp + 2) / 5 + 1;
-    let month = if mp < 10 { mp + 3 } else { mp - 9 };
-    let year = if month <= 2 { y_raw + 1 } else { y_raw };
-
-    format!(
-        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-        year, month, day, hh, mm, ss
-    )
+fn now_iso8601() -> String {
+    chrono::Utc::now().to_rfc3339()
 }

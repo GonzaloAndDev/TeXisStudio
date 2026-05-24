@@ -1,10 +1,15 @@
 // Descarga e instalación de perfiles remotos (biblioteca de comunidad).
 
+use futures_util::StreamExt;
 use serde_json::Value;
 use std::io::Cursor;
 use std::path::PathBuf;
+use std::time::Duration;
 use tauri::Manager;
 use texis_core::profile::ProfileLoader;
+
+/// Tamaño máximo permitido para un ZIP de perfil: 10 MB.
+const MAX_ZIP_BYTES: usize = 10 * 1024 * 1024;
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -53,8 +58,13 @@ pub async fn fetch_remote_profile(
     app: tauri::AppHandle,
     url: String,
 ) -> Result<Value, String> {
-    // 1. Descargar ZIP
-    let response = reqwest::get(&url).await.map_err(|e| {
+    // 1. Descargar ZIP con timeout y límite de tamaño
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(err)?;
+
+    let response = client.get(&url).send().await.map_err(|e| {
         format!("Error descargando desde '{}': {}", url, e)
     })?;
 
@@ -65,7 +75,29 @@ pub async fn fetch_remote_profile(
         ));
     }
 
-    let bytes = response.bytes().await.map_err(err)?.to_vec();
+    // Rechazar si Content-Length supera el límite
+    if let Some(len) = response.content_length() {
+        if len as usize > MAX_ZIP_BYTES {
+            return Err(format!(
+                "El archivo es demasiado grande ({} bytes, máximo {} bytes).",
+                len, MAX_ZIP_BYTES
+            ));
+        }
+    }
+
+    // Leer el stream limitando la cantidad de bytes acumulados
+    let mut bytes: Vec<u8> = Vec::new();
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(err)?;
+        bytes.extend_from_slice(&chunk);
+        if bytes.len() > MAX_ZIP_BYTES {
+            return Err(format!(
+                "El archivo supera el tamaño máximo permitido ({} bytes).",
+                MAX_ZIP_BYTES
+            ));
+        }
+    }
 
     // 2. Abrir el ZIP en memoria
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes.clone())).map_err(|e| {
@@ -148,12 +180,12 @@ pub async fn fetch_remote_profile(
         ));
     }
 
-    // 8. Copiar al directorio de perfiles
+    // 8. Copiar al directorio de perfiles (recursivo para subdirectorios)
     std::fs::create_dir_all(&dest_dir).map_err(err)?;
-    for entry in std::fs::read_dir(&temp_dir).map_err(err)? {
-        let entry = entry.map_err(err)?;
-        let dest_file = dest_dir.join(entry.file_name());
-        std::fs::copy(entry.path(), dest_file).map_err(err)?;
+    if let Err(e) = copy_dir_recursive(&temp_dir, &dest_dir) {
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        let _ = std::fs::remove_dir_all(&dest_dir);
+        return Err(e);
     }
     let _ = std::fs::remove_dir_all(&temp_dir);
 
@@ -182,6 +214,24 @@ fn find_profile_yaml_in_names(names: &[String]) -> Result<String, String> {
 
     candidates.sort_by_key(|(depth, _)| *depth);
     Ok(candidates[0].1.to_string())
+}
+
+/// Copia recursivamente `src` a `dst`, preservando la estructura de subdirectorios.
+fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
+    for entry in walkdir::WalkDir::new(src).min_depth(1) {
+        let entry = entry.map_err(err)?;
+        let rel = entry.path().strip_prefix(src).map_err(err)?;
+        let dest = dst.join(rel);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&dest).map_err(err)?;
+        } else {
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent).map_err(err)?;
+            }
+            std::fs::copy(entry.path(), &dest).map_err(err)?;
+        }
+    }
+    Ok(())
 }
 
 /// UUID corto para nombres de directorio temporal.

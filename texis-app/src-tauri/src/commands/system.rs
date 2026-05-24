@@ -159,13 +159,9 @@ pub fn import_profile(app: tauri::AppHandle, source_path: String) -> Result<Valu
     }
     std::fs::create_dir_all(&dest_dir).map_err(err)?;
 
-    // Copiar todos los archivos del directorio fuente
+    // Copia recursiva del directorio fuente
     let src_dir = profile_yaml.parent().unwrap_or(src);
-    for entry in std::fs::read_dir(src_dir).map_err(err)? {
-        let entry = entry.map_err(err)?;
-        let dest_file = dest_dir.join(entry.file_name());
-        std::fs::copy(entry.path(), dest_file).map_err(err)?;
-    }
+    copy_dir_recursive(src_dir, &dest_dir)?;
 
     Ok(profile_to_json(&profile))
 }
@@ -187,11 +183,7 @@ pub fn export_profile(
     let dest = PathBuf::from(&dest_path).join(format!("{}.texisprofile", profile_id));
     std::fs::create_dir_all(&dest).map_err(err)?;
 
-    for entry in std::fs::read_dir(&src_dir).map_err(err)? {
-        let entry = entry.map_err(err)?;
-        let dest_file = dest.join(entry.file_name());
-        std::fs::copy(entry.path(), dest_file).map_err(err)?;
-    }
+    copy_dir_recursive(&src_dir, &dest)?;
 
     Ok(serde_json::json!({
         "exported_to": dest.to_string_lossy(),
@@ -303,6 +295,24 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "bibliography_style": p.bibliography_style,
         "latex_engine": p.latex_engine,
     })
+}
+
+/// Copia recursivamente `src` a `dst`, preservando la estructura de subdirectorios.
+fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), String> {
+    for entry in walkdir::WalkDir::new(src).min_depth(1) {
+        let entry = entry.map_err(err)?;
+        let rel = entry.path().strip_prefix(src).map_err(err)?;
+        let dest = dst.join(rel);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&dest).map_err(err)?;
+        } else {
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent).map_err(err)?;
+            }
+            std::fs::copy(entry.path(), &dest).map_err(err)?;
+        }
+    }
+    Ok(())
 }
 
 fn engine_label(engine: &str) -> &str {

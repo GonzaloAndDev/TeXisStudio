@@ -1313,6 +1313,8 @@ export default function EditorView() {
         await api.saveSection(activeProjectPath, sectionId, blocks);
       } catch (e) {
         console.error("Error guardando:", e);
+        setSaveStatus("unsaved");
+        return;
       }
     }
     setSaveStatus("saved");

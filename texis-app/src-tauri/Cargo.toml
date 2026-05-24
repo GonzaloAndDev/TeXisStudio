@@ -18,5 +18,7 @@ walkdir     = { workspace = true }
 texis-core  = { path = "../../texis-core" }
 tauri-plugin-dialog = "2"
 dirs        = "5"
-reqwest     = { version = "0.12", default-features = false, features = ["rustls-tls"] }
-zip         = "2"
+reqwest      = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+zip          = "2"
+chrono       = { workspace = true }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
