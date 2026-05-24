@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use texis_core::{
     compiler::error_translator,
     project::loader::ProjectLoader,

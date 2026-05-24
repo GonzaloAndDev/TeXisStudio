@@ -1,4 +1,5 @@
 pub mod academic;
+pub mod bibliography;
 pub mod report;
 pub mod technical;
 
@@ -23,6 +24,9 @@ impl Validator {
 
         let technical = technical::validate(model, project_dir);
         all_issues.extend(technical.issues);
+
+        let bib = bibliography::validate(model, project_dir);
+        all_issues.extend(bib.issues);
 
         Ok(ValidationReport::new(all_issues))
     }

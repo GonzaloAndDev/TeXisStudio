@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBuild, IconCheck, IconChevronD, IconCode, IconDoc, IconDrag, IconFile,
@@ -1352,6 +1352,16 @@ export default function EditorView() {
   const [dragId, setDragId]   = useState<string | null>(null);
   const [dropId, setDropId]   = useState<string | null>(null);
 
+  // Snapshots (versiones)
+  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
+  const [snapshots, setSnapshots] = useState<{ filename: string; timestamp: string; label: string }[]>([]);
+  const [newSnapLabel, setNewSnapLabel] = useState("");
+  const [snapBusy, setSnapBusy] = useState(false);
+
+  // Navigation guard — bloquear si hay cambios sin guardar
+  const isUnsaved = saveStatus === "unsaved" || saveStatus === "error";
+  const blocker = useBlocker(isUnsaved);
+
   // Toolbar académico
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen] = useState(false);
@@ -1380,6 +1390,79 @@ export default function EditorView() {
     }
     setSaveStatus("saved");
   }, [activeProjectPath]);
+
+  // Prevenir cierre de ventana/app con cambios sin guardar
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isUnsaved) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isUnsaved]);
+
+  // ── Snapshots ──────────────────────────────────────────────────
+  const loadSnapshots = useCallback(async () => {
+    if (!activeProjectPath) return;
+    try {
+      const list = await api.listSnapshots(activeProjectPath);
+      setSnapshots(list);
+    } catch {
+      setSnapshots([]);
+    }
+  }, [activeProjectPath]);
+
+  useEffect(() => {
+    if (snapshotsOpen) loadSnapshots();
+  }, [snapshotsOpen, loadSnapshots]);
+
+  const handleCreateSnapshot = useCallback(async () => {
+    if (!activeProjectPath || !newSnapLabel.trim()) return;
+    setSnapBusy(true);
+    try {
+      await api.createSnapshot(activeProjectPath, newSnapLabel.trim());
+      setNewSnapLabel("");
+      await loadSnapshots();
+    } catch (e) {
+      console.error("Error creando snapshot:", e);
+    } finally {
+      setSnapBusy(false);
+    }
+  }, [activeProjectPath, newSnapLabel, loadSnapshots]);
+
+  const handleRestoreSnapshot = useCallback(async (filename: string) => {
+    if (!activeProjectPath) return;
+    const ok = window.confirm(
+      "¿Restaurar esta versión? El estado actual se guardará automáticamente como un snapshot de respaldo antes de restaurar."
+    );
+    if (!ok) return;
+    setSnapBusy(true);
+    try {
+      await api.restoreSnapshot(activeProjectPath, filename);
+      // Recargar el proyecto desde disco
+      const model = await api.getProject(activeProjectPath);
+      useProjectStore.getState().openProject(model, activeProjectPath);
+      setSnapshotsOpen(false);
+    } catch (e) {
+      console.error("Error restaurando snapshot:", e);
+    } finally {
+      setSnapBusy(false);
+    }
+  }, [activeProjectPath]);
+
+  const handleDeleteSnapshot = useCallback(async (filename: string) => {
+    if (!activeProjectPath) return;
+    const ok = window.confirm("¿Eliminar este snapshot? Esta acción no se puede deshacer.");
+    if (!ok) return;
+    try {
+      await api.deleteSnapshot(activeProjectPath, filename);
+      await loadSnapshots();
+    } catch (e) {
+      console.error("Error eliminando snapshot:", e);
+    }
+  }, [activeProjectPath, loadSnapshots]);
 
   const scheduleAutoSave = useCallback((blocks: ContentBlock[]) => {
     setSaveStatus("unsaved");
@@ -1555,6 +1638,13 @@ export default function EditorView() {
         right={
           <>
             <button className="btn btn-ghost btn-sm"><IconSearch size={13} /></button>
+            <button
+              className={`btn btn-ghost btn-sm${snapshotsOpen ? " btn-active" : ""}`}
+              onClick={() => setSnapshotsOpen((o) => !o)}
+              title="Versiones guardadas del proyecto"
+            >
+              <IconRefresh size={13} /> Versiones
+            </button>
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
               <IconBuild size={13} /> Compilar
             </button>
@@ -1754,6 +1844,163 @@ export default function EditorView() {
           onInsert={(ref) => insertCitation(ref, "parenthetical")}
           onClose={() => setCitPickerOpen(false)}
         />
+      )}
+
+      {/* ── Panel de versiones (snapshots) ───────────────────────── */}
+      {snapshotsOpen && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)",
+            display: "flex", justifyContent: "flex-end", zIndex: 800,
+          }}
+          onClick={() => setSnapshotsOpen(false)}
+        >
+          <div
+            style={{
+              width: 380, height: "100%", background: "var(--bg-chrome)",
+              borderLeft: "1px solid var(--border-firm)",
+              display: "flex", flexDirection: "column",
+              boxShadow: "-8px 0 32px rgba(0,0,0,0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)", flex: 1 }}>
+                Versiones guardadas
+              </span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setSnapshotsOpen(false)}>
+                <IconX size={13} />
+              </button>
+            </div>
+
+            {/* Crear nuevo snapshot */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6 }}>
+                Guardar versión actual
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  value={newSnapLabel}
+                  onChange={(e) => setNewSnapLabel(e.target.value)}
+                  placeholder="Nombre de la versión…"
+                  disabled={snapBusy}
+                  onKeyDown={(e) => { if (e.key === "Enter" && newSnapLabel.trim()) handleCreateSnapshot(); }}
+                  style={{
+                    flex: 1, padding: "6px 10px", borderRadius: "var(--r-sm)",
+                    border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+                    fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
+                  }}
+                />
+                <button
+                  className="btn btn-accent btn-sm"
+                  disabled={!newSnapLabel.trim() || snapBusy}
+                  onClick={handleCreateSnapshot}
+                >
+                  <IconPlus size={11} /> Guardar
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de snapshots */}
+            <div style={{ flex: 1, overflow: "auto", padding: "4px 0" }} className="scroll">
+              {snapshots.length === 0 ? (
+                <div style={{ padding: "36px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
+                  No hay versiones guardadas.
+                  <br />
+                  <span style={{ fontSize: "var(--fs-xs)" }}>Usa el campo de arriba para crear una.</span>
+                </div>
+              ) : (
+                snapshots.map((snap) => (
+                  <div
+                    key={snap.filename}
+                    style={{
+                      padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)",
+                      display: "flex", alignItems: "center", gap: 8,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {snap.label}
+                      </div>
+                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                        {snap.timestamp}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      disabled={snapBusy}
+                      onClick={() => handleRestoreSnapshot(snap.filename)}
+                      title="Restaurar esta versión"
+                      style={{ fontSize: "var(--fs-xs)", flexShrink: 0 }}
+                    >
+                      <IconRefresh size={10} /> Restaurar
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-icon"
+                      disabled={snapBusy}
+                      onClick={() => handleDeleteSnapshot(snap.filename)}
+                      title="Eliminar versión"
+                      style={{ padding: 4, opacity: 0.55, flexShrink: 0 }}
+                    >
+                      <IconTrash size={11} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: cambios sin guardar al navegar ─────────────────── */}
+      {blocker.state === "blocked" && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000,
+        }}>
+          <div style={{
+            width: 430, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
+            border: "1px solid var(--border-firm)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+            padding: "28px 28px 22px",
+          }}>
+            <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 10 }}>
+              Cambios sin guardar
+            </div>
+            <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6, margin: "0 0 22px" }}>
+              Tienes cambios sin guardar en esta sección. ¿Qué deseas hacer antes de salir?
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => blocker.reset?.()}
+              >
+                Seguir editando
+              </button>
+              <button
+                className="btn"
+                style={{ color: "var(--build-err)", borderColor: "var(--build-err)" }}
+                onClick={() => blocker.proceed?.()}
+              >
+                Salir sin guardar
+              </button>
+              <button
+                className="btn btn-accent"
+                onClick={async () => {
+                  if (activeSectionId) await doSave(localBlocks, activeSectionId);
+                  blocker.proceed?.();
+                }}
+              >
+                <IconCheck size={12} /> Guardar y salir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <TxStatusbar items={[

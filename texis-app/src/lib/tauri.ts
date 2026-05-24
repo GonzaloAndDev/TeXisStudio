@@ -143,6 +143,19 @@ export const api = {
   listReferences: (projectPath: string): Promise<BibReference[]> =>
     call("list_references", { projectPath }),
 
+  // ── Snapshots ────────────────────────────────────────────────────
+  createSnapshot: (projectPath: string, label: string): Promise<{ filename: string; label: string; created_at: string }> =>
+    call("create_snapshot", { projectPath, label }),
+
+  listSnapshots: (projectPath: string): Promise<{ filename: string; timestamp: string; label: string }[]> =>
+    call("list_snapshots", { projectPath }),
+
+  restoreSnapshot: (projectPath: string, snapshotFilename: string): Promise<void> =>
+    call("restore_snapshot", { projectPath, snapshotFilename }),
+
+  deleteSnapshot: (projectPath: string, snapshotFilename: string): Promise<void> =>
+    call("delete_snapshot", { projectPath, snapshotFilename }),
+
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),
 

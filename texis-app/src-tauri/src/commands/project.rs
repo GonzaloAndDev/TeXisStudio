@@ -230,6 +230,149 @@ pub fn list_references(project_path: String) -> Result<Value, String> {
     Ok(serde_json::json!(result))
 }
 
+// ── Snapshots ─────────────────────────────────────────────────────
+
+/// Crea un snapshot (copia nombrada) del proyecto en su estado actual.
+/// El archivo se guarda en `<project>/snapshots/<timestamp>_<label>.project.yaml`.
+#[tauri::command]
+pub fn create_snapshot(project_path: String, label: String) -> Result<Value, String> {
+    let label_clean = sanitize_snapshot_label(&label);
+    if label_clean.is_empty() {
+        return Err("La etiqueta del snapshot no puede estar vacía.".to_string());
+    }
+
+    let project_dir = PathBuf::from(&project_path);
+    let src = project_dir.join("tesis.project.yaml");
+    if !src.exists() {
+        return Err("No se encontró tesis.project.yaml en el directorio del proyecto.".to_string());
+    }
+
+    let snapshots_dir = project_dir.join("snapshots");
+    std::fs::create_dir_all(&snapshots_dir).map_err(err)?;
+
+    let timestamp = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%S").to_string();
+    let filename = format!("{}_{}.project.yaml", timestamp, label_clean);
+    let dest = snapshots_dir.join(&filename);
+
+    std::fs::copy(&src, &dest).map_err(err)?;
+
+    Ok(serde_json::json!({
+        "filename": filename,
+        "label": label,
+        "created_at": chrono::Utc::now().to_rfc3339(),
+    }))
+}
+
+/// Devuelve la lista de snapshots del proyecto, ordenados por nombre (más reciente primero).
+#[tauri::command]
+pub fn list_snapshots(project_path: String) -> Result<Value, String> {
+    let snapshots_dir = PathBuf::from(&project_path).join("snapshots");
+
+    if !snapshots_dir.exists() {
+        return Ok(serde_json::json!([]));
+    }
+
+    let mut entries: Vec<Value> = std::fs::read_dir(&snapshots_dir)
+        .map_err(err)?
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path()
+                .extension()
+                .and_then(|x| x.to_str())
+                .map(|x| x == "yaml")
+                .unwrap_or(false)
+        })
+        .filter_map(|e| {
+            let filename = e.file_name().to_string_lossy().to_string();
+            // Extraer label desde el nombre: <timestamp>_<label>.project.yaml
+            let stem = filename.strip_suffix(".project.yaml")?;
+            let (ts, label) = stem.split_once('_').unwrap_or((stem, ""));
+            Some(serde_json::json!({
+                "filename": filename,
+                "timestamp": ts,
+                "label": label,
+            }))
+        })
+        .collect();
+
+    // Ordenar más reciente primero (por nombre, que tiene el timestamp al inicio)
+    entries.sort_by(|a, b| {
+        b["filename"].as_str().unwrap_or("").cmp(a["filename"].as_str().unwrap_or(""))
+    });
+
+    Ok(serde_json::json!(entries))
+}
+
+/// Restaura el proyecto a un snapshot.
+/// Antes de sobreescribir, crea automáticamente un snapshot de "pre-restauración".
+#[tauri::command]
+pub fn restore_snapshot(project_path: String, snapshot_filename: String) -> Result<(), String> {
+    // Seguridad: el nombre no puede contener separadores de ruta
+    if snapshot_filename.contains('/') || snapshot_filename.contains('\\') || snapshot_filename.contains("..") {
+        return Err("Nombre de snapshot inválido.".to_string());
+    }
+
+    let project_dir = PathBuf::from(&project_path);
+    let snapshots_dir = project_dir.join("snapshots");
+    let snapshot_path = snapshots_dir.join(&snapshot_filename);
+
+    if !snapshot_path.exists() {
+        return Err(format!("El snapshot '{}' no existe.", snapshot_filename));
+    }
+
+    let current = project_dir.join("tesis.project.yaml");
+
+    // Backup automático del estado actual antes de restaurar
+    if current.exists() {
+        let ts = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%S").to_string();
+        let pre_restore = snapshots_dir.join(format!("{}_pre-restauracion.project.yaml", ts));
+        std::fs::create_dir_all(&snapshots_dir).map_err(err)?;
+        std::fs::copy(&current, &pre_restore).map_err(err)?;
+    }
+
+    std::fs::copy(&snapshot_path, &current).map_err(err)?;
+    Ok(())
+}
+
+/// Elimina un snapshot del proyecto.
+#[tauri::command]
+pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Result<(), String> {
+    if snapshot_filename.contains('/') || snapshot_filename.contains('\\') || snapshot_filename.contains("..") {
+        return Err("Nombre de snapshot inválido.".to_string());
+    }
+
+    let path = PathBuf::from(&project_path)
+        .join("snapshots")
+        .join(&snapshot_filename);
+
+    if !path.exists() {
+        return Err(format!("El snapshot '{}' no existe.", snapshot_filename));
+    }
+
+    std::fs::remove_file(&path).map_err(err)?;
+    Ok(())
+}
+
+/// Sanitiza la etiqueta de un snapshot para usarla como parte del nombre de archivo.
+fn sanitize_snapshot_label(label: &str) -> String {
+    label
+        .trim()
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else if c == ' ' {
+                '-'
+            } else {
+                '_'
+            }
+        })
+        .take(60)
+        .collect::<String>()
+        .trim_matches(['-', '_'].as_ref())
+        .to_string()
+}
+
 /// Construye el directorio de perfiles para una app handle dada.
 /// (Misma lógica que system.rs — producción primero, luego dev.)
 fn profiles_dir_for_app(app: &tauri::AppHandle) -> PathBuf {
