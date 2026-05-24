@@ -99,23 +99,35 @@ En CI/CD (GitHub Actions) se construyen automáticamente al publicar un tag `v*`
 | Linux (cualquier) | `.AppImage` | `chmod +x TeXisStudio.AppImage && ./TeXisStudio.AppImage` |
 | macOS | `.dmg` | arrastrar a Aplicaciones — universal Intel + Apple Silicon |
 
+### Prerrequisitos por sistema
+
+| Sistema | Requisito | Cómo obtenerlo |
+|---|---|---|
+| **Todos** | Rust stable | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| **Todos** | Node.js 18+ | [nodejs.org](https://nodejs.org) |
+| Windows | WiX Toolset (MSI) | Tauri lo instala automáticamente si falta |
+| Windows | Strawberry Perl (latexmk) | [strawberryperl.com](https://strawberryperl.com) |
+| Debian/Ubuntu | `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `patchelf` | El script los instala con `apt-get` |
+| Fedora/RHEL | `webkit2gtk4.1-devel`, `gtk3-devel`, `libappindicator-gtk3-devel`, `patchelf` | El script los instala con `dnf` |
+| macOS | Xcode Command Line Tools | `xcode-select --install` |
+| macOS | Targets Rust universales | El script los añade con `rustup target add` |
+
 ### Build local
 
 ```powershell
-# Windows
+# Windows → genera MSI + NSIS + portable ZIP en target\release\bundle\
 .\scripts\build-windows.ps1
 ```
 
 ```bash
-# Linux (detecta automáticamente apt / dnf / pacman)
+# Linux → genera .deb + .rpm + .AppImage en target/release/bundle/
+# Detecta automáticamente apt (Debian/Ubuntu), dnf (Fedora), pacman (Arch)
 bash scripts/build-linux.sh
 
-# macOS (genera universal binary Intel + Apple Silicon)
+# macOS → genera DMG universal (Intel + Apple Silicon) en
+# target/universal-apple-darwin/release/bundle/dmg/
 bash scripts/build-mac.sh
 ```
-
-Los artefactos quedan en `target/release/bundle/` (Windows y Linux)
-o en `target/universal-apple-darwin/release/bundle/` (macOS).
 
 ### Release automática (GitHub Actions)
 

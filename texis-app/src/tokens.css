@@ -22,11 +22,17 @@
   --ink-800:  #1B1916;     /* Tinta                                   */
   --ink-900:  #100F0D;
 
-  /* ─── Acentos ─── */
-  --accent:        #B5532D;   /* Sienna — encuadernación, cuero       */
-  --accent-soft:   #E9C9B7;
-  --accent-tint:   #FBEFE6;
-  --accent-deep:   #8A3E20;
+  /* ─── Acento principal — índigo ─── */
+  --accent:        #4338CA;   /* Índigo-700 — chrome, botones, selección */
+  --accent-soft:   #A5B4FC;   /* Índigo-300 — bordes suaves              */
+  --accent-tint:   #EEF2FF;   /* Índigo-50  — fondos muy suaves          */
+  --accent-deep:   #3730A3;   /* Índigo-800 — hover, profundidad         */
+
+  /* ─── Detalle — verde pizarra ─── */
+  --detail:        #4F7A68;   /* Verde pizarra — detalles secundarios    */
+  --detail-soft:   #A3C4B8;
+  --detail-tint:   #EAF2EE;
+  --detail-deep:   #3A5E4E;
 
   --build-ok:      #4A7C5A;   /* Verde compilación exitosa            */
   --build-ok-tint: #DCEAD9;
@@ -34,7 +40,7 @@
   --build-warn-tint: #F4E8C8;
   --build-err:     #B33A3A;
   --build-err-tint:#F1D6D6;
-  --link:          #3D6B97;
+  --link:          #4338CA;
 
   /* ─── Roles semánticos (claro) ─── */
   --bg-app:        var(--ink-50);
@@ -43,7 +49,7 @@
   --bg-paper:      var(--paper-100);
   --bg-paper-edge: var(--paper-300);
   --bg-hover:      rgba(27, 25, 22, 0.04);
-  --bg-selected:   rgba(181, 83, 45, 0.10);
+  --bg-selected:   rgba(67, 56, 202, 0.08);
 
   --fg-strong:     var(--ink-800);
   --fg-default:    var(--ink-700);
@@ -104,7 +110,7 @@
   --bg-paper:      #25221C;        /* Papel "ahumado" en oscuro */
   --bg-paper-edge: #2E2A22;
   --bg-hover:      rgba(255,255,255,0.04);
-  --bg-selected:   rgba(212, 122, 78, 0.14);
+  --bg-selected:   rgba(99, 102, 241, 0.14);
 
   --fg-strong:     #F2EEE4;
   --fg-default:    #DAD3C4;
@@ -115,10 +121,15 @@
   --border-soft:   rgba(255,255,255,0.09);
   --border-firm:   rgba(255,255,255,0.16);
 
-  --accent:        #D47A4E;
-  --accent-soft:   #5A3823;
-  --accent-tint:   #2E1F15;
-  --accent-deep:   #E9986B;
+  --accent:        #818CF8;   /* Índigo-400 — más visible en oscuro   */
+  --accent-soft:   #3730A3;
+  --accent-tint:   #1E1B4B;
+  --accent-deep:   #A5B4FC;
+
+  --detail:        #6FB19A;
+  --detail-soft:   #2D4E43;
+  --detail-tint:   #1A2E28;
+  --detail-deep:   #9DD4C0;
 
   --build-ok:      #6FB186;
   --build-ok-tint: #1F2C24;

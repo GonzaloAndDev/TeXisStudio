@@ -70,7 +70,7 @@ const S = {
     display: "flex", flexDirection: "column" as const, gap: 10, minHeight: 132,
     position: "relative" as const,
   },
-  cardSpine: { width: 4, height: 28, borderRadius: 2, background: "var(--accent)", flexShrink: 0 } as const,
+  cardSpine: { width: 4, height: 28, borderRadius: 2, background: "var(--detail)", flexShrink: 0 } as const,
   cardTitle: {
     fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500,
     color: "var(--fg-strong)", lineHeight: 1.3, letterSpacing: "-0.005em", margin: 0,

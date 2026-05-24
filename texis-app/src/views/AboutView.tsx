@@ -50,7 +50,7 @@ export default function AboutView() {
               <TxLogo size={32} />
             </div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-3xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
-              TeXis<em style={{ fontStyle: "italic", color: "var(--accent-deep)" }}>Studio</em>
+              TeXis<em style={{ fontStyle: "italic", color: "var(--detail)" }}>Studio</em>
             </h1>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
               v1.0.0 — Release oficial
