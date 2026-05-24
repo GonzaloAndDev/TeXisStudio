@@ -251,6 +251,17 @@ export interface CloudFolder {
   hint: string;
 }
 
+// ── Bibliography entry (from list_references) ───────────────────
+
+export interface BibReference {
+  key: string;
+  entry_type: string;
+  title: string;
+  author: string;
+  year: string;
+  journal: string;
+}
+
 // ── Profile update payload (for update_profile command) ─────────
 
 export interface ProfileUpdatePayload {

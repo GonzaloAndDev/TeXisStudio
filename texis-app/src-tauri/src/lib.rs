@@ -11,6 +11,7 @@ pub fn run() {
             commands::project::save_section,
             commands::project::save_project,
             commands::project::validate_project,
+            commands::project::list_references,
             commands::compiler::compile_project,
             commands::system::get_profiles,
             commands::system::get_profile_detail,

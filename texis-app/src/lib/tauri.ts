@@ -3,6 +3,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  BibReference,
   CloudFolder,
   CompilationResult,
   LatexInfo,
@@ -35,6 +36,12 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     preferred_backend: undefined,
   } satisfies LatexInfo,
   get_cloud_folders: [] as CloudFolder[],
+  list_references: [
+    { key: "goodfellow2016deep",  entry_type: "book",    title: "Deep Learning",                                         author: "Goodfellow, Ian and Bengio, Yoshua and Courville, Aaron", year: "2016", journal: "" },
+    { key: "lecun2015deep",       entry_type: "article", title: "Deep learning",                                         author: "LeCun, Yann and Bengio, Yoshua and Hinton, Geoffrey",    year: "2015", journal: "Nature" },
+    { key: "vaswani2017attention",entry_type: "inproceedings", title: "Attention is All You Need",                      author: "Vaswani, Ashish et al.",                                  year: "2017", journal: "NeurIPS" },
+    { key: "he2016deep",          entry_type: "inproceedings", title: "Deep Residual Learning for Image Recognition",   author: "He, Kaiming et al.",                                      year: "2016", journal: "CVPR" },
+  ] as BibReference[],
   get_profiles: [
     {
       id: "generic.thesis",
@@ -123,6 +130,9 @@ export const api = {
 
   deleteProfile: (profileId: string): Promise<void> =>
     call("delete_profile", { profileId }),
+
+  listReferences: (projectPath: string): Promise<BibReference[]> =>
+    call("list_references", { projectPath }),
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),

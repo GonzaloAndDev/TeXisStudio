@@ -175,6 +175,38 @@ pub fn validate_project(project_path: String) -> Result<Value, String> {
     }))
 }
 
+/// Lista las entradas del archivo .bib del proyecto (content/bibliography/references.bib).
+#[tauri::command]
+pub fn list_references(project_path: String) -> Result<Value, String> {
+    use texis_core::bibliography::parser::BibParser;
+
+    let bib_path = PathBuf::from(&project_path)
+        .join("content")
+        .join("bibliography")
+        .join("references.bib");
+
+    if !bib_path.exists() {
+        // Sin archivo .bib — devolver lista vacía, no un error
+        return Ok(serde_json::json!([]));
+    }
+
+    let parser = BibParser;
+    let entries = parser.parse_file(&bib_path).map_err(err)?;
+
+    let result: Vec<Value> = entries.iter().map(|e| {
+        serde_json::json!({
+            "key":        e.key,
+            "entry_type": e.entry_type,
+            "title":      e.title(),
+            "author":     e.author(),
+            "year":       e.year(),
+            "journal":    e.fields.get("journal").or_else(|| e.fields.get("booktitle")).map(|s| s.as_str()).unwrap_or(""),
+        })
+    }).collect();
+
+    Ok(serde_json::json!(result))
+}
+
 fn build_default_model(name: &str, profile_id: &str) -> ProjectModel {
     use std::collections::HashMap;
     use texis_core::project::model::*;

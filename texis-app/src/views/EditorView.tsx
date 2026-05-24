@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBuild, IconChevronD, IconCode, IconDoc, IconDrag, IconFile,
+  IconBuild, IconCheck, IconChevronD, IconCode, IconDoc, IconDrag, IconFile,
   IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
   IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTrash, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { ContentBlock, HeadingLevel, ProjectModel, ProjectSection } from "../types";
+import type { BibReference, ContentBlock, HeadingLevel, ProjectModel, ProjectSection } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -640,6 +640,352 @@ function BlockItem({
   );
 }
 
+// ── CommandPalette (Ctrl+K) ───────────────────────────────────────
+
+const PALETTE_BLOCK_ITEMS = [
+  { type: "paragraph" as ContentBlock["type"],  label: "Párrafo",      icon: "¶",  hint: "Texto libre" },
+  { type: "heading"   as ContentBlock["type"],  label: "Título",       icon: "H",  hint: "H1 / H2 / H3" },
+  { type: "list"      as ContentBlock["type"],  label: "Lista",        icon: "•",  hint: "Viñetas o numerada" },
+  { type: "equation"  as ContentBlock["type"],  label: "Ecuación",     icon: "∑",  hint: "LaTeX math" },
+  { type: "figure"    as ContentBlock["type"],  label: "Figura",       icon: "🖼",  hint: "Imagen con leyenda" },
+  { type: "table"     as ContentBlock["type"],  label: "Tabla",        icon: "⊞",  hint: "Tabla editable" },
+  { type: "citation"  as ContentBlock["type"],  label: "Cita",         icon: "❞",  hint: "Referencia bibliográfica" },
+  { type: "raw_latex" as ContentBlock["type"],  label: "LaTeX directo",icon: "{}",  hint: "Fragmento LaTeX" },
+];
+
+function CommandPalette({
+  sections,
+  onInsertBlock,
+  onJumpSection,
+  onClose,
+}: {
+  sections: ProjectSection[];
+  onInsertBlock: (type: ContentBlock["type"]) => void;
+  onJumpSection: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [cursor, setCursor] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const q = query.toLowerCase();
+
+  const blockItems = PALETTE_BLOCK_ITEMS.filter(
+    (b) => !q || b.label.toLowerCase().includes(q) || b.hint.toLowerCase().includes(q)
+  );
+
+  const sectionItems = sections
+    .filter((s) => s.enabled && (!q || (s.title ?? s.id).toLowerCase().includes(q)))
+    .map((s) => ({ id: s.id, label: s.title ?? s.id, placement: s.placement }));
+
+  const allItems: { kind: "block" | "section"; label: string }[] = [
+    ...blockItems.map((b) => ({ kind: "block" as const, ...b })),
+    ...sectionItems.map((s) => ({ kind: "section" as const, ...s, type: undefined as never, icon: "§", hint: s.placement })),
+  ];
+
+  const total = allItems.length;
+
+  function confirm(idx: number) {
+    const item = allItems[idx];
+    if (!item) return;
+    if (item.kind === "block") onInsertBlock((item as unknown as typeof blockItems[0]).type);
+    else onJumpSection((item as unknown as typeof sectionItems[0]).id);
+    onClose();
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        paddingTop: 120, zIndex: 900,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: 520, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
+          border: "1px solid var(--border-firm)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          overflow: "hidden",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Barra de búsqueda */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <IconSearch size={14} style={{ color: "var(--fg-faint)", flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
+            placeholder="Insertar bloque o ir a sección…"
+            style={{
+              flex: 1, border: "none", outline: "none", background: "transparent",
+              fontSize: "var(--fs-md)", color: "var(--fg-strong)",
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, total - 1)); }
+              if (e.key === "ArrowUp")   { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
+              if (e.key === "Enter")     { e.preventDefault(); confirm(cursor); }
+              if (e.key === "Escape")    { e.preventDefault(); onClose(); }
+            }}
+          />
+          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0 }}>Esc cierra</span>
+        </div>
+
+        {/* Resultados */}
+        <div style={{ maxHeight: 340, overflow: "auto" }} className="scroll">
+          {blockItems.length > 0 && (
+            <>
+              <div style={{ padding: "6px 16px 4px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
+                Insertar bloque
+              </div>
+              {blockItems.map((b, i) => {
+                const globalIdx = i;
+                return (
+                  <div
+                    key={b.type}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "8px 16px", cursor: "pointer",
+                      background: cursor === globalIdx ? "var(--bg-selected)" : "transparent",
+                    }}
+                    onMouseEnter={() => setCursor(globalIdx)}
+                    onClick={() => confirm(globalIdx)}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0,
+                      background: cursor === globalIdx ? "var(--accent)" : "var(--ink-100)",
+                      color: cursor === globalIdx ? "white" : "var(--fg-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: 600,
+                    }}>
+                      {b.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{b.label}</div>
+                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{b.hint}</div>
+                    </div>
+                    {cursor === globalIdx && (
+                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {sectionItems.length > 0 && (
+            <>
+              <div style={{ padding: "6px 16px 4px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", borderTop: blockItems.length > 0 ? "1px solid var(--border-subtle)" : "none", marginTop: blockItems.length > 0 ? 4 : 0 }}>
+                Ir a sección
+              </div>
+              {sectionItems.map((s, i) => {
+                const globalIdx = blockItems.length + i;
+                return (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "8px 16px", cursor: "pointer",
+                      background: cursor === globalIdx ? "var(--bg-selected)" : "transparent",
+                    }}
+                    onMouseEnter={() => setCursor(globalIdx)}
+                    onClick={() => confirm(globalIdx)}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0,
+                      background: cursor === globalIdx ? "var(--accent)" : "var(--ink-100)",
+                      color: cursor === globalIdx ? "white" : "var(--fg-muted)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14,
+                    }}>
+                      §
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{s.label}</div>
+                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{s.placement}</div>
+                    </div>
+                    {cursor === globalIdx && (
+                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {total === 0 && (
+            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
+              Sin resultados para «{query}»
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CitationPickerModal ───────────────────────────────────────────
+
+function CitationPickerModal({
+  refs,
+  onInsert,
+  onClose,
+}: {
+  refs: BibReference[];
+  onInsert: (ref: BibReference) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [citationType, setCitationType] = useState<"parenthetical" | "narrative" | "footnote">("parenthetical");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const q = query.toLowerCase();
+  const filtered = refs.filter(
+    (r) =>
+      !q ||
+      r.key.toLowerCase().includes(q) ||
+      r.title.toLowerCase().includes(q) ||
+      r.author.toLowerCase().includes(q) ||
+      r.year.includes(q)
+  );
+
+  const typeLabel: Record<string, string> = {
+    parenthetical: "\\parencite",
+    narrative:     "\\textcite",
+    footnote:      "\\footcite",
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        paddingTop: 100, zIndex: 900,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: 580, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
+          border: "1px solid var(--border-firm)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "70vh",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", flex: 1 }}>
+            Insertar cita bibliográfica
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)" }}>
+            <IconX size={14} />
+          </button>
+        </div>
+
+        {/* Tipo de cita */}
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)", display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Tipo:</span>
+          {(["parenthetical", "narrative", "footnote"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setCitationType(t)}
+              className={`btn btn-sm ${citationType === t ? "btn-accent" : "btn-ghost"}`}
+              style={{ fontSize: 11, fontFamily: "var(--font-mono)", padding: "3px 10px" }}
+            >
+              {citationType === t && <IconCheck size={9} sw={2.5} />}
+              {typeLabel[t]}
+            </button>
+          ))}
+        </div>
+
+        {/* Búsqueda */}
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 8 }}>
+          <IconSearch size={13} style={{ color: "var(--fg-faint)", flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por clave, título, autor o año…"
+            style={{
+              flex: 1, border: "none", outline: "none", background: "transparent",
+              fontSize: "var(--fs-sm)", color: "var(--fg-strong)",
+            }}
+            onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+          />
+        </div>
+
+        {/* Lista de referencias */}
+        <div style={{ flex: 1, overflow: "auto" }} className="scroll">
+          {refs.length === 0 && (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--fg-faint)" }}>
+              <div style={{ fontSize: "var(--fs-sm)", marginBottom: 6 }}>No se encontró el archivo .bib</div>
+              <div style={{ fontSize: "var(--fs-xs)" }}>
+                Crea <span style={{ fontFamily: "var(--font-mono)" }}>content/bibliography/references.bib</span> en tu proyecto.
+              </div>
+            </div>
+          )}
+          {refs.length > 0 && filtered.length === 0 && (
+            <div style={{ padding: "32px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
+              Sin resultados para «{query}»
+            </div>
+          )}
+          {filtered.map((ref) => (
+            <div
+              key={ref.key}
+              onClick={() => { onInsert(ref); onClose(); }}
+              style={{
+                padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)",
+                cursor: "pointer", display: "flex", gap: 12, alignItems: "flex-start",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-selected)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+            >
+              {/* Chip de tipo */}
+              <span style={{
+                flexShrink: 0, padding: "2px 6px", borderRadius: "var(--r-xs)",
+                background: "var(--ink-100)", fontFamily: "var(--font-mono)",
+                fontSize: 9, color: "var(--fg-faint)", marginTop: 2,
+              }}>
+                {ref.entry_type}
+              </span>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-xs)", color: "var(--accent-deep)", marginBottom: 2 }}>
+                  {ref.key}
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", lineHeight: 1.3, marginBottom: 3 }}>
+                  {ref.title || <em style={{ color: "var(--fg-faint)" }}>Sin título</em>}
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {ref.author && <span>{ref.author.split(" and ")[0]}{ref.author.includes(" and ") ? " et al." : ""}</span>}
+                  {ref.year && <span style={{ fontFamily: "var(--font-mono)" }}>{ref.year}</span>}
+                  {ref.journal && <span style={{ fontStyle: "italic" }}>{ref.journal}</span>}
+                </div>
+              </div>
+
+              <div style={{
+                flexShrink: 0, fontSize: 10, fontFamily: "var(--font-mono)",
+                color: "var(--fg-faint)", padding: "3px 7px",
+                background: "var(--bg-panel)", borderRadius: "var(--r-xs)",
+                border: "1px solid var(--border-subtle)", alignSelf: "center",
+              }}>
+                {typeLabel[citationType]}{"{"}…{"}"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── MetaPanel: panel derecho con metadatos editables ─────────────
 
 function MetaField({
@@ -901,11 +1247,20 @@ function MetaPanel({
 
         <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
 
-        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.7 }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.9 }}>
           <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 2 }}>Atajos</div>
-          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Ctrl+S</kbd> Guardar</div>
-          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Esc</kbd> Salir edición</div>
-          <div><kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 4px" }}>Enter</kbd> Lista: nuevo ítem</div>
+          {([
+            ["Ctrl+K",  "Paleta de comandos"],
+            ["Ctrl+[",  "Insertar cita"],
+            ["Ctrl+S",  "Guardar"],
+            ["Esc",     "Salir edición"],
+            ["Enter",   "Lista: nuevo ítem"],
+          ] as [string, string][]).map(([key, desc]) => (
+            <div key={key} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>{key}</kbd>
+              <span>{desc}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -935,6 +1290,11 @@ export default function EditorView() {
   // Drag & drop state
   const [dragId, setDragId]   = useState<string | null>(null);
   const [dropId, setDropId]   = useState<string | null>(null);
+
+  // Toolbar académico
+  const [paletteOpen, setPaletteOpen]     = useState(false);
+  const [citPickerOpen, setCitPickerOpen] = useState(false);
+  const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
 
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {
@@ -1004,6 +1364,23 @@ export default function EditorView() {
     setEditingId(null);
   }, [scheduleAutoSave]);
 
+  // Insertar cita bibliográfica desde el picker
+  const insertCitation = useCallback((ref: BibReference, citType: "parenthetical" | "narrative" | "footnote" = "parenthetical") => {
+    const id = newId();
+    const block: ContentBlock = {
+      type: "citation",
+      id,
+      citation_key: ref.key,
+      citation_type: citType,
+    };
+    setLocalBlocks((prev) => {
+      const next = [...prev, block];
+      scheduleAutoSave(next);
+      return next;
+    });
+    setEditingId(id);
+  }, [scheduleAutoSave]);
+
   // Reordenar bloques al soltar (dragId → antes de dropId)
   const handleDrop = useCallback((targetId: string) => {
     if (!dragId || dragId === targetId) { setDragId(null); setDropId(null); return; }
@@ -1033,9 +1410,29 @@ export default function EditorView() {
     }
   }, [activeProject, activeProjectPath]);
 
+  // Cargar referencias .bib cuando el proyecto cambia
+  useEffect(() => {
+    if (!activeProjectPath) return;
+    api.listReferences(activeProjectPath)
+      .then(setBibRefs)
+      .catch(() => setBibRefs([]));
+  }, [activeProjectPath]);
+
   // Atajos de teclado
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Ctrl+K / Cmd+K → paleta de comandos
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+      // Ctrl+[ / Cmd+[ → picker de citas
+      if ((e.ctrlKey || e.metaKey) && e.key === "[") {
+        e.preventDefault();
+        setCitPickerOpen((o) => !o);
+        return;
+      }
       // Ctrl+S / Cmd+S → guardar inmediatamente
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
@@ -1043,15 +1440,18 @@ export default function EditorView() {
           if (saveTimer.current) clearTimeout(saveTimer.current);
           doSave(localBlocks, activeSectionId);
         }
+        return;
       }
-      // Esc → salir del modo edición del bloque activo
+      // Esc → cerrar modales o salir del modo edición
       if (e.key === "Escape") {
+        if (paletteOpen)    { setPaletteOpen(false); return; }
+        if (citPickerOpen)  { setCitPickerOpen(false); return; }
         setEditingId(null);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeSectionId, localBlocks, doSave]);
+  }, [activeSectionId, localBlocks, doSave, paletteOpen, citPickerOpen]);
 
   if (!activeProject || !activeProjectPath) {
     return (
@@ -1135,7 +1535,6 @@ export default function EditorView() {
               ["equation",  <IconSigma size={12} />,   "Ecuación"],
               ["figure",    <IconImage size={12} />,    "Figura"],
               ["table",     <IconTable size={12} />,    "Tabla"],
-              ["citation",  <IconMore size={12} />,     "Cita"],
               ["raw_latex", <IconCode size={12} />,     "LaTeX"],
             ] as [ContentBlock["type"], React.ReactNode, string][]).map(([type, icon, label]) => (
               <button
@@ -1148,7 +1547,36 @@ export default function EditorView() {
                 {icon}<span>{label}</span>
               </button>
             ))}
+
+            {/* Separador */}
+            <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 4px", flexShrink: 0 }} />
+
+            {/* Picker de citas */}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setCitPickerOpen(true)}
+              title="Insertar cita bibliográfica (Ctrl+[)"
+              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+            >
+              <IconMore size={12} /><span>Cita</span>
+            </button>
+
             <div style={{ flex: 1 }} />
+
+            {/* Paleta de comandos */}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setPaletteOpen(true)}
+              title="Paleta de comandos (Ctrl+K)"
+              style={{ fontSize: "var(--fs-xs)", gap: 5, padding: "4px 10px" }}
+            >
+              <IconSearch size={11} />
+              <span>Comandos</span>
+              <span className="kbd" style={{ fontSize: 9 }}>⌘K</span>
+            </button>
+
+            <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 6px", flexShrink: 0 }} />
+
             <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
               <IconRefresh size={11} /> {saveLabel}
@@ -1229,10 +1657,34 @@ export default function EditorView() {
         />
       </div>
 
+      {/* Paleta de comandos (Ctrl+K) */}
+      {paletteOpen && (
+        <CommandPalette
+          sections={activeProject.sections}
+          onInsertBlock={(type) => addBlock(type)}
+          onJumpSection={(id) => { setActiveSectionId(id); }}
+          onClose={() => setPaletteOpen(false)}
+        />
+      )}
+
+      {/* Picker de citas (Ctrl+[) */}
+      {citPickerOpen && (
+        <CitationPickerModal
+          refs={bibRefs}
+          onInsert={(ref) => insertCitation(ref, "parenthetical")}
+          onClose={() => setCitPickerOpen(false)}
+        />
+      )}
+
       <TxStatusbar items={[
         { text: saveLabel, dot: saveDot },
         { icon: <IconFile size={11} />, text: projectName },
         { text: `${bodyWordCount.toLocaleString("es")} palabras` },
+        {
+          right: true,
+          text: bibRefs.length > 0 ? `${bibRefs.length} refs en .bib` : "sin .bib",
+          icon: <span style={{ cursor: "pointer" }} onClick={() => setCitPickerOpen(true)} />,
+        },
         { right: true, text: `${activeProject.sections.filter((s) => s.enabled).length} secciones` },
       ]} />
     </>
