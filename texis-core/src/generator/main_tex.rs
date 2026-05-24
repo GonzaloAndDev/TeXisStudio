@@ -59,8 +59,8 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreR
             let o = o.as_str();
             let is_font_size   = matches!(o, "10pt" | "11pt" | "12pt");
             let is_paper_size  = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
-            !(is_font_size && typo.font_size.is_some())
-                && !(is_paper_size && typo.paper_size.is_some())
+            !(is_font_size && typo.font_size.is_some()
+                || is_paper_size && typo.paper_size.is_some())
         })
         .cloned()
         .collect();

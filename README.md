@@ -4,7 +4,7 @@ Editor profesional de tesis con LaTeX — sin necesitar aprender LaTeX directame
 
 **Autor:** Gonzalo Andrade Estrella · [@GonzaloAndDev](https://github.com/GonzaloAndDev)  
 **Licencia:** AGPL v3 + Commons Clause  
-**Estado:** v0.2.0 en desarrollo activo
+**Estado:** v1.0.0 — Release oficial (features de escritorio activas)
 
 ---
 

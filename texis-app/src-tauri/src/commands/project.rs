@@ -525,7 +525,7 @@ pub fn update_section_meta(
     use texis_core::project::model::SectionStatus;
     use texis_core::project::model::ProjectSection;
 
-    fn apply(sections: &mut Vec<ProjectSection>, id: &str, status: &SectionStatus, notes: &Option<String>) -> bool {
+    fn apply(sections: &mut [ProjectSection], id: &str, status: &SectionStatus, notes: &Option<String>) -> bool {
         for s in sections.iter_mut() {
             if s.id == id {
                 s.status = status.clone();
