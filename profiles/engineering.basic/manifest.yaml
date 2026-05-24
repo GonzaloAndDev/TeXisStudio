@@ -1,0 +1,14 @@
+schema_version: "0.1.0"
+id: "engineering.basic"
+name: "Ingeniería / Reporte técnico"
+version: "0.1.0"
+description: "Reporte técnico con secciones de diseño, implementación y pruebas. Bibliografía IEEE."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - ingenieria
+  - tecnico
+  - ieee
+  - tesis
+  - licenciatura
+  - maestria

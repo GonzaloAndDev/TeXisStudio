@@ -1,20 +1,21 @@
 schema_version: "0.1.0"
-id: "generic.tesina"
-name: "Tesina genérica"
-description: "Versión simplificada para licenciatura: introducción, desarrollo y conclusiones. Clase book, XeLaTeX, biber, APA 7."
+id: "company.internship"
+name: "Reporte de prácticas / Residencia"
+description: "Formato para reportes de residencia profesional y estadías empresariales. Incluye descripción de empresa, actividades y resultados. Bibliografía APA 7."
 author: "Gonzalo Andrade Estrella"
 version: "0.1.0"
 license: "AGPL-3.0"
 tags:
-  - tesina
+  - practicas
+  - residencia
+  - empresa
   - licenciatura
   - apa
-  - xelatex
 
 document_class:
   name: "book"
   options:
-    - "11pt"
+    - "12pt"
     - "letterpaper"
     - "oneside"
 
@@ -28,6 +29,9 @@ packages:
   - "geometry"
   - "graphicx"
   - "booktabs"
+  - "array"
+  - "float"
+  - "caption"
   - "csquotes"
   - "setspace"
   - "hyperref"
@@ -37,31 +41,57 @@ sections:
     element_id: "title_page"
     placement: "front_matter"
     required: true
+    title: null
 
   - id: "table_of_contents"
     element_id: "table_of_contents"
     placement: "front_matter"
     required: true
+    title: null
 
   - id: "introduction"
     element_id: "introduction"
     placement: "body"
     required: true
     title: "Introducción"
+    label: "sec:introduccion"
 
-  - id: "development"
+  - id: "company_description"
     element_id: "theoretical_framework"
     placement: "body"
     required: true
-    title: "Desarrollo"
+    title: "Descripción de la empresa"
+    label: "sec:empresa"
+
+  - id: "activities"
+    element_id: "methodology"
+    placement: "body"
+    required: true
+    title: "Actividades desarrolladas"
+    label: "sec:actividades"
+
+  - id: "results"
+    element_id: "results"
+    placement: "body"
+    required: true
+    title: "Resultados y aportaciones"
+    label: "sec:resultados"
 
   - id: "conclusions"
     element_id: "conclusions"
     placement: "body"
     required: true
     title: "Conclusiones"
+    label: "sec:conclusiones"
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
+    title: "Referencias"
+
+  - id: "appendices"
+    element_id: "appendices"
+    placement: "appendix"
+    required: false
+    title: "Anexos"

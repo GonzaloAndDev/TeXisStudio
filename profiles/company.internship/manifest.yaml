@@ -1,0 +1,13 @@
+schema_version: "0.1.0"
+id: "company.internship"
+name: "Reporte de prácticas / Residencia"
+version: "0.1.0"
+description: "Formato empresarial para reportes de residencia profesional y estadías."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - practicas
+  - residencia
+  - empresa
+  - licenciatura
+  - apa

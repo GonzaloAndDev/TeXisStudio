@@ -1,22 +1,22 @@
 schema_version: "0.1.0"
-id: "generic.tesina"
-name: "Tesina genérica"
-description: "Versión simplificada para licenciatura: introducción, desarrollo y conclusiones. Clase book, XeLaTeX, biber, APA 7."
+id: "apa.basic"
+name: "APA básico"
+description: "Perfil simplificado para trabajos académicos con estilo APA 7 estricto. Ideal para reportes, ensayos y artículos cortos."
 author: "Gonzalo Andrade Estrella"
 version: "0.1.0"
 license: "AGPL-3.0"
 tags:
-  - tesina
-  - licenciatura
   - apa
-  - xelatex
+  - reporte
+  - ensayo
+  - articulo
+  - licenciatura
 
 document_class:
-  name: "book"
+  name: "article"
   options:
-    - "11pt"
+    - "12pt"
     - "letterpaper"
-    - "oneside"
 
 latex_engine: "xelatex"
 compiler: "latexmk"
@@ -37,31 +37,37 @@ sections:
     element_id: "title_page"
     placement: "front_matter"
     required: true
+    title: null
 
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
+  - id: "abstract_es"
+    element_id: "abstract_es"
     placement: "front_matter"
-    required: true
+    required: false
+    title: "Resumen"
 
   - id: "introduction"
     element_id: "introduction"
     placement: "body"
     required: true
     title: "Introducción"
+    label: "sec:introduccion"
 
   - id: "development"
     element_id: "theoretical_framework"
     placement: "body"
     required: true
     title: "Desarrollo"
+    label: "sec:desarrollo"
 
   - id: "conclusions"
     element_id: "conclusions"
     placement: "body"
     required: true
     title: "Conclusiones"
+    label: "sec:conclusiones"
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
+    title: "Referencias"

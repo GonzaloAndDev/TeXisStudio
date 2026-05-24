@@ -1,0 +1,13 @@
+schema_version: "0.1.0"
+id: "apa.basic"
+name: "APA básico"
+version: "0.1.0"
+description: "Perfil simplificado para trabajos académicos con estilo APA 7 estricto."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - apa
+  - reporte
+  - ensayo
+  - articulo
+  - licenciatura

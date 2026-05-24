@@ -1,0 +1,15 @@
+schema_version: "0.1.0"
+id: "vancouver.health"
+name: "Ciencias de la salud (IMRyD)"
+version: "0.1.0"
+description: "Estructura IMRyD para investigación clínica y biomédica con bibliografía Vancouver."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - salud
+  - medicina
+  - imryd
+  - vancouver
+  - tesis
+  - licenciatura
+  - maestria

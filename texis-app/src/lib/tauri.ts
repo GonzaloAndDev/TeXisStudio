@@ -12,6 +12,9 @@ import type {
   ValidationReport,
 } from "../types";
 
+// re-export convenience
+export type { ProfileInfo };
+
 const isTauri = () =>
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -24,8 +27,32 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     is_usable: false,
     latexmk_version: undefined,
     texlive_year: undefined,
-  },
+  } satisfies LatexInfo,
   get_cloud_folders: [] as CloudFolder[],
+  get_profiles: [
+    {
+      id: "generic.thesis",
+      name: "Tesis genérica",
+      description: "Estructura clásica con marco teórico, metodología, resultados y conclusiones.",
+      meta: "XeLaTeX · biber · APA 7",
+      tags: ["tesis", "licenciatura", "maestria", "doctorado"],
+      sections_count: 13,
+      sections: [],
+      author: "Gonzalo Andrade Estrella",
+      version: "0.1.0",
+    },
+    {
+      id: "generic.tesina",
+      name: "Tesina genérica",
+      description: "Versión simplificada para licenciatura: introducción, desarrollo y cierre.",
+      meta: "XeLaTeX · biber · APA 7",
+      tags: ["tesina", "licenciatura"],
+      sections_count: 6,
+      sections: [],
+      author: "Gonzalo Andrade Estrella",
+      version: "0.1.0",
+    },
+  ] as ProfileInfo[],
 };
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -75,6 +102,15 @@ export const api = {
 
   getProfiles: (): Promise<ProfileInfo[]> =>
     call("get_profiles"),
+
+  getProfileDetail: (profileId: string): Promise<ProfileInfo> =>
+    call("get_profile_detail", { profileId }),
+
+  importProfile: (sourcePath: string): Promise<ProfileInfo> =>
+    call("import_profile", { sourcePath }),
+
+  exportProfile: (profileId: string, destPath: string): Promise<{ exported_to: string; profile_id: string }> =>
+    call("export_profile", { profileId, destPath }),
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),

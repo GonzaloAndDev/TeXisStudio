@@ -1,17 +1,18 @@
 schema_version: "0.1.0"
-id: "generic.thesis"
-name: "Tesis genérica"
-description: "Perfil base para tesis de licenciatura, maestría y doctorado. Clase book, XeLaTeX, biber, APA 7."
+id: "vancouver.health"
+name: "Ciencias de la salud (IMRyD)"
+description: "Estructura IMRyD para investigación clínica y biomédica. Bibliografía estilo Vancouver. Ideal para tesis de medicina, enfermería y ciencias de la salud."
 author: "Gonzalo Andrade Estrella"
 version: "0.1.0"
 license: "AGPL-3.0"
 tags:
+  - salud
+  - medicina
+  - imryd
+  - vancouver
   - tesis
   - licenciatura
   - maestria
-  - doctorado
-  - apa
-  - xelatex
 
 document_class:
   name: "book"
@@ -23,13 +24,15 @@ document_class:
 latex_engine: "xelatex"
 compiler: "latexmk"
 bibliography_backend: "biber"
-bibliography_style: "apa"
+bibliography_style: "vancouver"
 
 packages:
   - "fontspec"
   - "geometry"
   - "graphicx"
   - "booktabs"
+  - "array"
+  - "longtable"
   - "csquotes"
   - "setspace"
   - "hyperref"
@@ -50,7 +53,7 @@ sections:
   - id: "abstract_es"
     element_id: "abstract_es"
     placement: "front_matter"
-    required: false
+    required: true
     title: "Resumen"
 
   - id: "abstract_en"
@@ -59,18 +62,6 @@ sections:
     required: false
     title: "Abstract"
 
-  - id: "dedication"
-    element_id: "dedication"
-    placement: "front_matter"
-    required: false
-    title: "Dedicatoria"
-
-  - id: "acknowledgements"
-    element_id: "acknowledgements"
-    placement: "front_matter"
-    required: false
-    title: "Agradecimientos"
-
   - id: "introduction"
     element_id: "introduction"
     placement: "body"
@@ -78,19 +69,12 @@ sections:
     title: "Introducción"
     label: "sec:introduccion"
 
-  - id: "theoretical_framework"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Marco Teórico"
-    label: "sec:marco"
-
-  - id: "methodology"
+  - id: "materials_methods"
     element_id: "methodology"
     placement: "body"
     required: true
-    title: "Metodología"
-    label: "sec:metodologia"
+    title: "Material y métodos"
+    label: "sec:metodos"
 
   - id: "results"
     element_id: "results"
@@ -102,14 +86,14 @@ sections:
   - id: "discussion"
     element_id: "discussion"
     placement: "body"
-    required: false
+    required: true
     title: "Discusión"
     label: "sec:discusion"
 
   - id: "conclusions"
     element_id: "conclusions"
     placement: "body"
-    required: true
+    required: false
     title: "Conclusiones"
     label: "sec:conclusiones"
 

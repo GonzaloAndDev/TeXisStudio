@@ -4,7 +4,7 @@ Editor profesional de tesis con LaTeX — sin necesitar aprender LaTeX directame
 
 **Autor:** Gonzalo Andrade Estrella · [@GonzaloAndDev](https://github.com/GonzaloAndDev)  
 **Licencia:** AGPL v3 + Commons Clause *(pendiente revisión legal)*  
-**Estado:** Release 0.2 beta
+**Estado:** Release 0.3 beta
 
 ---
 
@@ -114,11 +114,15 @@ TeXisStudio/
   `cd texis-app && npx tauri icon ruta/icono.png`
 - [ ] `npm run tauri build` — generar instalador `.exe` distribuible
 
-### Release 0.3 — Perfiles desde la UI
-- [ ] Editor visual de perfiles (estructura de secciones, estilo bib)
-- [ ] Importar/exportar `.texisprofile`
-- [ ] Perfiles adicionales: `apa.basic`, `vancouver.health`, `engineering.basic`, `company.internship`
-- [ ] Pantalla de Elementos con catálogo de elementos reutilizables
+### Release 0.3 — Perfiles desde la UI ✅
+- [x] ProfileRegistry wired — `get_profiles` carga desde `profiles/` en disco (prod: bundle, dev: workspace)
+- [x] Importar/exportar `.texisprofile` — diálogo nativo, copia a directorio de perfiles
+- [x] Perfiles adicionales: `apa.basic`, `vancouver.health`, `engineering.basic`, `company.internship`
+- [x] Catálogo de elementos en LibraryView — 8 tipos de bloque con descripción y salida LaTeX
+- [x] Panel de detalle de perfil — secciones, especificaciones técnicas, acciones
+- [x] WizardView carga perfiles desde API + preview de secciones al seleccionar
+- [x] `ProfileInfo` extendido: `sections`, `sections_count`, `author`, `version`, `license`
+- [ ] Editor visual de perfiles (estructura de secciones, estilo bib) — Release 0.4
 
 ### Release 0.4 — Instalación LaTeX
 - [ ] Asistente de instalación de LaTeX dentro de la app

@@ -13,6 +13,9 @@ pub fn run() {
             commands::project::validate_project,
             commands::compiler::compile_project,
             commands::system::get_profiles,
+            commands::system::get_profile_detail,
+            commands::system::import_profile,
+            commands::system::export_profile,
             commands::system::detect_latex,
             commands::system::get_cloud_folders,
         ])

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconCheck, IconChevronL, IconChevronR, IconFile, IconInfo,
@@ -27,13 +27,21 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     description: "Estructura clásica con marco teórico, metodología, resultados y conclusiones.",
     meta: "XeLaTeX · biber · APA 7",
     tags: ["tesis", "licenciatura", "maestria", "doctorado"],
+    sections_count: 13,
+    sections: [],
+    author: "Gonzalo Andrade Estrella",
+    version: "0.1.0",
   },
   {
     id: "generic.tesina",
-    name: "Tesina",
+    name: "Tesina genérica",
     description: "Versión simplificada para licenciatura: introducción, desarrollo y cierre.",
     meta: "XeLaTeX · biber · APA 7",
     tags: ["tesina", "licenciatura"],
+    sections_count: 6,
+    sections: [],
+    author: "Gonzalo Andrade Estrella",
+    version: "0.1.0",
   },
 ];
 
@@ -298,91 +306,146 @@ function StepDatos({
   );
 }
 
-// Paso 3: selección de perfil
+const PLACEMENT_SHORT: Record<string, string> = {
+  front_matter: "Preliminares",
+  body:         "Cuerpo",
+  back_matter:  "Final",
+  appendix:     "Anexos",
+};
+
+// Paso 3: selección de perfil con preview de secciones
 function StepPerfil({
   profiles, selected, onSelect,
 }: {
   profiles: ProfileInfo[]; selected: string; onSelect: (id: string) => void;
 }) {
+  const selProfile = profiles.find((p) => p.id === selected);
+
   return (
-    <>
-      <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        ¿Qué <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>perfil</em> usarás como base?
-      </h1>
-      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 540 }}>
-        Cada perfil define la clase LaTeX, paquetes y estructura de secciones.
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, maxWidth: 820 }}>
-        {profiles.map((p) => (
-          <div
-            key={p.id}
-            onClick={() => onSelect(p.id)}
-            style={{
-              background: selected === p.id ? "var(--accent-tint)" : "var(--bg-panel)",
-              border: `1px solid ${selected === p.id ? "var(--accent)" : "var(--border-soft)"}`,
-              borderRadius: "var(--r-lg)", padding: 18, cursor: "pointer",
-              boxShadow: selected === p.id ? "0 0 0 3px var(--accent-soft)" : "none",
-              display: "flex", flexDirection: "column", gap: 8, minHeight: 130,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", gap: 24, maxWidth: 900, alignItems: "flex-start" }}>
+      {/* Listado */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
+          ¿Qué <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>perfil</em> usarás?
+        </h1>
+        <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 22, maxWidth: 500 }}>
+          Cada perfil define la clase LaTeX, paquetes y estructura de secciones.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {profiles.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => onSelect(p.id)}
+              style={{
+                background: selected === p.id ? "var(--accent-tint)" : "var(--bg-panel)",
+                border: `1px solid ${selected === p.id ? "var(--accent)" : "var(--border-soft)"}`,
+                borderRadius: "var(--r-lg)", padding: "14px 16px", cursor: "pointer",
+                boxShadow: selected === p.id ? "0 0 0 3px var(--accent-soft)" : "none",
+                display: "flex", gap: 12, alignItems: "flex-start",
+              }}
+            >
               <div style={{
-                width: 32, height: 32, borderRadius: "var(--r-md)",
+                width: 32, height: 32, borderRadius: "var(--r-md)", flexShrink: 0,
                 background: selected === p.id ? "var(--accent)" : "var(--ink-100)",
                 color: selected === p.id ? "white" : "var(--fg-default)",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <IconBook size={16} />
+                <IconBook size={15} />
               </div>
-              {selected === p.id && (
-                <span className="chip chip-accent" style={{ marginTop: 4 }}>
-                  <IconCheck size={9} sw={2.5} /> seleccionado
-                </span>
-              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{p.name}</span>
+                  {selected === p.id && (
+                    <span className="chip chip-accent" style={{ fontSize: 10 }}>
+                      <IconCheck size={8} sw={2.5} /> seleccionado
+                    </span>
+                  )}
+                </div>
+                {p.description && (
+                  <p style={{ margin: "3px 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.4 }}>{p.description}</p>
+                )}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>{p.meta}</span>
+                  {p.sections_count > 0 && (
+                    <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>· {p.sections_count} secciones</span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{p.name}</div>
-            <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>{p.description}</p>
-            <div style={{ marginTop: "auto", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
-              {p.meta}
-            </div>
+          ))}
+        </div>
+
+        <div style={{
+          marginTop: 16, padding: "12px 14px", borderRadius: "var(--r-md)",
+          background: "var(--accent-tint)", border: "1px dashed var(--accent-soft)",
+          fontSize: "var(--fs-sm)", color: "var(--accent-deep)",
+          display: "flex", gap: 10, alignItems: "flex-start",
+        }}>
+          <IconInfo size={14} />
+          <div>
+            <strong>¿No ves tu institución?</strong> Importa un perfil desde la{" "}
+            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => window.open("/library")}>Biblioteca</span>.
           </div>
-        ))}
-      </div>
-      <div style={{
-        marginTop: 20, padding: "14px 16px", borderRadius: "var(--r-md)",
-        background: "var(--accent-tint)", border: "1px dashed var(--accent-soft)",
-        fontSize: "var(--fs-sm)", color: "var(--accent-deep)",
-        display: "flex", gap: 10, alignItems: "flex-start", maxWidth: 820,
-      }}>
-        <IconInfo size={14} />
-        <div>
-          <strong>¿Tu institución no aparece?</strong> Puedes importar un perfil comunitario
-          o crear uno propio — disponible en Release 0.3.
         </div>
       </div>
-    </>
+
+      {/* Preview de secciones del perfil seleccionado */}
+      {selProfile && selProfile.sections.length > 0 && (
+        <div style={{
+          width: 220, flexShrink: 0,
+          background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+          borderRadius: "var(--r-lg)", padding: 16,
+        }}>
+          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 10 }}>
+            Secciones del perfil
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {selProfile.sections.map((s) => (
+              <div key={s.id} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "4px 8px", borderRadius: "var(--r-sm)",
+                background: "var(--bg-app)", border: "1px solid var(--border-subtle)",
+              }}>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)" }}>
+                  {s.title ?? s.id}
+                </span>
+                <span style={{ fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>
+                  {PLACEMENT_SHORT[s.placement] ?? s.placement}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
 export default function WizardView() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [docType, setDocType] = useState("tesis");
-  const [profileId, setProfileId] = useState("generic.thesis");
+  const [profileId, setProfileId] = useState(
+    searchParams.get("profile") ?? "generic.thesis"
+  );
   const [form, setForm] = useState<Record<string, string>>({
     title: "", full_name: "", institution: "", faculty: "", city: "Ciudad de México",
   });
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
-  const [profiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
+  const [profiles, setProfiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
 
-  // Resolver path por defecto al montar
+  // Resolver path por defecto + cargar perfiles reales al montar
   useEffect(() => {
     resolveDocumentsPath().then(setOutputPath).catch(() => setOutputPath("/tmp"));
     api.getCloudFolders().then(setCloudFolders).catch(() => {});
+    api.getProfiles()
+      .then((loaded) => { if (loaded.length > 0) setProfiles(loaded); })
+      .catch(() => {}); // silencioso, usa BUILTIN_PROFILES como fallback
   }, []);
 
   async function handlePickFolder() {

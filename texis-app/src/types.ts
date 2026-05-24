@@ -200,12 +200,29 @@ export interface CompilationResult {
 
 // ── Profiles ────────────────────────────────────────────────────
 
+export interface ProfileSectionInfo {
+  id: string;
+  element_id: string;
+  placement: string;  // "front_matter" | "body" | "back_matter" | "appendix"
+  required: boolean;
+  title?: string;
+  label?: string;
+}
+
 export interface ProfileInfo {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   meta: string;
   tags: string[];
+  sections_count: number;
+  sections: ProfileSectionInfo[];
+  author?: string;
+  version?: string;
+  license?: string;
+  document_class?: string;
+  bibliography_style?: string;
+  latex_engine?: string;
 }
 
 // ── System ──────────────────────────────────────────────────────

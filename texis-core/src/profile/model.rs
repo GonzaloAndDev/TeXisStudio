@@ -5,7 +5,20 @@ pub struct Profile {
     pub schema_version: String,
     pub id: String,
     pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Nivel académico / tipo de documento (tesis, tesina, artículo…)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    /// Autor del perfil
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    /// Versión del perfil (semver)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// Licencia del perfil
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<String>,
     pub document_class: ProfileDocumentClass,
     pub latex_engine: String,
     pub compiler: String,
