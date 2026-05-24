@@ -2,37 +2,81 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { checkText, SpellError } from "../services/spellcheck";
 import { useSettingsStore } from "../stores/settings";
+import { useLangPacksStore } from "../stores/languagePacks";
 import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface BlockInput {
+  id: string;
+  content: string;
+}
+
+/** SpellError enriched with the block it belongs to. */
+export interface BlockSpellError extends SpellError {
+  blockId: string;
+}
+
 interface Props {
-  text: string;
-  onReplace: (original: string, replacement: string) => void;
+  /** Paragraph blocks to check. Each block is checked independently. */
+  blocks: BlockInput[];
+  /**
+   * Called when the user accepts a suggestion.
+   * Provides the block ID and the exact character range to replace.
+   */
+  onReplace: (blockId: string, start: number, end: number, replacement: string) => void;
   onClose: () => void;
 }
 
-export function SpellPanel({ text, onReplace, onClose }: Props) {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function SpellPanel({ blocks, onReplace, onClose }: Props) {
   const { t } = useTranslation();
   const { spellLang, autocorrectEnabled, setAutocorrect, setSpellLang, customDictionary, addToCustomDictionary } =
     useSettingsStore();
-  const [errors, setErrors] = useState<SpellError[] | null>(null);
+  const { installed } = useLangPacksStore();
+  const [errors, setErrors] = useState<BlockSpellError[] | null>(null);
   const [loadErr, setLoadErr] = useState(false);
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
   const busy = useRef(false);
 
+  // Stable key to detect block content changes without re-creating heavy objects
+  const contentKey = blocks.map((b) => b.content).join("|");
+
   useEffect(() => {
-    if (!spellLang) return;
+    if (!spellLang || blocks.length === 0) return;
     if (busy.current) return;
     busy.current = true;
     setErrors(null);
     setLoadErr(false);
 
-    checkText(text, spellLang, customDictionary)
-      .then((errs) => setErrors(errs))
-      .catch(() => setLoadErr(true))
-      .finally(() => { busy.current = false; });
-  }, [text, spellLang, customDictionary]);
+    (async () => {
+      try {
+        const all: BlockSpellError[] = [];
+        for (const block of blocks) {
+          if (!block.content.trim()) continue;
+          const blockErrors = await checkText(block.content, spellLang, customDictionary);
+          for (const e of blockErrors) {
+            all.push({ ...e, blockId: block.id });
+          }
+        }
+        setErrors(all);
+      } catch {
+        setLoadErr(true);
+      } finally {
+        busy.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentKey, spellLang, customDictionary]);
 
-  const visible = errors?.filter((e) => !ignored.has(e.word.toLowerCase())) ?? [];
+  const visible = errors?.filter((e) => !ignored.has(`${e.blockId}:${e.start}`)) ?? [];
+
+  // ── Language selector: bundled + installed community packs with spelling ──
+  const installedWithSpell = installed.filter(
+    (p) => p.entry.capabilities.spelling && !SUPPORTED_LANGUAGES.some((l) => l.code === p.id),
+  );
+  const bundledWithSpell = SUPPORTED_LANGUAGES.filter((l) => SPELL_CHECK_LANGS[l.code] !== null);
 
   return (
     <aside style={{
@@ -52,10 +96,13 @@ export function SpellPanel({ text, onReplace, onClose }: Props) {
       </div>
 
       {/* Language selector */}
-      <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border-subtle)", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{
+        padding: "8px 14px", borderBottom: "1px solid var(--border-subtle)",
+        display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap",
+      }}>
         <span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-xs)" }}>{t("spell.spell_lang")}:</span>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-          {SUPPORTED_LANGUAGES.filter((l) => SPELL_CHECK_LANGS[l.code] !== null).map((l) => (
+          {bundledWithSpell.map((l) => (
             <button
               key={l.code}
               className={`btn btn-sm ${spellLang === l.code ? "btn-accent" : "btn-ghost"}`}
@@ -63,6 +110,17 @@ export function SpellPanel({ text, onReplace, onClose }: Props) {
               onClick={() => setSpellLang(l.code)}
             >
               {l.flag} {l.code.toUpperCase()}
+            </button>
+          ))}
+          {installedWithSpell.map((p) => (
+            <button
+              key={p.id}
+              className={`btn btn-sm ${spellLang === p.id ? "btn-accent" : "btn-ghost"}`}
+              style={{ fontSize: "var(--fs-xs)", padding: "2px 6px" }}
+              onClick={() => setSpellLang(p.id)}
+              title={p.entry.native_name}
+            >
+              {p.entry.flag} {p.id.toUpperCase()}
             </button>
           ))}
         </div>
@@ -123,7 +181,7 @@ export function SpellPanel({ text, onReplace, onClose }: Props) {
                 <button
                   className="btn btn-ghost btn-sm"
                   style={{ fontSize: "var(--fs-xs)" }}
-                  onClick={() => setIgnored((s) => new Set([...s, err.word.toLowerCase()]))}
+                  onClick={() => setIgnored((s) => new Set([...s, `${err.blockId}:${err.start}`]))}
                 >
                   {t("spell.ignore")}
                 </button>
@@ -143,7 +201,7 @@ export function SpellPanel({ text, onReplace, onClose }: Props) {
                     key={s}
                     className="btn btn-sm"
                     style={{ fontSize: "var(--fs-xs)" }}
-                    onClick={() => onReplace(err.word, s)}
+                    onClick={() => onReplace(err.blockId, err.start, err.end, s)}
                   >
                     {s}
                   </button>

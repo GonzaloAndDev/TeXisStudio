@@ -13,7 +13,6 @@ import { LanguagePicker } from "../components/LanguagePicker";
 import { SpellPanel } from "../components/SpellPanel";
 import { GrammarPanel } from "../components/GrammarPanel";
 import { applyAutocorrect } from "../services/autocorrect";
-import { applyReplacement } from "../services/grammar";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
@@ -45,6 +44,26 @@ function newId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `block-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// ── Block offset utilities ────────────────────────────────────────
+// Used by SpellPanel (block-scoped errors) and GrammarPanel (offset mapping).
+
+/**
+ * Build a map from joined-text character offsets back to individual blocks.
+ * Blocks are joined with `separator` (default "\n\n") — same as what we send to LanguageTool.
+ */
+function buildBlockOffsetMap(
+  blocks: Array<{ id: string; content: string }>,
+  separator = "\n\n",
+): Array<{ id: string; start: number; end: number }> {
+  const map: Array<{ id: string; start: number; end: number }> = [];
+  let offset = 0;
+  for (const b of blocks) {
+    map.push({ id: b.id, start: offset, end: offset + b.content.length });
+    offset += b.content.length + separator.length;
+  }
+  return map;
 }
 
 function countWords(blocks: ContentBlock[]): number {
@@ -82,10 +101,13 @@ function ParagraphEditor({
       if (result) {
         e.preventDefault();
         const { newText, newCursor } = result;
-        onChange(newText + (e.key === " " ? " " : "\n"));
+        // Insertar el separador EN la posición del cursor, no al final del texto
+        const sep = e.key === " " ? " " : "\n";
+        const corrected = newText.slice(0, newCursor) + sep + newText.slice(newCursor);
+        onChange(corrected);
         requestAnimationFrame(() => {
           if (ref.current) {
-            const pos = newCursor + 1;
+            const pos = newCursor + 1; // +1 por el separador insertado
             ref.current.setSelectionRange(pos, pos);
             ref.current.style.height = "auto";
             ref.current.style.height = ref.current.scrollHeight + "px";
@@ -2644,12 +2666,18 @@ export default function EditorView() {
       {/* Paneles de revisión ortográfica / gramatical */}
       {spellPanelOpen && (
         <SpellPanel
-          text={localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join(" ")}
-          onReplace={(original, replacement) => {
+          blocks={localBlocks
+            .filter((b) => b.type === "paragraph")
+            .map((b) => ({ id: b.id, content: b.type === "paragraph" ? b.content : "" }))}
+          onReplace={(blockId, start, end, replacement) => {
             setLocalBlocks((prev) => {
               const next = prev.map((b) => {
-                if (b.type !== "paragraph") return b;
-                return { ...b, content: b.content.split(original).join(replacement) };
+                if (b.id !== blockId || b.type !== "paragraph") return b;
+                // Replace only the exact character range — never touches other blocks
+                return {
+                  ...b,
+                  content: b.content.slice(0, start) + replacement + b.content.slice(end),
+                };
               });
               scheduleAutoSave(next);
               return next;
@@ -2660,18 +2688,39 @@ export default function EditorView() {
       )}
       {grammarPanelOpen && (
         <GrammarPanel
-          text={localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join("\n\n")}
+          text={localBlocks
+            .filter((b) => b.type === "paragraph")
+            .map((b) => (b.type === "paragraph" ? b.content : ""))
+            .join("\n\n")}
           onAccept={(match: GrammarMatch, replacement: string) => {
-            const fullText = localBlocks.filter((b) => b.type === "paragraph").map((b) => b.type === "paragraph" ? b.content : "").join("\n\n");
-            const corrected = applyReplacement(fullText, match, replacement);
-            const paragraphs = corrected.split("\n\n");
-            let pIdx = 0;
             setLocalBlocks((prev) => {
+              // Build offset map using the same separator as the text we sent to LT
+              const paraBlocks = prev
+                .filter((b) => b.type === "paragraph")
+                .map((b) => ({ id: b.id, content: b.type === "paragraph" ? b.content : "" }));
+              const offsetMap = buildBlockOffsetMap(paraBlocks, "\n\n");
+
+              // Find which block contains the match start offset
+              const blockEntry = offsetMap.find(
+                (e) => match.offset >= e.start && match.offset < e.end,
+              );
+              if (!blockEntry) return prev; // offset out of range — skip
+
+              const localStart = match.offset - blockEntry.start;
+              const localEnd = localStart + match.length;
+
+              // Safety: reject cross-block corrections (extremely rare but possible)
+              if (localEnd > blockEntry.end - blockEntry.start) return prev;
+
               const next = prev.map((b) => {
-                if (b.type !== "paragraph") return b;
-                const content = paragraphs[pIdx] ?? b.content;
-                pIdx++;
-                return { ...b, content };
+                if (b.id !== blockEntry.id || b.type !== "paragraph") return b;
+                return {
+                  ...b,
+                  content:
+                    b.content.slice(0, localStart) +
+                    replacement +
+                    b.content.slice(localEnd),
+                };
               });
               scheduleAutoSave(next);
               return next;

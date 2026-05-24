@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::Emitter;
 use texis_core::{
     compiler::error_translator,
@@ -75,7 +75,9 @@ pub async fn compile_project(
     let resolved_backend = resolve_backend(&backend_name)?;
     let _ = app.emit("compile://log", format!("→ Iniciando {resolved_backend}…"));
 
-    // ── Paso 3: compilar con streaming y timeout de 5 min ─────────
+    // ── Paso 3: compilar con streaming ───────────────────────────
+    // El timeout y la cancelación se manejan DENTRO de spawn_blocking
+    // mediante un watchdog thread que mata el proceso hijo.
     let app2 = app.clone();
     let build_dir2 = build_dir.clone();
     let backend2 = resolved_backend.to_string();
@@ -84,14 +86,7 @@ pub async fn compile_project(
         run_compiler_streaming(&app2, &build_dir2, &backend2, draft, cancel)
     });
 
-    let result = tokio::time::timeout(std::time::Duration::from_secs(300), task)
-        .await
-        .map_err(|_| {
-            "Compilación interrumpida: el tiempo límite de 5 minutos fue superado.".to_string()
-        })?
-        .map_err(|e| format!("Error interno: {e}"))?;
-
-    result
+    task.await.map_err(|e| format!("Error interno: {e}"))?
 }
 
 /// Cancela la compilación en curso.
@@ -128,6 +123,10 @@ fn resolve_backend(name: &str) -> Result<&'static str, String> {
 
 /// Ejecuta el compilador en modo streaming.
 /// Se llama desde `spawn_blocking`; emite eventos Tauri en cada línea.
+///
+/// Maneja timeout de 5 minutos y cancelación de usuario mediante un watchdog
+/// thread independiente que mata el proceso hijo. Esto garantiza que el proceso
+/// LaTeX siempre termina aunque se cuelgue sin emitir output.
 fn run_compiler_streaming(
     app: &tauri::AppHandle,
     build_dir: &Path,
@@ -167,7 +166,42 @@ fn run_compiler_streaming(
     let stdout = child.stdout.take().expect("stdout piped");
     let stderr = child.stderr.take().expect("stderr piped");
 
-    // Leer stderr en un hilo separado para no bloquear stdout
+    // Compartir child para que el watchdog pueda matarlo
+    let child_shared: Arc<Mutex<Option<std::process::Child>>> =
+        Arc::new(Mutex::new(Some(child)));
+    let timed_out = Arc::new(AtomicBool::new(false));
+
+    // ── Watchdog thread ─────────────────────────────────────────────
+    // Monitorea cada 500 ms. Si se supera el timeout o se solicita cancelación,
+    // mata el proceso hijo directamente. Esto funciona incluso si LaTeX se
+    // cuelga sin emitir ninguna línea de output.
+    {
+        let child_w = child_shared.clone();
+        let cancel_w = cancel.clone();
+        let timeout_w = timed_out.clone();
+        std::thread::spawn(move || {
+            let deadline =
+                std::time::Instant::now() + std::time::Duration::from_secs(300);
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                let elapsed = std::time::Instant::now() >= deadline;
+                let cancelled = cancel_w.load(Ordering::Relaxed);
+                if elapsed || cancelled {
+                    if elapsed {
+                        timeout_w.store(true, Ordering::SeqCst);
+                    }
+                    if let Ok(mut guard) = child_w.lock() {
+                        if let Some(ref mut c) = *guard {
+                            let _ = c.kill();
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+    }
+
+    // ── Hilo de stderr ──────────────────────────────────────────────
     let app_err = app.clone();
     let cancel_err = cancel.clone();
     let stderr_thread = std::thread::spawn(move || {
@@ -184,12 +218,14 @@ fn run_compiler_streaming(
         lines.join("\n")
     });
 
-    // Leer stdout línea a línea y emitir eventos
+    // ── Leer stdout ─────────────────────────────────────────────────
+    // El loop termina naturalmente cuando el proceso es matado por el watchdog
+    // (el pipe se cierra). Los checks explícitos aquí son el camino rápido para
+    // cuando hay output activo; el watchdog maneja el caso de proceso colgado.
     let mut log = String::new();
     for line in BufReader::new(stdout).lines() {
-        if cancel.load(Ordering::Relaxed) {
-            let _ = child.kill();
-            return Err("Compilación cancelada por el usuario.".to_string());
+        if cancel.load(Ordering::Relaxed) || timed_out.load(Ordering::Relaxed) {
+            break; // El watchdog ya está matando el proceso
         }
         if let Ok(l) = line {
             let _ = app.emit("compile://log", &l);
@@ -204,7 +240,31 @@ fn run_compiler_streaming(
         log.push_str(&stderr_output);
     }
 
-    let status = child.wait().map_err(err)?;
+    // Esperar al proceso hijo
+    let status_result = {
+        let mut guard = child_shared
+            .lock()
+            .map_err(|_| "Error interno: lock del proceso contaminado.".to_string())?;
+        guard
+            .as_mut()
+            .ok_or_else(|| "Proceso ya terminado.".to_string())?
+            .wait()
+            .map_err(err)
+    };
+
+    // Reportar timeout y cancelación antes de revisar el exit status
+    if timed_out.load(Ordering::Relaxed) {
+        return Err(
+            "Compilación interrumpida: el tiempo límite de 5 minutos fue superado. \
+             El proceso LaTeX fue terminado."
+                .to_string(),
+        );
+    }
+    if cancel.load(Ordering::Relaxed) {
+        return Err("Compilación cancelada por el usuario.".to_string());
+    }
+
+    let status = status_result?;
     let success = status.success();
 
     let user_errors = error_translator::translate_log(&log);
