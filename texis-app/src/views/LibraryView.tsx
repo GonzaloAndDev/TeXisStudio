@@ -823,16 +823,27 @@ interface CommunityProfile {
   verified?: boolean;
 }
 
+const PROFILES_REPO = "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download";
+
 const COMMUNITY_PROFILES: CommunityProfile[] = [
   {
+    id: "generic.thesis",
+    name: "Tesis genérica",
+    description: "Estructura completa para tesis de cualquier disciplina. Portada, resumen, capítulos, conclusiones y bibliografía.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["tesis", "genérico", "licenciatura", "maestría", "doctorado"],
+    meta: "XeLaTeX · biber · APA",
+    downloadUrl: `${PROFILES_REPO}/generic.thesis.zip`,
+    verified: true,
+  },
+  {
     id: "apa.basic",
-    name: "Tesis APA 7 básica",
-    description: "Estructura estándar para trabajos académicos con estilo APA 7. Incluye portada, resumen, capítulos IMRyD y referencias.",
+    name: "Tesis APA 7",
+    description: "Estructura IMRyD estándar con estilo APA 7. Portada, resumen, introducción, metodología, resultados y referencias.",
     author: "Gonzalo Andrade Estrella",
     tags: ["tesis", "APA", "licenciatura", "maestría"],
     meta: "XeLaTeX · biber · APA 7",
-    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
-    stars: 24,
+    downloadUrl: `${PROFILES_REPO}/apa.basic.zip`,
     verified: true,
   },
   {
@@ -842,8 +853,7 @@ const COMMUNITY_PROFILES: CommunityProfile[] = [
     author: "Gonzalo Andrade Estrella",
     tags: ["tesis", "salud", "Vancouver", "doctorado"],
     meta: "XeLaTeX · biber · Vancouver",
-    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
-    stars: 17,
+    downloadUrl: `${PROFILES_REPO}/vancouver.health.zip`,
     verified: true,
   },
   {
@@ -853,8 +863,7 @@ const COMMUNITY_PROFILES: CommunityProfile[] = [
     author: "Gonzalo Andrade Estrella",
     tags: ["reporte", "ingeniería", "IEEE"],
     meta: "XeLaTeX · biber · IEEE",
-    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
-    stars: 12,
+    downloadUrl: `${PROFILES_REPO}/engineering.basic.zip`,
     verified: true,
   },
   {
@@ -864,8 +873,17 @@ const COMMUNITY_PROFILES: CommunityProfile[] = [
     author: "Gonzalo Andrade Estrella",
     tags: ["prácticas", "empresa", "APA"],
     meta: "XeLaTeX · biber · APA 7",
-    downloadUrl: "https://github.com/texisstudio/community-profiles/archive/refs/heads/main.zip",
-    stars: 9,
+    downloadUrl: `${PROFILES_REPO}/company.internship.zip`,
+    verified: true,
+  },
+  {
+    id: "generic.tesina",
+    name: "Tesina genérica",
+    description: "Versión compacta para trabajos monográficos, tesinas y documentos académicos breves.",
+    author: "Gonzalo Andrade Estrella",
+    tags: ["tesina", "monografía", "licenciatura"],
+    meta: "XeLaTeX · biber · APA",
+    downloadUrl: `${PROFILES_REPO}/generic.tesina.zip`,
     verified: true,
   },
 ];
