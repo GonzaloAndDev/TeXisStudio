@@ -84,6 +84,52 @@ TeXisStudio/
 
 ---
 
+## Distribución — instaladores y portable
+
+Los instaladores se generan con un solo comando desde la plataforma correspondiente.
+En CI/CD (GitHub Actions) se construyen automáticamente al publicar un tag `v*`.
+
+| Plataforma | Formato | Cómo instalar |
+|---|---|---|
+| Windows | `.msi` | doble clic — instalador nativo Windows |
+| Windows | `-setup.exe` | doble clic — alternativo (NSIS) |
+| Windows | `_portable.zip` | extraer y ejecutar `TeXisStudio.exe` directamente |
+| Debian / Ubuntu | `.deb` | `sudo dpkg -i TeXisStudio.deb` |
+| Fedora / RHEL | `.rpm` | `sudo rpm -i TeXisStudio.rpm` |
+| Linux (cualquier) | `.AppImage` | `chmod +x TeXisStudio.AppImage && ./TeXisStudio.AppImage` |
+| macOS | `.dmg` | arrastrar a Aplicaciones — universal Intel + Apple Silicon |
+
+### Build local
+
+```powershell
+# Windows
+.\scripts\build-windows.ps1
+```
+
+```bash
+# Linux (detecta automáticamente apt / dnf / pacman)
+bash scripts/build-linux.sh
+
+# macOS (genera universal binary Intel + Apple Silicon)
+bash scripts/build-mac.sh
+```
+
+Los artefactos quedan en `target/release/bundle/` (Windows y Linux)
+o en `target/universal-apple-darwin/release/bundle/` (macOS).
+
+### Release automática (GitHub Actions)
+
+Al hacer `git push origin main --tags`, el workflow `.github/workflows/release.yml`
+construye en paralelo para Windows, Linux y macOS y publica todos los artefactos
+en la release de GitHub sin intervención manual.
+
+> **Nota sobre firma de código:** sin certificado de firma, Windows SmartScreen
+> y macOS Gatekeeper muestran una advertencia al ejecutar por primera vez.
+> En Windows: *Más información → Ejecutar de todas formas*.
+> En macOS: *clic derecho → Abrir → Abrir de todas formas*.
+
+---
+
 ## Requisitos del sistema
 
 | Componente | Versión mínima |
