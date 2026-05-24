@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBook, IconCheck, IconCode, IconDoc, IconDownload, IconEdit,
-  IconHeading, IconImage, IconList, IconPlus, IconRefresh, IconSearch, IconSigma,
+  IconBook, IconBuilding, IconCheck, IconCode, IconDoc, IconDownload, IconEdit,
+  IconFolder, IconGlobe, IconGrid, IconHeading, IconImage, IconLayers,
+  IconList, IconMap, IconPlus, IconRefresh, IconSearch, IconSigma,
   IconTable, IconText, IconTrash, IconUpload, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
@@ -196,8 +197,11 @@ function saveStyles(styles: CitationStyle[]) {
 const CONTINENT_LABEL: Record<string, string> = {
   america: "América", europe: "Europa", asia: "Asia", generic: "Genérico",
 };
-const CONTINENT_EMOJI: Record<string, string> = {
-  america: "🌎", europe: "🌍", asia: "🌏", generic: "📄",
+const CONTINENT_ABBR: Record<string, string> = {
+  america: "AM", europe: "EU", asia: "AS", generic: "GN",
+};
+const CONTINENT_COLOR: Record<string, string> = {
+  america: "#4338CA", europe: "#0369A1", asia: "#B45309", generic: "#4F7A68",
 };
 const COUNTRY_LABEL: Record<string, string> = {
   mexico: "México", usa: "Estados Unidos", canada: "Canadá",
@@ -841,7 +845,7 @@ function StylesTab() {
           </>
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10, padding: 24, color: "var(--fg-faint)", textAlign: "center" }}>
-            <div style={{ fontSize: 32 }}>📖</div>
+            <div style={{ width: 44, height: 44, borderRadius: "var(--r-lg)", background: "var(--ink-100)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)" }}><IconLayers size={20} /></div>
             <div style={{ fontSize: "var(--fs-sm)" }}>Selecciona un estilo para ver el detalle</div>
             <div style={{ fontSize: "var(--fs-xs)", lineHeight: 1.6 }}>
               Usa ▲▼ para cambiar el orden.<br />El orden determina el menú desplegable al crear un proyecto.
@@ -1027,7 +1031,7 @@ function CommunityTab({ installedIds, onInstalled }: {
                 {navContinent && (
                   <>
                     <span>›</span>
-                    <span style={{ cursor: navCountry ? "pointer" : "default", color: navCountry ? "var(--accent)" : "var(--fg-strong)", fontWeight: navCountry ? 400 : 500 }} onClick={() => { if (navCountry) setNavCountry(null); }}>{CONTINENT_EMOJI[navContinent]} {CONTINENT_LABEL[navContinent] ?? navContinent}</span>
+                    <span style={{ cursor: navCountry ? "pointer" : "default", color: navCountry ? "var(--accent)" : "var(--fg-strong)", fontWeight: navCountry ? 400 : 500 }} onClick={() => { if (navCountry) setNavCountry(null); }}>{CONTINENT_LABEL[navContinent] ?? navContinent}</span>
                   </>
                 )}
                 {navCountry && (
@@ -1044,14 +1048,21 @@ function CommunityTab({ installedIds, onInstalled }: {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 32 }}>
                 {continents.map((continent) => {
                   const count = catalog.filter((p) => p.continent === continent).length;
+                  const color = CONTINENT_COLOR[continent] ?? "var(--accent)";
                   return (
-                    <div key={continent} onClick={() => setNavContinent(continent)} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "20px 16px", cursor: "pointer", textAlign: "center", transition: "border-color 0.15s, box-shadow 0.15s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-soft)")}
+                    <div key={continent} onClick={() => setNavContinent(continent)}
+                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "18px 16px", cursor: "pointer", transition: "border-color 0.15s, box-shadow 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = color; e.currentTarget.style.boxShadow = `0 0 0 3px ${color}22`; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-soft)"; e.currentTarget.style.boxShadow = "none"; }}
                     >
-                      <div style={{ fontSize: 28, marginBottom: 8 }}>{CONTINENT_EMOJI[continent] ?? "🌐"}</div>
-                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 4 }}>{CONTINENT_LABEL[continent] ?? continent}</div>
-                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfil{count !== 1 ? "es" : ""}</div>
+                      <div style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: `${color}18`, color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                        <IconMap size={16} />
+                      </div>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>{CONTINENT_LABEL[continent] ?? continent}</div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfiles</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color, fontWeight: 700, background: `${color}14`, padding: "1px 5px", borderRadius: "var(--r-xs)" }}>{CONTINENT_ABBR[continent] ?? continent.slice(0,2).toUpperCase()}</span>
+                      </div>
                     </div>
                   );
                 })}
@@ -1063,13 +1074,20 @@ function CommunityTab({ installedIds, onInstalled }: {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 32 }}>
                 {countriesInContinent(navContinent).map((country) => {
                   const count = profilesInCountry(navContinent, country).length;
+                  const color = CONTINENT_COLOR[navContinent] ?? "var(--accent)";
                   return (
-                    <div key={country} onClick={() => setNavCountry(country)} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "16px 14px", cursor: "pointer", transition: "border-color 0.15s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-soft)")}
+                    <div key={country} onClick={() => setNavCountry(country)}
+                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 14px", cursor: "pointer", transition: "border-color 0.15s", display: "flex", alignItems: "center", gap: 10 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = color; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-soft)"; }}
                     >
-                      <div style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 4 }}>{COUNTRY_LABEL[country] ?? country}</div>
-                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfil{count !== 1 ? "es" : ""}</div>
+                      <div style={{ width: 28, height: 28, borderRadius: "var(--r-sm)", background: `${color}14`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <IconBuilding size={13} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{COUNTRY_LABEL[country] ?? country}</div>
+                        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfiles</div>
+                      </div>
                     </div>
                   );
                 })}
@@ -1172,11 +1190,11 @@ export default function LibraryView() {
     navigate(`/new?profile=${encodeURIComponent(profile.id)}`);
   }
 
-  const TABS: { id: LibTab; label: string; icon: string }[] = [
-    { id: "profiles",  label: "Perfiles",  icon: "📂" },
-    { id: "community", label: "Comunidad", icon: "🌐" },
-    { id: "styles",    label: "Estilos",   icon: "📖" },
-    { id: "elements",  label: "Elementos", icon: "🧩" },
+  const TABS: { id: LibTab; label: string; icon: React.ReactNode }[] = [
+    { id: "profiles",  label: "Perfiles",  icon: <IconFolder size={13} /> },
+    { id: "community", label: "Comunidad", icon: <IconGlobe size={13} /> },
+    { id: "styles",    label: "Estilos",   icon: <IconLayers size={13} /> },
+    { id: "elements",  label: "Elementos", icon: <IconGrid size={13} /> },
   ];
 
   return (
@@ -1207,7 +1225,7 @@ export default function LibraryView() {
         <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", padding: "20px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           {TABS.map(({ id, label, icon }) => (
             <div key={id} onClick={() => setTab(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: "var(--r-md)", cursor: "pointer", fontSize: "var(--fs-base)", background: tab === id ? "var(--bg-selected)" : "transparent", color: tab === id ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: tab === id ? 500 : 400 }}>
-              <span style={{ fontSize: 13 }}>{icon}</span> {label}
+              {icon} {label}
             </div>
           ))}
           <div style={{ flex: 1 }} />

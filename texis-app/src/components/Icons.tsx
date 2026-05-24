@@ -162,4 +162,46 @@ export const IconSun      = (p: IconProps) => (
 export const IconStar     = (p: IconProps) => <Icon {...p} d="M12 3l2.6 5.5 6 .9-4.4 4.2 1 6L12 16.8 6.7 19.6l1-6L3.4 9.4l6-.9z" />;
 export const IconTrash    = (p: IconProps) => <Icon {...p} d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />;
 export const IconEdit     = (p: IconProps) => <Icon {...p} d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />;
-export const IconRefresh  = (p: IconProps) => <Icon {...p} d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5" />;
+export const IconRefresh  = (p: IconProps) => <Icon {...p} d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5" />
+export const IconGlobe    = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3c-2.6 3.5-4 7.5-4 9s1.4 5.5 4 9M12 3c2.6 3.5 4 7.5 4 9s-1.4 5.5-4 9" />
+  </Icon>
+);
+export const IconGrid     = (p: IconProps) => (
+  <Icon {...p} fill="none">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </Icon>
+);
+export const IconLayers   = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M2 10l10-5 10 5-10 5z" />
+    <path d="M2 16l10-5 10 5" />
+  </Icon>
+);
+export const IconMap      = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 7l6-3 6 3 6-3v14l-6 3-6-3-6 3z" />
+    <path d="M9 4v14M15 7v14" />
+  </Icon>
+);
+export const IconBuilding = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 21h18M4 21V7l8-4 8 4v14" />
+    <rect x="9" y="13" width="2" height="4" />
+    <rect x="13" y="13" width="2" height="4" />
+    <rect x="9" y="8" width="2" height="3" />
+    <rect x="13" y="8" width="2" height="3" />
+  </Icon>
+);
+export const IconQuote    = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+    <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" />
+  </Icon>
+);;
