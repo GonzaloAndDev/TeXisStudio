@@ -105,7 +105,7 @@ mod tests {
     use super::*;
     use crate::project::model::{
         AcademicLevel, BibliographyBackend, CitationBlock, CitationType, CompilerKind,
-        ContentBlock, DocumentClassConfig, DocumentKind, FigureWidth, InstitutionData,
+        ContentBlock, DocumentClassConfig, DocumentKind, InstitutionData,
         LatexConfig, LatexEngine, ProjectMetadata, ProjectModel, ProjectSection,
         SectionPlacement, StudentData,
     };
@@ -124,6 +124,7 @@ mod tests {
                 academic_level: AcademicLevel::Licenciatura,
                 language: "es".to_string(),
                 city: "x".to_string(), year: 2026, keywords: vec![],
+                funding: None,
             },
             institution: InstitutionData {
                 name: "U".to_string(), faculty: None, department: None,
@@ -132,6 +133,7 @@ mod tests {
             student: StudentData {
                 full_name: "A".to_string(), student_id: None, email: None,
                 advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
+                committee: vec![], orcid: None,
             },
             profile_id: "generic.thesis".to_string(),
             latex_config: LatexConfig {

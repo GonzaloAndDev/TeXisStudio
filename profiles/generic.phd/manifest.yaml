@@ -1,0 +1,14 @@
+schema_version: "0.1.0"
+id: "generic.phd"
+name: "Tesis de posgrado"
+version: "0.1.0"
+description: "Para maestría y doctorado: revisión de literatura, estado del arte, experimentación, glosario y acrónimos. XeLaTeX + biber + APA 7."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - tesis
+  - maestria
+  - doctorado
+  - posgrado
+  - apa
+  - xelatex

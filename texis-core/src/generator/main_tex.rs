@@ -98,8 +98,10 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreR
                     }
                     match section.element_id.as_str() {
                         "table_of_contents" => out.push_str("\n\\tableofcontents\n"),
-                        "list_of_figures"   => out.push_str("\\listoffigures\n"),
-                        "list_of_tables"    => out.push_str("\\listoftables\n"),
+                        "list_of_figures"    => out.push_str("\\listoffigures\n"),
+                        "list_of_tables"     => out.push_str("\\listoftables\n"),
+                        "list_of_algorithms" => out.push_str("\\listofalgorithms\n"),
+                        "list_of_listings"   => out.push_str("\\lstlistoflistings\n"),
                         _ => out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id)),
                     }
                 }
@@ -181,6 +183,14 @@ fn render_paquetes(model: &ProjectModel) -> String {
 
     out.push_str("\\usepackage[hidelinks]{hyperref}\n");
 
+    // Posgrado: código fuente, algoritmos, teoremas
+    out.push_str("\n% Paquetes de posgrado\n");
+    out.push_str("\\usepackage{listings}\n");
+    out.push_str("\\lstset{basicstyle=\\ttfamily\\footnotesize, frame=single, breaklines=true, tabsize=4, showstringspaces=false}\n");
+    out.push_str("\\usepackage{algorithm}\n");
+    out.push_str("\\usepackage{algpseudocode}\n");
+    out.push_str("\\usepackage{amsthm}\n");
+
     // Paquetes adicionales del modelo
     for pkg in &model.latex_config.packages_required {
         out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
@@ -205,6 +215,24 @@ fn render_estilo(model: &ProjectModel) -> String {
     out.push_str(&format!("{}\n", spacing_cmd));
     out.push_str("\\setlength{\\parindent}{1.5em}\n");
     out.push_str("\\setlength{\\parskip}{6pt}\n");
+
+    // Entornos de teoremas (amsthm)
+    out.push_str("\n% Entornos de teoremas\n");
+    out.push_str("\\newtheorem{theorem}{Teorema}[chapter]\n");
+    out.push_str("\\newtheorem{lemma}[theorem]{Lema}\n");
+    out.push_str("\\newtheorem{corollary}[theorem]{Corolario}\n");
+    out.push_str("\\newtheorem{proposition}[theorem]{Proposici\\'{o}n}\n");
+    out.push_str("\\theoremstyle{definition}\n");
+    out.push_str("\\newtheorem{definition}[theorem]{Definici\\'{o}n}\n");
+    out.push_str("\\theoremstyle{remark}\n");
+    out.push_str("\\newtheorem*{remark}{Observaci\\'{o}n}\n");
+    // Variantes no numeradas
+    out.push_str("\\newtheorem*{theorem*}{Teorema}\n");
+    out.push_str("\\newtheorem*{lemma*}{Lema}\n");
+    out.push_str("\\newtheorem*{corollary*}{Corolario}\n");
+    out.push_str("\\newtheorem*{proposition*}{Proposici\\'{o}n}\n");
+    out.push_str("\\newtheorem*{definition*}{Definici\\'{o}n}\n");
+
     out
 }
 
@@ -282,6 +310,56 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
         "\\newcommand{{\\tesisCiudad}}{{{}}}\n",
         latex_escape(&model.metadata.city)
     ));
+
+    // ORCID iD
+    if let Some(orcid) = &model.student.orcid {
+        if !orcid.is_empty() {
+            out.push_str(&format!(
+                "\\newcommand{{\\tesisORCID}}{{{}}}\n",
+                latex_escape(orcid)
+            ));
+        }
+    }
+
+    // Comité sinodal / jurado
+    if !model.student.committee.is_empty() {
+        let joined = model.student.committee.iter()
+            .map(|m| match &m.role {
+                Some(r) => format!("{} ({})", latex_escape(&m.full_name), latex_escape(r)),
+                None    => latex_escape(&m.full_name),
+            })
+            .collect::<Vec<_>>()
+            .join(" \\\\ ");
+        out.push_str(&format!(
+            "\\newcommand{{\\tesisComite}}{{{}}}\n",
+            joined
+        ));
+        // Comandos individuales para plantillas de portada avanzadas
+        for (i, m) in model.student.committee.iter().enumerate() {
+            out.push_str(&format!(
+                "\\newcommand{{\\tesisComite{}}}{{{}}}\n",
+                i + 1,
+                latex_escape(&m.full_name)
+            ));
+            if let Some(r) = &m.role {
+                out.push_str(&format!(
+                    "\\newcommand{{\\tesisComite{}Rol}}{{{}}}\n",
+                    i + 1,
+                    latex_escape(r)
+                ));
+            }
+        }
+    }
+
+    // Financiamiento
+    if let Some(funding) = &model.metadata.funding {
+        if !funding.is_empty() {
+            out.push_str(&format!(
+                "\\newcommand{{\\tesisFinanciamiento}}{{{}}}\n",
+                latex_escape(funding)
+            ));
+        }
+    }
 
     out
 }

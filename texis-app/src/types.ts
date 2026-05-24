@@ -1,6 +1,6 @@
 // Tipos TypeScript que reflejan los structs Rust de texis-core.
 
-export type DocumentKind = "tesis" | "tesina";
+export type DocumentKind = "tesis" | "tesina" | "tesis_posgrado";
 
 export type AcademicLevel =
   | "bachillerato"
@@ -93,6 +93,56 @@ export interface RawLatexBlock {
   user_confirmed: boolean;
 }
 
+// ── Bloques de posgrado ─────────────────────────────────────────
+
+export interface GlossaryEntryBlock {
+  type: "glossary_entry";
+  id: string;
+  term: string;
+  definition: string;
+}
+
+export interface AcronymEntryBlock {
+  type: "acronym_entry";
+  id: string;
+  acronym: string;
+  full_form: string;
+  description?: string;
+}
+
+export interface CodeBlock {
+  type: "code";
+  id: string;
+  language: string;
+  caption?: string;
+  label?: string;
+  content: string;
+  show_line_numbers: boolean;
+}
+
+export interface AlgorithmBlock {
+  type: "algorithm";
+  id: string;
+  caption: string;
+  label?: string;
+  input?: string;
+  output?: string;
+  body: string;
+}
+
+export type TheoremKind =
+  | "theorem" | "lemma" | "corollary" | "definition"
+  | "proposition" | "proof" | "remark";
+
+export interface TheoremBlock {
+  type: "theorem";
+  id: string;
+  kind: TheoremKind;
+  title?: string;
+  content: string;
+  numbered: boolean;
+}
+
 export type ContentBlock =
   | ParagraphBlock
   | HeadingBlock
@@ -101,7 +151,12 @@ export type ContentBlock =
   | CitationBlock
   | EquationBlock
   | ListBlock
-  | RawLatexBlock;
+  | RawLatexBlock
+  | GlossaryEntryBlock
+  | AcronymEntryBlock
+  | CodeBlock
+  | AlgorithmBlock
+  | TheoremBlock;
 
 // ── Project Model ───────────────────────────────────────────────
 
@@ -131,6 +186,13 @@ export interface ProjectMetadata {
   city: string;
   year: number;
   keywords: string[];
+  funding?: string;
+}
+
+export interface CommitteeMember {
+  full_name: string;
+  role?: string;
+  institution?: string;
 }
 
 export interface InstitutionData {
@@ -157,6 +219,10 @@ export interface StudentData {
   advisors?: string[];
   /** Co-autores en trabajos grupales. */
   co_authors?: CoAuthor[];
+  /** Comité sinodal / jurado (posgrado). */
+  committee?: CommitteeMember[];
+  /** ORCID iD del autor. */
+  orcid?: string;
 }
 
 // ── LaTeX typography settings ────────────────────────────────────

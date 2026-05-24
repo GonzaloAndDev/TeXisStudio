@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+fn default_true() -> bool { true }
+
 // ── ProjectModel ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,6 +42,9 @@ pub struct ProjectMetadata {
     pub city: String,
     pub year: u32,
     pub keywords: Vec<String>,
+    /// Agencia financiadora o número de beca (opcional).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub funding: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +52,7 @@ pub struct ProjectMetadata {
 pub enum DocumentKind {
     Tesis,
     Tesina,
+    TesisPosgrado,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,6 +72,18 @@ pub struct InstitutionData {
     pub department: Option<String>,
     pub logo_path: Option<PathBuf>,
     pub country: String,
+}
+
+/// Miembro del comité sinodal / jurado de posgrado.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitteeMember {
+    pub full_name: String,
+    /// Rol en el comité: "Presidente", "Secretario", "Vocal 1", etc.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    /// Institución de adscripción (puede diferir de la del estudiante).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub institution: Option<String>,
 }
 
 /// Co-autor de un trabajo grupal.
@@ -96,6 +114,12 @@ pub struct StudentData {
     /// @deprecated — usar `advisors` en proyectos nuevos.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub co_advisor: Option<String>,
+    /// Comité sinodal / jurado (posgrado).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub committee: Vec<CommitteeMember>,
+    /// ORCID iD del autor (https://orcid.org/XXXX-XXXX-XXXX-XXXX).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub orcid: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -221,6 +245,12 @@ pub enum ContentBlock {
     Equation(EquationBlock),
     List(ListBlock),
     RawLatex(RawLatexBlock),
+    // ── Bloques de posgrado ────────────────────────────────────
+    GlossaryEntry(GlossaryEntryBlock),
+    AcronymEntry(AcronymEntryBlock),
+    Code(CodeBlock),
+    Algorithm(AlgorithmBlock),
+    Theorem(TheoremBlock),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -331,6 +361,77 @@ pub enum ListType {
     Itemize,
     Enumerate,
     Description,
+}
+
+// ── Bloques de posgrado ───────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GlossaryEntryBlock {
+    pub id: String,
+    pub term: String,
+    pub definition: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AcronymEntryBlock {
+    pub id: String,
+    pub acronym: String,
+    pub full_form: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CodeBlock {
+    pub id: String,
+    /// Lenguaje para resaltado: "Python", "Java", "C", "C++", "MATLAB", "R", etc.
+    pub language: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    pub content: String,
+    #[serde(default)]
+    pub show_line_numbers: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlgorithmBlock {
+    pub id: String,
+    pub caption: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    /// Entradas del algoritmo (e.g. "dataset $D$, umbral $\theta$").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input: Option<String>,
+    /// Salidas del algoritmo.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
+    /// Pseudocódigo: una instrucción por línea.
+    pub body: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TheoremKind {
+    Theorem,
+    Lemma,
+    Corollary,
+    Definition,
+    Proposition,
+    Proof,
+    Remark,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TheoremBlock {
+    pub id: String,
+    pub kind: TheoremKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    pub content: String,
+    #[serde(default = "default_true")]
+    pub numbered: bool,
 }
 
 /// REGLAS DE SEGURIDAD:

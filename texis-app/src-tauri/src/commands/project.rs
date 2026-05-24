@@ -658,6 +658,7 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             city:           "Ciudad de México".to_string(),
             year:           chrono::Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
             keywords:       vec![],
+            funding:        None,
         },
         institution: InstitutionData {
             name:       "Universidad".to_string(),
@@ -674,6 +675,8 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             co_advisor: None,
             advisors:   vec![],
             co_authors: vec![],
+            committee:  vec![],
+            orcid:      None,
         },
         profile_id: profile.id.clone(),
         latex_config: LatexConfig {

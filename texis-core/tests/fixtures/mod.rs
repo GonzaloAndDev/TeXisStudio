@@ -1,5 +1,6 @@
 // Fixtures para tests de integración.
 // Nota: no se nombra ninguna variable 'gen' (reservado en edition 2024).
+#![allow(dead_code)]
 
 use std::collections::HashMap;
 use tempfile::TempDir;
@@ -22,6 +23,7 @@ pub fn generic_thesis_model() -> ProjectModel {
             city: "Ciudad de México".to_string(),
             year: 2026,
             keywords: vec!["agua".to_string(), "calidad".to_string()],
+            funding: None,
         },
         institution: InstitutionData {
             name: "Universidad Nacional Autónoma de México".to_string(),
@@ -38,6 +40,8 @@ pub fn generic_thesis_model() -> ProjectModel {
             co_advisor: None,
             advisors: vec!["Dr. María López".to_string()],
             co_authors: vec![],
+            committee: vec![],
+            orcid: None,
         },
         profile_id: "generic.thesis".to_string(),
         latex_config: LatexConfig {

@@ -4,13 +4,13 @@ import "katex/dist/katex.min.css";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
-  IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
-  IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTrash, IconX,
+  IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
+  IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
+  IconSearch, IconSettings, IconSigma, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus } from "../types";
+import type { BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -540,6 +540,241 @@ function CitationEditor({
   );
 }
 
+// ── GlossaryEntryEditor ───────────────────────────────────────────
+
+function GlossaryEntryEditor({
+  term, definition, onChange,
+}: {
+  term: string; definition: string;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+    padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Término</label>
+        <input autoFocus value={term} onChange={(e) => onChange({ term: e.target.value })} placeholder="Ontología" style={fieldStyle} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Definición</label>
+        <textarea value={definition} onChange={(e) => onChange({ definition: e.target.value })} placeholder="Rama de la filosofía que estudia el ser en cuanto ser." rows={3} style={{ ...fieldStyle, resize: "vertical" }} />
+      </div>
+    </div>
+  );
+}
+
+// ── AcronymEntryEditor ────────────────────────────────────────────
+
+function AcronymEntryEditor({
+  acronym, full_form, description, onChange,
+}: {
+  acronym: string; full_form: string; description?: string;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+    padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Acrónimo</label>
+          <input autoFocus value={acronym} onChange={(e) => onChange({ acronym: e.target.value })} placeholder="IA" style={{ ...fieldStyle, fontWeight: 600 }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Forma completa</label>
+          <input value={full_form} onChange={(e) => onChange({ full_form: e.target.value })} placeholder="Inteligencia Artificial" style={fieldStyle} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Descripción adicional (opcional)</label>
+        <input value={description ?? ""} onChange={(e) => onChange({ description: e.target.value || undefined })} placeholder="Contexto o aclaración opcional…" style={fieldStyle} />
+      </div>
+    </div>
+  );
+}
+
+// ── CodeBlockEditor ───────────────────────────────────────────────
+
+const CODE_LANGUAGES = [
+  "Python", "Java", "C", "C++", "C#", "JavaScript", "TypeScript",
+  "MATLAB", "R", "Rust", "Go", "Bash", "SQL", "LaTeX", "Julia",
+];
+
+function CodeBlockEditor({
+  language, caption, label, content, show_line_numbers, onChange,
+}: {
+  language: string; caption?: string; label?: string; content: string; show_line_numbers: boolean;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+    padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Lenguaje:</span>
+        {CODE_LANGUAGES.map((l) => (
+          <button key={l} className={`btn btn-sm ${language === l ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ language: l })} style={{ fontSize: "var(--fs-xs)", padding: "2px 8px" }}>{l}</button>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda (caption)</label>
+          <input value={caption ?? ""} onChange={(e) => onChange({ caption: e.target.value || undefined })} placeholder="Algoritmo de clasificación" style={fieldStyle} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <input value={label ?? ""} onChange={(e) => onChange({ label: e.target.value || undefined })} placeholder="lst:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
+        </div>
+      </div>
+      <div>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer", marginBottom: 6 }}>
+          <input type="checkbox" checked={show_line_numbers} onChange={(e) => onChange({ show_line_numbers: e.target.checked })} style={{ accentColor: "var(--accent)" }} />
+          Mostrar números de línea
+        </label>
+        <textarea
+          autoFocus
+          value={content}
+          onChange={(e) => onChange({ content: e.target.value })}
+          rows={8}
+          style={{
+            fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
+            background: "var(--ink-900)", border: "none", outline: "none",
+            padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
+          }}
+          placeholder={`# Escribe tu código aquí\ndef ejemplo():\n    pass`}
+          spellCheck={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── AlgorithmBlockEditor ──────────────────────────────────────────
+
+function AlgorithmBlockEditor({
+  caption, label, input, output, body, onChange,
+}: {
+  caption: string; label?: string; input?: string; output?: string; body: string;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+    padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Nombre del algoritmo *</label>
+          <input autoFocus value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Clasificador por vecinos más cercanos" style={fieldStyle} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <input value={label ?? ""} onChange={(e) => onChange({ label: e.target.value || undefined })} placeholder="alg:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Entrada (Require)</label>
+          <input value={input ?? ""} onChange={(e) => onChange({ input: e.target.value || undefined })} placeholder="dataset D, umbral θ" style={fieldStyle} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Salida (Ensure)</label>
+          <input value={output ?? ""} onChange={(e) => onChange({ output: e.target.value || undefined })} placeholder="clasificación C" style={fieldStyle} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+          Pseudocódigo — una instrucción por línea
+        </label>
+        <textarea
+          value={body}
+          onChange={(e) => onChange({ body: e.target.value })}
+          rows={8}
+          style={{
+            fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
+            background: "var(--ink-900)", border: "none", outline: "none",
+            padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
+          }}
+          placeholder={"Inicializar modelo M\nPara cada muestra x en D:\n  Calcular distancia d(x, centroide)\n  Asignar etiqueta más cercana\nRetornar M"}
+        />
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
+          Cada línea se convierte en un paso numerado en el PDF. Usa LaTeX matemático si necesitas: $x_i$, $\theta$, etc.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TheoremBlockEditor ────────────────────────────────────────────
+
+const THEOREM_KINDS: { kind: TheoremKind; label: string; env: string }[] = [
+  { kind: "theorem",    label: "Teorema",     env: "theorem"    },
+  { kind: "lemma",      label: "Lema",        env: "lemma"      },
+  { kind: "corollary",  label: "Corolario",   env: "corollary"  },
+  { kind: "proposition",label: "Proposición", env: "proposition"},
+  { kind: "definition", label: "Definición",  env: "definition" },
+  { kind: "proof",      label: "Demostración",env: "proof"      },
+  { kind: "remark",     label: "Observación", env: "remark"     },
+];
+
+function TheoremBlockEditor({
+  kind, title, content, numbered, onChange,
+}: {
+  kind: TheoremKind; title?: string; content: string; numbered: boolean;
+  onChange: (u: Record<string, unknown>) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
+    padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
+    color: "var(--fg-strong)", outline: "none", width: "100%",
+  };
+  const isPureUnnumbered = kind === "proof" || kind === "remark";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {THEOREM_KINDS.map((t) => (
+          <button key={t.kind} className={`btn btn-sm ${kind === t.kind ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ kind: t.kind })} style={{ fontSize: "var(--fs-xs)", padding: "3px 10px" }}>{t.label}</button>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr auto", gap: 8, alignItems: "end" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Título opcional</label>
+          <input value={title ?? ""} onChange={(e) => onChange({ title: e.target.value || undefined })} placeholder="Teorema de Pitágoras" style={fieldStyle} />
+        </div>
+        {!isPureUnnumbered && (
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer", paddingBottom: 2 }}>
+            <input type="checkbox" checked={numbered} onChange={(e) => onChange({ numbered: e.target.checked })} style={{ accentColor: "var(--accent)" }} />
+            Numerado
+          </label>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Contenido (acepta LaTeX matemático)</label>
+        <textarea
+          autoFocus
+          value={content}
+          onChange={(e) => onChange({ content: e.target.value })}
+          rows={4}
+          style={{ ...fieldStyle, fontFamily: "var(--font-display)", lineHeight: 1.6, resize: "vertical" }}
+          placeholder="Sea $a^2 + b^2 = c^2$ donde $c$ es la hipotenusa..."
+        />
+      </div>
+    </div>
+  );
+}
+
 // ── BlockItem: combina preview + edición ──────────────────────────
 
 function BlockItem({
@@ -666,6 +901,56 @@ function BlockItem({
             )}
           </div>
         );
+      // ── Posgrado ──────────────────────────────────────────────────
+      case "glossary_entry":
+        return (
+          <GlossaryEntryEditor
+            term={block.term}
+            definition={block.definition}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "acronym_entry":
+        return (
+          <AcronymEntryEditor
+            acronym={block.acronym}
+            full_form={block.full_form}
+            description={block.description}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "code":
+        return (
+          <CodeBlockEditor
+            language={block.language}
+            caption={block.caption}
+            label={block.label}
+            content={block.content}
+            show_line_numbers={block.show_line_numbers}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "algorithm":
+        return (
+          <AlgorithmBlockEditor
+            caption={block.caption}
+            label={block.label}
+            input={block.input}
+            output={block.output}
+            body={block.body}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
+      case "theorem":
+        return (
+          <TheoremBlockEditor
+            kind={block.kind}
+            title={block.title}
+            content={block.content}
+            numbered={block.numbered}
+            onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
+          />
+        );
       default:
         return <div style={{ color: "var(--fg-faint)" }}>Bloque no editable</div>;
     }
@@ -755,6 +1040,78 @@ function BlockItem({
             )}
           </div>
         );
+      // ── Posgrado previews ─────────────────────────────────────────
+      case "glossary_entry":
+        return (
+          <div style={{ display: "flex", gap: 8, fontFamily: "var(--font-display)", fontSize: 14, lineHeight: 1.55 }}>
+            <span style={{ fontWeight: 700, color: "var(--fg-strong)", whiteSpace: "nowrap", minWidth: 120 }}>
+              {block.term || <em style={{ fontStyle: "normal", opacity: 0.4 }}>término</em>}
+            </span>
+            <span style={{ color: "var(--fg-default)" }}>
+              {block.definition || <em style={{ opacity: 0.4 }}>definición…</em>}
+            </span>
+          </div>
+        );
+      case "acronym_entry":
+        return (
+          <div style={{ display: "flex", gap: 8, fontFamily: "var(--font-display)", fontSize: 14, lineHeight: 1.55 }}>
+            <span style={{ fontWeight: 700, color: "var(--fg-strong)", fontFamily: "var(--font-mono)", minWidth: 60 }}>
+              {block.acronym || <em style={{ fontStyle: "normal", opacity: 0.4 }}>ACR</em>}
+            </span>
+            <span style={{ color: "var(--fg-default)" }}>
+              {block.full_form || <em style={{ opacity: 0.4 }}>forma completa…</em>}
+              {block.description ? <span style={{ color: "var(--fg-muted)" }}>. {block.description}</span> : null}
+            </span>
+          </div>
+        );
+      case "code":
+        return (
+          <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", top: 6, right: 8, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", background: "var(--ink-800)", padding: "1px 6px", borderRadius: "var(--r-xs)" }}>
+              {block.language || "código"}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)", overflowX: "auto", whiteSpace: "pre" }}>
+              {block.content || "(vacío)"}
+            </div>
+            {block.caption && <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 4, textAlign: "center", fontStyle: "italic" }}>{block.caption}</div>}
+          </div>
+        );
+      case "algorithm":
+        return (
+          <div style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", overflow: "hidden", fontSize: "var(--fs-sm)", fontFamily: "var(--font-display)" }}>
+            <div style={{ background: "var(--bg-panel)", padding: "6px 12px", borderBottom: "1px solid var(--border-subtle)", fontWeight: 600, color: "var(--fg-strong)", fontSize: 13 }}>
+              Algoritmo: {block.caption || <em style={{ opacity: 0.5, fontWeight: 400 }}>sin nombre</em>}
+            </div>
+            {(block.input || block.output) && (
+              <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--border-subtle)", fontSize: 12, color: "var(--fg-muted)" }}>
+                {block.input && <div><strong>Entrada:</strong> {block.input}</div>}
+                {block.output && <div><strong>Salida:</strong> {block.output}</div>}
+              </div>
+            )}
+            <div style={{ padding: "8px 12px", background: "var(--bg-app)", fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", whiteSpace: "pre-wrap" }}>
+              {block.body || <span style={{ opacity: 0.4 }}>(pseudocódigo vacío)</span>}
+            </div>
+          </div>
+        );
+      case "theorem": {
+        const tk = THEOREM_KINDS.find((t) => t.kind === block.kind);
+        const envLabel = tk?.label ?? block.kind;
+        const envColor: Record<string, string> = {
+          theorem: "#4A90E2", lemma: "#7B68EE", corollary: "#6A9FB5",
+          proposition: "#5F9EA0", definition: "#52C41A", proof: "#888", remark: "#888",
+        };
+        const color = envColor[block.kind] ?? "var(--accent)";
+        return (
+          <div style={{ borderLeft: `3px solid ${color}`, paddingLeft: 12, paddingRight: 4 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color, marginBottom: 4, fontFamily: "var(--font-display)" }}>
+              {envLabel}{block.title ? ` (${block.title})` : ""}{block.numbered && block.kind !== "proof" && block.kind !== "remark" ? " [numerado]" : ""}
+            </div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.6, color: "var(--fg-default)", fontStyle: "italic" }}>
+              {block.content || <span style={{ opacity: 0.4, fontStyle: "normal" }}>contenido vacío…</span>}
+            </div>
+          </div>
+        );
+      }
       default:
         return <div style={{ color: "var(--fg-faint)" }}>[bloque desconocido]</div>;
     }
@@ -826,14 +1183,20 @@ function BlockItem({
 // ── CommandPalette (Ctrl+K) ───────────────────────────────────────
 
 const PALETTE_BLOCK_ITEMS = [
-  { type: "paragraph" as ContentBlock["type"],  label: "Párrafo",      icon: "¶",  hint: "Texto libre" },
-  { type: "heading"   as ContentBlock["type"],  label: "Título",       icon: "H",  hint: "H1 / H2 / H3" },
-  { type: "list"      as ContentBlock["type"],  label: "Lista",        icon: "•",  hint: "Viñetas o numerada" },
-  { type: "equation"  as ContentBlock["type"],  label: "Ecuación",     icon: "∑",  hint: "LaTeX math" },
-  { type: "figure"    as ContentBlock["type"],  label: "Figura",       icon: "🖼",  hint: "Imagen con leyenda" },
-  { type: "table"     as ContentBlock["type"],  label: "Tabla",        icon: "⊞",  hint: "Tabla editable" },
-  { type: "citation"  as ContentBlock["type"],  label: "Cita",         icon: "❞",  hint: "Referencia bibliográfica" },
-  { type: "raw_latex" as ContentBlock["type"],  label: "LaTeX directo",icon: "{}",  hint: "Fragmento LaTeX" },
+  { type: "paragraph"     as ContentBlock["type"],  label: "Párrafo",      icon: "¶",  hint: "Texto libre" },
+  { type: "heading"       as ContentBlock["type"],  label: "Título",       icon: "H",  hint: "H1 / H2 / H3" },
+  { type: "list"          as ContentBlock["type"],  label: "Lista",        icon: "•",  hint: "Viñetas o numerada" },
+  { type: "equation"      as ContentBlock["type"],  label: "Ecuación",     icon: "∑",  hint: "LaTeX math" },
+  { type: "figure"        as ContentBlock["type"],  label: "Figura",       icon: "🖼",  hint: "Imagen con leyenda" },
+  { type: "table"         as ContentBlock["type"],  label: "Tabla",        icon: "⊞",  hint: "Tabla editable" },
+  { type: "citation"      as ContentBlock["type"],  label: "Cita",         icon: "❞",  hint: "Referencia bibliográfica" },
+  { type: "raw_latex"     as ContentBlock["type"],  label: "LaTeX directo",icon: "{}",  hint: "Fragmento LaTeX" },
+  // Posgrado
+  { type: "code"          as ContentBlock["type"],  label: "Código",       icon: "<>", hint: "Bloque de código fuente" },
+  { type: "algorithm"     as ContentBlock["type"],  label: "Algoritmo",    icon: "∷",  hint: "Pseudocódigo numerado" },
+  { type: "theorem"       as ContentBlock["type"],  label: "Teorema",      icon: "∀",  hint: "Teorema / Lema / Definición" },
+  { type: "glossary_entry"as ContentBlock["type"],  label: "Glosario",     icon: "Gl", hint: "Entrada de glosario" },
+  { type: "acronym_entry" as ContentBlock["type"],  label: "Acrónimo",     icon: "Ab", hint: "Lista de abreviaturas" },
 ];
 
 function CommandPalette({
@@ -1388,6 +1751,68 @@ function MetaPanel({
             </div>
           ))}
         </div>
+        {/* Comité sinodal (posgrado) */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Comité sinodal</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next: CommitteeMember[] = [...(project.student.committee ?? []), { full_name: "" }];
+                onSave({ student: { ...project.student, committee: next } });
+              }}
+              style={{ fontSize: 11, padding: "1px 7px", border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", background: "var(--bg-app)", color: "var(--fg-muted)", cursor: "pointer" }}
+            >
+              + Agregar
+            </button>
+          </div>
+          {(project.student.committee ?? []).length === 0 && (
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic", padding: "4px 0" }}>
+              Sin comité — opcional para maestría, recomendado para doctorado
+            </div>
+          )}
+          {(project.student.committee ?? []).map((m, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 4, marginBottom: 4, alignItems: "center" }}>
+              <input
+                value={m.full_name}
+                onChange={(e) => {
+                  const next = [...(project.student.committee ?? [])];
+                  next[i] = { ...next[i], full_name: e.target.value };
+                  onSave({ student: { ...project.student, committee: next } });
+                }}
+                placeholder="Dra. María García"
+                style={{ padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none" }}
+              />
+              <input
+                value={m.role ?? ""}
+                onChange={(e) => {
+                  const next = [...(project.student.committee ?? [])];
+                  next[i] = { ...next[i], role: e.target.value || undefined };
+                  onSave({ student: { ...project.student, committee: next } });
+                }}
+                placeholder="Presidenta"
+                style={{ padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", outline: "none" }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const next = (project.student.committee ?? []).filter((_, idx) => idx !== i);
+                  onSave({ student: { ...project.student, committee: next } });
+                }}
+                style={{ width: 22, height: 22, flexShrink: 0, border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", background: "var(--bg-panel)", color: "var(--fg-faint)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+
+        {/* ORCID */}
+        <MetaField
+          label="ORCID iD"
+          value={project.student.orcid ?? ""}
+          onChange={(v) => onSave({ student: { ...project.student, orcid: v || undefined } })}
+          mono
+        />
+
         <MetaField
           label="Institución"
           value={project.institution.name}
@@ -1721,14 +2146,19 @@ export default function EditorView() {
     const id = newId();
     let block: ContentBlock;
     switch (type) {
-      case "paragraph":   block = { type, id, content: "" }; break;
-      case "heading":     block = { type, id, level: "section", content: "" }; break;
-      case "list":        block = { type, id, list_type: "itemize", items: [""] }; break;
-      case "equation":    block = { type, id, latex_content: "", numbered: false }; break;
-      case "raw_latex":   block = { type, id, content: "", user_confirmed: false }; break;
-      case "figure":      block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
-      case "table":       block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]] }; break;
-      case "citation":    block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
+      case "paragraph":      block = { type, id, content: "" }; break;
+      case "heading":        block = { type, id, level: "section", content: "" }; break;
+      case "list":           block = { type, id, list_type: "itemize", items: [""] }; break;
+      case "equation":       block = { type, id, latex_content: "", numbered: false }; break;
+      case "raw_latex":      block = { type, id, content: "", user_confirmed: false }; break;
+      case "figure":         block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
+      case "table":          block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]] }; break;
+      case "citation":       block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
+      case "glossary_entry": block = { type, id, term: "", definition: "" }; break;
+      case "acronym_entry":  block = { type, id, acronym: "", full_form: "", description: undefined }; break;
+      case "code":           block = { type, id, language: "Python", content: "", show_line_numbers: true }; break;
+      case "algorithm":      block = { type, id, caption: "", body: "" }; break;
+      case "theorem":        block = { type, id, kind: "theorem", content: "", numbered: true }; break;
       default: return;
     }
     setLocalBlocks((prev) => {
@@ -1991,13 +2421,18 @@ export default function EditorView() {
           {/* Toolbar */}
           <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
             {([
-              ["paragraph", <IconText size={12} />,    "Párrafo"],
-              ["heading",   <IconHeading size={12} />,  "Título"],
-              ["list",      <IconList size={12} />,     "Lista"],
-              ["equation",  <IconSigma size={12} />,   "Ecuación"],
-              ["figure",    <IconImage size={12} />,    "Figura"],
-              ["table",     <IconTable size={12} />,    "Tabla"],
-              ["raw_latex", <IconCode size={12} />,     "LaTeX"],
+              ["paragraph",      <IconText size={12} />,           "Párrafo"],
+              ["heading",        <IconHeading size={12} />,         "Título"],
+              ["list",           <IconList size={12} />,            "Lista"],
+              ["equation",       <IconSigma size={12} />,          "Ecuación"],
+              ["figure",         <IconImage size={12} />,           "Figura"],
+              ["table",          <IconTable size={12} />,           "Tabla"],
+              ["raw_latex",      <IconCode size={12} />,            "LaTeX"],
+              ["code",           <IconCode size={12} />,            "Código"],
+              ["algorithm",      <IconAlgorithm size={12} />,       "Algoritmo"],
+              ["theorem",        <IconTheorem size={12} />,         "Teorema"],
+              ["glossary_entry", <IconGlossaryEntry size={12} />,   "Glosario"],
+              ["acronym_entry",  <IconAcronym size={12} />,         "Acrónimo"],
             ] as [ContentBlock["type"], React.ReactNode, string][]).map(([type, icon, label]) => (
               <button
                 key={type}

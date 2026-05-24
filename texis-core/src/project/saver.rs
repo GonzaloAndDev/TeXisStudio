@@ -21,6 +21,7 @@ mod tests {
                 city: "Ciudad de México".to_string(),
                 year: 2026,
                 keywords: vec![],
+                funding: None,
             },
             institution: InstitutionData {
                 name: "Universidad".to_string(),
@@ -37,6 +38,8 @@ mod tests {
                 co_advisor: None,
                 advisors: vec![],
                 co_authors: vec![],
+                committee: vec![],
+                orcid: None,
             },
             profile_id: "generic.thesis".to_string(),
             latex_config: LatexConfig {

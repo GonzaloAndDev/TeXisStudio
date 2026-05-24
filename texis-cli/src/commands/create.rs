@@ -61,6 +61,7 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
             city: "Ciudad de México".to_string(),
             year: Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
             keywords: vec![],
+            funding: None,
         },
         institution: InstitutionData {
             name: "Universidad".to_string(),
@@ -77,6 +78,8 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
             co_advisor: None,
             advisors: vec![],
             co_authors: vec![],
+            committee: vec![],
+            orcid: None,
         },
         profile_id: profile_id.to_string(),
         latex_config: LatexConfig {

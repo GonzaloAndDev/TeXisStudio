@@ -199,6 +199,34 @@ export const IconBuilding = (p: IconProps) => (
     <rect x="13" y="8" width="2" height="3" />
   </Icon>
 );
+// ── Posgrado ─────────────────────────────────────────────────────
+export const IconAlgorithm = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M8 8h9M8 12h6M8 16h8" />
+    <circle cx="5.5" cy="8"  r=".7" fill="currentColor" stroke="none" />
+    <circle cx="5.5" cy="12" r=".7" fill="currentColor" stroke="none" />
+    <circle cx="5.5" cy="16" r=".7" fill="currentColor" stroke="none" />
+  </Icon>
+);
+export const IconTheorem = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 4H4v16h1M19 4h1v16h-1M9 12h6" />
+  </Icon>
+);
+export const IconAcronym = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 17L8 7l4 10M6 13.5h4" />
+    <path d="M15 17V7M15 7h3a2 2 0 0 1 0 4h-3v0h3a2.5 2.5 0 0 1 0 5h-3" />
+  </Icon>
+);
+export const IconGlossaryEntry = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 5a2 2 0 0 1 2-2h10v16H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 0 2 2h10" />
+    <path d="M9 8h5M9 12h7M9 16h4" />
+  </Icon>
+);
+
 export const IconQuote    = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />

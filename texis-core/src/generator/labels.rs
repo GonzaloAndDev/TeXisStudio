@@ -6,7 +6,11 @@ pub fn section_output_path(section: &ProjectSection, body_index: usize) -> Optio
     match section.placement {
         SectionPlacement::FrontMatter => {
             match section.element_id.as_str() {
-                "table_of_contents" | "list_of_figures" | "list_of_tables" => None,
+                "table_of_contents"
+                | "list_of_figures"
+                | "list_of_tables"
+                | "list_of_algorithms"
+                | "list_of_listings" => None,
                 _ => Some(format!("preliminares/{}.tex", section.id)),
             }
         }
