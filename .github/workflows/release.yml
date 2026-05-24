@@ -1,0 +1,209 @@
+name: Build & Release
+
+# Disparadores:
+#   - git push de un tag v* → crea release en GitHub con todos los artefactos
+#   - workflow_dispatch → build manual sin release (útil para probar)
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Windows → MSI + NSIS + portable ZIP
+  # ─────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Windows (MSI · NSIS · portable)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias npm
+        run: cd texis-app && npm ci
+
+      - name: Build (MSI + NSIS)
+        run: cd texis-app && npm run tauri build
+
+      - name: Crear portable ZIP
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = if ($tag -match '^v(.+)$') { $Matches[1] } else { "1.0.0" }
+
+          $portableDir = "target\release\bundle\_portable_tmp"
+          $portableZip = "target\release\bundle\TeXisStudio_${version}_x64_portable.zip"
+
+          New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
+          Copy-Item "target\release\texis-app.exe" "$portableDir\TeXisStudio.exe"
+          if (Test-Path "profiles") {
+            Copy-Item -Recurse "profiles" "$portableDir\profiles"
+          }
+          Compress-Archive -Path "$portableDir\*" -DestinationPath $portableZip -Force
+          Remove-Item -Recurse -Force $portableDir
+          Write-Host "Portable: $portableZip"
+
+      - name: Subir MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: target/release/bundle/msi/*.msi
+
+      - name: Subir NSIS
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nsis
+          path: target/release/bundle/nsis/*-setup.exe
+
+      - name: Subir portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: target/release/bundle/*_portable.zip
+
+  # ─────────────────────────────────────────────────────────────────
+  # Linux → .deb (Debian/Ubuntu) + .rpm (Fedora) + AppImage (universal)
+  # ─────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Linux (deb · rpm · AppImage)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2
+
+      - name: Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: linux-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias npm
+        run: cd texis-app && npm ci
+
+      - name: Build (deb + rpm + AppImage)
+        run: cd texis-app && npm run tauri build
+
+      - name: Subir .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: target/release/bundle/deb/*.deb
+
+      - name: Subir .rpm
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: target/release/bundle/rpm/*.rpm
+
+      - name: Subir AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: target/release/bundle/appimage/*.AppImage
+
+  # ─────────────────────────────────────────────────────────────────
+  # macOS → DMG universal (Intel x86_64 + Apple Silicon arm64)
+  # ─────────────────────────────────────────────────────────────────
+  build-macos:
+    name: macOS (DMG universal)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust stable + targets universales
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: macos-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias npm
+        run: cd texis-app && npm ci
+
+      - name: Build universal binary (Intel + Apple Silicon)
+        run: cd texis-app && npm run tauri build -- --target universal-apple-darwin
+
+      - name: Subir DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+  # ─────────────────────────────────────────────────────────────────
+  # GitHub Release — solo cuando se hace push de un tag v*
+  # ─────────────────────────────────────────────────────────────────
+  release:
+    name: Crear GitHub Release
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Descargar todos los artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Listar artefactos
+        run: find artifacts -type f | sort
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

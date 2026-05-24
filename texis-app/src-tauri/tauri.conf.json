@@ -37,6 +37,32 @@
     ],
     "resources": {
       "../../profiles": "profiles"
+    },
+    "category": "Education",
+    "shortDescription": "Editor profesional de tesis con LaTeX",
+    "longDescription": "TeXisStudio permite elaborar tesis y tesinas de alta calidad tipográfica usando LaTeX como motor, sin necesitar aprender LaTeX directamente. El usuario edita un modelo estructurado; el sistema genera LaTeX limpio; el PDF es portable y compilable sin la app.",
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3"
+        ]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
     }
   }
 }
