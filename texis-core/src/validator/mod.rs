@@ -6,6 +6,7 @@ pub mod technical;
 pub use report::{IssueSeverity, ValidationIssue, ValidationReport};
 
 use crate::error::CoreResult;
+use crate::profile::model::Profile;
 use crate::project::model::ProjectModel;
 use std::path::Path;
 
@@ -17,9 +18,18 @@ impl Validator {
     }
 
     pub fn validate(&self, model: &ProjectModel, project_dir: &Path) -> CoreResult<ValidationReport> {
+        self.validate_with_profile(model, project_dir, None)
+    }
+
+    pub fn validate_with_profile(
+        &self,
+        model: &ProjectModel,
+        project_dir: &Path,
+        profile: Option<&Profile>,
+    ) -> CoreResult<ValidationReport> {
         let mut all_issues = Vec::new();
 
-        let academic = academic::validate(model);
+        let academic = academic::validate(model, profile);
         all_issues.extend(academic.issues);
 
         let technical = technical::validate(model, project_dir);

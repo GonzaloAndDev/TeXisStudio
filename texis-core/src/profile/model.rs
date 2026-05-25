@@ -92,6 +92,14 @@ pub struct Profile {
     /// El loader aplica estos aliases (más los built-in) al cargar el perfil.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub element_aliases: Option<HashMap<String, String>>,
+    /// Límite de palabras del cuerpo principal (excluye preliminares y bibliografía).
+    /// Cambridge: 80 000, Oxford DPhil: 100 000. None = sin límite declarado.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_words: Option<u32>,
+    /// Límite de palabras del resumen / abstract.
+    /// Cambridge y Oxford: 300. None = sin límite declarado.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_abstract_words: Option<u32>,
     pub sections: Vec<ProfileSectionDef>,
 }
 

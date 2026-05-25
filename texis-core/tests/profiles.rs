@@ -203,6 +203,26 @@ fn oxford_mhra_tiene_secciones_minimas() {
     assert!(has_bib, "debe tener references/bibliography");
 }
 
+// ── Límites de palabras ───────────────────────────────────────────
+
+#[test]
+fn cambridge_apa7_max_words_80k() {
+    let p = load_profile("europe/uk/cambridge/apa7/profile.yaml");
+    let limit = p.max_words.expect("Cambridge APA7 debe declarar max_words");
+    assert_eq!(limit, 80_000, "Cambridge: límite debe ser 80 000 palabras");
+    let abs = p.max_abstract_words.expect("Cambridge APA7 debe declarar max_abstract_words");
+    assert_eq!(abs, 300, "Cambridge: resumen debe limitarse a 300 palabras");
+}
+
+#[test]
+fn oxford_mhra_max_words_100k() {
+    let p = load_profile("europe/uk/oxford/mhra/profile.yaml");
+    let limit = p.max_words.expect("Oxford MHRA debe declarar max_words");
+    assert_eq!(limit, 100_000, "Oxford DPhil: límite debe ser 100 000 palabras");
+    let abs = p.max_abstract_words.expect("Oxford MHRA debe declarar max_abstract_words");
+    assert_eq!(abs, 300, "Oxford: resumen debe limitarse a 300 palabras");
+}
+
 // ── Perfiles internos bundled ─────────────────────────────────────
 
 fn internal_profiles_dir() -> PathBuf {

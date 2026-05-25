@@ -1,9 +1,10 @@
 // Validaciones académicas: estructura mínima, metadatos requeridos, etc.
 
 use super::report::{IssueSeverity, ValidationIssue, ValidationReport};
-use crate::project::model::ProjectModel;
+use crate::profile::model::Profile;
+use crate::project::model::{ContentBlock, ProjectModel, SectionPlacement};
 
-pub fn validate(model: &ProjectModel) -> ValidationReport {
+pub fn validate(model: &ProjectModel, profile: Option<&Profile>) -> ValidationReport {
     let mut issues = Vec::new();
 
     check_title_not_empty(model, &mut issues);
@@ -16,7 +17,122 @@ pub fn validate(model: &ProjectModel) -> ValidationReport {
     check_posgrado_committee(model, &mut issues);
     check_posgrado_abstract(model, &mut issues);
 
+    if let Some(p) = profile {
+        check_word_limits(model, p, &mut issues);
+    }
+
     ValidationReport::new(issues)
+}
+
+// ── Conteo de palabras ────────────────────────────────────────────
+
+/// Cuenta palabras aproximadas en un texto (split por espacios/saltos de línea).
+fn count_words(text: &str) -> u32 {
+    text.split_whitespace().count() as u32
+}
+
+/// Extrae texto de un bloque de contenido.
+fn block_text(block: &ContentBlock) -> Option<&str> {
+    match block {
+        ContentBlock::Paragraph(b) => Some(&b.content),
+        ContentBlock::Heading(b)   => Some(&b.content),
+        ContentBlock::Theorem(b)   => Some(&b.content),
+        ContentBlock::RawLatex(b)  => Some(&b.content),
+        ContentBlock::Code(b)      => Some(&b.content),
+        _ => None,
+    }
+}
+
+/// Cuenta palabras en todas las secciones del cuerpo principal (excluye
+/// front_matter y back_matter para respetar lo que exigen Cambridge/Oxford:
+/// "excluding bibliography, appendices, footnotes and figures").
+fn count_body_words(model: &ProjectModel) -> u32 {
+    model
+        .sections
+        .iter()
+        .filter(|s| s.enabled && matches!(s.placement, SectionPlacement::Body))
+        .flat_map(|s| s.blocks.iter())
+        .filter_map(block_text)
+        .map(count_words)
+        .sum()
+}
+
+/// Cuenta palabras en la sección abstract (cualquiera, es/en).
+fn count_abstract_words(model: &ProjectModel) -> u32 {
+    model
+        .sections
+        .iter()
+        .filter(|s| {
+            s.enabled
+                && (s.element_id == "abstract_es"
+                    || s.element_id == "abstract_en"
+                    || s.element_id == "abstract")
+        })
+        .flat_map(|s| s.blocks.iter())
+        .filter_map(block_text)
+        .map(count_words)
+        .sum()
+}
+
+fn check_word_limits(
+    model: &ProjectModel,
+    profile: &Profile,
+    issues: &mut Vec<ValidationIssue>,
+) {
+    if let Some(limit) = profile.max_words {
+        let count = count_body_words(model);
+        if count > 0 {
+            let pct = (count as f64 / limit as f64 * 100.0) as u32;
+            if count > limit {
+                issues.push(ValidationIssue {
+                    severity: IssueSeverity::Error,
+                    code: "E_WORD_LIMIT_EXCEEDED".to_string(),
+                    message: format!(
+                        "El cuerpo principal supera el límite de palabras del perfil: \
+                         {count} palabras (límite: {limit})."
+                    ),
+                    suggestion: Some(format!(
+                        "El perfil '{}' limita el cuerpo principal a {limit} palabras. \
+                         Reduce el contenido antes de la entrega final.",
+                        profile.name
+                    )),
+                    section_id: None,
+                });
+            } else if pct >= 90 {
+                issues.push(ValidationIssue {
+                    severity: IssueSeverity::Warning,
+                    code: "W_WORD_LIMIT_NEAR".to_string(),
+                    message: format!(
+                        "Te acercas al límite de palabras: {count} de {limit} ({pct}%)."
+                    ),
+                    suggestion: Some(
+                        "Revisa el alcance del trabajo antes de agregar más contenido."
+                            .to_string(),
+                    ),
+                    section_id: None,
+                });
+            }
+        }
+    }
+
+    if let Some(abs_limit) = profile.max_abstract_words {
+        let abs_count = count_abstract_words(model);
+        if abs_count > abs_limit {
+            issues.push(ValidationIssue {
+                severity: IssueSeverity::Warning,
+                code: "W_ABSTRACT_TOO_LONG".to_string(),
+                message: format!(
+                    "El resumen/abstract supera el límite del perfil: \
+                     {abs_count} palabras (límite: {abs_limit})."
+                ),
+                suggestion: Some(format!(
+                    "El perfil '{}' limita el resumen a {abs_limit} palabras.",
+                    profile.name
+                )),
+                section_id: None,
+            });
+        }
+    }
 }
 
 fn check_title_not_empty(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {

@@ -170,14 +170,21 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
 
 /// Valida el proyecto y devuelve el reporte de issues.
 #[tauri::command]
-pub fn validate_project(project_path: String) -> Result<Value, String> {
+pub fn validate_project(
+    app: tauri::AppHandle,
+    project_path: String,
+) -> Result<Value, String> {
     let path = PathBuf::from(&project_path);
     let yaml_path = path.join("tesis.project.yaml");
     let loader = ProjectLoader;
     let model = loader.load_from_file(&yaml_path).map_err(err)?;
 
+    let profile = load_profile_for_model(&app, &model);
+
     let validator = Validator::new();
-    let report = validator.validate(&model, &path).map_err(err)?;
+    let report = validator
+        .validate_with_profile(&model, &path, profile.as_deref())
+        .map_err(err)?;
 
     let issues: Vec<Value> = report
         .issues
@@ -449,6 +456,7 @@ pub fn check_pdf_postflight(project_path: String) -> Result<Value, String> {
 /// Devuelve la ruta al ZIP creado.
 #[tauri::command]
 pub fn export_delivery(
+    app: tauri::AppHandle,
     project_path: String,
     output_path: String,
     export_mode: Option<String>,
@@ -466,8 +474,9 @@ pub fn export_delivery(
 
     // ── Cargar modelo y validar ───────────────────────────────────
     let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+    let profile = load_profile_for_model(&app, &model);
     let validation = Validator::new()
-        .validate(&model, &project_dir)
+        .validate_with_profile(&model, &project_dir, profile.as_deref())
         .map_err(err)?;
 
     let validation_errors: Vec<_> = validation
@@ -885,6 +894,31 @@ fn profiles_dir_for_app(app: &tauri::AppHandle) -> PathBuf {
         .and_then(|p| p.parent())
         .map(|root| root.join("profiles"))
         .unwrap_or_else(|| PathBuf::from("profiles"))
+}
+
+/// Carga el perfil correspondiente al profile_id del modelo, sin fallar si no se encuentra.
+fn load_profile_for_model(app: &tauri::AppHandle, model: &ProjectModel) -> Option<Profile> {
+    use texis_core::profile::ProfileLoader;
+
+    let profiles_root = profiles_dir_for_app(app);
+    let loader = ProfileLoader;
+
+    // 1. Perfiles bundled: profiles/<id>/profile.yaml
+    let bundled = profiles_root.join(&model.profile_id).join("profile.yaml");
+    if bundled.exists() {
+        return loader.load_from_file(&bundled).ok();
+    }
+
+    // 2. Perfiles externos instalados: profiles/external/<id>/profile.yaml
+    let external = profiles_root
+        .join("external")
+        .join(&model.profile_id)
+        .join("profile.yaml");
+    if external.exists() {
+        return loader.load_from_file(&external).ok();
+    }
+
+    None
 }
 
 /// Construye un ProjectModel con los datos del perfil real.
