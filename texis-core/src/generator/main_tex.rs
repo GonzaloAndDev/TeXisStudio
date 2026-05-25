@@ -10,6 +10,7 @@ use crate::error::{CoreError, CoreResult};
 use crate::project::model::{BibliographyBackend, ProjectModel, SectionPlacement};
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
+use serde_json::Value;
 use std::path::Path;
 
 const HEADER_COMMENT: &str = "\
@@ -26,11 +27,16 @@ const HEADER_COMMENT: &str = "\
 % ─────────────────────────────────────────────────────────────────
 ";
 
-pub fn generate(model: &ProjectModel, build_dir: &Path, engine: &TemplateEngine) -> CoreResult<()> {
-    let main = render_to_string(model, engine)?;
+pub fn generate(
+    model: &ProjectModel,
+    build_dir: &Path,
+    engine: &TemplateEngine,
+    lang_config: Option<&Value>,
+) -> CoreResult<()> {
+    let main = render_to_string(model, engine, lang_config)?;
     std::fs::write(build_dir.join("main.tex"), &main).map_err(CoreError::Io)?;
 
-    let paquetes = render_paquetes(model);
+    let paquetes = render_paquetes(model, lang_config);
     std::fs::write(build_dir.join("configuracion/paquetes.tex"), &paquetes).map_err(CoreError::Io)?;
 
     let estilo = render_estilo(model);
@@ -42,7 +48,7 @@ pub fn generate(model: &ProjectModel, build_dir: &Path, engine: &TemplateEngine)
     Ok(())
 }
 
-pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreResult<String> {
+pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_config: Option<&Value>) -> CoreResult<String> {
     let mut out = String::new();
 
     out.push_str(HEADER_COMMENT);
@@ -152,7 +158,7 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine) -> CoreR
     Ok(out)
 }
 
-fn render_paquetes(model: &ProjectModel) -> String {
+fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
 
     // Paquetes base según el motor
@@ -168,6 +174,33 @@ fn render_paquetes(model: &ProjectModel) -> String {
     out.push_str("\\usepackage{setspace}\n");
     out.push_str("\\usepackage{microtype}\n");
     out.push_str("\\usepackage{csquotes}\n");
+
+    // ── Configuración de idioma (paquetes de la comunidad) ───────────────────
+    // Sólo se emite cuando el frontend pasa un lang_config extraído de la
+    // localStorage del pack instalado (tx-lang-pack-latex:{id}).
+    // Si no hay config de idioma, el documento queda en el idioma por defecto
+    // de la clase (generalmente español/inglés del perfil).
+    if let Some(cfg) = lang_config {
+        let polyglossia = cfg.get("polyglossia_name").and_then(|v| v.as_str());
+        let babel = cfg.get("babel_name").and_then(|v| v.as_str());
+        let xelatex_font = cfg.get("xelatex_font").and_then(|v| v.as_str());
+
+        if let Some(lang_name) = polyglossia {
+            // polyglossia es el paquete preferido para XeLaTeX/LuaLaTeX
+            out.push_str("\n% Idioma del documento (polyglossia)\n");
+            out.push_str("\\usepackage{polyglossia}\n");
+            out.push_str(&format!("\\setmainlanguage{{{}}}\n", lang_name));
+        } else if let Some(lang_name) = babel {
+            // Fallback a babel cuando polyglossia no está disponible
+            out.push_str("\n% Idioma del documento (babel)\n");
+            out.push_str(&format!("\\usepackage[{}]{{babel}}\n", lang_name));
+        }
+
+        if let Some(font) = xelatex_font {
+            // Fuente especificada por el pack (necesaria para scripts no-latinos)
+            out.push_str(&format!("\\setmainfont{{{}}}\n", font));
+        }
+    }
 
     // Bibliografía
     let bib_style = &model.latex_config.bibliography_style;

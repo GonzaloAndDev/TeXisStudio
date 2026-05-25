@@ -55,6 +55,7 @@ pub async fn compile_project(
     project_path: String,
     backend_name: String,
     draft: bool,
+    lang_config: Option<Value>,
 ) -> Result<Value, String> {
     // Reiniciar bandera de cancelación
     let cancel = state.cancel_flag.clone();
@@ -69,7 +70,7 @@ pub async fn compile_project(
     let loader = ProjectLoader;
     let model = loader.load_from_file(&yaml_path).map_err(err)?;
     let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    latex_gen.generate_with_lang(&model, &build_dir, lang_config.as_ref()).map_err(err)?;
 
     // ── Paso 2: seleccionar backend ───────────────────────────────
     let resolved_backend = resolve_backend(&backend_name)?;

@@ -9,6 +9,8 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
+import { useSettingsStore } from "../stores/settings";
+import { getLatexConfig } from "../services/languagePacks";
 import type { CompilationResult, UserError } from "../types";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
@@ -137,6 +139,7 @@ export default function CompileView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
+  const { lang } = useSettingsStore();
 
   const [compileState, setCompileState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
@@ -182,7 +185,8 @@ export default function CompileView() {
     });
 
     try {
-      const res = await api.compileProject(activeProjectPath, backend, draft);
+      const langConfig = getLatexConfig(lang);
+      const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
       setResult(res);
       setCompileState(res.success ? "success" : "error");
       // Abrir automáticamente el PDF si la compilación fue exitosa

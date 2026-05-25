@@ -238,12 +238,31 @@ export async function installPack(
     }
   }
 
+  // 4 — LaTeX language config (babel/polyglossia settings)
+  let latexData: Record<string, unknown> | undefined;
+  const needsLatex = entry.capabilities.latex_babel || entry.capabilities.latex_polyglossia;
+  if (needsLatex && entry.latex_url) {
+    const res = await safeFetch(entry.latex_url, `${entry.id} latex.json`, MAX_UI_BYTES);
+    const text = await res.text();
+    if (text.length > MAX_UI_BYTES) {
+      throw new Error(`${entry.id} latex.json too large (${text.length} bytes, max ${MAX_UI_BYTES})`);
+    }
+    try {
+      latexData = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(`${entry.id} latex.json is not valid JSON`);
+    }
+  }
+
   // ── All assets valid — now persist atomically ────────────────────────────
   if (ui_data) {
     localStorage.setItem(`tx-lang-pack-ui:${entry.id}`, JSON.stringify(ui_data));
   }
   if (autocorrectData !== undefined) {
     localStorage.setItem(`tx-lang-pack-autocorrect:${entry.id}`, JSON.stringify(autocorrectData));
+  }
+  if (latexData !== undefined) {
+    localStorage.setItem(`tx-lang-pack-latex:${entry.id}`, JSON.stringify(latexData));
   }
 
   onProgress?.("done");
@@ -269,6 +288,7 @@ export function uninstallPack(id: string): void {
   saveInstalledPacks(packs);
   localStorage.removeItem(`tx-lang-pack-ui:${id}`);
   localStorage.removeItem(`tx-lang-pack-autocorrect:${id}`);
+  localStorage.removeItem(`tx-lang-pack-latex:${id}`);
 }
 
 // ── Restore installed locale data on app start ────────────────────────────────
@@ -292,4 +312,23 @@ export function getSpellingUrls(id: string): { aff: string; dic: string } | null
   if (!pack?.entry.capabilities.spelling) return null;
   if (!pack.entry.spelling_aff_url || !pack.entry.spelling_dic_url) return null;
   return { aff: pack.entry.spelling_aff_url, dic: pack.entry.spelling_dic_url };
+}
+
+/**
+ * Returns the stored latex.json config for an installed pack.
+ * Only present when capabilities.latex_babel or latex_polyglossia is true
+ * and the pack was installed after this version shipped.
+ */
+export function getLatexConfig(id: string): Record<string, unknown> | null {
+  const pack = loadInstalledPacks().find((p) => p.id === id);
+  if (!pack) return null;
+  const needsLatex = pack.entry.capabilities.latex_babel || pack.entry.capabilities.latex_polyglossia;
+  if (!needsLatex) return null;
+  const raw = localStorage.getItem(`tx-lang-pack-latex:${id}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }

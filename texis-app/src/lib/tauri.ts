@@ -109,9 +109,10 @@ export const api = {
   compileProject: (
     projectPath: string,
     backendName: string,
-    draft: boolean
+    draft: boolean,
+    langConfig?: Record<string, unknown> | null,
   ): Promise<CompilationResult> =>
-    call("compile_project", { projectPath, backendName, draft }),
+    call("compile_project", { projectPath, backendName, draft, langConfig: langConfig ?? null }),
 
   cancelCompile: (): Promise<void> =>
     call("cancel_compile"),
