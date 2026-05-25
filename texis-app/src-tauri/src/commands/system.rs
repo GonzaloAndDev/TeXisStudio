@@ -413,6 +413,8 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "latex_engine": p.latex_engine,
         "status": status_str,
         "verification": verification,
+        "max_words": p.max_words,
+        "max_abstract_words": p.max_abstract_words,
     })
 }
 

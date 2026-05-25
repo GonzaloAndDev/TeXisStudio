@@ -334,6 +334,8 @@ export interface ProfileInfo {
   latex_engine?: string;
   status: ProfileStatus;
   verification?: ProfileVerification;
+  max_words?: number;
+  max_abstract_words?: number;
 }
 
 // ── System ──────────────────────────────────────────────────────

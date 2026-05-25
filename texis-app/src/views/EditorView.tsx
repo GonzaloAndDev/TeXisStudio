@@ -2094,11 +2094,12 @@ function MetaField({
 }
 
 function MetaPanel({
-  project, wordCount, blockCount, onSave, onCompile,
+  project, wordCount, blockCount, maxWords, onSave, onCompile,
 }: {
   project: ProjectModel;
   wordCount: number;
   blockCount: number;
+  maxWords?: number;
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
 }) {
@@ -2329,6 +2330,32 @@ function MetaPanel({
           <div>
             <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Palabras</div>
             <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{wordCount.toLocaleString("es")}</div>
+            {maxWords && maxWords > 0 && (() => {
+              const pct = Math.min(100, (wordCount / maxWords) * 100);
+              const over = wordCount > maxWords;
+              const near = pct >= 90;
+              const barColor = over ? "var(--build-err)" : near ? "var(--build-warn)" : "var(--build-ok)";
+              return (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{
+                    height: 4, borderRadius: 2,
+                    background: "var(--border-subtle)", overflow: "hidden",
+                  }}>
+                    <div style={{
+                      height: "100%", width: `${pct}%`,
+                      background: barColor,
+                      transition: "width 0.3s, background 0.3s",
+                    }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: over ? "var(--build-err)" : "var(--fg-faint)", marginTop: 2 }}>
+                    {over
+                      ? `+${(wordCount - maxWords).toLocaleString("es")} sobre límite`
+                      : `${(maxWords - wordCount).toLocaleString("es")} restantes`
+                    }
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           <div>
             <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>Bloques</div>
@@ -2518,12 +2545,16 @@ export default function EditorView() {
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
 
-  // Perfil activo: se carga para mostrar guidance por sección
+  // Perfil activo: se carga para mostrar guidance por sección y límites
   const [profileSections, setProfileSections] = useState<import("../types").ProfileSectionInfo[]>([]);
+  const [profileMaxWords, setProfileMaxWords] = useState<number | undefined>(undefined);
   useEffect(() => {
     const pid = activeProject?.profile_id;
     if (!pid) return;
-    api.getProfileDetail(pid).then((p) => setProfileSections(p.sections ?? [])).catch(() => {});
+    api.getProfileDetail(pid).then((p) => {
+      setProfileSections(p.sections ?? []);
+      setProfileMaxWords(p.max_words);
+    }).catch(() => {});
   }, [activeProject?.profile_id]);
 
   // Sincronizar localBlocks cuando cambia la sección activa
@@ -3096,6 +3127,7 @@ export default function EditorView() {
           project={activeProject}
           wordCount={bodyWordCount}
           blockCount={localBlocks.length}
+          maxWords={profileMaxWords}
           onSave={saveMetadata}
           onCompile={() => navigate(`/project/${encodedPath}/compile`)}
         />
