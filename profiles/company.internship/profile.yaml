@@ -3,7 +3,7 @@ id: "company.internship"
 name: "Reporte de prácticas / Residencia"
 description: "Formato para reportes de residencia profesional y estadías empresariales. Incluye descripción de empresa, actividades y resultados. Bibliografía APA 7."
 author: "Gonzalo Andrade Estrella"
-version: "0.1.0"
+version: "0.2.0"
 license: "AGPL-3.0"
 tags:
   - practicas
@@ -42,12 +42,19 @@ sections:
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      La portada se genera automáticamente con los datos institucionales.
+      Incluirá: nombre del estudiante, empresa, periodo de prácticas, institución académica y carrera.
+      No necesitas escribir contenido aquí — configura los datos en los metadatos del proyecto.
 
   - id: "table_of_contents"
     element_id: "table_of_contents"
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      El índice se genera automáticamente.
+      No necesitas escribir nada aquí.
 
   - id: "introduction"
     element_id: "introduction"
@@ -55,6 +62,14 @@ sections:
     required: true
     title: "Introducción"
     label: "sec:introduccion"
+    guidance: |
+      Contextualiza el reporte y presenta al lector el propósito de las prácticas:
+      • Carrera y perfil profesional del practicante.
+      • Nombre de la empresa y área donde se realizaron las prácticas.
+      • Periodo y duración total.
+      • Objetivo general de la residencia: ¿qué problema o necesidad organizacional se atendió?
+      • Breve descripción de la estructura del reporte.
+      Extensión: 1–2 páginas.
 
   - id: "company_description"
     element_id: "theoretical_framework"
@@ -62,6 +77,14 @@ sections:
     required: true
     title: "Descripción de la empresa"
     label: "sec:empresa"
+    guidance: |
+      Presenta la organización donde realizaste las prácticas:
+      • Nombre completo, razón social y giro empresarial.
+      • Historia breve y misión/visión.
+      • Organigrama general (puedes insertar una figura).
+      • Área o departamento donde trabajaste y su función dentro de la empresa.
+      • Infraestructura tecnológica relevante para tus actividades.
+      No copies textualmente la página web de la empresa — parafrasea y cita la fuente.
 
   - id: "activities"
     element_id: "methodology"
@@ -69,6 +92,13 @@ sections:
     required: true
     title: "Actividades desarrolladas"
     label: "sec:actividades"
+    guidance: |
+      Describe cronológicamente o por proyecto las actividades que realizaste:
+      • Para cada actividad: objetivo, descripción del proceso, herramientas o tecnologías usadas.
+      • Incluye capturas de pantalla, diagramas o tablas cuando apoyen la explicación.
+      • Menciona los retos encontrados y cómo los resolviste.
+      • Puedes organizar por semanas, sprints, fases del proyecto o áreas de trabajo.
+      Esta es la sección más extensa del reporte — sé específico y técnico.
 
   - id: "results"
     element_id: "results"
@@ -76,6 +106,13 @@ sections:
     required: true
     title: "Resultados y aportaciones"
     label: "sec:resultados"
+    guidance: |
+      Presenta los productos y contribuciones concretas de tu residencia:
+      • Entregables completados (sistemas, reportes, manuales, mejoras de proceso).
+      • Métricas o evidencia de impacto cuando sea posible (tiempo ahorrado, errores reducidos, etc.).
+      • Competencias profesionales desarrolladas.
+      • Comparación entre los objetivos propuestos y lo logrado.
+      Sé objetivo: si algo no se concluyó, explica por qué.
 
   - id: "conclusions"
     element_id: "conclusions"
@@ -83,15 +120,35 @@ sections:
     required: true
     title: "Conclusiones"
     label: "sec:conclusiones"
+    guidance: |
+      Cierra el reporte con una reflexión profesional:
+      • ¿Se cumplieron los objetivos de la residencia?
+      • ¿Qué aprendizajes profesionales obtuviste?
+      • ¿Cómo complementó la experiencia tu formación académica?
+      • Recomendaciones para futuros practicantes o para la empresa.
+      Extensión: 1–2 páginas.
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
     title: "Referencias"
+    guidance: |
+      Lista las fuentes consultadas durante las prácticas: manuales técnicos, normas, artículos, sitios web.
+      La lista se genera automáticamente desde tu .bib.
+      Estilo APA 7. Usa el importador DOI para agregar referencias académicas fácilmente.
 
   - id: "appendices"
     element_id: "appendices"
     placement: "appendix"
     required: false
     title: "Anexos"
+    guidance: |
+      Incluye material de soporte que sería muy extenso en el cuerpo principal:
+      • Carta de aceptación de la empresa.
+      • Carta de término / evaluación del tutor empresarial.
+      • Bitácoras semanales (si lo exige tu institución).
+      • Código fuente relevante.
+      • Manuales de usuario o técnicos desarrollados.
+      • Evidencias fotográficas del lugar de trabajo.
+      Numera cada anexo (Anexo A, B…) y refiérelos desde el texto.

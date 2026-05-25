@@ -8,8 +8,11 @@ pub fn validate(model: &ProjectModel) -> ValidationReport {
 
     check_title_not_empty(model, &mut issues);
     check_student_name(model, &mut issues);
+    check_placeholder_metadata(model, &mut issues);
     check_institution_name(model, &mut issues);
     check_has_body_sections(model, &mut issues);
+    check_required_sections_have_content(model, &mut issues);
+    check_has_advisor(model, &mut issues);
     check_posgrado_committee(model, &mut issues);
     check_posgrado_abstract(model, &mut issues);
 
@@ -82,6 +85,78 @@ fn check_posgrado_committee(model: &ProjectModel, issues: &mut Vec<ValidationIss
             code: "W_PHD_NO_COMMITTEE".to_string(),
             message: "Una tesis de doctorado generalmente requiere un comité sinodal o jurado.".to_string(),
             suggestion: Some("Agrega los miembros del comité en el panel de metadatos del proyecto.".to_string()),
+            section_id: None,
+        });
+    }
+}
+
+/// Detecta metadatos que siguen siendo los valores por defecto de la plantilla.
+fn check_placeholder_metadata(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
+    if model.student.full_name.trim() == "Autor" {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Error,
+            code: "E_PLACEHOLDER_STUDENT_NAME".to_string(),
+            message: "El nombre del autor sigue siendo el valor predeterminado ('Autor').".to_string(),
+            suggestion: Some("Actualiza el nombre completo del autor en los metadatos del proyecto.".to_string()),
+            section_id: None,
+        });
+    }
+    if model.institution.name.trim() == "Universidad" {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_PLACEHOLDER_INSTITUTION".to_string(),
+            message: "El nombre de la institución sigue siendo el valor predeterminado ('Universidad').".to_string(),
+            suggestion: Some("Actualiza el nombre de tu institución en los metadatos.".to_string()),
+            section_id: None,
+        });
+    }
+}
+
+/// Error si una sección obligatoria está habilitada pero no tiene ningún bloque de contenido.
+/// Las secciones auto-generadas (portada, índice, referencias, listas) se omiten.
+fn check_required_sections_have_content(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
+    const AUTO_GENERATED: &[&str] = &[
+        "title_page", "table_of_contents", "list_of_figures",
+        "list_of_tables", "list_of_algorithms", "references",
+    ];
+
+    for section in &model.sections {
+        if !section.required || !section.enabled {
+            continue;
+        }
+        if AUTO_GENERATED.contains(&section.element_id.as_str()) {
+            continue;
+        }
+        if section.blocks.is_empty() {
+            let title = section.title.as_deref().unwrap_or(section.id.as_str());
+            issues.push(ValidationIssue {
+                severity: IssueSeverity::Error,
+                code: "E_EMPTY_REQUIRED_SECTION".to_string(),
+                message: format!("La sección obligatoria '{}' está vacía.", title),
+                suggestion: Some(format!(
+                    "Agrega contenido en la sección '{}' antes de exportar.",
+                    title
+                )),
+                section_id: Some(section.id.clone()),
+            });
+        }
+    }
+}
+
+/// Avisa si no se ha asignado ningún director de tesis.
+fn check_has_advisor(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
+    let has_advisor = model.student.advisor
+        .as_deref()
+        .map(|a| !a.trim().is_empty())
+        .unwrap_or(false)
+        || !model.student.advisors.is_empty();
+
+    if !has_advisor {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_NO_ADVISOR".to_string(),
+            message: "No se ha especificado un director de tesis.".to_string(),
+            suggestion: Some("Ingresa el nombre del director en el panel de metadatos.".to_string()),
             section_id: None,
         });
     }

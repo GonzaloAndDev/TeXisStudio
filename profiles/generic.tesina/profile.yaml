@@ -3,7 +3,7 @@ id: "generic.tesina"
 name: "Tesina genérica"
 description: "Versión simplificada para licenciatura: introducción, desarrollo y conclusiones. Clase book, XeLaTeX, biber, APA 7."
 author: "Gonzalo Andrade Estrella"
-version: "0.1.0"
+version: "0.2.0"
 license: "AGPL-3.0"
 tags:
   - tesina
@@ -37,31 +37,63 @@ sections:
     element_id: "title_page"
     placement: "front_matter"
     required: true
+    guidance: |
+      La portada se genera automáticamente con los datos institucionales configurados al crear el proyecto.
+      No necesitas escribir contenido aquí.
 
   - id: "table_of_contents"
     element_id: "table_of_contents"
     placement: "front_matter"
     required: true
+    guidance: |
+      El índice se genera automáticamente desde tus secciones habilitadas.
+      No necesitas escribir nada aquí.
 
   - id: "introduction"
     element_id: "introduction"
     placement: "body"
     required: true
     title: "Introducción"
+    guidance: |
+      La introducción presenta el tema y motiva el trabajo. Para una tesina incluye:
+      1. Contexto breve del tema (de lo general a lo específico).
+      2. Problema o pregunta que aborda el trabajo.
+      3. Objetivo general.
+      4. Justificación: ¿por qué es relevante estudiarlo?
+      5. Breve descripción de cómo se organiza el documento.
+      Extensión típica: 1–3 páginas.
 
   - id: "development"
     element_id: "theoretical_framework"
     placement: "body"
     required: true
     title: "Desarrollo"
+    guidance: |
+      El desarrollo es el cuerpo central del trabajo. Divídelo en subsecciones lógicas:
+      • Marco conceptual: define los conceptos clave con apoyo bibliográfico.
+      • Análisis o desarrollo del tema: argumento, propuesta o estudio central.
+      • Resultados o hallazgos si aplica.
+      Cada idea debe estar respaldada por fuentes. Usa bloques "Cita bibliográfica" para referenciar.
+      Extensión típica: 10–30 páginas.
 
   - id: "conclusions"
     element_id: "conclusions"
     placement: "body"
     required: true
     title: "Conclusiones"
+    guidance: |
+      Cierra el trabajo respondiendo directamente al objetivo planteado en la introducción:
+      • ¿Se logró el objetivo? ¿Qué se encontró?
+      • Reflexión sobre la relevancia del trabajo.
+      • Limitaciones encontradas.
+      • Recomendaciones o líneas de trabajo futuro.
+      Extensión típica: 1–2 páginas. No introduzcas información nueva aquí.
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
+    guidance: |
+      La lista de referencias se genera automáticamente desde tu archivo .bib al compilar.
+      Usa el importador DOI (Ctrl+[ > panel DOI) para agregar fuentes fácilmente.
+      El estilo APA 7 se aplica automáticamente.

@@ -41,6 +41,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "id": s.id, "element_id": s.element_id,
         "placement": s.placement, "required": s.required,
         "title": s.title, "label": s.label,
+        "guidance": s.guidance,
     })).collect();
     serde_json::json!({
         "id": p.id, "name": p.name, "description": p.description,
@@ -61,6 +62,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
 pub async fn fetch_remote_profile(
     app: tauri::AppHandle,
     url: String,
+    expected_sha256: Option<String>,
 ) -> Result<Value, String> {
     // 0. Validar URL con parser formal — exigir HTTPS y host presente
     let parsed = reqwest::Url::parse(&url)
@@ -113,7 +115,31 @@ pub async fn fetch_remote_profile(
         }
     }
 
-    // 2. Abrir el ZIP en memoria
+    // 2. Verificar SHA256 si el llamador proporcionó el hash esperado
+    if let Some(expected) = &expected_sha256 {
+        let expected = expected.trim().to_lowercase();
+        if !expected.is_empty() {
+            let valid_sha = expected.len() == 64
+                && expected.chars().all(|c| c.is_ascii_hexdigit());
+            if !valid_sha {
+                return Err(
+                    "El hash SHA-256 esperado no tiene un formato válido.".to_string(),
+                );
+            }
+            let digest = sha256_bytes(&bytes);
+            if digest != expected {
+                return Err(format!(
+                    "El archivo descargado no coincide con el hash esperado.\n\
+                     Esperado:  {}\n\
+                     Obtenido:  {}\n\
+                     El archivo puede estar dañado o haber sido modificado.",
+                    expected, digest
+                ));
+            }
+        }
+    }
+
+    // 3. Abrir el ZIP en memoria
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes.clone())).map_err(|e| {
         format!("El archivo descargado no es un ZIP válido: {}", e)
     })?;
@@ -249,6 +275,12 @@ fn find_profile_yaml_in_names(names: &[String]) -> Result<String, String> {
 
     candidates.sort_by_key(|(depth, _)| *depth);
     Ok(candidates[0].1.to_string())
+}
+
+/// Devuelve el digest SHA-256 de `data` como cadena hexadecimal en minúsculas.
+fn sha256_bytes(data: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(data))
 }
 
 /// Copia recursivamente `src` a `dst`, preservando la estructura de subdirectorios.

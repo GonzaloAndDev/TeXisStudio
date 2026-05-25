@@ -135,14 +135,20 @@ export const api = {
   updateProfile: (profileId: string, payload: ProfileUpdatePayload): Promise<ProfileInfo> =>
     call("update_profile", { profileId, payload }),
 
-  fetchRemoteProfile: (url: string): Promise<ProfileInfo> =>
-    call("fetch_remote_profile", { url }),
+  fetchRemoteProfile: (url: string, expectedSha256?: string): Promise<ProfileInfo> =>
+    call("fetch_remote_profile", { url, expectedSha256: expectedSha256 ?? null }),
 
   deleteProfile: (profileId: string): Promise<void> =>
     call("delete_profile", { profileId }),
 
   listReferences: (projectPath: string): Promise<BibReference[]> =>
     call("list_references", { projectPath }),
+
+  importDoi: (doi: string): Promise<string> =>
+    call("import_doi", { doi }),
+
+  appendBibEntry: (projectPath: string, bibtex: string): Promise<void> =>
+    call("append_bib_entry", { projectPath, bibtex }),
 
   // ── Snapshots ────────────────────────────────────────────────────
   createSnapshot: (projectPath: string, label: string): Promise<{ filename: string; label: string; created_at: string }> =>

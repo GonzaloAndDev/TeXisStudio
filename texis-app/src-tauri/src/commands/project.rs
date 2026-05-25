@@ -230,6 +230,67 @@ pub fn list_references(project_path: String) -> Result<Value, String> {
     Ok(serde_json::json!(result))
 }
 
+/// Añade una entrada BibTeX al archivo references.bib del proyecto.
+/// Crea el archivo (y directorios intermedios) si no existe.
+/// Rechaza entradas que ya contengan la misma citation key (comparación exacta via BibParser).
+#[tauri::command]
+pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<(), String> {
+    use std::io::Write;
+    use texis_core::bibliography::parser::BibParser;
+
+    let bibtex = bibtex.trim().to_string();
+    if bibtex.is_empty() {
+        return Err("La entrada BibTeX está vacía.".to_string());
+    }
+
+    let bib_dir = PathBuf::from(&project_path)
+        .join("content")
+        .join("bibliography");
+    std::fs::create_dir_all(&bib_dir).map_err(err)?;
+    let bib_path = bib_dir.join("references.bib");
+
+    // Extraer la citation key usando el parser real
+    let parser = BibParser;
+    let new_entries = parser.parse_str(&bibtex);
+    if new_entries.len() != 1 {
+        return Err(
+            "La entrada BibTeX debe contener exactamente una referencia.".to_string(),
+        );
+    }
+
+    let new_key = new_entries[0].key.clone();
+
+    if new_key.is_empty() {
+        return Err("La citation key está vacía. Verifica el formato BibTeX.".to_string());
+    }
+
+    // Detectar duplicados parseando el .bib existente
+    if bib_path.exists() {
+        let existing_content = std::fs::read_to_string(&bib_path).map_err(err)?;
+        let existing_entries = parser.parse_str(&existing_content);
+        if existing_entries.iter().any(|e| e.key == new_key) {
+            return Err(format!(
+                "La clave '{}' ya existe en references.bib.",
+                new_key
+            ));
+        }
+    }
+
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&bib_path)
+        .map_err(err)?;
+
+    // Separador: línea en blanco antes si el archivo no está vacío
+    if bib_path.metadata().map(|m| m.len()).unwrap_or(0) > 0 {
+        writeln!(file).map_err(err)?;
+    }
+    writeln!(file, "{}", bibtex).map_err(err)?;
+
+    Ok(())
+}
+
 // ── Snapshots ─────────────────────────────────────────────────────
 
 /// Crea un snapshot (copia nombrada) del proyecto en su estado actual.

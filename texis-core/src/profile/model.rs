@@ -42,4 +42,7 @@ pub struct ProfileSectionDef {
     pub required: bool,
     pub title: Option<String>,
     pub label: Option<String>,
+    /// Orientación para el estudiante sobre qué debe contener esta sección.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guidance: Option<String>,
 }

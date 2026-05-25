@@ -11,7 +11,7 @@ import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
-import type { CompilationResult, UserError } from "../types";
+import type { CompilationResult, UserError, ValidationReport, ValidationIssue } from "../types";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 type Backend = "auto" | "latexmk" | "tectonic";
@@ -101,6 +101,183 @@ function BackendChip({
   );
 }
 
+// ── Modal de checklist de entrega ────────────────────────────────
+
+type PendingAction = "compile" | "export";
+
+const SEV_COLOR: Record<string, string> = {
+  Error:      "var(--build-err)",
+  Warning:    "var(--build-warn)",
+  Suggestion: "var(--accent)",
+};
+
+const SEV_LABEL: Record<string, string> = {
+  Error:      "Error",
+  Warning:    "Advertencia",
+  Suggestion: "Sugerencia",
+};
+
+function IssueRow({ issue, onGoTo }: {
+  issue: ValidationIssue;
+  onGoTo?: () => void;
+}) {
+  const color = SEV_COLOR[issue.severity] ?? "var(--fg-muted)";
+  return (
+    <div style={{
+      padding: "10px 14px",
+      borderBottom: "1px solid var(--border-subtle)",
+      borderLeft: `3px solid ${color}`,
+      background: "var(--bg-surface)",
+    }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, color,
+          background: `color-mix(in srgb, ${color} 12%, transparent)`,
+          padding: "1px 6px", borderRadius: "var(--r-sm)",
+          flexShrink: 0, marginTop: 1, letterSpacing: "0.04em",
+        }}>
+          {SEV_LABEL[issue.severity]}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", lineHeight: 1.5 }}>
+            {issue.message}
+          </div>
+          {issue.suggestion && (
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 4, lineHeight: 1.4 }}>
+              → {issue.suggestion}
+            </div>
+          )}
+        </div>
+        {onGoTo && (
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: 11, flexShrink: 0 }}
+            onClick={onGoTo}
+          >
+            Ir a sección
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, onGoToSection }: {
+  report: ValidationReport;
+  pendingAction: PendingAction;
+  onProceed: () => void;
+  onClose: () => void;
+  onGoToSection: (sectionId: string) => void;
+}) {
+  const errors      = report.issues.filter(i => i.severity === "Error");
+  const warnings    = report.issues.filter(i => i.severity === "Warning");
+  const suggestions = report.issues.filter(i => i.severity === "Suggestion");
+  const hasErrors   = errors.length > 0;
+  const actionLabel = pendingAction === "compile" ? "Compilar" : "Exportar entrega";
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9000,
+      background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        width: 520, maxHeight: "80vh", display: "flex", flexDirection: "column",
+        background: "var(--bg-base)", borderRadius: "var(--r-lg)",
+        border: "1px solid var(--border-firm)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
+        overflow: "hidden",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "16px 20px", borderBottom: "1px solid var(--border-subtle)",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          {hasErrors
+            ? <IconErr size={16} style={{ color: "var(--build-err)", flexShrink: 0 }} />
+            : <IconWarn size={16} style={{ color: "var(--build-warn)", flexShrink: 0 }} />
+          }
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: "var(--fs-md)", color: "var(--fg-strong)" }}>
+              Verificación antes de {actionLabel.toLowerCase()}
+            </div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
+              {hasErrors
+                ? `Corrige ${errors.length} error${errors.length > 1 ? "es" : ""} antes de continuar.`
+                : `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""} encontrada${warnings.length !== 1 ? "s" : ""}. Puedes continuar de todos modos.`
+              }
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>
+            <IconX size={12} />
+          </button>
+        </div>
+
+        {/* Issues list */}
+        <div style={{ flex: 1, overflow: "auto" }} className="scroll">
+          {errors.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-err)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Errores ({errors.length})
+              </div>
+              {errors.map((issue, i) => (
+                <IssueRow
+                  key={i} issue={issue}
+                  onGoTo={issue.section_id ? () => { onGoToSection(issue.section_id!); onClose(); } : undefined}
+                />
+              ))}
+            </>
+          )}
+          {warnings.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-warn)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Advertencias ({warnings.length})
+              </div>
+              {warnings.map((issue, i) => (
+                <IssueRow
+                  key={i} issue={issue}
+                  onGoTo={issue.section_id ? () => { onGoToSection(issue.section_id!); onClose(); } : undefined}
+                />
+              ))}
+            </>
+          )}
+          {suggestions.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Sugerencias ({suggestions.length})
+              </div>
+              {suggestions.map((issue, i) => (
+                <IssueRow key={i} issue={issue} />
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: "12px 20px", borderTop: "1px solid var(--border-subtle)",
+          display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center",
+          background: "var(--bg-panel)",
+        }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>
+            Cerrar
+          </button>
+          {!hasErrors && (
+            <button
+              className="btn btn-sm"
+              style={{ background: "var(--build-warn)", color: "#fff", border: "none" }}
+              onClick={() => { onClose(); onProceed(); }}
+            >
+              <IconPlay size={11} /> {actionLabel} de todos modos
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Visor de PDF embebido ─────────────────────────────────────────
 
 function PdfViewer({ pdfPath }: { pdfPath: string }) {
@@ -150,6 +327,9 @@ export default function CompileView() {
   const [exportBusy, setExportBusy] = useState(false);
   const [exportedZip, setExportedZip] = useState<string | null>(null);
 
+  const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
+  const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
+
   const logRef = useRef<HTMLDivElement>(null);
 
   const projectName = activeProject?.metadata.title ?? "Proyecto";
@@ -172,7 +352,7 @@ export default function CompileView() {
   const tectonicOk = latexInfo?.has_tectonic ?? null;
   const nothingInstalled = latexInfo && !latexInfo.is_usable;
 
-  async function handleCompile() {
+  async function doCompile() {
     if (!activeProjectPath) return;
     setCompileState("compiling");
     setResult(null);
@@ -211,7 +391,33 @@ export default function CompileView() {
     }
   }
 
-  async function handleExportDelivery() {
+  async function runDeliveryCheck(action: PendingAction): Promise<boolean> {
+    if (!activeProjectPath) return false;
+    try {
+      const report = await api.validateProject(activeProjectPath);
+      const hasIssues = report.issues.some(i => i.severity === "Error" || i.severity === "Warning");
+      if (hasIssues) {
+        setCheckReport(report);
+        setCheckAction(action);
+        return false;
+      }
+    } catch {
+      // Si falla la validación, no bloqueamos — el compilador reportará sus propios errores
+    }
+    return true;
+  }
+
+  async function handleCompile() {
+    if (!activeProjectPath) return;
+    // Solo el borrador se salta el checklist; la compilación final lo requiere
+    if (!draft) {
+      const ok = await runDeliveryCheck("compile");
+      if (!ok) return;
+    }
+    doCompile();
+  }
+
+  async function doExportDelivery() {
     if (!activeProjectPath) return;
     const folder = await api.pickFolder();
     if (!folder) return;
@@ -225,6 +431,18 @@ export default function CompileView() {
     } finally {
       setExportBusy(false);
     }
+  }
+
+  async function handleExportDelivery() {
+    if (!activeProjectPath) return;
+    const ok = await runDeliveryCheck("export");
+    if (!ok) return;
+    doExportDelivery();
+  }
+
+  function handleGoToSection(sectionId: string) {
+    if (!encodedPath) return;
+    navigate(`/project/${encodedPath}?section=${sectionId}`);
   }
 
   async function handleCancel() {
@@ -245,6 +463,21 @@ export default function CompileView() {
 
   return (
     <>
+      {checkReport && checkAction && (
+        <DeliveryCheckModal
+          report={checkReport}
+          pendingAction={checkAction}
+          onProceed={() => {
+            const action = checkAction;
+            setCheckReport(null);
+            setCheckAction(null);
+            if (action === "compile") doCompile();
+            else doExportDelivery();
+          }}
+          onClose={() => { setCheckReport(null); setCheckAction(null); }}
+          onGoToSection={handleGoToSection}
+        />
+      )}
       <TxAppbar
         left={
           <>

@@ -867,6 +867,7 @@ interface CatalogProfile {
   tags: string[]; continent: string; country: string;
   institution?: string; city?: string;
   bibliography_style?: string; download_url: string; version?: string;
+  sha256?: string;
 }
 
 function CommunityTab({ installedIds, onInstalled }: {
@@ -908,7 +909,7 @@ function CommunityTab({ installedIds, onInstalled }: {
   async function handleInstall(cp: CatalogProfile) {
     setDownloading(cp.id); setOpError(null); setOpSuccess(null);
     try {
-      const installed = await api.fetchRemoteProfile(cp.download_url);
+      const installed = await api.fetchRemoteProfile(cp.download_url, cp.sha256);
       onInstalled(installed);
       setOpSuccess(`✓ "${installed.name}" instalado correctamente.`);
     } catch (e) { setOpError(String(e)); }

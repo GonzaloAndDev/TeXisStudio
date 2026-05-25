@@ -300,6 +300,7 @@ export interface ProfileSectionInfo {
   required: boolean;
   title?: string;
   label?: string;
+  guidance?: string;
 }
 
 export interface ProfileInfo {

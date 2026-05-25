@@ -220,6 +220,38 @@ const STATUS_CONFIG: Record<SectionStatus, { label: string; color: string; bg: s
   approved:  { label: "Aprobado",   color: "#52C41A", bg: "rgba(82,196,26,0.12)"   },
 };
 
+function SectionGuidance({ guidance }: { guidance?: string }) {
+  const [open, setOpen] = useState(false);
+  if (!guidance) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "var(--bg-subtle)", border: "1px solid var(--bg-paper-edge)",
+          borderRadius: "var(--r-sm)", padding: "5px 10px",
+          fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        <span style={{ fontSize: 12 }}>{open ? "▾" : "▸"}</span>
+        Orientación de la sección
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 6, padding: "10px 14px",
+          background: "var(--bg-subtle)", border: "1px solid var(--bg-paper-edge)",
+          borderRadius: "var(--r-sm)", fontSize: "var(--fs-sm)",
+          color: "var(--fg-muted)", lineHeight: 1.6, whiteSpace: "pre-wrap",
+        }}>
+          {guidance}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionStatusBar({
   section,
   onChangeStatus,
@@ -1439,15 +1471,53 @@ function CitationPickerModal({
   refs,
   onInsert,
   onClose,
+  projectPath,
+  onBibUpdated,
 }: {
   refs: BibReference[];
   onInsert: (ref: BibReference) => void;
   onClose: () => void;
+  projectPath: string | null;
+  onBibUpdated: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [citationType, setCitationType] = useState<"parenthetical" | "narrative" | "footnote">("parenthetical");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // DOI import state
+  const [doiInput, setDoiInput] = useState("");
+  const [doiLoading, setDoiLoading] = useState(false);
+  const [doiResult, setDoiResult] = useState<string | null>(null);
+  const [doiError, setDoiError] = useState<string | null>(null);
+  const [doiSaved, setDoiSaved] = useState(false);
+
+  const handleDoiLookup = async () => {
+    if (!doiInput.trim()) return;
+    setDoiLoading(true);
+    setDoiResult(null);
+    setDoiError(null);
+    setDoiSaved(false);
+    try {
+      const bibtex = await api.importDoi(doiInput.trim());
+      setDoiResult(bibtex);
+    } catch (e) {
+      setDoiError(String(e));
+    } finally {
+      setDoiLoading(false);
+    }
+  };
+
+  const handleDoiSave = async () => {
+    if (!doiResult || !projectPath) return;
+    try {
+      await api.appendBibEntry(projectPath, doiResult);
+      setDoiSaved(true);
+      onBibUpdated();
+    } catch (e) {
+      setDoiError(String(e));
+    }
+  };
 
   const q = query.toLowerCase();
   const filtered = refs.filter(
@@ -1523,6 +1593,72 @@ function CitationPickerModal({
             }}
             onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
           />
+        </div>
+
+        {/* Panel importar por DOI */}
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-subtle)" }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6, fontWeight: 500 }}>
+            Importar referencia por DOI
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              value={doiInput}
+              onChange={(e) => { setDoiInput(e.target.value); setDoiResult(null); setDoiError(null); setDoiSaved(false); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleDoiLookup(); }}
+              placeholder="10.1000/xyz123 o https://doi.org/…"
+              style={{
+                flex: 1, border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)",
+                padding: "5px 8px", fontSize: "var(--fs-xs)", fontFamily: "var(--font-mono)",
+                background: "var(--bg-chrome)", color: "var(--fg-strong)", outline: "none",
+              }}
+            />
+            <button
+              onClick={handleDoiLookup}
+              disabled={doiLoading || !doiInput.trim()}
+              className="btn btn-sm btn-accent"
+              style={{ fontSize: 11, whiteSpace: "nowrap" }}
+            >
+              {doiLoading ? "Buscando…" : "Buscar DOI"}
+            </button>
+          </div>
+          {doiError && (
+            <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--error)", background: "var(--error-bg)", borderRadius: "var(--r-xs)", padding: "4px 8px" }}>
+              {doiError}
+            </div>
+          )}
+          {doiResult && (
+            <div style={{ marginTop: 8 }}>
+              <textarea
+                readOnly
+                value={doiResult}
+                rows={5}
+                style={{
+                  width: "100%", resize: "none", fontFamily: "var(--font-mono)",
+                  fontSize: 10, background: "var(--bg-chrome)", border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--r-xs)", padding: "6px 8px", color: "var(--fg-default)",
+                  boxSizing: "border-box",
+                }}
+                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+              />
+              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                <button
+                  onClick={handleDoiSave}
+                  disabled={doiSaved || !projectPath}
+                  className="btn btn-sm btn-accent"
+                  style={{ fontSize: 11 }}
+                >
+                  {doiSaved ? "✓ Agregado al .bib" : "Agregar al .bib"}
+                </button>
+                <button
+                  onClick={() => navigator.clipboard.writeText(doiResult)}
+                  className="btn btn-sm btn-ghost"
+                  style={{ fontSize: 11 }}
+                >
+                  Copiar BibTeX
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Lista de referencias */}
@@ -2094,6 +2230,14 @@ export default function EditorView() {
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
 
+  // Perfil activo: se carga para mostrar guidance por sección
+  const [profileSections, setProfileSections] = useState<import("../types").ProfileSectionInfo[]>([]);
+  useEffect(() => {
+    const pid = activeProject?.profile_id;
+    if (!pid) return;
+    api.getProfileDetail(pid).then((p) => setProfileSections(p.sections ?? [])).catch(() => {});
+  }, [activeProject?.profile_id]);
+
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {
     const section = activeProject?.sections.find((s) => s.id === activeSectionId);
@@ -2340,13 +2484,15 @@ export default function EditorView() {
     }
   }, [activeProjectPath, activeProject]);
 
-  // Cargar referencias .bib cuando el proyecto cambia
-  useEffect(() => {
+  // Cargar referencias .bib — reutilizable tras agregar entradas por DOI
+  const reloadBibRefs = useCallback(() => {
     if (!activeProjectPath) return;
     api.listReferences(activeProjectPath)
       .then(setBibRefs)
       .catch(() => setBibRefs([]));
   }, [activeProjectPath]);
+
+  useEffect(() => { reloadBibRefs(); }, [reloadBibRefs]);
 
   // Atajos de teclado
   useEffect(() => {
@@ -2598,6 +2744,10 @@ export default function EditorView() {
                   {activeSection.title ?? activeSection.element_id}
                 </div>
 
+                <SectionGuidance
+                  guidance={profileSections.find((ps) => ps.element_id === activeSection.element_id)?.guidance}
+                />
+
                 <SectionStatusBar
                   section={activeSection}
                   onChangeStatus={(s) => handleSectionStatusChange(activeSection.id, s)}
@@ -2747,6 +2897,8 @@ export default function EditorView() {
           refs={bibRefs}
           onInsert={(ref) => insertCitation(ref, "parenthetical")}
           onClose={() => setCitPickerOpen(false)}
+          projectPath={activeProjectPath}
+          onBibUpdated={reloadBibRefs}
         />
       )}
 

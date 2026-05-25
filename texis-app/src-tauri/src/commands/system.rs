@@ -29,6 +29,8 @@ pub struct SectionUpdateEntry {
     pub required: bool,
     pub title: Option<String>,
     pub label: Option<String>,
+    #[serde(default)]
+    pub guidance: Option<String>,
 }
 
 fn err(e: impl std::fmt::Display) -> String {
@@ -232,6 +234,7 @@ pub fn update_profile(
         required: s.required,
         title: s.title.clone(),
         label: s.label.clone(),
+        guidance: s.guidance.clone(),
     }).collect();
 
     loader.save_to_file(&profile, &yaml_path).map_err(err)?;
@@ -346,6 +349,7 @@ pub fn create_profile(
                 required: s.required,
                 title: s.title.clone(),
                 label: s.label.clone(),
+                guidance: s.guidance.clone(),
             })
             .collect(),
     };
@@ -374,6 +378,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "required": s.required,
         "title": s.title,
         "label": s.label,
+        "guidance": s.guidance,
     })).collect();
 
     serde_json::json!({

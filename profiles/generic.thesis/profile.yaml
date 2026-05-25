@@ -3,7 +3,7 @@ id: "generic.thesis"
 name: "Tesis genérica"
 description: "Perfil base para tesis de licenciatura, maestría y doctorado. Clase book, XeLaTeX, biber, APA 7."
 author: "Gonzalo Andrade Estrella"
-version: "0.1.0"
+version: "0.2.0"
 license: "AGPL-3.0"
 tags:
   - tesis
@@ -40,36 +40,61 @@ sections:
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      La portada la genera automáticamente el perfil con los datos institucionales que configuraste al crear el proyecto (nombre del estudiante, institución, título del trabajo, director de tesis, año).
+      No necesitas escribir contenido aquí.
 
   - id: "table_of_contents"
     element_id: "table_of_contents"
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      El índice de contenidos se genera automáticamente a partir de las secciones habilitadas en tu proyecto.
+      No necesitas escribir nada — solo asegúrate de que tus capítulos tengan títulos.
 
   - id: "abstract_es"
     element_id: "abstract_es"
     placement: "front_matter"
     required: false
     title: "Resumen"
+    guidance: |
+      El resumen presenta tu tesis en 150–250 palabras. Debe responder brevemente:
+      • ¿Cuál es el problema o pregunta de investigación?
+      • ¿Qué metodología usaste?
+      • ¿Cuáles son los resultados principales?
+      • ¿Cuál es la conclusión o aportación?
+      No cites referencias en el resumen. Escríbelo en pasado. Incluye 4–6 palabras clave al final.
 
   - id: "abstract_en"
     element_id: "abstract_en"
     placement: "front_matter"
     required: false
     title: "Abstract"
+    guidance: |
+      Traducción fiel del resumen al inglés, en el mismo formato (150–250 palabras).
+      Muchas instituciones de posgrado lo exigen para indexación internacional.
+      Keywords: mismas palabras clave que el resumen, en inglés.
 
   - id: "dedication"
     element_id: "dedication"
     placement: "front_matter"
     required: false
     title: "Dedicatoria"
+    guidance: |
+      Texto breve (1–5 líneas) dedicado a personas importantes para el autor.
+      Es personal y opcional. Algunos ejemplos: "A mis padres, por su apoyo incondicional."
+      No lleva título explícito en la mayoría de estilos — el perfil lo maneja.
 
   - id: "acknowledgements"
     element_id: "acknowledgements"
     placement: "front_matter"
     required: false
     title: "Agradecimientos"
+    guidance: |
+      Menciona a quienes contribuyeron a tu investigación: director(a), lectores, compañeros, instituciones, financiadores.
+      Sé específico: menciona el rol de cada persona u organización.
+      Extensión recomendada: media a una página.
 
   - id: "introduction"
     element_id: "introduction"
@@ -77,6 +102,16 @@ sections:
     required: true
     title: "Introducción"
     label: "sec:introduccion"
+    guidance: |
+      La introducción contextualiza tu trabajo y motiva al lector a seguir leyendo. Debe incluir:
+      1. Contexto general del tema (de lo amplio a lo específico).
+      2. Planteamiento del problema: ¿qué brecha o necesidad existe?
+      3. Pregunta de investigación o hipótesis.
+      4. Objetivo general y objetivos específicos.
+      5. Justificación: ¿por qué es relevante estudiar esto?
+      6. Alcances y limitaciones del estudio.
+      7. Breve descripción de la estructura de la tesis.
+      Extensión típica: 3–6 páginas.
 
   - id: "theoretical_framework"
     element_id: "theoretical_framework"
@@ -84,6 +119,14 @@ sections:
     required: false
     title: "Marco Teórico"
     label: "sec:marco"
+    guidance: |
+      El marco teórico sustenta tu investigación con la literatura existente. Debe:
+      • Revisar los conceptos y teorías clave relacionados con tu tema.
+      • Citar fuentes primarias y actuales (últimos 5–10 años para artículos; clásicos si son fundamentales).
+      • Organizar las ideas de forma lógica, no como lista de resúmenes.
+      • Identificar el estado del arte: ¿qué se sabe y qué falta saber?
+      • Posicionar tu trabajo dentro de la literatura: ¿qué aportas tú?
+      Usa el bloque "Cita bibliográfica" para cada referencia. Evita citas textuales excesivas — parafrasea y analiza.
 
   - id: "methodology"
     element_id: "methodology"
@@ -91,6 +134,15 @@ sections:
     required: true
     title: "Metodología"
     label: "sec:metodologia"
+    guidance: |
+      Describe cómo llevaste a cabo tu investigación con suficiente detalle para que pueda replicarse. Incluye:
+      • Tipo de investigación (cuantitativa, cualitativa, mixta; exploratoria, descriptiva, explicativa).
+      • Diseño: experimental, cuasiexperimental, estudio de caso, encuesta, etc.
+      • Población y muestra: criterios de selección, tamaño, técnica de muestreo.
+      • Instrumentos de recolección: cuestionarios, entrevistas, observación, experimentos.
+      • Procedimiento: pasos seguidos cronológicamente.
+      • Análisis de datos: software, estadísticas, categorías de análisis cualitativo.
+      • Consideraciones éticas si aplica.
 
   - id: "results"
     element_id: "results"
@@ -98,6 +150,13 @@ sections:
     required: true
     title: "Resultados"
     label: "sec:resultados"
+    guidance: |
+      Presenta los hallazgos de tu investigación de forma objetiva, sin interpretarlos aún. Guías:
+      • Organiza los resultados siguiendo el orden de tus objetivos o preguntas de investigación.
+      • Usa tablas y figuras para datos numéricos o comparativos — referencia cada una en el texto.
+      • No repitas en texto lo que ya muestra una tabla; comenta lo más relevante.
+      • Sé preciso con cifras: incluye unidades, porcentajes, valores estadísticos (p, r, χ², etc.).
+      • Para investigación cualitativa: presenta categorías con citas textuales ilustrativas.
 
   - id: "discussion"
     element_id: "discussion"
@@ -105,6 +164,14 @@ sections:
     required: false
     title: "Discusión"
     label: "sec:discusion"
+    guidance: |
+      Aquí interpretas tus resultados y los relacionas con la literatura. Es la sección más analítica. Debe:
+      • Explicar qué significan tus resultados en el contexto de tu pregunta de investigación.
+      • Comparar con estudios previos: ¿coinciden? ¿difieren? ¿por qué?
+      • Señalar resultados inesperados y ofrecer explicaciones posibles.
+      • Discutir implicaciones teóricas y prácticas de tus hallazgos.
+      • Reconocer las limitaciones del estudio con honestidad.
+      No presentes resultados nuevos aquí — solo interpreta los ya reportados.
 
   - id: "conclusions"
     element_id: "conclusions"
@@ -112,15 +179,36 @@ sections:
     required: true
     title: "Conclusiones"
     label: "sec:conclusiones"
+    guidance: |
+      Las conclusiones cierran tu argumento y responden directamente a tus objetivos. Incluye:
+      • Respuesta a la pregunta de investigación / verificación de hipótesis.
+      • Síntesis de los hallazgos más importantes (sin repetir detalles de resultados).
+      • Aportaciones originales del trabajo.
+      • Recomendaciones para la práctica profesional o para futuras investigaciones.
+      • Reflexión final sobre la relevancia del trabajo.
+      Extensión recomendada: 2–4 páginas. No introduzcas información nueva.
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
     title: "Referencias"
+    guidance: |
+      La lista de referencias se genera automáticamente desde tu archivo .bib al compilar.
+      Asegúrate de que cada fuente citada en el texto esté en el .bib, y viceversa.
+      Para agregar referencias: usa el botón de importar DOI o edita el archivo references.bib directamente.
+      El estilo de citación (APA 7 en este perfil) lo aplica LaTeX automáticamente.
 
   - id: "appendices"
     element_id: "appendices"
     placement: "appendix"
     required: false
     title: "Anexos"
+    guidance: |
+      Los anexos contienen material de apoyo que no cabe en el cuerpo principal pero que el lector puede necesitar verificar:
+      • Instrumentos de recolección (cuestionarios completos, guías de entrevista).
+      • Tablas de datos crudos.
+      • Código fuente o scripts.
+      • Mapas, planos, documentos legales.
+      • Cartas de autorización o consentimiento informado.
+      Cada anexo debe estar numerado (Anexo A, Anexo B…) y referenciado desde el texto principal.

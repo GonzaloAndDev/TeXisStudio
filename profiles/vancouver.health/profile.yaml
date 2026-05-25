@@ -3,7 +3,7 @@ id: "vancouver.health"
 name: "Ciencias de la salud (IMRyD)"
 description: "Estructura IMRyD para investigación clínica y biomédica. Bibliografía estilo Vancouver. Ideal para tesis de medicina, enfermería y ciencias de la salud."
 author: "Gonzalo Andrade Estrella"
-version: "0.1.0"
+version: "0.2.0"
 license: "AGPL-3.0"
 tags:
   - salud
@@ -43,24 +43,42 @@ sections:
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      La portada se genera automáticamente con los datos del proyecto.
+      No necesitas escribir contenido aquí.
 
   - id: "table_of_contents"
     element_id: "table_of_contents"
     placement: "front_matter"
     required: true
     title: null
+    guidance: |
+      El índice se genera automáticamente.
+      No necesitas escribir nada aquí.
 
   - id: "abstract_es"
     element_id: "abstract_es"
     placement: "front_matter"
     required: true
     title: "Resumen"
+    guidance: |
+      El resumen IMRyD se estructura con los mismos subtítulos que el artículo, en miniatura:
+      • Objetivo: una oración con el propósito del estudio.
+      • Material y métodos: diseño, población, intervención y mediciones principales.
+      • Resultados: hallazgos más relevantes con datos numéricos.
+      • Conclusiones: interpretación clínica y alcance.
+      Límite: 250 palabras para tesis (varía por institución). Sin citas. Sin acrónimos sin definir.
+      Al final: 3–6 Palabras clave MeSH (Medical Subject Headings).
 
   - id: "abstract_en"
     element_id: "abstract_en"
     placement: "front_matter"
     required: false
     title: "Abstract"
+    guidance: |
+      Traducción fiel del resumen al inglés con los mismos subtítulos: Objective, Methods, Results, Conclusions.
+      Keywords: términos MeSH en inglés.
+      Requerido para indexación en PubMed/MEDLINE y presentación en congresos internacionales.
 
   - id: "introduction"
     element_id: "introduction"
@@ -68,6 +86,15 @@ sections:
     required: true
     title: "Introducción"
     label: "sec:introduccion"
+    guidance: |
+      En IMRyD, la Introducción responde: ¿qué se sabe? ¿qué no se sabe? ¿qué se va a estudiar?
+      Estructura recomendada (embudo):
+      1. Magnitud del problema de salud (epidemiología, carga de enfermedad).
+      2. Lo que se conoce: revisión selectiva de la literatura con citas Vancouver ([1], [2]…).
+      3. Vacío de conocimiento o controversia que motiva el estudio.
+      4. Pregunta de investigación u objetivo del estudio (claramente enunciado).
+      5. Hipótesis si aplica.
+      No presentes resultados aquí. Extensión típica: 2–4 páginas.
 
   - id: "materials_methods"
     element_id: "methodology"
@@ -75,6 +102,17 @@ sections:
     required: true
     title: "Material y métodos"
     label: "sec:metodos"
+    guidance: |
+      Describe el estudio con suficiente detalle para que pueda replicarse. Incluye:
+      • Diseño del estudio: experimental, cohorte, caso-control, corte transversal, revisión sistemática, etc.
+      • Lugar y período del estudio.
+      • Población: criterios de inclusión y exclusión.
+      • Muestra: tamaño, técnica de muestreo, justificación estadística.
+      • Intervención (si aplica): descripción exacta, dosis, duración.
+      • Variables e instrumentos de medición.
+      • Análisis estadístico: pruebas usadas, software, nivel de significancia.
+      • Consideraciones éticas: aprobación del comité de ética, consentimiento informado.
+      Evita justificar las decisiones metodológicas — solo descríbelas.
 
   - id: "results"
     element_id: "results"
@@ -82,6 +120,14 @@ sections:
     required: true
     title: "Resultados"
     label: "sec:resultados"
+    guidance: |
+      Presenta los hallazgos de forma objetiva y sin interpretación:
+      • Comienza con las características de la muestra (Tabla 1: características basales).
+      • Presenta los resultados en el orden de los objetivos o hipótesis.
+      • Usa tablas y figuras para datos numéricos — cada una referenciada en el texto.
+      • Reporta: n, %, medias ± DE, medianas (RIC), RR, OR, IC 95%, valor p.
+      • No repitas en texto lo que ya muestra la tabla — comenta solo lo más relevante.
+      • Para estudios cualitativos: categorías con citas textuales de participantes (anónimas).
 
   - id: "discussion"
     element_id: "discussion"
@@ -89,6 +135,15 @@ sections:
     required: true
     title: "Discusión"
     label: "sec:discusion"
+    guidance: |
+      Es la sección más analítica y la más difícil de escribir. Debe:
+      • Retomar el objetivo del estudio y resumir el hallazgo principal.
+      • Comparar tus resultados con estudios previos (similares, diferentes y contradictorios).
+      • Explicar las discrepancias: diferencias de diseño, población, contexto.
+      • Señalar implicaciones clínicas: ¿qué cambia en la práctica?
+      • Reconocer las limitaciones del estudio (no las minimices — refuerza la credibilidad).
+      • Sugerir investigación futura específica.
+      No presentes resultados nuevos aquí.
 
   - id: "conclusions"
     element_id: "conclusions"
@@ -96,15 +151,36 @@ sections:
     required: false
     title: "Conclusiones"
     label: "sec:conclusiones"
+    guidance: |
+      En muchos artículos biomédicos las conclusiones se incluyen en la Discusión.
+      Si tu institución las requiere por separado:
+      • Una o dos oraciones por objetivo respondido.
+      • Responde directamente a la pregunta de investigación.
+      • Evita generalizar más allá de lo que los datos permiten.
+      • Menciona el aporte al conocimiento o a la práctica clínica.
 
   - id: "references"
     element_id: "references"
     placement: "back_matter"
     required: true
     title: "Referencias"
+    guidance: |
+      Estilo Vancouver: referencias numéricas en orden de aparición en el texto ([1], [2]…).
+      La lista se genera automáticamente desde tu .bib al compilar.
+      Prioriza fuentes indexadas en MEDLINE/PubMed, Scopus, Web of Science.
+      Usa el importador DOI para agregar artículos con un clic — Crossref tiene la mayoría de PubMed.
+      Límite de referencias: varía por institución (frecuente: 30–50 para tesis).
 
   - id: "appendices"
     element_id: "appendices"
     placement: "appendix"
     required: false
     title: "Anexos"
+    guidance: |
+      Incluye documentos de soporte que no caben en el texto:
+      • Instrumento de recolección (cuestionario, hoja de captura de datos).
+      • Carta de aprobación del comité de ética.
+      • Consentimiento informado.
+      • Tablas de datos crudos o suplementarios.
+      • Protocolo de intervención detallado.
+      Numera: Anexo A, B… y refiérelos desde el texto.
