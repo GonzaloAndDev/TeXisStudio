@@ -33,9 +33,15 @@ impl CompilationBackend for LatexmkBackend {
             });
         }
 
+        let engine_flag = match options.latex_engine.as_deref().unwrap_or("xelatex") {
+            "pdflatex" => "-pdf",
+            "lualatex" => "-lualatex",
+            _ => "-xelatex",
+        };
+
         let mut cmd = Command::new("latexmk");
         cmd.current_dir(build_dir)
-            .arg("-xelatex")
+            .arg(engine_flag)
             .arg("-interaction=nonstopmode")
             .arg("-file-line-error");
 

@@ -69,6 +69,14 @@ pub async fn compile_project(
     let _ = app.emit("compile://log", "→ Generando archivos LaTeX…");
     let loader = ProjectLoader;
     let model = loader.load_from_file(&yaml_path).map_err(err)?;
+
+    use texis_core::project::model::LatexEngine;
+    let engine_flag = match model.latex_config.engine {
+        LatexEngine::Pdflatex => "-pdf",
+        LatexEngine::Lualatex => "-lualatex",
+        LatexEngine::Xelatex  => "-xelatex",
+    };
+
     let latex_gen = LaTeXGenerator::new().map_err(err)?;
     latex_gen.generate_with_lang(&model, &build_dir, lang_config.as_ref()).map_err(err)?;
 
@@ -82,9 +90,10 @@ pub async fn compile_project(
     let app2 = app.clone();
     let build_dir2 = build_dir.clone();
     let backend2 = resolved_backend.to_string();
+    let engine_flag2 = engine_flag.to_string();
 
     let task = tokio::task::spawn_blocking(move || {
-        run_compiler_streaming(&app2, &build_dir2, &backend2, draft, cancel)
+        run_compiler_streaming(&app2, &build_dir2, &backend2, &engine_flag2, draft, cancel)
     });
 
     task.await.map_err(|e| format!("Error interno: {e}"))?
@@ -132,6 +141,7 @@ fn run_compiler_streaming(
     app: &tauri::AppHandle,
     build_dir: &Path,
     backend: &str,
+    engine_flag: &str,
     draft: bool,
     cancel: Arc<AtomicBool>,
 ) -> Result<Value, String> {
@@ -143,7 +153,7 @@ fn run_compiler_streaming(
 
     match backend {
         "latexmk" => {
-            cmd.arg("-xelatex")
+            cmd.arg(engine_flag)
                 .arg("-interaction=nonstopmode")
                 .arg("-file-line-error");
             if draft {

@@ -11,7 +11,15 @@ import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
-import type { CompilationResult, UserError, ValidationReport, ValidationIssue } from "../types";
+import type {
+  CompilationResult,
+  ExportDeliveryResult,
+  PdfaCheck,
+  PdfPostflightResult,
+  UserError,
+  ValidationReport,
+  ValidationIssue,
+} from "../types";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 type Backend = "auto" | "latexmk" | "tectonic";
@@ -310,6 +318,123 @@ function PdfViewer({ pdfPath }: { pdfPath: string }) {
   );
 }
 
+// ── Panel de verificación PDF ─────────────────────────────────────
+
+function PdfaBadge({ pdfa }: { pdfa: PdfaCheck }) {
+  if (pdfa.flavour === null) {
+    return (
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 6, padding: "4px 8px", borderRadius: "var(--r-xs)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
+        PDF/A: no declarado — el PDF no incluye metadatos XMP de conformidad.
+        {pdfa.verapdf_version && <span style={{ marginLeft: 8, opacity: 0.6 }}>veraPDF {pdfa.verapdf_version}</span>}
+      </div>
+    );
+  }
+  const ok = pdfa.compliant;
+  return (
+    <div style={{
+      fontSize: "var(--fs-xs)", marginTop: 6, padding: "4px 10px", borderRadius: "var(--r-xs)",
+      background: ok ? "var(--build-ok-tint)" : "color-mix(in srgb, var(--build-warn) 12%, transparent)",
+      border: `1px solid ${ok ? "var(--build-ok)" : "var(--build-warn)"}`,
+      display: "flex", alignItems: "center", gap: 8,
+    }}>
+      <span style={{ color: ok ? "var(--build-ok)" : "var(--build-warn)", fontWeight: 600 }}>
+        {ok ? "✓" : "⚠"} PDF/A — {pdfa.flavour}
+      </span>
+      <span style={{ color: "var(--fg-muted)" }}>{ok ? "conforme" : "no conforme"}</span>
+      {pdfa.verapdf_version && <span style={{ marginLeft: "auto", opacity: 0.5 }}>veraPDF {pdfa.verapdf_version}</span>}
+    </div>
+  );
+}
+
+function PostflightPanel({ result }: { result: PdfPostflightResult }) {
+  const errors   = result.issues.filter((i) => i.severity === "error");
+  const warnings = result.issues.filter((i) => i.severity === "warning");
+
+  return (
+    <div style={{
+      padding: "14px 16px", borderRadius: "var(--r-md)",
+      background: "var(--bg-panel)",
+      border: `1px solid ${result.passed ? "var(--build-ok)" : "var(--build-err)"}`,
+      marginBottom: 12,
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        fontSize: "var(--fs-sm)", fontWeight: 600,
+        color: result.passed ? "var(--build-ok)" : "var(--build-err)",
+        marginBottom: 8,
+      }}>
+        {result.passed ? <IconCheckCircle size={14} /> : <IconErr size={14} />}
+        Verificación PDF — {result.passed ? "apta para entrega" : "no apta para entrega"}
+      </div>
+
+      {!result.pdf_exists && (
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>
+          El PDF no existe. Compila primero.
+        </div>
+      )}
+
+      {result.pdf_exists && (
+        <>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginBottom: 4, fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+            {result.metadata.pages !== undefined && <span>Páginas: <strong>{result.metadata.pages}</strong></span>}
+            {result.metadata.pdf_version && <span>PDF {result.metadata.pdf_version}</span>}
+            {result.metadata.file_size_bytes != null && (
+              <span>{(result.metadata.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
+            )}
+            {result.metadata.page_size && <span>{result.metadata.page_size}</span>}
+            <span style={{ color: result.all_fonts_embedded ? "var(--build-ok)" : "var(--build-warn)" }}>
+              Fuentes: {result.all_fonts_embedded
+                ? "todas incrustadas ✓"
+                : `${result.non_embedded_fonts.length} sin incrustar`}
+            </span>
+          </div>
+
+          {/* PDF/A — solo si veraPDF está disponible */}
+          {result.pdfa && <PdfaBadge pdfa={result.pdfa} />}
+
+          {errors.map((issue, i) => (
+            <div key={i} style={{
+              padding: "8px 10px", marginBottom: 4, borderRadius: "var(--r-sm)",
+              background: "color-mix(in srgb, var(--build-err) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--build-err) 25%, transparent)",
+              fontSize: "var(--fs-xs)",
+            }}>
+              <div style={{ color: "var(--build-err)", fontWeight: 600, marginBottom: 2 }}>
+                {issue.code}: {issue.message}
+              </div>
+              {issue.suggestion && (
+                <div style={{ color: "var(--fg-muted)" }}>{issue.suggestion}</div>
+              )}
+            </div>
+          ))}
+
+          {warnings.map((issue, i) => (
+            <div key={i} style={{
+              padding: "8px 10px", marginBottom: 4, borderRadius: "var(--r-sm)",
+              background: "color-mix(in srgb, var(--build-warn) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--build-warn) 25%, transparent)",
+              fontSize: "var(--fs-xs)",
+            }}>
+              <div style={{ color: "var(--build-warn)", fontWeight: 600, marginBottom: 2 }}>
+                {issue.code}: {issue.message}
+              </div>
+              {issue.suggestion && (
+                <div style={{ color: "var(--fg-muted)" }}>{issue.suggestion}</div>
+              )}
+            </div>
+          ))}
+
+          {result.tools_missing.length > 0 && (
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 4 }}>
+              Sin herramientas: {result.tools_missing.join(", ")} — instala poppler-utils para análisis completo.
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function CompileView() {
@@ -326,6 +451,10 @@ export default function CompileView() {
   const [showPdf, setShowPdf] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [exportedZip, setExportedZip] = useState<string | null>(null);
+  const [exportMode, setExportMode] = useState<"draft" | "review" | "final">("review");
+  const [exportResult, setExportResult] = useState<ExportDeliveryResult | null>(null);
+  const [postflightResult, setPostflightResult] = useState<PdfPostflightResult | null>(null);
+  const [postflightBusy, setPostflightBusy] = useState(false);
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
@@ -422,10 +551,12 @@ export default function CompileView() {
     const folder = await api.pickFolder();
     if (!folder) return;
     setExportBusy(true);
+    setExportResult(null);
     setExportedZip(null);
     try {
-      const zipPath = await api.exportDelivery(activeProjectPath, folder);
-      setExportedZip(zipPath);
+      const res = await api.exportDelivery(activeProjectPath, folder, exportMode);
+      setExportResult(res);
+      setExportedZip(res.zip_path);
     } catch (e) {
       alert(`Error al exportar: ${e}`);
     } finally {
@@ -433,10 +564,26 @@ export default function CompileView() {
     }
   }
 
+  async function doPostflightCheck() {
+    if (!activeProjectPath) return;
+    setPostflightBusy(true);
+    setPostflightResult(null);
+    try {
+      const res = await api.checkPdfPostflight(activeProjectPath);
+      setPostflightResult(res);
+    } catch (e) {
+      alert(`Error en verificación PDF: ${e}`);
+    } finally {
+      setPostflightBusy(false);
+    }
+  }
+
   async function handleExportDelivery() {
     if (!activeProjectPath) return;
-    const ok = await runDeliveryCheck("export");
-    if (!ok) return;
+    if (exportMode !== "draft") {
+      const ok = await runDeliveryCheck("export");
+      if (!ok) return;
+    }
     doExportDelivery();
   }
 
@@ -642,27 +789,65 @@ export default function CompileView() {
                   )}
                 </div>
 
-                {/* Botón de entrega final */}
+                {/* Paquete de entrega */}
                 <div style={{
                   padding: "14px 16px", borderRadius: "var(--r-md)",
                   background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
                   marginBottom: 12,
                 }}>
-                  <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 4 }}>
+                  <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 8 }}>
                     Paquete de entrega
                   </div>
-                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10, lineHeight: 1.6 }}>
-                    Genera un ZIP con el PDF, las fuentes LaTeX, el contenido y un informe de validación.
+
+                  {/* Selector de modo */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+                    {(["draft", "review", "final"] as const).map((m) => {
+                      const labels = { draft: "Borrador", review: "Revisión", final: "Final" };
+                      const col = m === "draft" ? "var(--fg-muted)" : m === "review" ? "var(--accent)" : "var(--build-ok)";
+                      const active = exportMode === m;
+                      return (
+                        <button
+                          key={m}
+                          className="btn btn-xs"
+                          onClick={() => setExportMode(m)}
+                          style={{
+                            border: `1px solid ${active ? col : "var(--border-firm)"}`,
+                            background: active ? `color-mix(in srgb, ${col} 15%, transparent)` : "transparent",
+                            color: active ? col : "var(--fg-muted)",
+                            fontWeight: active ? 600 : 400,
+                          }}
+                        >
+                          {labels[m]}
+                        </button>
+                      );
+                    })}
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginLeft: 2 }}>
+                      {exportMode === "draft"  && "Sin verificación"}
+                      {exportMode === "review" && "Bloquea errores de validación"}
+                      {exportMode === "final"  && "Bloquea errores + fuentes no incrustadas"}
+                    </span>
                   </div>
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: "var(--accent)", color: "#fff", border: "none" }}
-                    disabled={exportBusy}
-                    onClick={handleExportDelivery}
-                  >
-                    <IconMore size={12} />
-                    {exportBusy ? "Generando…" : "Exportar entrega (.zip)"}
-                  </button>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: "var(--accent)", color: "#fff", border: "none" }}
+                      disabled={exportBusy}
+                      onClick={handleExportDelivery}
+                    >
+                      <IconMore size={12} />
+                      {exportBusy ? "Generando…" : "Exportar entrega (.zip)"}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      disabled={postflightBusy || !result?.pdf_path}
+                      onClick={doPostflightCheck}
+                      title={!result?.pdf_path ? "Compila primero para obtener un PDF" : undefined}
+                    >
+                      {postflightBusy ? "Verificando…" : "Verificar PDF"}
+                    </button>
+                  </div>
+
                   {exportedZip && (
                     <div style={{
                       marginTop: 10, padding: "8px 12px",
@@ -672,10 +857,20 @@ export default function CompileView() {
                       display: "flex", alignItems: "flex-start", gap: 6,
                     }}>
                       <IconCheckCircle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
-                      {exportedZip}
+                      <div>
+                        {exportedZip}
+                        {exportResult && !exportResult.all_fonts_embedded && (
+                          <div style={{ color: "var(--build-warn)", marginTop: 4, fontFamily: "inherit" }}>
+                            ⚠ Hay fuentes no incrustadas en el PDF
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* Panel postflight */}
+                {postflightResult && <PostflightPanel result={postflightResult} />}
 
                 {result.warnings.map((w, i) => (
                   <ErrorCard key={i} error={{ message: w }} sev="warn" />

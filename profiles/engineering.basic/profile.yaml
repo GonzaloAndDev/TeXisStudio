@@ -1,10 +1,18 @@
-schema_version: "0.1.0"
+schema_version: "1.0.0"
 id: "engineering.basic"
 name: "Ingeniería / Reporte técnico"
 description: "Reporte técnico con secciones de planteamiento, diseño, implementación y pruebas. Bibliografía IEEE. Ideal para tesis de ingeniería y residencia profesional."
 author: "Gonzalo Andrade Estrella"
-version: "0.2.0"
+version: "1.0.0"
 license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-24"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/"
+    - "https://www.ieee.org/publications/authors/author-guidelines.html"
+  review_interval_days: 365
 tags:
   - ingenieria
   - tecnico

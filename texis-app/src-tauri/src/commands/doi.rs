@@ -398,49 +398,37 @@ fn work_to_bibtex(work: &CrossrefWork) -> String {
     render_bibtex(entry_type, &key, &fields)
 }
 
-// ── Comando Tauri ─────────────────────────────────────────────────────────────
+// ── Comandos Tauri ────────────────────────────────────────────────────────────
 
-/// Importa una referencia bibliográfica desde un DOI usando la API de Crossref.
-/// Retorna la entrada BibTeX como cadena de texto.
-#[tauri::command]
-pub async fn import_doi(doi: String) -> Result<String, String> {
-    let doi_clean = doi.trim().to_string();
-    if doi_clean.is_empty() {
-        return Err("El DOI no puede estar vacío.".to_string());
-    }
-
-    // Normalizar: quitar prefijo "https://doi.org/" o "doi:" si el usuario lo pegó
-    let doi_normalized = doi_clean
+fn normalize_doi(raw: &str) -> String {
+    raw.trim()
         .trim_start_matches("https://doi.org/")
         .trim_start_matches("http://doi.org/")
         .trim_start_matches("doi:")
         .trim_start_matches("DOI:")
         .trim()
-        .to_string();
+        .to_string()
+}
 
-    if doi_normalized.is_empty() {
-        return Err("DOI inválido.".to_string());
-    }
-
-    let url = format!("{}{}", CROSSREF_BASE, percent_encode_doi_path(&doi_normalized));
+async fn fetch_bibtex(doi_normalized: &str) -> Result<String, String> {
+    let url = format!("{}{}", CROSSREF_BASE, percent_encode_doi_path(doi_normalized));
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(TIMEOUT_SECS))
         .user_agent(USER_AGENT)
         .build()
-        .map_err(|e| format!("Error al crear cliente HTTP: {}", e))?;
+        .map_err(|e| format!("Error al crear cliente HTTP: {e}"))?;
 
     let resp = client
         .get(&url)
         .header("Accept", "application/json")
         .send()
         .await
-        .map_err(|e| format!("Error de red al consultar Crossref: {}", e))?;
+        .map_err(|e| format!("Error de red al consultar Crossref: {e}"))?;
 
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
-        return Err(format!("DOI no encontrado en Crossref: {}", doi_normalized));
+        return Err(format!("DOI no encontrado en Crossref: {doi_normalized}"));
     }
-
     if !resp.status().is_success() {
         return Err(format!("Crossref respondió con error HTTP {}", resp.status()));
     }
@@ -448,9 +436,93 @@ pub async fn import_doi(doi: String) -> Result<String, String> {
     let crossref: CrossrefResponse = resp
         .json()
         .await
-        .map_err(|e| format!("Error al parsear respuesta de Crossref: {}", e))?;
+        .map_err(|e| format!("Error al parsear respuesta de Crossref: {e}"))?;
 
     Ok(work_to_bibtex(&crossref.message))
+}
+
+/// Importa una referencia bibliográfica desde un DOI usando la API de Crossref.
+/// Retorna la entrada BibTeX como cadena de texto.
+#[tauri::command]
+pub async fn import_doi(doi: String) -> Result<String, String> {
+    if doi.trim().is_empty() {
+        return Err("El DOI no puede estar vacío.".to_string());
+    }
+    let doi_normalized = normalize_doi(&doi);
+    if doi_normalized.is_empty() {
+        return Err("DOI inválido.".to_string());
+    }
+    fetch_bibtex(&doi_normalized).await
+}
+
+/// Resultado individual de una importación por lotes.
+#[derive(serde::Serialize)]
+pub struct BatchDoiResult {
+    pub doi: String,
+    pub bibtex: Option<String>,
+    pub key: Option<String>,
+    pub error: Option<String>,
+}
+
+/// Importa múltiples DOIs en paralelo (máx. 8 concurrentes para respetar la
+/// política de cortesía de Crossref).
+/// Acepta una lista de DOIs crudos (con o sin prefijo https://doi.org/).
+/// Los DOIs vacíos o duplicados dentro del lote se ignoran silenciosamente.
+/// Retorna un resultado por DOI en el mismo orden de entrada (sin duplicados).
+#[tauri::command]
+pub async fn import_dois_batch(dois: Vec<String>) -> Result<Vec<BatchDoiResult>, String> {
+    use std::collections::HashSet;
+
+    // Deduplicar preservando orden
+    let mut seen = HashSet::new();
+    let unique_dois: Vec<String> = dois
+        .into_iter()
+        .filter_map(|d| {
+            let n = normalize_doi(&d);
+            if n.is_empty() || !seen.insert(n.clone()) { None } else { Some(n) }
+        })
+        .collect();
+
+    // Importar con concurrencia limitada (semáforo de 8)
+    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(8));
+    let handles: Vec<_> = unique_dois
+        .into_iter()
+        .map(|doi| {
+            let sem = semaphore.clone();
+            tokio::spawn(async move {
+                let _permit = sem.acquire().await;
+                let result = fetch_bibtex(&doi).await;
+                let key = result.as_ref().ok().and_then(|bib| {
+                    // Extraer la key del BibTeX generado: primera línea "@tipo{key,"
+                    bib.lines().next().and_then(|line| {
+                        let after_brace = line.find('{').map(|i| &line[i + 1..])?;
+                        let key = after_brace.trim_end_matches(',').trim().to_string();
+                        if key.is_empty() { None } else { Some(key) }
+                    })
+                });
+                BatchDoiResult {
+                    doi,
+                    bibtex: result.as_ref().ok().cloned(),
+                    key,
+                    error: result.err(),
+                }
+            })
+        })
+        .collect();
+
+    let mut results = Vec::with_capacity(handles.len());
+    for handle in handles {
+        match handle.await {
+            Ok(r) => results.push(r),
+            Err(e) => results.push(BatchDoiResult {
+                doi: "?".to_string(),
+                bibtex: None,
+                key: None,
+                error: Some(format!("Error interno: {e}")),
+            }),
+        }
+    }
+    Ok(results)
 }
 
 #[cfg(test)]

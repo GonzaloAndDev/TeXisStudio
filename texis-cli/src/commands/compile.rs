@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::path::Path;
 use texis_core::{
     compiler::{latexmk::LatexmkBackend, CompilationBackend, CompilationOptions},
-    project::loader::ProjectLoader,
+    project::{loader::ProjectLoader, model::LatexEngine},
     LaTeXGenerator,
 };
 
@@ -12,6 +12,12 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
     let model = loader.load_from_file(&project_file)?;
 
     let build_dir = project_dir.join("build");
+
+    let engine_str = match model.latex_config.engine {
+        LatexEngine::Pdflatex => "pdflatex",
+        LatexEngine::Lualatex => "lualatex",
+        LatexEngine::Xelatex  => "xelatex",
+    };
 
     // Generar archivos LaTeX
     // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
@@ -24,6 +30,7 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
         draft,
         clean_temp: false,
         max_runs: None,
+        latex_engine: Some(engine_str.to_string()),
     };
 
     let result = match backend_name {

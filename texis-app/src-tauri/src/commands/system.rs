@@ -381,6 +381,22 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "guidance": s.guidance,
     })).collect();
 
+    let status_str = match p.status {
+        texis_core::profile::ProfileStatus::Experimental => "experimental",
+        texis_core::profile::ProfileStatus::Draft        => "draft",
+        texis_core::profile::ProfileStatus::Reviewed     => "reviewed",
+        texis_core::profile::ProfileStatus::Verified     => "verified",
+        texis_core::profile::ProfileStatus::Stale        => "stale",
+        texis_core::profile::ProfileStatus::Deprecated   => "deprecated",
+    };
+
+    let verification = p.verification.as_ref().map(|v| serde_json::json!({
+        "verified_at": v.verified_at,
+        "verified_by": v.verified_by,
+        "source_urls": v.source_urls,
+        "review_interval_days": v.review_interval_days,
+    }));
+
     serde_json::json!({
         "id": p.id,
         "name": p.name,
@@ -395,6 +411,8 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "document_class": p.document_class.name,
         "bibliography_style": p.bibliography_style,
         "latex_engine": p.latex_engine,
+        "status": status_str,
+        "verification": verification,
     })
 }
 

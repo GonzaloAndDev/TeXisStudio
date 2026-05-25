@@ -17,7 +17,7 @@ import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind } from "../types";
+import type { BatchDoiResult, BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -1485,12 +1485,21 @@ function CitationPickerModal({
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // DOI import state
+  // Panel DOI: modo "single" | "batch"
+  const [doiMode, setDoiMode] = useState<"single" | "batch">("single");
+
+  // Single DOI
   const [doiInput, setDoiInput] = useState("");
   const [doiLoading, setDoiLoading] = useState(false);
   const [doiResult, setDoiResult] = useState<string | null>(null);
   const [doiError, setDoiError] = useState<string | null>(null);
   const [doiSaved, setDoiSaved] = useState(false);
+
+  // Batch DOI
+  const [batchInput, setBatchInput] = useState("");
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchDoiResult[]>([]);
+  const [batchSaved, setBatchSaved] = useState<Set<string>>(new Set());
 
   const handleDoiLookup = async () => {
     if (!doiInput.trim()) return;
@@ -1516,6 +1525,44 @@ function CitationPickerModal({
       onBibUpdated();
     } catch (e) {
       setDoiError(String(e));
+    }
+  };
+
+  const handleBatchImport = async () => {
+    const dois = batchInput.split(/[\n,;]+/).map((d) => d.trim()).filter(Boolean);
+    if (!dois.length) return;
+    setBatchLoading(true);
+    setBatchResults([]);
+    setBatchSaved(new Set());
+    try {
+      const results = await api.importDoisBatch(dois);
+      setBatchResults(results);
+    } catch (e) {
+      setBatchResults([{ doi: "—", error: String(e) }]);
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchSaveOne = async (r: BatchDoiResult) => {
+    if (!r.bibtex || !projectPath) return;
+    try {
+      await api.appendBibEntry(projectPath, r.bibtex);
+      setBatchSaved((prev) => new Set([...prev, r.doi]));
+      onBibUpdated();
+    } catch (e) {
+      setBatchResults((prev) =>
+        prev.map((x) => x.doi === r.doi ? { ...x, error: String(e) } : x)
+      );
+    }
+  };
+
+  const handleBatchSaveAll = async () => {
+    if (!projectPath) return;
+    for (const r of batchResults) {
+      if (r.bibtex && !batchSaved.has(r.doi)) {
+        await handleBatchSaveOne(r);
+      }
     }
   };
 
@@ -1595,68 +1642,134 @@ function CitationPickerModal({
           />
         </div>
 
-        {/* Panel importar por DOI */}
-        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-subtle)" }}>
-          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6, fontWeight: 500 }}>
-            Importar referencia por DOI
+        {/* Panel importar por DOI — tabulado: único / múltiples */}
+        <div style={{ borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-subtle)" }}>
+          {/* Pestañas */}
+          <div style={{ display: "flex", borderBottom: "1px solid var(--border-subtle)", padding: "0 16px" }}>
+            {(["single", "batch"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setDoiMode(m)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "8px 12px", fontSize: "var(--fs-xs)", fontWeight: doiMode === m ? 600 : 400,
+                  color: doiMode === m ? "var(--accent)" : "var(--fg-muted)",
+                  borderBottom: doiMode === m ? "2px solid var(--accent)" : "2px solid transparent",
+                  marginBottom: -1,
+                }}
+              >
+                {m === "single" ? "Un DOI" : "Múltiples DOIs"}
+              </button>
+            ))}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input
-              value={doiInput}
-              onChange={(e) => { setDoiInput(e.target.value); setDoiResult(null); setDoiError(null); setDoiSaved(false); }}
-              onKeyDown={(e) => { if (e.key === "Enter") handleDoiLookup(); }}
-              placeholder="10.1000/xyz123 o https://doi.org/…"
-              style={{
-                flex: 1, border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)",
-                padding: "5px 8px", fontSize: "var(--fs-xs)", fontFamily: "var(--font-mono)",
-                background: "var(--bg-chrome)", color: "var(--fg-strong)", outline: "none",
-              }}
-            />
-            <button
-              onClick={handleDoiLookup}
-              disabled={doiLoading || !doiInput.trim()}
-              className="btn btn-sm btn-accent"
-              style={{ fontSize: 11, whiteSpace: "nowrap" }}
-            >
-              {doiLoading ? "Buscando…" : "Buscar DOI"}
-            </button>
-          </div>
-          {doiError && (
-            <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--error)", background: "var(--error-bg)", borderRadius: "var(--r-xs)", padding: "4px 8px" }}>
-              {doiError}
+
+          {doiMode === "single" && (
+            <div style={{ padding: "10px 16px" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  value={doiInput}
+                  onChange={(e) => { setDoiInput(e.target.value); setDoiResult(null); setDoiError(null); setDoiSaved(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleDoiLookup(); }}
+                  placeholder="10.1000/xyz123 o https://doi.org/…"
+                  style={{
+                    flex: 1, border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)",
+                    padding: "5px 8px", fontSize: "var(--fs-xs)", fontFamily: "var(--font-mono)",
+                    background: "var(--bg-chrome)", color: "var(--fg-strong)", outline: "none",
+                  }}
+                />
+                <button
+                  onClick={handleDoiLookup}
+                  disabled={doiLoading || !doiInput.trim()}
+                  className="btn btn-sm btn-accent"
+                  style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                >
+                  {doiLoading ? "Buscando…" : "Buscar"}
+                </button>
+              </div>
+              {doiError && (
+                <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--build-err)", background: "var(--build-err-tint)", borderRadius: "var(--r-xs)", padding: "4px 8px" }}>
+                  {doiError}
+                </div>
+              )}
+              {doiResult && (
+                <div style={{ marginTop: 8 }}>
+                  <textarea
+                    readOnly value={doiResult} rows={4}
+                    style={{
+                      width: "100%", resize: "none", fontFamily: "var(--font-mono)",
+                      fontSize: 10, background: "var(--bg-chrome)", border: "1px solid var(--border-subtle)",
+                      borderRadius: "var(--r-xs)", padding: "6px 8px", color: "var(--fg-default)", boxSizing: "border-box",
+                    }}
+                    onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                  />
+                  <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                    <button onClick={handleDoiSave} disabled={doiSaved || !projectPath} className="btn btn-sm btn-accent" style={{ fontSize: 11 }}>
+                      {doiSaved ? "✓ Agregado" : "Agregar al .bib"}
+                    </button>
+                    <button onClick={() => navigator.clipboard.writeText(doiResult!)} className="btn btn-sm btn-ghost" style={{ fontSize: 11 }}>
+                      Copiar BibTeX
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {doiResult && (
-            <div style={{ marginTop: 8 }}>
+
+          {doiMode === "batch" && (
+            <div style={{ padding: "10px 16px" }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6 }}>
+                Un DOI por línea (también separados por coma o punto y coma):
+              </div>
               <textarea
-                readOnly
-                value={doiResult}
-                rows={5}
+                value={batchInput}
+                onChange={(e) => setBatchInput(e.target.value)}
+                rows={3}
+                placeholder={"10.1038/nature12373\n10.1126/science.1260419\nhttps://doi.org/10.1145/3442188.3445922"}
                 style={{
-                  width: "100%", resize: "none", fontFamily: "var(--font-mono)",
+                  width: "100%", resize: "vertical", fontFamily: "var(--font-mono)",
                   fontSize: 10, background: "var(--bg-chrome)", border: "1px solid var(--border-subtle)",
                   borderRadius: "var(--r-xs)", padding: "6px 8px", color: "var(--fg-default)",
                   boxSizing: "border-box",
                 }}
-                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               />
-              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+              <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                 <button
-                  onClick={handleDoiSave}
-                  disabled={doiSaved || !projectPath}
+                  onClick={handleBatchImport}
+                  disabled={batchLoading || !batchInput.trim()}
                   className="btn btn-sm btn-accent"
                   style={{ fontSize: 11 }}
                 >
-                  {doiSaved ? "✓ Agregado al .bib" : "Agregar al .bib"}
+                  {batchLoading ? "Importando…" : "Buscar todos"}
                 </button>
-                <button
-                  onClick={() => navigator.clipboard.writeText(doiResult)}
-                  className="btn btn-sm btn-ghost"
-                  style={{ fontSize: 11 }}
-                >
-                  Copiar BibTeX
-                </button>
+                {batchResults.some((r) => r.bibtex && !batchSaved.has(r.doi)) && (
+                  <button onClick={handleBatchSaveAll} className="btn btn-sm btn-ghost" style={{ fontSize: 11 }} disabled={!projectPath}>
+                    Agregar todos al .bib
+                  </button>
+                )}
               </div>
+              {batchResults.length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {batchResults.map((r) => (
+                    <div key={r.doi} style={{
+                      padding: "6px 8px", borderRadius: "var(--r-xs)",
+                      background: r.error ? "var(--build-err-tint)" : batchSaved.has(r.doi) ? "var(--build-ok-tint)" : "var(--bg-chrome)",
+                      border: `1px solid ${r.error ? "var(--build-err)" : batchSaved.has(r.doi) ? "var(--build-ok)" : "var(--border-subtle)"}`,
+                      fontSize: "var(--fs-xs)", display: "flex", alignItems: "center", gap: 8,
+                    }}>
+                      <span style={{ fontFamily: "var(--font-mono)", flex: 1, color: "var(--fg-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.key ?? r.doi}
+                      </span>
+                      {r.error && <span style={{ color: "var(--build-err)", flexShrink: 0 }}>{r.error}</span>}
+                      {r.bibtex && !r.error && !batchSaved.has(r.doi) && (
+                        <button onClick={() => handleBatchSaveOne(r)} className="btn btn-xs btn-accent" disabled={!projectPath} style={{ flexShrink: 0 }}>
+                          Agregar
+                        </button>
+                      )}
+                      {batchSaved.has(r.doi) && <span style={{ color: "var(--build-ok)", flexShrink: 0 }}>✓</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1708,6 +1821,14 @@ function CitationPickerModal({
                   {ref.author && <span>{ref.author.split(" and ")[0]}{ref.author.includes(" and ") ? " et al." : ""}</span>}
                   {ref.year && <span style={{ fontFamily: "var(--font-mono)" }}>{ref.year}</span>}
                   {ref.journal && <span style={{ fontStyle: "italic" }}>{ref.journal}</span>}
+                  {ref.doi && (
+                    <span
+                      title={ref.doi}
+                      style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {ref.doi}
+                    </span>
+                  )}
                 </div>
               </div>
 

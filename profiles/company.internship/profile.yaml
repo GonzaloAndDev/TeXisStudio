@@ -1,10 +1,17 @@
-schema_version: "0.1.0"
+schema_version: "1.0.0"
 id: "company.internship"
 name: "Reporte de prácticas / Residencia"
 description: "Formato para reportes de residencia profesional y estadías empresariales. Incluye descripción de empresa, actividades y resultados. Bibliografía APA 7."
 author: "Gonzalo Andrade Estrella"
-version: "0.2.0"
+version: "1.0.0"
 license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-24"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
+  review_interval_days: 730
 tags:
   - practicas
   - residencia

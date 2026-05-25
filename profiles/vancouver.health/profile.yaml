@@ -1,10 +1,18 @@
-schema_version: "0.1.0"
+schema_version: "1.0.0"
 id: "vancouver.health"
 name: "Ciencias de la salud (IMRyD)"
 description: "Estructura IMRyD para investigación clínica y biomédica. Bibliografía estilo Vancouver. Ideal para tesis de medicina, enfermería y ciencias de la salud."
 author: "Gonzalo Andrade Estrella"
-version: "0.2.0"
+version: "1.0.0"
 license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-24"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://www.icmje.org/recommendations/"
+    - "https://www.icmje.org/recommendations/browse/manuscript-preparation/"
+  review_interval_days: 365
 tags:
   - salud
   - medicina

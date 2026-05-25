@@ -1,9 +1,20 @@
 // ÚNICO módulo en texis-core que importa serde_yaml para perfiles.
 
-use super::model::Profile;
+use super::model::{Profile, ProfileStatus};
 use crate::error::{CoreError, CoreResult};
 use crate::schema::versions;
 use std::path::Path;
+
+/// Aliases built-in que se aplican a TODOS los perfiles.
+/// Permiten que los repositorios externos usen nombres alternativos de element_id
+/// sin romper el generador ni los validadores del core.
+const BUILTIN_ALIASES: &[(&str, &str)] = &[
+    ("cover", "title_page"),
+    ("toc", "table_of_contents"),
+    ("bibliography", "references"),
+    ("appendix", "appendices"),
+    ("abstract", "abstract_en"),
+];
 
 pub struct ProfileLoader;
 
@@ -14,18 +25,44 @@ impl ProfileLoader {
     }
 
     pub fn load_from_str(&self, content: &str, source: &str) -> CoreResult<Profile> {
-        let profile: Profile = serde_yaml::from_str(content).map_err(|e| {
+        let mut profile: Profile = serde_yaml::from_str(content).map_err(|e| {
             CoreError::YamlParse {
                 path: source.to_string(),
                 message: e.to_string(),
             }
         })?;
 
-        if !versions::is_supported(&profile.schema_version) {
+        // Validar y migrar schema_version.
+        // Perfiles sin schema_version (externos/legacy) quedan como Experimental.
+        if profile.schema_version.is_empty() {
+            if profile.status == ProfileStatus::Experimental {
+                // Mantener Experimental — sin fuente oficial trazada.
+            }
+        } else if !versions::is_acceptable(&profile.schema_version) {
             return Err(CoreError::UnsupportedSchemaVersion {
                 version: profile.schema_version.clone(),
                 current: versions::CURRENT_SCHEMA_VERSION.to_string(),
             });
+        } else if versions::is_migratable(&profile.schema_version) {
+            profile.schema_version = versions::CURRENT_SCHEMA_VERSION.to_string();
+        }
+
+        // Compilar tabla de aliases: built-in + los del perfil.
+        let mut aliases: std::collections::HashMap<String, String> = BUILTIN_ALIASES
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        if let Some(profile_aliases) = &profile.element_aliases {
+            for (k, v) in profile_aliases {
+                aliases.insert(k.clone(), v.clone());
+            }
+        }
+
+        // Resolver element_id de cada sección usando la tabla de aliases.
+        for section in &mut profile.sections {
+            if let Some(canonical) = aliases.get(&section.element_id) {
+                section.element_id = canonical.clone();
+            }
         }
 
         Ok(profile)

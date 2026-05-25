@@ -3,10 +3,13 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  BatchDoiResult,
   BibReference,
   CloudFolder,
   CompilationResult,
+  ExportDeliveryResult,
   LatexInfo,
+  PdfPostflightResult,
   ProfileInfo,
   ProfileUpdatePayload,
   ProjectModel,
@@ -147,7 +150,10 @@ export const api = {
   importDoi: (doi: string): Promise<string> =>
     call("import_doi", { doi }),
 
-  appendBibEntry: (projectPath: string, bibtex: string): Promise<void> =>
+  importDoisBatch: (dois: string[]): Promise<BatchDoiResult[]> =>
+    call("import_dois_batch", { dois }),
+
+  appendBibEntry: (projectPath: string, bibtex: string): Promise<string> =>
     call("append_bib_entry", { projectPath, bibtex }),
 
   // ── Snapshots ────────────────────────────────────────────────────
@@ -166,8 +172,11 @@ export const api = {
   updateSectionMeta: (projectPath: string, sectionId: string, status: string, notes?: string): Promise<void> =>
     call("update_section_meta", { projectPath, sectionId, status, notes }),
 
-  exportDelivery: (projectPath: string, outputPath: string): Promise<string> =>
-    call("export_delivery", { projectPath, outputPath }),
+  exportDelivery: (projectPath: string, outputPath: string, exportMode?: string): Promise<ExportDeliveryResult> =>
+    call("export_delivery", { projectPath, outputPath, exportMode }),
+
+  checkPdfPostflight: (projectPath: string): Promise<PdfPostflightResult> =>
+    call("check_pdf_postflight", { projectPath }),
 
   updateTypography: (
     projectPath: string,

@@ -21,6 +21,7 @@ pub fn run() {
             commands::project::update_section_meta,
             commands::project::update_typography,
             commands::project::export_delivery,
+            commands::project::check_pdf_postflight,
             commands::compiler::compile_project,
             commands::compiler::cancel_compile,
             commands::system::create_profile,
@@ -34,6 +35,7 @@ pub fn run() {
             commands::system::get_cloud_folders,
             commands::remote::fetch_remote_profile,
             commands::doi::import_doi,
+            commands::doi::import_dois_batch,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar TeXisStudio");

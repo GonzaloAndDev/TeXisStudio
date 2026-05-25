@@ -7,6 +7,7 @@ import {
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { CloudFolder, ProfileInfo } from "../types";
+import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
 import { documentDir } from "@tauri-apps/api/path";
 
@@ -353,13 +354,16 @@ function StepPerfil({
                 <IconBook size={15} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{p.name}</span>
-                  {selected === p.id && (
-                    <span className="chip chip-accent" style={{ fontSize: 10 }}>
-                      <IconCheck size={8} sw={2.5} /> seleccionado
-                    </span>
-                  )}
+                  <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                    <ProfileStatusBadge status={p.status} />
+                    {selected === p.id && (
+                      <span className="chip chip-accent" style={{ fontSize: 10 }}>
+                        <IconCheck size={8} sw={2.5} /> seleccionado
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {p.description && (
                   <p style={{ margin: "3px 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.4 }}>{p.description}</p>

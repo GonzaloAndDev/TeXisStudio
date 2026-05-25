@@ -2,6 +2,7 @@ use serde_json::Value;
 use std::path::PathBuf;
 use tauri::Manager;
 use texis_core::{
+    postflight::PdfChecker,
     profile::{model::Profile, ProfileRegistry},
     project::{loader::ProjectLoader, model::ProjectModel, saver::ProjectSaver},
     validator::Validator,
@@ -224,6 +225,11 @@ pub fn list_references(project_path: String) -> Result<Value, String> {
             "author":     e.author(),
             "year":       e.year(),
             "journal":    e.fields.get("journal").or_else(|| e.fields.get("booktitle")).map(|s| s.as_str()).unwrap_or(""),
+            "doi":        e.fields.get("doi").map(|s| s.as_str()).unwrap_or(""),
+            "pages":      e.fields.get("pages").map(|s| s.as_str()).unwrap_or(""),
+            "volume":     e.fields.get("volume").map(|s| s.as_str()).unwrap_or(""),
+            "publisher":  e.fields.get("publisher").map(|s| s.as_str()).unwrap_or(""),
+            "url":        e.fields.get("url").map(|s| s.as_str()).unwrap_or(""),
         })
     }).collect();
 
@@ -232,9 +238,10 @@ pub fn list_references(project_path: String) -> Result<Value, String> {
 
 /// Añade una entrada BibTeX al archivo references.bib del proyecto.
 /// Crea el archivo (y directorios intermedios) si no existe.
-/// Rechaza entradas que ya contengan la misma citation key (comparación exacta via BibParser).
+/// Rechaza entradas duplicadas por citation key O por campo DOI.
+/// Retorna la citation key de la entrada creada.
 #[tauri::command]
-pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<(), String> {
+pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<String, String> {
     use std::io::Write;
     use texis_core::bibliography::parser::BibParser;
 
@@ -249,30 +256,40 @@ pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<(), Stri
     std::fs::create_dir_all(&bib_dir).map_err(err)?;
     let bib_path = bib_dir.join("references.bib");
 
-    // Extraer la citation key usando el parser real
     let parser = BibParser;
     let new_entries = parser.parse_str(&bibtex);
     if new_entries.len() != 1 {
-        return Err(
-            "La entrada BibTeX debe contener exactamente una referencia.".to_string(),
-        );
+        return Err("La entrada BibTeX debe contener exactamente una referencia.".to_string());
     }
 
-    let new_key = new_entries[0].key.clone();
+    let new_entry = &new_entries[0];
+    let new_key = new_entry.key.clone();
+    let new_doi = new_entry.fields.get("doi").map(|s| s.to_lowercase());
 
     if new_key.is_empty() {
         return Err("La citation key está vacía. Verifica el formato BibTeX.".to_string());
     }
 
-    // Detectar duplicados parseando el .bib existente
+    // Detectar duplicados: por clave Y por DOI
     if bib_path.exists() {
         let existing_content = std::fs::read_to_string(&bib_path).map_err(err)?;
         let existing_entries = parser.parse_str(&existing_content);
+
         if existing_entries.iter().any(|e| e.key == new_key) {
-            return Err(format!(
-                "La clave '{}' ya existe en references.bib.",
-                new_key
-            ));
+            return Err(format!("La clave '{new_key}' ya existe en references.bib."));
+        }
+
+        if let Some(ref doi) = new_doi {
+            if !doi.is_empty() {
+                if let Some(dup) = existing_entries.iter().find(|e| {
+                    e.fields.get("doi").map(|d| d.to_lowercase()).as_deref() == Some(doi)
+                }) {
+                    return Err(format!(
+                        "El DOI '{doi}' ya está registrado como '{}'.",
+                        dup.key
+                    ));
+                }
+            }
         }
     }
 
@@ -282,13 +299,12 @@ pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<(), Stri
         .open(&bib_path)
         .map_err(err)?;
 
-    // Separador: línea en blanco antes si el archivo no está vacío
     if bib_path.metadata().map(|m| m.len()).unwrap_or(0) > 0 {
         writeln!(file).map_err(err)?;
     }
     writeln!(file, "{}", bibtex).map_err(err)?;
 
-    Ok(())
+    Ok(new_key)
 }
 
 // ── Snapshots ─────────────────────────────────────────────────────
@@ -414,18 +430,39 @@ pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Resul
     Ok(())
 }
 
-/// Genera un paquete ZIP de entrega final con el PDF, las fuentes LaTeX,
-/// el contenido (bib, figuras) y un informe de validación en texto.
-/// Devuelve la ruta al archivo ZIP creado.
+/// Ejecuta el postflight sobre el PDF compilado del proyecto.
+/// Devuelve el resultado como JSON para mostrarlo en la UI.
 #[tauri::command]
-pub fn export_delivery(project_path: String, output_path: String) -> Result<String, String> {
+pub fn check_pdf_postflight(project_path: String) -> Result<Value, String> {
+    let pdf_path = PathBuf::from(&project_path).join("build").join("main.pdf");
+    let result = PdfChecker::check(&pdf_path);
+    serde_json::to_value(&result).map_err(err)
+}
+
+/// Genera un paquete ZIP de entrega.
+///
+/// `export_mode`:
+///   - "draft"  → permite warnings y errores, el ZIP se marca como borrador
+///   - "review" → permite warnings, bloquea errores de validación críticos
+///   - "final"  → bloquea errores de validación y de postflight PDF
+///
+/// Devuelve la ruta al ZIP creado.
+#[tauri::command]
+pub fn export_delivery(
+    project_path: String,
+    output_path: String,
+    export_mode: Option<String>,
+) -> Result<Value, String> {
+    use sha2::{Digest, Sha256};
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    use zip::ZipWriter;
     use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
 
+    let mode = export_mode.as_deref().unwrap_or("draft");
     let project_dir = PathBuf::from(&project_path);
     let project_yaml = project_dir.join("tesis.project.yaml");
+    let pdf_path = project_dir.join("build").join("main.pdf");
 
     // ── Cargar modelo y validar ───────────────────────────────────
     let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
@@ -433,8 +470,50 @@ pub fn export_delivery(project_path: String, output_path: String) -> Result<Stri
         .validate(&model, &project_dir)
         .map_err(err)?;
 
+    let validation_errors: Vec<_> = validation
+        .issues
+        .iter()
+        .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error))
+        .collect();
+
+    // ── Gate de modo review/final ─────────────────────────────────
+    if mode == "review" || mode == "final" {
+        if !validation_errors.is_empty() {
+            let msgs: Vec<String> = validation_errors.iter().map(|i| i.message.clone()).collect();
+            return Err(format!(
+                "Exportación bloqueada — {} error(es) de validación:\n{}",
+                msgs.len(),
+                msgs.join("\n")
+            ));
+        }
+    }
+
+    // ── Postflight PDF (review y final) ──────────────────────────
+    let postflight = PdfChecker::check(&pdf_path);
+
+    if mode == "final" {
+        let pf_errors: Vec<_> = postflight
+            .issues
+            .iter()
+            .filter(|i| matches!(i.severity, texis_core::postflight::PdfIssueSeverity::Error))
+            .collect();
+        if !pf_errors.is_empty() {
+            let msgs: Vec<String> = pf_errors.iter().map(|i| i.message.clone()).collect();
+            return Err(format!(
+                "Exportación final bloqueada — {} problema(s) en el PDF:\n{}",
+                msgs.len(),
+                msgs.join("\n")
+            ));
+        }
+        if !pdf_path.exists() {
+            return Err(
+                "Exportación final bloqueada — no existe PDF compilado. Compila primero.".to_string(),
+            );
+        }
+    }
+
     // ── Construir el nombre del ZIP ───────────────────────────────
-    let slug = model
+    let slug: String = model
         .metadata
         .title
         .chars()
@@ -443,80 +522,234 @@ pub fn export_delivery(project_path: String, output_path: String) -> Result<Stri
         .collect::<String>()
         .trim_matches('_')
         .to_string();
-    let zip_name = format!("{}_entrega.zip", if slug.is_empty() { "tesis".to_string() } else { slug });
+    let mode_suffix = if mode == "draft" { "_borrador" } else { "" };
+    let zip_name = format!(
+        "{}{}_entrega.zip",
+        if slug.is_empty() { "tesis".to_string() } else { slug },
+        mode_suffix
+    );
     let zip_path = PathBuf::from(&output_path).join(&zip_name);
 
     // ── Crear ZIP ────────────────────────────────────────────────
     let file = File::create(&zip_path).map_err(err)?;
     let writer = BufWriter::new(file);
     let mut zip = ZipWriter::new(writer);
-    let opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let opts =
+        SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
-    // 1. PDF compilado (si existe)
-    let pdf_path = project_dir.join("build").join("main.pdf");
+    // Manifest (se construye al mismo tiempo que se agregan archivos)
+    let mut manifest_entries: Vec<serde_json::Value> = vec![];
+
+    let add_file = |zip: &mut ZipWriter<BufWriter<File>>,
+                    entry_name: &str,
+                    bytes: &[u8],
+                    manifest: &mut Vec<serde_json::Value>|
+     -> Result<(), String> {
+        let hash = format!("{:x}", Sha256::digest(bytes));
+        zip.start_file(entry_name, opts).map_err(err)?;
+        zip.write_all(bytes).map_err(err)?;
+        manifest.push(serde_json::json!({
+            "path": entry_name,
+            "sha256": hash,
+            "bytes": bytes.len(),
+        }));
+        Ok(())
+    };
+
+    // 1. PDF compilado
     if pdf_path.exists() {
-        zip.start_file("tesis.pdf", opts).map_err(err)?;
         let bytes = std::fs::read(&pdf_path).map_err(err)?;
-        zip.write_all(&bytes).map_err(err)?;
+        add_file(&mut zip, "thesis.pdf", &bytes, &mut manifest_entries)?;
     }
 
-    // 2. Fuentes LaTeX desde build/
+    // 2. Fuentes LaTeX (sources/)
     let build_dir = project_dir.join("build");
+    let exclude_build = [
+        "main.pdf", "main.aux", "main.log", "main.bbl", "main.bcf",
+        "main.blg", "main.run.xml", "main.toc", "main.out", "main.fls",
+        "main.fdb_latexmk", "main.synctex.gz",
+    ];
     if build_dir.exists() {
-        add_dir_to_zip(&mut zip, &build_dir, "sources", opts, &["main.pdf", "main.aux", "main.log", "main.bbl", "main.bcf", "main.blg", "main.run.xml", "main.toc", "main.out", "main.fls", "main.fdb_latexmk"])?;
+        for entry in walkdir::WalkDir::new(&build_dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.is_dir() { continue; }
+            let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if exclude_build.contains(&fname) { continue; }
+            if let Ok(rel) = path.strip_prefix(&build_dir) {
+                let entry_name = format!("sources/{}", rel.to_string_lossy().replace('\\', "/"));
+                let bytes = std::fs::read(path).map_err(err)?;
+                add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries)?;
+            }
+        }
     }
 
     // 3. Contenido (bibliografía, figuras)
     let content_dir = project_dir.join("content");
     if content_dir.exists() {
-        add_dir_to_zip(&mut zip, &content_dir, "content", opts, &[])?;
-    }
-
-    // 4. Informe de validación
-    {
-        zip.start_file("informe_validacion.txt", opts).map_err(err)?;
-        let mut report = format!(
-            "INFORME DE VALIDACIÓN — TeXisStudio\n{}\n\nProyecto: {}\nTotal de issues: {}\n\n",
-            "=".repeat(60),
-            model.metadata.title,
-            validation.issues.len()
-        );
-        if validation.issues.is_empty() {
-            report.push_str("✓ Sin problemas encontrados.\n");
-        } else {
-            for issue in &validation.issues {
-                let prefix = match issue.severity {
-                    texis_core::validator::IssueSeverity::Error      => "[ERROR]  ",
-                    texis_core::validator::IssueSeverity::Warning     => "[AVISO]  ",
-                    texis_core::validator::IssueSeverity::Suggestion  => "[SUGER.] ",
-                };
-                report.push_str(&format!("{}{}\n", prefix, issue.message));
-                if let Some(sug) = &issue.suggestion {
-                    report.push_str(&format!("         → {}\n", sug));
-                }
+        for entry in walkdir::WalkDir::new(&content_dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.is_dir() { continue; }
+            if let Ok(rel) = path.strip_prefix(&content_dir) {
+                let entry_name = format!("content/{}", rel.to_string_lossy().replace('\\', "/"));
+                let bytes = std::fs::read(path).map_err(err)?;
+                add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries)?;
             }
         }
-        zip.write_all(report.as_bytes()).map_err(err)?;
     }
 
-    // 5. README
+    // 4. compliance_report.json
     {
-        zip.start_file("README.txt", opts).map_err(err)?;
-        let readme = format!(
-            "TeXisStudio — Paquete de entrega\n{}\n\nTítulo:   {}\nAutor:    {}\nPerfil:   {}\n\nContenido del ZIP:\n  tesis.pdf            → PDF compilado\n  sources/             → Archivos fuente LaTeX\n  content/             → Bibliografía e imágenes\n  informe_validacion.txt → Reporte de validación\n\nGenerado por TeXisStudio el {}.\n",
-            "=".repeat(60),
+        let pf_issues_json: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
+            "severity": format!("{:?}", i.severity).to_lowercase(),
+            "code": i.code,
+            "message": i.message,
+            "suggestion": i.suggestion,
+        })).collect();
+
+        let validation_issues_json: Vec<_> = validation.issues.iter().map(|i| serde_json::json!({
+            "severity": format!("{:?}", i.severity).to_lowercase(),
+            "code": i.code,
+            "message": i.message,
+            "suggestion": i.suggestion,
+            "section_id": i.section_id,
+        })).collect();
+
+        let report = serde_json::json!({
+            "schema_version": "1.0",
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+            "generator": "TeXisStudio",
+            "export_mode": mode,
+            "project": {
+                "title": model.metadata.title,
+                "author": model.student.full_name,
+                "profile_id": model.profile_id,
+                "year": model.metadata.year,
+            },
+            "preflight": {
+                "passed": validation_errors.is_empty(),
+                "total_issues": validation.issues.len(),
+                "errors": validation_errors.len(),
+                "issues": validation_issues_json,
+            },
+            "postflight_pdf": {
+                "passed": postflight.passed,
+                "pdf_exists": postflight.pdf_exists,
+                "all_fonts_embedded": postflight.all_fonts_embedded,
+                "non_embedded_fonts": postflight.non_embedded_fonts,
+                "metadata": postflight.metadata,
+                "tools_available": postflight.tools_available,
+                "tools_missing": postflight.tools_missing,
+                "issues": pf_issues_json,
+            },
+            "disclaimer": "Este reporte cubre las validaciones automáticas disponibles. Algunos requisitos institucionales requieren confirmación manual con el programa, departamento o escuela de posgrado."
+        });
+
+        let report_bytes = serde_json::to_string_pretty(&report).map_err(err)?.into_bytes();
+        add_file(&mut zip, "compliance_report.json", &report_bytes, &mut manifest_entries)?;
+    }
+
+    // 5. submission_checklist.md
+    {
+        let checklist = format!(
+            "# Lista de verificación de entrega\n\n\
+             Generado por TeXisStudio el {}\n\n\
+             ## Proyecto\n\
+             - **Título:** {}\n\
+             - **Autor:** {}\n\
+             - **Perfil institucional:** {}\n\n\
+             ## Verificaciones automáticas\n\
+             - [{}] Validación de estructura: {}\n\
+             - [{}] Postflight PDF: {}\n\
+             - [{}] Fuentes incrustadas: {}\n\n\
+             ## Verificaciones manuales requeridas\n\
+             - [ ] Confirmar requisitos específicos del programa o departamento\n\
+             - [ ] Confirmar nombre exacto del grado y título según el programa\n\
+             - [ ] Confirmar nombre del director/comité según formato institucional\n\
+             - [ ] Confirmar copyright, licencia y restricciones de embargo\n\
+             - [ ] Confirmar material de terceros con permisos documentados\n\
+             - [ ] Confirmar sistema de entrega institucional (portal, email, físico)\n\
+             - [ ] Confirmar plazo de entrega y procedimiento de registro\n\n\
+             ---\n\
+             _Este paquete fue generado por TeXisStudio. Las validaciones automáticas\n\
+             no reemplazan la revisión del programa, departamento o escuela de posgrado._\n",
+            chrono::Utc::now().format("%Y-%m-%d"),
             model.metadata.title,
             model.student.full_name,
             model.profile_id,
-            chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
+            if validation_errors.is_empty() { "x" } else { " " },
+            if validation_errors.is_empty() { "✓ sin errores" } else { &format!("✗ {} error(es)", validation_errors.len()) },
+            if postflight.passed { "x" } else { " " },
+            if postflight.passed { "✓ pasó" } else { "✗ falló" },
+            if postflight.all_fonts_embedded { "x" } else { " " },
+            if postflight.all_fonts_embedded { "✓" } else { &format!("✗ {}", postflight.non_embedded_fonts.join(", ")) },
         );
-        zip.write_all(readme.as_bytes()).map_err(err)?;
+        add_file(&mut zip, "submission_checklist.md", checklist.as_bytes(), &mut manifest_entries)?;
+    }
+
+    // 6. manifest.sha256.json
+    {
+        let manifest = serde_json::json!({
+            "schema_version": "1.0",
+            "created_at": chrono::Utc::now().to_rfc3339(),
+            "generator": "TeXisStudio",
+            "export_mode": mode,
+            "files": manifest_entries,
+        });
+        let manifest_bytes = serde_json::to_string_pretty(&manifest).map_err(err)?.into_bytes();
+        zip.start_file("manifest.sha256.json", opts).map_err(err)?;
+        zip.write_all(&manifest_bytes).map_err(err)?;
+    }
+
+    // 7. README.txt
+    {
+        let warnings_count = validation.issues.iter()
+            .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning))
+            .count();
+        let readme = format!(
+            "TeXisStudio — Paquete de entrega\n{sep}\n\n\
+             Título:     {title}\n\
+             Autor:      {author}\n\
+             Perfil:     {profile}\n\
+             Modo:       {mode_str}\n\
+             Generado:   {date}\n\n\
+             Estado:\n\
+               Validación preflight: {pf_state} ({errs} errores, {warns} avisos)\n\
+               Postflight PDF:       {post_state}\n\
+               Fuentes incrustadas:  {fonts_state}\n\n\
+             Contenido del ZIP:\n\
+               thesis.pdf              → PDF compilado\n\
+               sources/                → Archivos fuente LaTeX\n\
+               content/                → Bibliografía e imágenes\n\
+               compliance_report.json  → Reporte de cumplimiento (machine-readable)\n\
+               submission_checklist.md → Lista de verificación de entrega\n\
+               manifest.sha256.json    → Hashes SHA-256 de todos los archivos\n\n\
+             AVISO: Este paquete incluye validaciones automáticas. Algunos requisitos\n\
+             institucionales requieren confirmación manual con tu programa o escuela.\n",
+            sep = "=".repeat(60),
+            title = model.metadata.title,
+            author = model.student.full_name,
+            profile = model.profile_id,
+            mode_str = mode.to_uppercase(),
+            date = chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
+            pf_state = if validation_errors.is_empty() { "OK" } else { "ERRORES" },
+            errs = validation_errors.len(),
+            warns = warnings_count,
+            post_state = if postflight.passed { "OK" } else { "PROBLEMAS" },
+            fonts_state = if postflight.all_fonts_embedded { "OK" } else { "NO INCRUSTADAS" },
+        );
+        add_file(&mut zip, "README.txt", readme.as_bytes(), &mut manifest_entries)?;
     }
 
     zip.finish().map_err(err)?;
 
-    Ok(zip_path.to_string_lossy().to_string())
+    let zip_path_str = zip_path.to_string_lossy().to_string();
+    Ok(serde_json::json!({
+        "zip_path": zip_path_str,
+        "export_mode": mode,
+        "validation_errors": validation_errors.len(),
+        "postflight_passed": postflight.passed,
+        "all_fonts_embedded": postflight.all_fonts_embedded,
+    }))
 }
 
 /// Agrega recursivamente un directorio al ZIP, excluyendo archivos por nombre.

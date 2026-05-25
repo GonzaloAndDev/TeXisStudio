@@ -7,6 +7,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      INSTA_UPDATE: new
     steps:
       - uses: actions/checkout@v4
 
@@ -26,14 +28,25 @@ jobs:
       - name: Unit tests (lib)
         run: cargo test --workspace --lib
 
-      - name: Integration tests
+      - name: Integration tests (snapshots + broken)
         run: cargo test --workspace --test snapshots --test broken
+
+      - name: Checkout TeXisStudio-Profiles (para tests de perfiles)
+        uses: actions/checkout@v4
+        with:
+          repository: GonzaloAndDev/TeXisStudio-Profiles
+          path: texis-profiles
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Integration tests (perfiles institucionales)
+        run: cargo test --workspace --test profiles
         env:
-          INSTA_UPDATE: new
+          TEXIS_PROFILES_PATH: ${{ github.workspace }}/texis-profiles
+          TEXIS_INTERNAL_PROFILES_PATH: ${{ github.workspace }}/profiles
 
       - name: Accept new snapshots (CI only)
         run: cargo insta review --accept
-        if: ${{ env.INSTA_UPDATE == 'new' }}
+        if: env.INSTA_UPDATE == 'new'
         continue-on-error: true
 
       - name: Format check

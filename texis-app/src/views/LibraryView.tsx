@@ -9,6 +9,7 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../types";
+import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
 // ── Catálogo de elementos ──────────────────────────────────────────────────────
 
@@ -252,9 +253,12 @@ function ProfileCard({ profile, selected, onClick }: {
             </div>
           </div>
         </div>
-        <span className={`chip ${selected ? "chip-accent" : "chip-ok"}`} style={{ flexShrink: 0, fontSize: 10 }}>
-          {selected ? <><IconCheck size={8} sw={2.5} /> seleccionado</> : "instalado"}
-        </span>
+        <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
+          <ProfileStatusBadge status={profile.status} />
+          <span className={`chip ${selected ? "chip-accent" : "chip-ok"}`} style={{ fontSize: 10 }}>
+            {selected ? <><IconCheck size={8} sw={2.5} /> seleccionado</> : "instalado"}
+          </span>
+        </div>
       </div>
       {profile.description && (
         <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
@@ -298,9 +302,23 @@ function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, onDelet
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: 16 }} className="scroll">
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500, color: "var(--fg-strong)" }}>{profile.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500, color: "var(--fg-strong)", flex: 1 }}>{profile.name}</div>
+            <ProfileStatusBadge status={profile.status} />
+          </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", marginBottom: 6 }}>{profile.id} · v{profile.version ?? "0.1.0"}</div>
           {profile.description && <p style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6, margin: 0 }}>{profile.description}</p>}
+          {profile.verification?.source_urls && profile.verification.source_urls.length > 0 && (
+            <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+              Fuente:{" "}
+              {profile.verification.source_urls.map((url, i) => (
+                <span key={i} style={{ fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{url}</span>
+              ))}
+              {profile.verification.verified_at && (
+                <span> · verificado {profile.verification.verified_at}</span>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
           {[["Motor LaTeX", profile.latex_engine ?? "xelatex"], ["Bibliografía", profile.bibliography_style?.toUpperCase() ?? "APA"], ["Clase", profile.document_class ?? "book"], ["Autor", profile.author ?? "—"], ["Licencia", profile.license ?? "—"]].map(([k, v]) => (

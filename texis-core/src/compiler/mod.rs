@@ -27,6 +27,9 @@ pub struct CompilationOptions {
     pub draft: bool,
     pub clean_temp: bool,
     pub max_runs: Option<u8>,
+    /// Motor LaTeX a usar. None usa el default del backend ("xelatex" para latexmk).
+    /// Valores válidos: "xelatex", "pdflatex", "lualatex".
+    pub latex_engine: Option<String>,
 }
 
 pub trait CompilationBackend: Send + Sync {

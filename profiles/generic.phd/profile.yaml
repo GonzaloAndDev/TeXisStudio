@@ -1,10 +1,18 @@
-schema_version: "0.1.0"
+schema_version: "1.0.0"
 id: "generic.phd"
 name: "Tesis de posgrado"
 description: "Perfil para maestría y doctorado: revisión de literatura, estado del arte, planteamiento, experimentación, glosario y acrónimos. XeLaTeX, biber, APA 7."
 author: "Gonzalo Andrade Estrella"
-version: "0.2.0"
+version: "1.0.0"
 license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-24"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
+    - "https://apastyle.apa.org/style-grammar-guidelines/student-and-professional/"
+  review_interval_days: 730
 tags:
   - tesis
   - maestria

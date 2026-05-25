@@ -303,6 +303,21 @@ export interface ProfileSectionInfo {
   guidance?: string;
 }
 
+export type ProfileStatus =
+  | "experimental"
+  | "draft"
+  | "reviewed"
+  | "verified"
+  | "stale"
+  | "deprecated";
+
+export interface ProfileVerification {
+  verified_at?: string;
+  verified_by?: string;
+  source_urls: string[];
+  review_interval_days?: number;
+}
+
 export interface ProfileInfo {
   id: string;
   name: string;
@@ -317,6 +332,8 @@ export interface ProfileInfo {
   document_class?: string;
   bibliography_style?: string;
   latex_engine?: string;
+  status: ProfileStatus;
+  verification?: ProfileVerification;
 }
 
 // ── System ──────────────────────────────────────────────────────
@@ -353,6 +370,18 @@ export interface BibReference {
   author: string;
   year: string;
   journal: string;
+  doi?: string;
+  pages?: string;
+  volume?: string;
+  publisher?: string;
+  url?: string;
+}
+
+export interface BatchDoiResult {
+  doi: string;
+  bibtex?: string;
+  key?: string;
+  error?: string;
 }
 
 // ── Profile update payload (for update_profile command) ─────────
@@ -429,6 +458,69 @@ export interface LangCatalog {
   schema_version: string;
   updated_at: string;
   packages: LangPackEntry[];
+}
+
+// ── PDF Postflight ───────────────────────────────────────────────
+
+export type PdfIssueSeverity = "error" | "warning" | "info";
+
+export interface PdfIssue {
+  severity: PdfIssueSeverity;
+  code: string;
+  message: string;
+  suggestion?: string;
+}
+
+export interface PdfMetadata {
+  title?: string;
+  author?: string;
+  creator?: string;
+  producer?: string;
+  creation_date?: string;
+  pages?: number;
+  pdf_version?: string;
+  file_size_bytes?: number;
+  page_size?: string;
+  is_encrypted: boolean;
+  is_linearized: boolean;
+  has_javascript: boolean;
+}
+
+export interface FontCheck {
+  name: string;
+  font_type: string;
+  embedded: boolean;
+  subset: boolean;
+}
+
+export interface PdfaCheck {
+  compliant: boolean;
+  flavour: string | null;
+  summary: string;
+  verapdf_version: string | null;
+}
+
+export interface PdfPostflightResult {
+  pdf_exists: boolean;
+  metadata: PdfMetadata;
+  fonts: FontCheck[];
+  all_fonts_embedded: boolean;
+  non_embedded_fonts: string[];
+  issues: PdfIssue[];
+  passed: boolean;
+  tools_available: string[];
+  tools_missing: string[];
+  pdfa: PdfaCheck | null;
+}
+
+export type ExportMode = "draft" | "review" | "final";
+
+export interface ExportDeliveryResult {
+  zip_path: string;
+  export_mode: string;
+  validation_errors: number;
+  postflight_passed: boolean;
+  all_fonts_embedded: boolean;
 }
 
 // ── Recent project entry (from list_recent_projects) ────────────
