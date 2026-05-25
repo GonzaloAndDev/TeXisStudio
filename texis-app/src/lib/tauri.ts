@@ -15,6 +15,9 @@ import type {
   ProjectModel,
   RecentProject,
   ValidationReport,
+  ZoteroImportResult,
+  ZoteroItem,
+  ZoteroStatus,
 } from "../types";
 
 // re-export convenience
@@ -192,6 +195,16 @@ export const api = {
 
   getCloudFolders: (): Promise<CloudFolder[]> =>
     call("get_cloud_folders"),
+
+  // ── Zotero ─────────────────────────────────────────────────────
+  checkZoteroStatus: (): Promise<ZoteroStatus> =>
+    call("check_zotero_status"),
+
+  searchZotero: (query: string): Promise<ZoteroItem[]> =>
+    call("search_zotero", { query }),
+
+  importZoteroItems: (keys: string[]): Promise<ZoteroImportResult[]> =>
+    call("import_zotero_items", { keys }),
 
   /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */
   pickFolder: async (): Promise<string | null> => {

@@ -532,3 +532,27 @@ export interface RecentProject {
   academic_level: string;
   updated_at: string;
 }
+
+// ── Zotero / Better BibTeX integration ──────────────────────────
+
+export interface ZoteroStatus {
+  available: boolean;
+  version: string | null;
+  message: string | null;
+}
+
+export interface ZoteroItem {
+  key: string;
+  title: string;
+  author: string;
+  year: string;
+  item_type: string;
+  cite_key: string | null;
+}
+
+export interface ZoteroImportResult {
+  key: string;
+  bibtex: string | null;
+  cite_key: string | null;
+  error: string | null;
+}

@@ -17,7 +17,7 @@ import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BatchDoiResult, BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind } from "../types";
+import type { BatchDoiResult, BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind, ZoteroImportResult, ZoteroItem, ZoteroStatus } from "../types";
 
 // ── Utilidades ────────────────────────────────────────────────────
 
@@ -1485,8 +1485,8 @@ function CitationPickerModal({
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // Panel DOI: modo "single" | "batch"
-  const [doiMode, setDoiMode] = useState<"single" | "batch">("single");
+  // Panel importación: modo "single" | "batch" | "zotero"
+  const [doiMode, setDoiMode] = useState<"single" | "batch" | "zotero">("single");
 
   // Single DOI
   const [doiInput, setDoiInput] = useState("");
@@ -1500,6 +1500,72 @@ function CitationPickerModal({
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchResults, setBatchResults] = useState<BatchDoiResult[]>([]);
   const [batchSaved, setBatchSaved] = useState<Set<string>>(new Set());
+
+  // Zotero
+  const [zoteroStatus, setZoteroStatus] = useState<ZoteroStatus | null>(null);
+  const [zoteroChecked, setZoteroChecked] = useState(false);
+  const [zoteroQuery, setZoteroQuery] = useState("");
+  const [zoteroItems, setZoteroItems] = useState<ZoteroItem[]>([]);
+  const [zoteroLoading, setZoteroLoading] = useState(false);
+  const [zoteroSelected, setZoteroSelected] = useState<Set<string>>(new Set());
+  const [zoteroImporting, setZoteroImporting] = useState(false);
+  const [zoteroSaved, setZoteroSaved] = useState<Set<string>>(new Set());
+  const [zoteroImportResults, setZoteroImportResults] = useState<ZoteroImportResult[]>([]);
+
+  const checkZotero = async () => {
+    setZoteroChecked(false);
+    const status = await api.checkZoteroStatus().catch(() => ({ available: false, version: null, message: "Error al conectar." }));
+    setZoteroStatus(status);
+    setZoteroChecked(true);
+    if (status.available) {
+      handleZoteroSearch("");
+    }
+  };
+
+  const handleZoteroSearch = async (q: string) => {
+    setZoteroLoading(true);
+    try {
+      const items = await api.searchZotero(q);
+      setZoteroItems(items);
+    } catch {
+      setZoteroItems([]);
+    } finally {
+      setZoteroLoading(false);
+    }
+  };
+
+  const toggleZoteroSelect = (key: string) => {
+    setZoteroSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const handleZoteroImport = async () => {
+    if (!projectPath || zoteroSelected.size === 0) return;
+    setZoteroImporting(true);
+    try {
+      const results = await api.importZoteroItems([...zoteroSelected]);
+      setZoteroImportResults(results);
+      const newSaved = new Set(zoteroSaved);
+      for (const r of results) {
+        if (r.bibtex && !r.error) {
+          try {
+            await api.appendBibEntry(projectPath, r.bibtex);
+            newSaved.add(r.key);
+          } catch { /* duplicado u otro error — no fatal */ }
+        }
+      }
+      setZoteroSaved(newSaved);
+      if (newSaved.size > 0) {
+        onBibUpdated();
+        setZoteroSelected(new Set());
+      }
+    } finally {
+      setZoteroImporting(false);
+    }
+  };
 
   const handleDoiLookup = async () => {
     if (!doiInput.trim()) return;
@@ -1646,10 +1712,13 @@ function CitationPickerModal({
         <div style={{ borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-subtle)" }}>
           {/* Pestañas */}
           <div style={{ display: "flex", borderBottom: "1px solid var(--border-subtle)", padding: "0 16px" }}>
-            {(["single", "batch"] as const).map((m) => (
+            {(["single", "batch", "zotero"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => setDoiMode(m)}
+                onClick={() => {
+                  setDoiMode(m);
+                  if (m === "zotero" && !zoteroChecked) checkZotero();
+                }}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
                   padding: "8px 12px", fontSize: "var(--fs-xs)", fontWeight: doiMode === m ? 600 : 400,
@@ -1658,7 +1727,7 @@ function CitationPickerModal({
                   marginBottom: -1,
                 }}
               >
-                {m === "single" ? "Un DOI" : "Múltiples DOIs"}
+                {m === "single" ? "Un DOI" : m === "batch" ? "Múltiples DOIs" : "Zotero"}
               </button>
             ))}
           </div>
@@ -1769,6 +1838,104 @@ function CitationPickerModal({
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+
+          {doiMode === "zotero" && (
+            <div style={{ padding: "10px 16px" }}>
+              {!zoteroChecked ? (
+                <div style={{ textAlign: "center", padding: "12px 0" }}>
+                  <button onClick={checkZotero} className="btn btn-sm btn-accent">
+                    Detectar Zotero
+                  </button>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 6 }}>
+                    Requiere Zotero + plugin Better BibTeX en ejecución.
+                  </div>
+                </div>
+              ) : !zoteroStatus?.available ? (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "center", padding: "8px 0" }}>
+                  <div style={{ marginBottom: 4 }}>Zotero no está disponible.</div>
+                  <div style={{ color: "var(--fg-faint)" }}>{zoteroStatus?.message}</div>
+                  <button onClick={checkZotero} className="btn btn-xs btn-ghost" style={{ marginTop: 8 }}>
+                    Reintentar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                    <input
+                      value={zoteroQuery}
+                      onChange={(e) => setZoteroQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleZoteroSearch(zoteroQuery); }}
+                      placeholder="Buscar en tu librería Zotero…"
+                      style={{
+                        flex: 1, border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)",
+                        padding: "5px 8px", fontSize: "var(--fs-xs)",
+                        background: "var(--bg-chrome)", color: "var(--fg-strong)", outline: "none",
+                      }}
+                    />
+                    <button
+                      onClick={() => handleZoteroSearch(zoteroQuery)}
+                      disabled={zoteroLoading}
+                      className="btn btn-xs btn-ghost"
+                    >
+                      {zoteroLoading ? "…" : "Buscar"}
+                    </button>
+                  </div>
+
+                  {zoteroItems.length > 0 && (
+                    <div style={{ maxHeight: 180, overflow: "auto", display: "flex", flexDirection: "column", gap: 2 }} className="scroll">
+                      {zoteroItems.map((item) => {
+                        const sel = zoteroSelected.has(item.key);
+                        const saved = zoteroSaved.has(item.key);
+                        return (
+                          <div
+                            key={item.key}
+                            onClick={() => !saved && toggleZoteroSelect(item.key)}
+                            style={{
+                              padding: "5px 8px", borderRadius: "var(--r-xs)", cursor: saved ? "default" : "pointer",
+                              background: saved ? "var(--build-ok-tint)" : sel ? "var(--accent-tint, #e8f0fe)" : "var(--bg-chrome)",
+                              border: `1px solid ${saved ? "var(--build-ok)" : sel ? "var(--accent)" : "var(--border-subtle)"}`,
+                              display: "flex", alignItems: "center", gap: 8,
+                            }}
+                          >
+                            <input type="checkbox" checked={sel || saved} readOnly style={{ flexShrink: 0 }} />
+                            <span style={{ flex: 1, fontSize: "var(--fs-xs)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {item.title}
+                            </span>
+                            <span style={{ fontSize: 10, color: "var(--fg-faint)", flexShrink: 0 }}>
+                              {item.author && `${item.author} `}{item.year}
+                            </span>
+                            {saved && <span style={{ color: "var(--build-ok)", fontSize: 10, flexShrink: 0 }}>✓</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {zoteroSelected.size > 0 && (
+                    <button
+                      onClick={handleZoteroImport}
+                      disabled={zoteroImporting || !projectPath}
+                      className="btn btn-sm btn-accent"
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    >
+                      {zoteroImporting
+                        ? "Importando…"
+                        : `Importar ${zoteroSelected.size} referencia${zoteroSelected.size > 1 ? "s" : ""} al .bib`}
+                    </button>
+                  )}
+
+                  {zoteroImportResults.some((r) => r.error) && (
+                    <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>
+                      {zoteroImportResults.filter((r) => r.error).map((r) => (
+                        <div key={r.key}>{r.cite_key ?? r.key}: {r.error}</div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

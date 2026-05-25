@@ -36,6 +36,9 @@ pub fn run() {
             commands::remote::fetch_remote_profile,
             commands::doi::import_doi,
             commands::doi::import_dois_batch,
+            commands::zotero::check_zotero_status,
+            commands::zotero::search_zotero,
+            commands::zotero::import_zotero_items,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar TeXisStudio");
