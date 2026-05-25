@@ -17,7 +17,7 @@
 import type { LangCatalog, LangPackEntry, InstalledLangPack, LangCapabilities } from "../types";
 
 const CATALOG_URL =
-  "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio/main/community/languages/catalog.json";
+  "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio-Languages/main/catalog.json";
 
 const INSTALLED_KEY = "tx-installed-packs";
 
