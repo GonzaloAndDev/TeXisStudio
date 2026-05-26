@@ -267,6 +267,14 @@ export interface ValidationIssue {
   message: string;
   suggestion?: string;
   section_id?: string;
+  rule_id?: string;
+  profile_id?: string;
+  profile_status?: string;
+  source_url?: string;
+  source_title?: string;
+  automated?: boolean;
+  expected?: string;
+  actual?: string;
 }
 
 export interface ValidationReport {
@@ -314,6 +322,8 @@ export type ProfileStatus =
 export interface ProfileVerification {
   verified_at?: string;
   verified_by?: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
   source_urls: string[];
   review_interval_days?: number;
 }

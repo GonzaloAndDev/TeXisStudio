@@ -6,7 +6,7 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { CloudFolder, ProfileInfo } from "../types";
+import type { CloudFolder, ProfileInfo, ProfileStatus } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
 import { documentDir } from "@tauri-apps/api/path";
@@ -32,6 +32,7 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     sections: [],
     author: "Gonzalo Andrade Estrella",
     version: "0.1.0",
+    status: "draft" as ProfileStatus,
   },
   {
     id: "generic.tesina",
@@ -43,6 +44,7 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     sections: [],
     author: "Gonzalo Andrade Estrella",
     version: "0.1.0",
+    status: "draft" as ProfileStatus,
   },
 ];
 

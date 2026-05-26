@@ -317,16 +317,10 @@ pub fn create_profile(
 
     std::fs::create_dir_all(&profile_dir).map_err(err)?;
 
-    let profile = Profile {
-        schema_version: texis_core::schema::versions::CURRENT_SCHEMA_VERSION.to_string(),
-        id: profile_id.clone(),
-        name: payload.name,
-        description: payload.description,
-        author: payload.author,
-        version: Some(payload.version.unwrap_or_else(|| "0.1.0".to_string())),
-        license: payload.license,
-        tags: payload.tags,
-        document_class: ProfileDocumentClass {
+    let mut profile = Profile::new_draft(
+        profile_id.clone(),
+        payload.name,
+        ProfileDocumentClass {
             name: payload.document_class,
             options: vec![
                 "12pt".to_string(),
@@ -334,25 +328,26 @@ pub fn create_profile(
                 "oneside".to_string(),
             ],
         },
-        latex_engine: payload.latex_engine,
-        compiler: "latexmk".to_string(),
-        bibliography_backend: payload.bibliography_backend,
-        bibliography_style: payload.bibliography_style,
-        packages: vec![],
-        sections: payload
-            .sections
-            .iter()
-            .map(|s| ProfileSectionDef {
-                id: s.id.clone(),
-                element_id: s.element_id.clone(),
-                placement: s.placement.clone(),
-                required: s.required,
-                title: s.title.clone(),
-                label: s.label.clone(),
-                guidance: s.guidance.clone(),
-            })
-            .collect(),
-    };
+        payload.latex_engine,
+        payload.bibliography_backend,
+        payload.bibliography_style,
+    );
+
+    profile.schema_version = texis_core::schema::versions::CURRENT_SCHEMA_VERSION.to_string();
+    profile.description    = payload.description;
+    profile.author         = payload.author;
+    profile.version        = Some(payload.version.unwrap_or_else(|| "0.1.0".to_string()));
+    profile.license        = payload.license;
+    profile.tags           = payload.tags;
+    profile.sections       = payload.sections.iter().map(|s| ProfileSectionDef {
+        id:         s.id.clone(),
+        element_id: s.element_id.clone(),
+        placement:  s.placement.clone(),
+        required:   s.required,
+        title:      s.title.clone(),
+        label:      s.label.clone(),
+        guidance:   s.guidance.clone(),
+    }).collect();
 
     let yaml_path = profile_dir.join("profile.yaml");
     let loader = ProfileLoader;
@@ -393,6 +388,8 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
     let verification = p.verification.as_ref().map(|v| serde_json::json!({
         "verified_at": v.verified_at,
         "verified_by": v.verified_by,
+        "reviewed_at": v.reviewed_at,
+        "reviewed_by": v.reviewed_by,
         "source_urls": v.source_urls,
         "review_interval_days": v.review_interval_days,
     }));

@@ -1,7 +1,8 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ProfileStatus {
     Experimental,
@@ -18,19 +19,35 @@ impl Default for ProfileStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Metadatos de verificación y revisión de un perfil institucional.
+///
+/// `reviewed_at` / `reviewed_by` → revisión humana con trazabilidad de fuentes.
+/// `verified_at` / `verified_by` → verificación automatizada completa (CI + sample).
+/// Los campos legacy `verified_at`/`verified_by` se preservan para compatibilidad con
+/// perfiles existentes que los usan para indicar revisión.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProfileVerification {
+    /// Fecha de la última verificación automatizada (ISO 8601).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub verified_at: Option<String>,
+    /// Nombre o alias del verificador en la última verificación automatizada.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub verified_by: Option<String>,
+    /// Fecha de la última revisión humana (ISO 8601). Semántica más precisa que verified_at.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reviewed_at: Option<String>,
+    /// Nombre o alias del revisor humano.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reviewed_by: Option<String>,
+    /// URLs de las fuentes institucionales oficiales consultadas.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub source_urls: Vec<String>,
+    /// Intervalo máximo recomendado de re-revisión en días.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub review_interval_days: Option<u32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProfileMargins {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub top: Option<String>,
@@ -42,7 +59,7 @@ pub struct ProfileMargins {
     pub right: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProfilePageLayout {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub paper: Option<String>,
@@ -52,7 +69,7 @@ pub struct ProfilePageLayout {
     pub line_spacing: Option<f32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Profile {
     #[serde(default)]
     pub schema_version: String,
@@ -103,13 +120,13 @@ pub struct Profile {
     pub sections: Vec<ProfileSectionDef>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProfileDocumentClass {
     pub name: String,
     pub options: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ProfileSectionDef {
     pub id: String,
     pub element_id: String,
@@ -119,4 +136,47 @@ pub struct ProfileSectionDef {
     pub label: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guidance: Option<String>,
+}
+
+impl Profile {
+    /// Constructor semántico para perfiles nuevos creados desde la UI o la CLI.
+    ///
+    /// Produce un perfil en estado `Draft` con todos los campos opcionales en `None`/vacíos.
+    /// El caller asigna `schema_version` después de la construcción usando
+    /// `texis_core::schema::versions::CURRENT_SCHEMA_VERSION`.
+    ///
+    /// No usar `..Default::default()` — `Profile` no implementa `Default` intencionalmente
+    /// para evitar construcciones incompletas con carga semántica institucional.
+    pub fn new_draft(
+        id: String,
+        name: String,
+        document_class: ProfileDocumentClass,
+        latex_engine: String,
+        bibliography_backend: String,
+        bibliography_style: String,
+    ) -> Self {
+        Self {
+            schema_version: String::new(),
+            id,
+            name,
+            description: None,
+            tags: vec![],
+            author: None,
+            version: Some("0.1.0".to_string()),
+            license: None,
+            status: ProfileStatus::Draft,
+            verification: None,
+            document_class,
+            latex_engine,
+            compiler: "latexmk".to_string(),
+            bibliography_backend,
+            bibliography_style,
+            packages: vec![],
+            page_layout: None,
+            element_aliases: None,
+            max_words: None,
+            max_abstract_words: None,
+            sections: vec![],
+        }
+    }
 }

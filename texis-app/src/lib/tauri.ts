@@ -11,6 +11,7 @@ import type {
   LatexInfo,
   PdfPostflightResult,
   ProfileInfo,
+  ProfileStatus,
   ProfileUpdatePayload,
   ProjectModel,
   RecentProject,
@@ -59,6 +60,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
       sections: [],
       author: "Gonzalo Andrade Estrella",
       version: "0.1.0",
+      status: "draft" as ProfileStatus,
     },
     {
       id: "generic.tesina",
@@ -70,6 +72,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
       sections: [],
       author: "Gonzalo Andrade Estrella",
       version: "0.1.0",
+      status: "draft" as ProfileStatus,
     },
   ] as ProfileInfo[],
 };
