@@ -69,6 +69,24 @@ pub struct ProfilePageLayout {
     pub line_spacing: Option<f32>,
 }
 
+/// Requisitos de formato PDF declarados por el perfil institucional.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct PdfRequirements {
+    /// Requisitos de conformidad PDF/A.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdfa: Option<PdfaRequirement>,
+}
+
+/// Requisito de conformidad PDF/A.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct PdfaRequirement {
+    /// Si es true, el perfil exige PDF/A en la entrega final.
+    pub required: bool,
+    /// Nivel de PDF/A requerido, ej. "PDF/A-1b", "PDF/A-2b".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Profile {
     #[serde(default)]
@@ -118,6 +136,9 @@ pub struct Profile {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_abstract_words: Option<u32>,
     pub sections: Vec<ProfileSectionDef>,
+    /// Requisitos de formato PDF (PDF/A, etc.). None = sin requisitos declarados.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdf_requirements: Option<PdfRequirements>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -177,6 +198,7 @@ impl Profile {
             max_words: None,
             max_abstract_words: None,
             sections: vec![],
+            pdf_requirements: None,
         }
     }
 }

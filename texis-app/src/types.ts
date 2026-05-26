@@ -328,6 +328,15 @@ export interface ProfileVerification {
   review_interval_days?: number;
 }
 
+export interface PdfaRequirement {
+  required: boolean;
+  level?: string;
+}
+
+export interface PdfRequirements {
+  pdfa?: PdfaRequirement;
+}
+
 export interface ProfileInfo {
   id: string;
   name: string;
@@ -346,6 +355,7 @@ export interface ProfileInfo {
   verification?: ProfileVerification;
   max_words?: number;
   max_abstract_words?: number;
+  pdf_requirements?: PdfRequirements;
 }
 
 // ── System ──────────────────────────────────────────────────────
