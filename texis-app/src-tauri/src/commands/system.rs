@@ -1,3 +1,4 @@
+use chrono;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -513,6 +514,131 @@ pub fn get_cloud_folders() -> Result<Value, String> {
     }
 
     Ok(serde_json::json!(folders))
+}
+
+/// Ejecuta el System Doctor y devuelve el reporte de diagnóstico del entorno.
+#[tauri::command]
+pub fn run_system_doctor(
+    profile_engine: String,
+    bibliography_backend: String,
+    bibliography_style: String,
+    requires_pdfa: bool,
+) -> Result<Value, String> {
+    use texis_core::system::doctor;
+
+    let report = doctor::run_doctor(
+        &profile_engine,
+        &bibliography_backend,
+        &bibliography_style,
+        requires_pdfa,
+    );
+
+    let checks: Vec<Value> = report.checks.iter().map(|c| {
+        let status = match c.status {
+            doctor::ToolStatus::Available => "available",
+            doctor::ToolStatus::Missing   => "missing",
+            doctor::ToolStatus::Unknown   => "unknown",
+        };
+        let hint = c.install_hint.as_ref().map(|h| serde_json::json!({
+            "macos":   h.macos,
+            "linux":   h.linux,
+            "windows": h.windows,
+        }));
+        serde_json::json!({
+            "name":         c.name,
+            "status":       status,
+            "version":      c.version,
+            "description":  c.description,
+            "critical":     c.critical,
+            "install_hint": hint,
+        })
+    }).collect();
+
+    Ok(serde_json::json!({
+        "checks":               checks,
+        "environment_ok":       report.environment_ok,
+        "has_critical_missing": report.has_critical_missing,
+    }))
+}
+
+/// Comprueba si el proyecto tiene profile.lock.yaml y devuelve su contenido.
+#[tauri::command]
+pub fn check_profile_lock(project_path: String) -> Result<Value, String> {
+    use texis_core::profile::lock::{check_lock_status, LockStatus, ProfileLock};
+
+    let dir = std::path::PathBuf::from(&project_path);
+    let status = check_lock_status(&dir);
+
+    match status {
+        LockStatus::Locked => {
+            let lock = ProfileLock::load(&dir).map_err(|e| e.to_string())?;
+            Ok(serde_json::json!({
+                "locked": true,
+                "lock":   lock,
+            }))
+        }
+        LockStatus::Unlocked => {
+            Ok(serde_json::json!({
+                "locked": false,
+                "lock":   null,
+            }))
+        }
+    }
+}
+
+/// Crea profile.lock.yaml para el proyecto con el perfil activo.
+#[tauri::command]
+pub fn create_profile_lock(
+    app: tauri::AppHandle,
+    project_path: String,
+    profile_id: String,
+) -> Result<Value, String> {
+    use texis_core::profile::lock::ProfileLock;
+    use texis_core::profile::ProfileRegistry;
+
+    let project_dir = std::path::PathBuf::from(&project_path);
+    let profiles_root = profiles_dir(&app);
+
+    let mut registry = ProfileRegistry::new();
+    if profiles_root.exists() {
+        registry.load_from_dir(&profiles_root).map_err(err)?;
+    }
+    let profile = registry
+        .get(&profile_id)
+        .ok_or_else(|| format!("Perfil '{}' no encontrado.", profile_id))?;
+
+    let profile_yaml_path = profiles_root.join(&profile_id).join("profile.yaml");
+    let sha256 = if profile_yaml_path.exists() {
+        ProfileLock::sha256_of_file(&profile_yaml_path).unwrap_or_else(|_| "unknown".to_string())
+    } else {
+        "unknown".to_string()
+    };
+
+    let status_str = match profile.status {
+        texis_core::profile::ProfileStatus::Draft        => "draft",
+        texis_core::profile::ProfileStatus::Reviewed     => "reviewed",
+        texis_core::profile::ProfileStatus::Verified     => "verified",
+        texis_core::profile::ProfileStatus::Experimental => "experimental",
+        texis_core::profile::ProfileStatus::Stale        => "stale",
+        texis_core::profile::ProfileStatus::Deprecated   => "deprecated",
+    };
+
+    let lock = ProfileLock {
+        profile_id:              profile_id.clone(),
+        profile_version:         profile.version.clone().unwrap_or_else(|| "0.1.0".to_string()),
+        profile_status_at_lock:  status_str.to_string(),
+        source:                  "TeXisStudio-Profiles".to_string(),
+        sha256,
+        locked_at:               chrono::Utc::now().to_rfc3339(),
+        texis_core_version:      env!("CARGO_PKG_VERSION").to_string(),
+    };
+
+    lock.save(&project_dir).map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "locked": true,
+        "lock":   lock,
+    }))
 }
 
 /// Detecta si LaTeX está instalado en el sistema.
