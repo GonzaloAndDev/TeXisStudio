@@ -7,6 +7,7 @@ pub mod postflight;
 pub mod profile;
 pub mod project;
 pub mod schema;
+pub mod system;
 pub mod template;
 pub mod validator;
 
