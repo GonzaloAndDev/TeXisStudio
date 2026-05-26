@@ -133,6 +133,10 @@ pub struct LatexConfig {
     /// Ajustes tipográficos del usuario. Tienen prioridad sobre los valores del perfil.
     #[serde(default)]
     pub typography: LatexTypography,
+    /// Layout de página copiado del perfil activo. Tiene prioridad sobre `typography.margin_cm`.
+    /// None en proyectos creados antes de P1.1 — el generador usa margin_cm como fallback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_layout: Option<PageLayout>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,6 +144,35 @@ pub struct DocumentClassConfig {
     /// "book" por defecto. Configurable por perfil.
     pub name: String,
     pub options: Vec<String>,
+}
+
+/// Márgenes asimétricos declarados por el perfil institucional.
+/// Cada valor es una medida LaTeX válida, ej. "38.1mm", "2.54cm", "1in".
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PageMargins {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub top: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bottom: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub left: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub right: Option<String>,
+}
+
+/// Layout de página copiado del perfil activo al crear el proyecto.
+/// Los márgenes asimétricos tienen prioridad sobre el margen uniforme de `LatexTypography`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PageLayout {
+    /// Tamaño de papel del perfil (ej. "a4paper", "letterpaper").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paper: Option<String>,
+    /// Márgenes asimétricos del perfil (ej. MIT: 38.1mm izquierdo para encuadernación).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub margins: Option<PageMargins>,
+    /// Interlineado declarado por el perfil (ej. 1.5 = onehalf).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line_spacing: Option<f32>,
 }
 
 /// Ajustes tipográficos configurables por el usuario desde la UI.

@@ -475,6 +475,12 @@ pub fn export_delivery(
     // ── Cargar modelo y validar ───────────────────────────────────
     let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
     let profile = load_profile_for_model(&app, &model);
+
+    // ── P1.9: Bloqueo de dependencias críticas en modo final ─────
+    if mode == "final" {
+        check_critical_dependencies_for_export(&model, profile.as_deref())?;
+    }
+
     let validation = Validator::new()
         .validate_with_profile(&model, &project_dir, profile.as_deref())
         .map_err(err)?;
@@ -1018,10 +1024,29 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             bibliography_style:   profile.bibliography_style.clone(),
             packages_required:    profile.packages.clone(),
             typography:           Default::default(),
+            page_layout:          map_profile_page_layout(profile),
         },
         sections,
         file_states: HashMap::new(),
     }
+}
+
+/// Convierte el `page_layout` del perfil al tipo `PageLayout` del modelo de proyecto.
+/// Devuelve `None` si el perfil no declara page_layout.
+fn map_profile_page_layout(profile: &Profile) -> Option<texis_core::project::model::PageLayout> {
+    use texis_core::project::model::{PageLayout, PageMargins};
+
+    let pl = profile.page_layout.as_ref()?;
+    Some(PageLayout {
+        paper: pl.paper.clone(),
+        margins: pl.margins.as_ref().map(|m| PageMargins {
+            top:    m.top.clone(),
+            bottom: m.bottom.clone(),
+            left:   m.left.clone(),
+            right:  m.right.clone(),
+        }),
+        line_spacing: pl.line_spacing,
+    })
 }
 
 fn now_iso8601() -> String {
@@ -1159,5 +1184,68 @@ fn validate_profile_id(id: &str) -> Result<(), String> {
             id
         ));
     }
+    Ok(())
+}
+
+/// P1.9 — Verifica que las dependencias críticas para `export final` están disponibles.
+///
+/// Bloquea solo por ausencias críticas (D3-bis). Los warnings no bloquean.
+/// La escritura y los modos draft/review nunca se bloquean.
+fn check_critical_dependencies_for_export(
+    model: &ProjectModel,
+    profile: Option<&texis_core::profile::model::Profile>,
+) -> Result<(), String> {
+    use texis_core::system::doctor;
+
+    let engine = profile
+        .map(|p| p.latex_engine.as_str())
+        .or_else(|| {
+            use texis_core::project::model::LatexEngine;
+            Some(match &model.latex_config.engine {
+                LatexEngine::Xelatex  => "xelatex",
+                LatexEngine::Pdflatex => "pdflatex",
+                LatexEngine::Lualatex => "lualatex",
+            })
+        })
+        .unwrap_or("xelatex");
+
+    let bib_backend = profile
+        .map(|p| p.bibliography_backend.as_str())
+        .unwrap_or("biber");
+
+    let bib_style = profile
+        .map(|p| p.bibliography_style.as_str())
+        .unwrap_or("");
+
+    let requires_pdfa = false; // TODO P2.4: leer del perfil cuando se implemente pdf_requirements
+
+    let report = doctor::run_doctor(engine, bib_backend, bib_style, requires_pdfa);
+
+    if report.has_critical_missing {
+        let missing: Vec<String> = report
+            .checks
+            .iter()
+            .filter(|c| c.critical && c.status == doctor::ToolStatus::Missing)
+            .map(|c| {
+                let hint = c.install_hint.as_ref().map(|h| {
+                    let platform = if cfg!(target_os = "macos") {
+                        h.macos.as_deref()
+                    } else if cfg!(target_os = "windows") {
+                        h.windows.as_deref()
+                    } else {
+                        h.linux.as_deref()
+                    };
+                    platform.map(|s| format!("  → {s}")).unwrap_or_default()
+                }).unwrap_or_default();
+                format!("- {} ({}){}", c.name, c.description, if hint.is_empty() { String::new() } else { format!("\n{hint}") })
+            })
+            .collect();
+
+        return Err(format!(
+            "ERROR: No se puede generar la entrega final.\n\nFaltan dependencias críticas:\n{}\n\nInstálalas e intenta de nuevo.",
+            missing.join("\n")
+        ));
+    }
+
     Ok(())
 }

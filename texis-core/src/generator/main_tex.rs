@@ -158,13 +158,42 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
     Ok(out)
 }
 
+/// Genera el \usepackage{geometry} con los márgenes correctos.
+///
+/// Prioridad (P1.1/P1.2):
+/// 1. Márgenes asimétricos en `latex_config.page_layout.margins` (copiados del perfil).
+/// 2. Margen uniforme `typography.margin_cm` del proyecto (override del usuario).
+/// 3. Default 2.5 cm uniforme.
+fn render_geometry(model: &ProjectModel) -> String {
+    let layout = model.latex_config.page_layout.as_ref();
+
+    let paper = layout
+        .and_then(|l| l.paper.as_deref())
+        .or_else(|| model.latex_config.typography.paper_size.as_deref())
+        .unwrap_or("letterpaper");
+
+    // Márgenes asimétricos (institucionales) tienen prioridad
+    if let Some(margins) = layout.and_then(|l| l.margins.as_ref()) {
+        let top    = margins.top.as_deref().unwrap_or("25.4mm");
+        let bottom = margins.bottom.as_deref().unwrap_or("25.4mm");
+        let left   = margins.left.as_deref().unwrap_or("25.4mm");
+        let right  = margins.right.as_deref().unwrap_or("25.4mm");
+        return format!(
+            "\\usepackage[{paper},top={top},bottom={bottom},left={left},right={right}]{{geometry}}\n"
+        );
+    }
+
+    // Margen uniforme del usuario o default
+    let margin = model.latex_config.typography.margin_cm.unwrap_or(2.5);
+    format!("\\usepackage[{paper},margin={margin}cm]{{geometry}}\n")
+}
+
 fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
 
     // Paquetes base según el motor
     out.push_str("\\usepackage{fontspec}\n");
-    let margin = model.latex_config.typography.margin_cm.unwrap_or(2.5);
-    out.push_str(&format!("\\usepackage[margin={}cm]{{geometry}}\n", margin));
+    out.push_str(&render_geometry(model));
     out.push_str("\\usepackage{graphicx}\n");
     out.push_str("\\usepackage{booktabs}\n");
     out.push_str("\\usepackage{array}\n");
@@ -234,16 +263,25 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
 
 fn render_estilo(model: &ProjectModel) -> String {
     let mut out = String::from("% Estilo — generado automáticamente\n\n");
-    let spacing_cmd = match model
-        .latex_config
-        .typography
-        .line_spacing
-        .as_deref()
-        .unwrap_or("onehalf")
-    {
-        "single" => "\\singlespacing",
-        "double" => "\\doublespacing",
-        _        => "\\onehalfspacing",
+
+    // Prioridad de interlineado (P1.2):
+    // 1. line_spacing del perfil (page_layout.line_spacing, valor float: 1.0=single, 1.5=onehalf, 2.0=double)
+    // 2. line_spacing del usuario (typography.line_spacing, string: "single"|"onehalf"|"double")
+    // 3. Default: onehalf
+    let spacing_cmd = if let Some(spacing_f) = model.latex_config.page_layout.as_ref().and_then(|l| l.line_spacing) {
+        if spacing_f <= 1.0 {
+            "\\singlespacing"
+        } else if spacing_f >= 2.0 {
+            "\\doublespacing"
+        } else {
+            "\\onehalfspacing"
+        }
+    } else {
+        match model.latex_config.typography.line_spacing.as_deref().unwrap_or("onehalf") {
+            "single" => "\\singlespacing",
+            "double" => "\\doublespacing",
+            _        => "\\onehalfspacing",
+        }
     };
     out.push_str(&format!("{}\n", spacing_cmd));
     out.push_str("\\setlength{\\parindent}{1.5em}\n");
