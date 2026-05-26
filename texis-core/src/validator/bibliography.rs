@@ -11,6 +11,7 @@
 
 use super::report::{IssueSeverity, ValidationIssue, ValidationReport};
 use crate::bibliography::parser::{BibEntry, BibParser};
+use crate::bibliography::validator::validate_entries;
 use crate::project::model::{ContentBlock, ProjectModel};
 use std::collections::HashSet;
 use std::path::Path;
@@ -49,6 +50,42 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
     // Validar campos requeridos y formato de cada entrada
     for entry in &entries {
         issues.extend(validate_entry_fields(entry));
+    }
+
+    // P4.1: duplicados de citation key, duplicados de DOI, DOI con formato inválido
+    let deep = validate_entries(&entries);
+    for dup in &deep.duplicate_keys {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Error,
+            code: "E_BIB_DUPLICATE_KEY".to_string(),
+            message: format!("Citation key duplicada en references.bib: {}", dup),
+            suggestion: Some("Cada entrada en el .bib debe tener una citation key única.".to_string()),
+            automated: Some(true),
+            ..Default::default()
+        });
+    }
+    for (key1, key2) in &deep.duplicate_dois {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_BIB_DUPLICATE_DOI".to_string(),
+            message: format!(
+                "Las entradas '{}' y '{}' tienen el mismo DOI — posible duplicado.",
+                key1, key2
+            ),
+            suggestion: Some("Verifica si son la misma fuente citada dos veces con distinta key.".to_string()),
+            automated: Some(true),
+            ..Default::default()
+        });
+    }
+    for (key, doi) in &deep.invalid_dois {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_BIB_INVALID_DOI_FORMAT".to_string(),
+            message: format!("La entrada '{}' tiene un DOI con formato inválido: '{}'.", key, doi),
+            suggestion: Some("Un DOI válido empieza con '10.' seguido de dígitos y '/'. Ej: 10.1145/359545.359563".to_string()),
+            automated: Some(true),
+            ..Default::default()
+        });
     }
 
     let bib_keys: HashSet<String> = entries.into_iter().map(|e| e.key).collect();
