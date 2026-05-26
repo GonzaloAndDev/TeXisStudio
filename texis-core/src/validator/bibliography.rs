@@ -39,7 +39,8 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
                 suggestion: Some(
                     "Verifica que el archivo .bib tenga formato BibTeX válido.".to_string(),
                 ),
-                section_id: None,
+                automated: Some(true),
+                ..Default::default()
             });
             return ValidationReport::new(issues);
         }
@@ -72,6 +73,8 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
                                 key
                             )),
                             section_id: Some(section.id.clone()),
+                            automated: Some(true),
+                            ..Default::default()
                         });
                     }
                     cited_keys.insert(key);
@@ -96,7 +99,8 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
                         "Cita la referencia en el texto o elimínala del .bib para mantener la bibliografía limpia."
                             .to_string(),
                     ),
-                    section_id: None,
+                    automated: Some(true),
+                    ..Default::default()
                 });
             }
         }
@@ -150,7 +154,8 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
                 "Usa tipos estándar: @article, @book, @inproceedings, @mastersthesis, @phdthesis, @misc…"
                     .to_string(),
             ),
-            section_id: None,
+            automated: Some(true),
+            ..Default::default()
         });
     }
 
@@ -173,7 +178,8 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
                     "Agrega '{}' a la entrada '{}' en references.bib.",
                     field_desc, entry.key
                 )),
-                section_id: None,
+                automated: Some(true),
+                ..Default::default()
             });
         }
     }
@@ -191,7 +197,8 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
                     entry.key, year
                 ),
                 suggestion: Some("El año debe ser un número de 4 dígitos (ej. 2023).".to_string()),
-                section_id: None,
+                automated: Some(true),
+                ..Default::default()
             });
         }
     }
@@ -211,7 +218,8 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
                 suggestion: Some(
                     "APA 7 e IEEE recomiendan incluir el DOI. Agrega: doi = {10.xxxx/...}".to_string(),
                 ),
-                section_id: None,
+                automated: Some(true),
+                ..Default::default()
             });
         }
     }

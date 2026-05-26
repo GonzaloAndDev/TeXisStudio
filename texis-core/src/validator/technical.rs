@@ -39,6 +39,8 @@ fn check_missing_figures(model: &ProjectModel, project_dir: &Path, issues: &mut 
                             fig.file
                         )),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
@@ -67,7 +69,8 @@ fn check_missing_bib(model: &ProjectModel, project_dir: &Path, issues: &mut Vec<
                 "Crea el archivo content/bibliography/references.bib con las referencias en formato BibTeX."
                     .to_string(),
             ),
-            section_id: None,
+            automated: Some(true),
+            ..Default::default()
         });
     }
 }
@@ -96,6 +99,8 @@ fn check_unsafe_figure_paths(model: &ProjectModel, issues: &mut Vec<ValidationIs
                             "Usa solo nombres de archivo relativos sin '..' ni rutas absolutas, p.ej. 'grafica.png'.".to_string()
                         ),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
@@ -133,6 +138,8 @@ fn check_invalid_label_format(model: &ProjectModel, issues: &mut Vec<ValidationI
                             "Los labels solo pueden contener letras, números, ':', '_', '-' y '.', y deben empezar por letra.".to_string()
                         ),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
@@ -165,6 +172,8 @@ fn check_invalid_citation_keys(model: &ProjectModel, issues: &mut Vec<Validation
                             "Las citation keys solo pueden contener letras, números, '_', '-', '.' y ':' sin espacios.".to_string()
                         ),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
@@ -190,6 +199,8 @@ fn check_unconfirmed_raw_latex(model: &ProjectModel, issues: &mut Vec<Validation
                             "Confirma el bloque desde el editor para que se incluya en el documento generado.".to_string()
                         ),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
@@ -416,6 +427,8 @@ fn check_duplicate_labels(model: &ProjectModel, issues: &mut Vec<ValidationIssue
                             label
                         )),
                         section_id: Some(section.id.clone()),
+                        automated: Some(true),
+                        ..Default::default()
                     });
                 }
             }
