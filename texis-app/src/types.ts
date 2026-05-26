@@ -568,3 +568,45 @@ export interface ZoteroImportResult {
   cite_key: string | null;
   error: string | null;
 }
+
+// ── System Doctor ────────────────────────────────────────────────
+
+export type ToolStatus = "available" | "missing" | "unknown";
+
+export interface InstallHint {
+  macos?: string;
+  linux?: string;
+  windows?: string;
+}
+
+export interface DoctorCheck {
+  name: string;
+  status: ToolStatus;
+  version?: string;
+  description: string;
+  critical: boolean;
+  install_hint?: InstallHint;
+}
+
+export interface DoctorReport {
+  checks: DoctorCheck[];
+  environment_ok: boolean;
+  has_critical_missing: boolean;
+}
+
+// ── Profile Lock ─────────────────────────────────────────────────
+
+export interface ProfileLockData {
+  profile_id: string;
+  profile_version: string;
+  profile_status_at_lock: string;
+  source: string;
+  sha256: string;
+  locked_at: string;
+  texis_core_version: string;
+}
+
+export interface ProfileLockStatus {
+  locked: boolean;
+  lock: ProfileLockData | null;
+}

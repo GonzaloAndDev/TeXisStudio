@@ -7,10 +7,12 @@ import type {
   BibReference,
   CloudFolder,
   CompilationResult,
+  DoctorReport,
   ExportDeliveryResult,
   LatexInfo,
   PdfPostflightResult,
   ProfileInfo,
+  ProfileLockStatus,
   ProfileStatus,
   ProfileUpdatePayload,
   ProjectModel,
@@ -49,6 +51,12 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     { key: "vaswani2017attention",entry_type: "inproceedings", title: "Attention is All You Need",                      author: "Vaswani, Ashish et al.",                                  year: "2017", journal: "NeurIPS" },
     { key: "he2016deep",          entry_type: "inproceedings", title: "Deep Residual Learning for Image Recognition",   author: "He, Kaiming et al.",                                      year: "2016", journal: "CVPR" },
   ] as BibReference[],
+  run_system_doctor: {
+    checks: [],
+    environment_ok: false,
+    has_critical_missing: false,
+  } satisfies DoctorReport,
+  check_profile_lock: { locked: false, lock: null } satisfies ProfileLockStatus,
   get_profiles: [
     {
       id: "generic.thesis",
@@ -208,6 +216,20 @@ export const api = {
 
   importZoteroItems: (keys: string[]): Promise<ZoteroImportResult[]> =>
     call("import_zotero_items", { keys }),
+
+  runSystemDoctor: (
+    profileEngine: string,
+    bibliographyBackend: string,
+    bibliographyStyle: string,
+    requiresPdfa: boolean,
+  ): Promise<DoctorReport> =>
+    call("run_system_doctor", { profileEngine, bibliographyBackend, bibliographyStyle, requiresPdfa }),
+
+  checkProfileLock: (projectPath: string): Promise<ProfileLockStatus> =>
+    call("check_profile_lock", { projectPath }),
+
+  createProfileLock: (projectPath: string, profileId: string): Promise<ProfileLockStatus> =>
+    call("create_profile_lock", { projectPath, profileId }),
 
   /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */
   pickFolder: async (): Promise<string | null> => {
