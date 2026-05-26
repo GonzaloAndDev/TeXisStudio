@@ -525,6 +525,22 @@ pub async fn import_dois_batch(dois: Vec<String>) -> Result<Vec<BatchDoiResult>,
     Ok(results)
 }
 
+// ── P4.2 — Preview bibliográfico por estilo ───────────────────────────────────
+
+/// Formatea una entrada BibTeX en texto plano aproximado al estilo indicado.
+/// Acepta una cadena BibTeX completa; toma la primera entrada que encuentre.
+/// Retorna texto con marcadores *cursiva* y **negrita** para rendering en UI.
+#[tauri::command]
+pub fn preview_bib_entry(bibtex: String, style: String) -> Result<String, String> {
+    use texis_core::bibliography::parser::BibParser;
+    use texis_core::bibliography::formatter::format_entry;
+
+    let entries = BibParser.parse_str(&bibtex);
+    let entry = entries.first()
+        .ok_or_else(|| "No se encontró ninguna entrada BibTeX válida.".to_string())?;
+    Ok(format_entry(entry, &style))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

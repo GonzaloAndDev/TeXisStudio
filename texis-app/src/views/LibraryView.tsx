@@ -593,12 +593,38 @@ function ElementsTab() {
 
 // ── StylesTab ─────────────────────────────────────────────────────────────────
 
+// Entrada de muestra para el preview bibliográfico (P4.2)
+const PREVIEW_BIBTEX = `@article{smith2024,
+  author  = {Smith, John A. and Jones, Mary B.},
+  title   = {Machine Learning Applications in Academic Writing},
+  journal = {Journal of Educational Technology},
+  year    = {2024},
+  volume  = {15},
+  number  = {3},
+  pages   = {234--256},
+  doi     = {10.1000/xyz123},
+}`;
+
+// Renderiza *cursiva* y **negrita** en el texto de preview
+function renderPreviewText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    return part;
+  });
+}
+
 function StylesTab() {
   const [styles, setStyles]           = useState<CitationStyle[]>(loadStyles);
   const [selected, setSelected]       = useState<CitationStyle | null>(null);
   const [addingCustom, setAddingCustom] = useState(false);
   const [editingCustom, setEditingCustom] = useState<CitationStyle | null>(null);
   const [search, setSearch]           = useState("");
+  const [preview, setPreview]         = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // New/edit form state
   const emptyForm = { id: "", name: "", full_name: "", type: "author_date" as const, biblatex_style: "", in_text_format: "", bibliography_title: "References", description: "", disciplines: "" };
@@ -606,6 +632,16 @@ function StylesTab() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => { saveStyles(styles); }, [styles]);
+
+  useEffect(() => {
+    if (!selected) { setPreview(null); return; }
+    setPreviewLoading(true);
+    setPreview(null);
+    api.previewBibEntry(PREVIEW_BIBTEX, selected.biblatex_style)
+      .then((text) => setPreview(text))
+      .catch(() => setPreview(null))
+      .finally(() => setPreviewLoading(false));
+  }, [selected]);
 
   function moveStyle(index: number, dir: -1 | 1) {
     const next = index + dir;
@@ -848,11 +884,37 @@ function StylesTab() {
               {selected.regions_primary && (
                 <>
                   <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 8 }}>Regiones principales</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 16 }}>
                     {selected.regions_primary.map((r) => <span key={r} className="chip" style={{ fontSize: 10, background: "var(--detail-tint)", color: "var(--detail-deep)" }}>{r}</span>)}
                   </div>
                 </>
               )}
+
+              {/* P4.2 — Vista previa bibliográfica */}
+              <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 8 }}>
+                  Vista previa
+                </div>
+                <div style={{
+                  padding: "12px 14px", borderRadius: "var(--r-md)",
+                  background: "var(--bg-app)", border: "1px solid var(--border-subtle)",
+                  fontSize: "var(--fs-xs)", color: "var(--fg-default)",
+                  lineHeight: 1.8, fontFamily: "var(--font-sans, Georgia, serif)",
+                  minHeight: 56,
+                }}>
+                  {previewLoading && (
+                    <span style={{ color: "var(--fg-faint)", fontStyle: "italic" }}>Generando vista previa…</span>
+                  )}
+                  {!previewLoading && preview && renderPreviewText(preview)}
+                  {!previewLoading && !preview && (
+                    <span style={{ color: "var(--fg-faint)", fontStyle: "italic" }}>Vista previa no disponible.</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 5, lineHeight: 1.5 }}>
+                  Ejemplo: artículo con 2 autores, volumen, número, páginas y DOI.
+                  Aproximación — el formato final lo produce LaTeX.
+                </div>
+              </div>
             </div>
             {!selected.builtin && (
               <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8 }}>

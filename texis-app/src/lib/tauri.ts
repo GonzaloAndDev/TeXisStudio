@@ -83,6 +83,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
       status: "draft" as ProfileStatus,
     },
   ] as ProfileInfo[],
+  preview_bib_entry: "Smith, J. A., & Jones, M. B. (2024). Machine learning applications in academic writing. *Journal of Educational Technology*, *15*(3), 234–256. https://doi.org/10.1000/xyz123",
 };
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -166,6 +167,9 @@ export const api = {
 
   importDoisBatch: (dois: string[]): Promise<BatchDoiResult[]> =>
     call("import_dois_batch", { dois }),
+
+  previewBibEntry: (bibtex: string, style: string): Promise<string> =>
+    call("preview_bib_entry", { bibtex, style }),
 
   appendBibEntry: (projectPath: string, bibtex: string): Promise<string> =>
     call("append_bib_entry", { projectPath, bibtex }),

@@ -39,6 +39,7 @@ pub fn run() {
             commands::remote::fetch_remote_profile,
             commands::doi::import_doi,
             commands::doi::import_dois_batch,
+            commands::doi::preview_bib_entry,
             commands::zotero::check_zotero_status,
             commands::zotero::search_zotero,
             commands::zotero::import_zotero_items,
