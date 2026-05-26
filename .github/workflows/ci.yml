@@ -49,6 +49,12 @@ jobs:
         if: env.INSTA_UPDATE == 'new'
         continue-on-error: true
 
+      - name: Verify schema is up to date (P0.3)
+        run: |
+          cargo run --package texis-core --bin generate_schema
+          git diff --exit-code schemas/profile.v1.0.0.json || (echo "ERROR: schemas/profile.v1.0.0.json está desactualizado. Ejecuta: cargo run --package texis-core --bin generate_schema" && exit 1)
+        if: runner.os == 'Linux'
+
       - name: Format check
         run: cargo fmt --all -- --check
 

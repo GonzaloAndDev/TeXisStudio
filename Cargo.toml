@@ -15,6 +15,7 @@ serde_yaml   = "0.9"
 serde_json   = "1"
 minijinja    = { version = "2", features = ["loader"] }
 jsonschema   = "0.18"
+schemars     = { version = "0.8", features = ["preserve_order"] }
 thiserror    = "1"
 anyhow       = "1"
 walkdir      = "2"
