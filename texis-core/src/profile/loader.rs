@@ -8,12 +8,16 @@ use std::path::Path;
 /// Aliases built-in que se aplican a TODOS los perfiles.
 /// Permiten que los repositorios externos usen nombres alternativos de element_id
 /// sin romper el generador ni los validadores del core.
+///
+/// NOTA: "abstract" → "abstract_en" fue eliminado (P1.3) porque causaba colisión
+/// silenciosa entre el resumen genérico y el abstract en inglés.
+/// IDs oficiales: abstract (genérico), abstract_es, abstract_en, abstract_fr, abstract_pt.
 const BUILTIN_ALIASES: &[(&str, &str)] = &[
     ("cover", "title_page"),
     ("toc", "table_of_contents"),
     ("bibliography", "references"),
     ("appendix", "appendices"),
-    ("abstract", "abstract_en"),
+    ("experimentation", "results"),
 ];
 
 pub struct ProfileLoader;
