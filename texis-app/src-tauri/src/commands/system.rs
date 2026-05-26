@@ -395,6 +395,13 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "review_interval_days": v.review_interval_days,
     }));
 
+    let pdf_requirements = p.pdf_requirements.as_ref().map(|r| serde_json::json!({
+        "pdfa": r.pdfa.as_ref().map(|pdfa| serde_json::json!({
+            "required": pdfa.required,
+            "level": pdfa.level,
+        })),
+    }));
+
     serde_json::json!({
         "id": p.id,
         "name": p.name,
@@ -413,6 +420,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "verification": verification,
         "max_words": p.max_words,
         "max_abstract_words": p.max_abstract_words,
+        "pdf_requirements": pdf_requirements,
     })
 }
 

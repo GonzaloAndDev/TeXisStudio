@@ -701,7 +701,107 @@ pub fn export_delivery(
         add_file(&mut zip, "submission_checklist.md", checklist.as_bytes(), &mut manifest_entries)?;
     }
 
-    // 6. manifest.sha256.json
+    // 6. postflight_report.json — postflight completo serializable
+    {
+        let pf_issues_full: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
+            "severity": format!("{:?}", i.severity).to_lowercase(),
+            "code": i.code,
+            "message": i.message,
+            "suggestion": i.suggestion,
+        })).collect();
+        let fonts_full: Vec<_> = postflight.fonts.iter().map(|f| serde_json::json!({
+            "name": f.name,
+            "font_type": f.font_type,
+            "embedded": f.embedded,
+            "subset": f.subset,
+        })).collect();
+        let pf_report = serde_json::json!({
+            "schema_version": "1.0",
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+            "pdf_exists": postflight.pdf_exists,
+            "passed": postflight.passed,
+            "all_fonts_embedded": postflight.all_fonts_embedded,
+            "non_embedded_fonts": postflight.non_embedded_fonts,
+            "tools_available": postflight.tools_available,
+            "tools_missing": postflight.tools_missing,
+            "fonts": fonts_full,
+            "issues": pf_issues_full,
+            "metadata": postflight.metadata,
+        });
+        let pf_bytes = serde_json::to_string_pretty(&pf_report).map_err(err)?.into_bytes();
+        add_file(&mut zip, "postflight_report.json", &pf_bytes, &mut manifest_entries)?;
+    }
+
+    // 7. compilation_reproducibility.json — D5: declarar, no prometer reproducibilidad
+    {
+        let latex_info = texis_core::compiler::detector::LatexInstallation::detect();
+        let repro = serde_json::json!({
+            "compilation_reproducibility": "not_guaranteed",
+            "note": "La compilación LaTeX puede producir PDFs binariamente distintos entre entornos aunque el fuente sea idéntico.",
+            "profile_id": model.profile_id,
+            "compiler": if latex_info.has_xelatex { "xelatex" } else if latex_info.has_latexmk { "latexmk" } else { "unknown" },
+            "compiler_version": latex_info.latexmk_version,
+            "texlive_year": latex_info.texlive_year,
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+        });
+        let repro_bytes = serde_json::to_string_pretty(&repro).map_err(err)?.into_bytes();
+        add_file(&mut zip, "compilation_reproducibility.json", &repro_bytes, &mut manifest_entries)?;
+    }
+
+    // 8. policy_report.json — PolicyReport del ProfilePolicyValidator (D1-bis)
+    if let Some(ref p) = profile {
+        use texis_core::profile::ProfilePolicyValidator;
+        let policy_report = ProfilePolicyValidator::validate(p);
+        let issues_json: Vec<_> = policy_report.issues.iter().map(|i| serde_json::json!({
+            "severity": format!("{:?}", i.severity).to_lowercase(),
+            "code": i.code,
+            "message": i.message,
+            "field": i.field,
+        })).collect();
+        let pr_json = serde_json::json!({
+            "schema_version": "1.0",
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+            "profile_id": policy_report.profile_id,
+            "profile_status": format!("{:?}", policy_report.profile_status).to_lowercase(),
+            "has_errors": policy_report.has_errors(),
+            "has_warnings": policy_report.has_warnings(),
+            "issues": issues_json,
+        });
+        let pr_bytes = serde_json::to_string_pretty(&pr_json).map_err(err)?.into_bytes();
+        add_file(&mut zip, "policy_report.json", &pr_bytes, &mut manifest_entries)?;
+    }
+
+    // 9. profile.lock.yaml — si el proyecto tiene perfil congelado (P1.7)
+    {
+        use texis_core::profile::lock::{check_lock_status, LockStatus};
+        if check_lock_status(&project_dir) == LockStatus::Locked {
+            let lock_path = project_dir.join("profile.lock.yaml");
+            let lock_bytes = std::fs::read(&lock_path).map_err(err)?;
+            add_file(&mut zip, "profile.lock.yaml", &lock_bytes, &mut manifest_entries)?;
+        }
+    }
+
+    // 10. texis.version.json
+    {
+        let version_info = serde_json::json!({
+            "texis_app_version": env!("CARGO_PKG_VERSION"),
+            "schema_version": "1.0.0",
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+        });
+        let ver_bytes = serde_json::to_string_pretty(&version_info).map_err(err)?.into_bytes();
+        add_file(&mut zip, "texis.version.json", &ver_bytes, &mut manifest_entries)?;
+    }
+
+    // 11. build.log — log de la última compilación si existe
+    {
+        let log_path = project_dir.join("build").join("main.log");
+        if log_path.exists() {
+            let log_bytes = std::fs::read(&log_path).map_err(err)?;
+            add_file(&mut zip, "build.log", &log_bytes, &mut manifest_entries)?;
+        }
+    }
+
+    // 12. manifest.sha256.json
     {
         let manifest = serde_json::json!({
             "schema_version": "1.0",
@@ -732,12 +832,18 @@ pub fn export_delivery(
                Postflight PDF:       {post_state}\n\
                Fuentes incrustadas:  {fonts_state}\n\n\
              Contenido del ZIP:\n\
-               thesis.pdf              → PDF compilado\n\
-               sources/                → Archivos fuente LaTeX\n\
-               content/                → Bibliografía e imágenes\n\
-               compliance_report.json  → Reporte de cumplimiento (machine-readable)\n\
-               submission_checklist.md → Lista de verificación de entrega\n\
-               manifest.sha256.json    → Hashes SHA-256 de todos los archivos\n\n\
+               thesis.pdf                         → PDF compilado\n\
+               sources/                           → Archivos fuente LaTeX\n\
+               content/                           → Bibliografía e imágenes\n\
+               compliance_report.json             → Reporte de cumplimiento\n\
+               postflight_report.json             → Verificación del PDF\n\
+               policy_report.json                 → Política del perfil institucional\n\
+               compilation_reproducibility.json   → Declaración de reproducibilidad\n\
+               texis.version.json                 → Versión del generador\n\
+               profile.lock.yaml                  → Perfil congelado (si existe)\n\
+               build.log                          → Log de compilación (si existe)\n\
+               submission_checklist.md            → Lista de verificación\n\
+               manifest.sha256.json               → Hashes SHA-256 de todos los archivos\n\n\
              AVISO: Este paquete incluye validaciones automáticas. Algunos requisitos\n\
              institucionales requieren confirmación manual con tu programa o escuela.\n",
             sep = "=".repeat(60),
@@ -1217,7 +1323,11 @@ fn check_critical_dependencies_for_export(
         .map(|p| p.bibliography_style.as_str())
         .unwrap_or("");
 
-    let requires_pdfa = false; // TODO P2.4: leer del perfil cuando se implemente pdf_requirements
+    let requires_pdfa = profile
+        .and_then(|p| p.pdf_requirements.as_ref())
+        .and_then(|r| r.pdfa.as_ref())
+        .map(|pdfa| pdfa.required)
+        .unwrap_or(false);
 
     let report = doctor::run_doctor(engine, bib_backend, bib_style, requires_pdfa);
 
