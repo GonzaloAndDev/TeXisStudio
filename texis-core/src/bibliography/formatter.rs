@@ -143,7 +143,7 @@ fn field<'a>(entry: &'a BibEntry, key: &str) -> &'a str {
     entry.fields.get(key).map(|s| s.as_str()).unwrap_or("")
 }
 
-fn field_nonempty(entry: &BibEntry, key: &str) -> Option<&str> {
+fn field_nonempty<'a>(entry: &'a BibEntry, key: &str) -> Option<&'a str> {
     entry.fields.get(key).map(|s| s.as_str()).filter(|s| !s.is_empty())
 }
 
