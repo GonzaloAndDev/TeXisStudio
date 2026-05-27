@@ -77,14 +77,29 @@ impl CompilationBackend for LatexmkBackend {
         };
 
         let user_errors = super::error_translator::translate_log(&last_pass_log);
-        // bbl_resolved = biber ya corrió y produjo bibliography no-vacía.
-        // Cuando es true, ignoramos warnings de "Please (re)run Biber" en el log:
-        // son mensajes INTERMEDIOS de antes de que biber corriera (bien de latexmk interno
-        // o de nuestro fallback manual), no del estado final del documento.
+        let log = final_log;
+
+        // ── Determinación de éxito ───────────────────────────────────────────
+        //
+        // bbl_resolved = biber ya corrió y produjo una bibliography no-vacía.
+        // Cuando es true, ignoramos warnings "Please (re)run Biber" del log:
+        // son mensajes intermedios de antes de que biber corriera.
+        //
+        // pdf_generated = main.pdf existe y tiene contenido.
+        // Usamos evidencia física porque algunas versiones de latexmk reportan
+        // exit code != 0 aunque el PDF se generó correctamente (p.ej. cuando
+        // detecta que quedan runs pendientes de estabilización pero ya generó el
+        // output principal). Si el PDF existe, biber resolvió y no hay errores
+        // de usuario, consideramos el pase exitoso.
         let bbl = build_dir.join("main.bbl");
         let bbl_resolved = std::fs::metadata(&bbl).map(|m| m.len() > 0).unwrap_or(false);
-        let success = pass_succeeded(command_succeeded, &last_pass_log, &user_errors, bbl_resolved);
-        let log = final_log;
+        let pdf_generated = std::fs::metadata(build_dir.join("main.pdf"))
+            .map(|m| m.len() > 0)
+            .unwrap_or(false);
+
+        let success = pass_succeeded(command_succeeded, &last_pass_log, &user_errors, bbl_resolved)
+            // Fallback: evidencia física — PDF existe + biber resolvió + sin errores de usuario
+            || (pdf_generated && bbl_resolved && user_errors.is_empty());
 
         let pdf_path = if success {
             let pdf = build_dir.join("main.pdf");
@@ -248,6 +263,13 @@ mod tests {
         // bbl_resolved=true porque latexmk corrió biber y main.bbl no está vacío
         assert!(pass_succeeded(true, full_latexmk_log, &[], true),
             "Falso positivo: latexmk manejó biber correctamente pero pass_succeeded falló");
+    }
+
+    #[test]
+    fn pass_succeeded_falso_con_command_fallido_sin_bbl() {
+        // Si el comando falló Y bbl está vacío → falla
+        let log = "This is xelatex 2024";
+        assert!(!pass_succeeded(false, log, &[], false));
     }
 }
 
