@@ -43,7 +43,8 @@ fn collect_text_corpus(model: &ProjectModel) -> String {
                 ContentBlock::Algorithm(b)  => {
                     corpus.push(' ');
                     corpus.push_str(&b.caption);
-                    if let Some(c) = &b.content { corpus.push(' '); corpus.push_str(c); }
+                    corpus.push(' ');
+                    corpus.push_str(&b.body);
                 }
                 _ => {}
             }
@@ -258,7 +259,7 @@ mod tests {
 
     fn equation(label: Option<&str>) -> ContentBlock {
         ContentBlock::Equation(EquationBlock {
-            id: "e1".into(), content: "E=mc^2".into(),
+            id: "e1".into(), latex_content: "E=mc^2".into(),
             label: label.map(|s| s.into()), numbered: true,
         })
     }
