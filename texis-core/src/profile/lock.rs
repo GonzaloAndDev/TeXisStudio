@@ -123,7 +123,7 @@ mod tests {
     fn sha256_abc() {
         assert_eq!(
             sha256_str(b"abc"),
-            "ba7816bf8f01cfea414140de5dae2ec73b00361bbef0469632f0f0b0c2e49d45"
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
     }
 
