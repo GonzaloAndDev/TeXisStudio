@@ -186,42 +186,34 @@ fn format_apa7(entry: &BibEntry) -> String {
                 vol_part = format!("*{}*", vol);
                 if !num.is_empty() { vol_part.push_str(&format!("({})", num)); }
             }
+            let vol_sep   = if vol_part.is_empty() { "" } else { ", " };
             let pages_str = if !pages.is_empty() { format!(", {}", pages_range(pages)) } else { String::new() };
-            let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
+            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
 
-            format!(
-                "{} ({year}). {title}. *{journal}*{vol_sep}{vol_part}{pages_str}.{url_str}",
-                author_str, year = year, title = title, journal = journal,
-                vol_sep = if vol_part.is_empty() { "" } else { ", " },
-                vol_part = vol_part,
-            )
+            format!("{} ({}). {}. *{}*{}{}{}.{}",
+                author_str, year, title, journal, vol_sep, vol_part, pages_str, url_str)
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({year}). *{title}*. {publisher}.{url_str}",
-                author_str, year = year, title = title, publisher = publisher)
+            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
+            format!("{} ({}). *{}*. {}.{}", author_str, year, title, publisher, url_str)
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
             let pages     = field(entry, "pages");
             let pages_str = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({year}). {title}. En *{booktitle}*{pages_str}.{url_str}",
-                author_str, year = year, title = title, booktitle = booktitle,
-                pages_str = pages_str)
+            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
+            format!("{} ({}). {}. En *{}*{}.{}", author_str, year, title, booktitle, pages_str, url_str)
         }
         "phdthesis" | "mastersthesis" => {
-            let kind = if entry.entry_type == "phdthesis" { "Tesis doctoral" } else { "Tesis de maestría" };
+            let kind   = if entry.entry_type == "phdthesis" { "Tesis doctoral" } else { "Tesis de maestría" };
             let school = field(entry, "school");
             let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({year}). *{title}* [{kind}]. {school}.{url_str}",
-                author_str, year = year, title = title, kind = kind, school = school)
+            format!("{} ({}). *{}* [{}]. {}.{}", author_str, year, title, kind, school, url_str)
         }
         _ => {
             let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({year}). *{title}*.{url_str}",
-                author_str, year = year, title = title)
+            format!("{} ({}). *{}*.{}", author_str, year, title, url_str)
         }
     }
 }
@@ -691,7 +683,7 @@ fn format_generic(entry: &BibEntry) -> String {
     if author.is_empty() {
         format!("*{}* ({}).{}", title, year, doi_str)
     } else {
-        format!("{} ({year}). *{title}*.{doi}", author = author, year = year, title = title, doi = doi_str)
+        format!("{} ({}). *{}*.{}", author, year, title, doi_str)
     }
 }
 
