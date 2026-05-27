@@ -5,6 +5,11 @@ use std::process::Command;
 
 pub struct LatexmkBackend;
 
+struct CommandCapture {
+    log: String,
+    success: bool,
+}
+
 impl LatexmkBackend {
     pub fn new() -> Self {
         Self
@@ -48,27 +53,31 @@ impl CompilationBackend for LatexmkBackend {
              $clean_ext = 'bbl run.xml bcf fls fdb_latexmk synctex.gz';\n"
         ).map_err(CoreError::Io)?;
 
-        let first_log = run_latexmk(build_dir, options, engine_flag)?;
+        let first_pass = run_latexmk(build_dir, options, engine_flag)?;
 
         // Algunos entornos/versiones de latexmk dejan biblatex a medias aunque .bcf exista.
         // Si el primer pase indica bibliografía pendiente, forzamos biber + segundo pase.
         // La decisión de éxito se basa SOLO en el último pase para evitar falsos positivos
         // del "Please (re)run Biber" que siempre aparece en el primer pase intermedio.
-        let final_log = if needs_manual_biber(&first_log, build_dir) {
-            let biber_log = run_biber(build_dir)?;
-            let second_log = run_latexmk(build_dir, options, engine_flag)?;
-            format!("{first_log}\n[biber]\n{biber_log}\n[latexmk-pass2]\n{second_log}")
+        let (final_log, last_pass_log, command_succeeded) = if needs_manual_biber(&first_pass.log, build_dir) {
+            let biber = run_biber(build_dir)?;
+            let second_pass = run_latexmk(build_dir, options, engine_flag)?;
+            let final_log = format!(
+                "{}\n[biber]\n{}\n[latexmk-pass2]\n{}",
+                first_pass.log, biber.log, second_pass.log
+            );
+            let last_pass_log = final_log
+                .rfind("[latexmk-pass2]")
+                .map(|pos| &final_log[pos..])
+                .unwrap_or(&final_log)
+                .to_string();
+            (final_log, last_pass_log, biber.success && second_pass.success)
         } else {
-            first_log.clone()
+            (first_pass.log.clone(), first_pass.log.clone(), first_pass.success)
         };
 
-        let last_pass_log = final_log
-            .rfind("[latexmk-pass2]")
-            .map(|pos| &final_log[pos..])
-            .unwrap_or(&final_log);
-
-        let user_errors = super::error_translator::translate_log(last_pass_log);
-        let success = !has_blocking_compile_issue(last_pass_log, &user_errors);
+        let user_errors = super::error_translator::translate_log(&last_pass_log);
+        let success = pass_succeeded(command_succeeded, &last_pass_log, &user_errors);
         let log = final_log;
 
         let pdf_path = if success {
@@ -102,7 +111,7 @@ impl CompilationBackend for LatexmkBackend {
     }
 }
 
-fn run_latexmk(build_dir: &Path, options: &CompilationOptions, engine_flag: &str) -> CoreResult<String> {
+fn run_latexmk(build_dir: &Path, options: &CompilationOptions, engine_flag: &str) -> CoreResult<CommandCapture> {
     let mut cmd = Command::new("latexmk");
     cmd.current_dir(build_dir)
         .arg(engine_flag)
@@ -122,24 +131,20 @@ fn run_latexmk(build_dir: &Path, options: &CompilationOptions, engine_flag: &str
     run_and_capture(&mut cmd)
 }
 
-fn run_biber(build_dir: &Path) -> CoreResult<String> {
+fn run_biber(build_dir: &Path) -> CoreResult<CommandCapture> {
     let mut cmd = Command::new("biber");
     cmd.current_dir(build_dir).arg("main");
     run_and_capture(&mut cmd)
 }
 
-fn run_and_capture(cmd: &mut Command) -> CoreResult<String> {
+fn run_and_capture(cmd: &mut Command) -> CoreResult<CommandCapture> {
     let output = cmd.output().map_err(CoreError::Io)?;
     let log = String::from_utf8_lossy(&output.stdout).to_string()
         + &String::from_utf8_lossy(&output.stderr);
-
-    if output.status.success() {
-        Ok(log)
-    } else {
-        Err(CoreError::Compilation {
-            message: log,
-        })
-    }
+    Ok(CommandCapture {
+        log,
+        success: output.status.success(),
+    })
 }
 
 fn needs_manual_biber(log: &str, build_dir: &Path) -> bool {
@@ -166,7 +171,7 @@ fn has_blocking_compile_issue(
 
 #[cfg(test)]
 mod tests {
-    use super::{bibliography_pending_in_log, has_blocking_compile_issue};
+    use super::{bibliography_pending_in_log, has_blocking_compile_issue, pass_succeeded};
     use crate::compiler::UserError;
 
     #[test]
@@ -188,4 +193,18 @@ mod tests {
         };
         assert!(has_blocking_compile_issue(ok_log, &[err]));
     }
+
+    #[test]
+    fn exito_final_requiere_comando_ok_y_log_limpio() {
+        let ok_log = "Output written on main.pdf (12 pages).";
+        let pending_log = "Package biblatex Warning: Please (re)run Biber on the file: main";
+
+        assert!(pass_succeeded(true, ok_log, &[]));
+        assert!(!pass_succeeded(false, ok_log, &[]));
+        assert!(!pass_succeeded(true, pending_log, &[]));
+    }
+}
+
+fn pass_succeeded(command_succeeded: bool, log: &str, user_errors: &[super::UserError]) -> bool {
+    command_succeeded && !has_blocking_compile_issue(log, user_errors)
 }
