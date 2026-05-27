@@ -39,10 +39,19 @@ impl CompilationBackend for LatexmkBackend {
             _ => "-xelatex",
         };
 
+        // Write .latexmkrc to ensure biber runs correctly with biblatex.
+        // latexmk needs explicit biber configuration to process biblatex .bcf files.
+        let latexmkrc = build_dir.join(".latexmkrc");
+        let _ = std::fs::write(&latexmkrc,
+            "$biber = 'biber %O %S';\n\
+             $bibtex_use = 2;\n\
+             $clean_ext = 'bbl run.xml bcf fls fdb_latexmk synctex.gz';\n"
+        );
+
         let mut cmd = Command::new("latexmk");
         cmd.current_dir(build_dir)
             .arg(engine_flag)
-            .arg("-bibtex")          // run biber/bibtex as needed (required for biblatex)
+            .arg("-bibtex")
             .arg("-interaction=nonstopmode")
             .arg("-file-line-error");
 
