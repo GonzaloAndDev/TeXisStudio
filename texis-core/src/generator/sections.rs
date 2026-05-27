@@ -195,12 +195,33 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 CitationType::Multiple      => "parencite",
                 CitationType::Footnote      => "footcite",
             };
-            let page_opt = c
-                .page
+            let prefix = c
+                .prefix
                 .as_deref()
-                .map(|p| format!("[{{}}][{}]", p))
-                .unwrap_or_default();
-            format!("\\{}{}{{{}}}", cmd, page_opt, c.citation_key)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(latex_escape);
+            let mut postnote_parts = Vec::new();
+            if let Some(page) = c.page.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+                postnote_parts.push(latex_escape(page));
+            }
+            if let Some(suffix) = c.suffix.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+                postnote_parts.push(latex_escape(suffix));
+            }
+            let postnote = if postnote_parts.is_empty() {
+                None
+            } else {
+                Some(postnote_parts.join(", "))
+            };
+
+            let options = match (prefix, postnote) {
+                (Some(pre), Some(post)) => format!("[{}][{}]", pre, post),
+                (Some(pre), None) => format!("[{}]", pre),
+                (None, Some(post)) => format!("[{}]", post),
+                (None, None) => String::new(),
+            };
+
+            format!("\\{}{}{{{}}}\n\n", cmd, options, c.citation_key)
         }
 
         ContentBlock::Figure(f) => {
@@ -379,7 +400,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::project::model::{RawLatexBlock, ContentBlock};
+    use crate::project::model::{CitationBlock, CitationType, ContentBlock, RawLatexBlock};
 
     #[test]
     fn raw_latex_confirmado_genera_contenido() {
@@ -471,5 +492,19 @@ mod tests {
         });
         let out = render_block(&block);
         assert!(out.contains("\\begin{lemma*}"));
+    }
+
+    #[test]
+    fn citation_block_renderiza_opciones_y_salto_final() {
+        let block = ContentBlock::Citation(CitationBlock {
+            id: "c1".to_string(),
+            citation_key: "lamport1978time".to_string(),
+            citation_type: CitationType::Parenthetical,
+            page: Some("558--565".to_string()),
+            prefix: Some("see".to_string()),
+            suffix: Some("sec. 2".to_string()),
+        });
+        let out = render_block(&block);
+        assert_eq!(out, "\\parencite[see][558--565, sec. 2]{lamport1978time}\n\n");
     }
 }

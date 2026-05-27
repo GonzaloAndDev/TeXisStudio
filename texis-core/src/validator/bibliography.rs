@@ -120,8 +120,25 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
         }
     }
 
+    // Sin citas semánticas, biblatex generará una bibliografía vacía salvo que el usuario
+    // haga algo manual como \nocite{*}. No lo marcamos como error global para no romper
+    // flujos avanzados, pero sí avisamos porque suele ser una omisión real del proyecto.
+    if !bib_keys.is_empty() && cited_keys.is_empty() {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_BIB_NO_CITATIONS".to_string(),
+            message: "Existe references.bib, pero el proyecto no contiene bloques de cita semánticos."
+                .to_string(),
+            suggestion: Some(
+                "Inserta bloques de cita (`type: citation`) para que la bibliografía se genere, o usa \\nocite{*} manualmente si quieres listar referencias sin citas."
+                    .to_string(),
+            ),
+            automated: Some(true),
+            ..Default::default()
+        });
+    }
+
     // Referencias definidas en .bib pero no citadas en el documento.
-    // Solo si hay al menos alguna cita — sin citas el warning sería ruido prematuro.
     if !cited_keys.is_empty() {
         for bib_key in &bib_keys {
             if !cited_keys.contains(bib_key.as_str()) {
@@ -550,6 +567,10 @@ mod tests {
         // Ninguna cita en el modelo
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
+        assert!(
+            report.issues.iter().any(|i| i.code == "W_BIB_NO_CITATIONS"),
+            "sin citas semánticas debe avisar que la bibliografía quedará vacía"
+        );
         assert!(
             !report.issues.iter().any(|i| i.code == "W_UNUSED_REFERENCE"),
             "sin citas en el documento, no debe advertir sobre referencias no usadas"
