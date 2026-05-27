@@ -77,7 +77,13 @@ impl CompilationBackend for LatexmkBackend {
         };
 
         let user_errors = super::error_translator::translate_log(&last_pass_log);
-        let success = pass_succeeded(command_succeeded, &last_pass_log, &user_errors);
+        // bbl_resolved = biber ya corrió y produjo bibliography no-vacía.
+        // Cuando es true, ignoramos warnings de "Please (re)run Biber" en el log:
+        // son mensajes INTERMEDIOS de antes de que biber corriera (bien de latexmk interno
+        // o de nuestro fallback manual), no del estado final del documento.
+        let bbl = build_dir.join("main.bbl");
+        let bbl_resolved = std::fs::metadata(&bbl).map(|m| m.len() > 0).unwrap_or(false);
+        let success = pass_succeeded(command_succeeded, &last_pass_log, &user_errors, bbl_resolved);
         let log = final_log;
 
         let pdf_path = if success {
@@ -164,8 +170,11 @@ fn bibliography_pending_in_log(log: &str) -> bool {
 fn has_blocking_compile_issue(
     log: &str,
     user_errors: &[super::UserError],
+    bbl_resolved: bool,
 ) -> bool {
-    bibliography_pending_in_log(log)
+    // Si biber ya resolvió la bibliografía (bbl no-vacío), los warnings de
+    // "Please (re)run Biber" son mensajes intermedios del log y no son bloqueantes.
+    (!bbl_resolved && bibliography_pending_in_log(log))
         || !user_errors.is_empty()
 }
 
@@ -182,16 +191,29 @@ mod tests {
     }
 
     #[test]
-    fn exito_requiere_pdf_y_sin_errores() {
+    fn exito_requiere_sin_errores_de_usuario() {
         let ok_log = "Output written on main.pdf (12 pages).";
-        assert!(!has_blocking_compile_issue(ok_log, &[]));
+        // Sin bbl_resolved y sin errores → OK
+        assert!(!has_blocking_compile_issue(ok_log, &[], false));
 
         let err = UserError {
             message: "Error en la bibliografía (biber).".to_string(),
             suggestion: Some("Revisa references.bib".to_string()),
             raw_log_line: None,
         };
-        assert!(has_blocking_compile_issue(ok_log, &[err]));
+        // Con error de usuario → siempre bloqueante
+        assert!(has_blocking_compile_issue(ok_log, &[err.clone()], false));
+        assert!(has_blocking_compile_issue(ok_log, &[err], true));
+    }
+
+    #[test]
+    fn biber_pending_en_log_bloquea_solo_si_bbl_no_resuelto() {
+        let pending_log = "Package biblatex Warning: Please (re)run Biber on the file: main";
+
+        // bbl_resolved=false → warning es bloqueante
+        assert!(has_blocking_compile_issue(pending_log, &[], false));
+        // bbl_resolved=true → warning es intermedio, no bloqueante
+        assert!(!has_blocking_compile_issue(pending_log, &[], true));
     }
 
     #[test]
@@ -199,12 +221,41 @@ mod tests {
         let ok_log = "Output written on main.pdf (12 pages).";
         let pending_log = "Package biblatex Warning: Please (re)run Biber on the file: main";
 
-        assert!(pass_succeeded(true, ok_log, &[]));
-        assert!(!pass_succeeded(false, ok_log, &[]));
-        assert!(!pass_succeeded(true, pending_log, &[]));
+        // Caso normal: comando ok, log limpio, sin bbl
+        assert!(pass_succeeded(true, ok_log, &[], false));
+        // Comando fallido → siempre false
+        assert!(!pass_succeeded(false, ok_log, &[], false));
+        // bbl no resuelto + warning en log → false
+        assert!(!pass_succeeded(true, pending_log, &[], false));
+    }
+
+    #[test]
+    fn falso_positivo_corregido_cuando_latexmk_maneja_biber_internamente() {
+        // CASO REAL: latexmk corre biber internamente (-bibtex).
+        // Su log completo contiene el warning "Please (re)run Biber" de ANTES de que
+        // biber corriera, pero biber ya resolvió la bibliografía (bbl_resolved=true).
+        // Antes del fix: pass_succeeded devolvía false (falso positivo).
+        // Después del fix: pass_succeeded devuelve true.
+        let full_latexmk_log = concat!(
+            "Latexmk: Run number 1 of rule 'xelatex'\n",
+            "Package biblatex Warning: Please (re)run Biber on the file: main\n",
+            "Latexmk: Run number 1 of rule 'biber main'\n",
+            "INFO - This is Biber 2.19\n",
+            "Latexmk: Run number 2 of rule 'xelatex'\n",
+            "Output written on main.pdf (42 pages).\n",
+            "Latexmk: All targets (main.pdf) are up-to-date\n",
+        );
+        // bbl_resolved=true porque latexmk corrió biber y main.bbl no está vacío
+        assert!(pass_succeeded(true, full_latexmk_log, &[], true),
+            "Falso positivo: latexmk manejó biber correctamente pero pass_succeeded falló");
     }
 }
 
-fn pass_succeeded(command_succeeded: bool, log: &str, user_errors: &[super::UserError]) -> bool {
-    command_succeeded && !has_blocking_compile_issue(log, user_errors)
+fn pass_succeeded(
+    command_succeeded: bool,
+    log: &str,
+    user_errors: &[super::UserError],
+    bbl_resolved: bool,
+) -> bool {
+    command_succeeded && !has_blocking_compile_issue(log, user_errors, bbl_resolved)
 }
