@@ -30,6 +30,8 @@ pub struct CompilationOptions {
     /// Motor LaTeX a usar. None usa el default del backend ("xelatex" para latexmk).
     /// Valores válidos: "xelatex", "pdflatex", "lualatex".
     pub latex_engine: Option<String>,
+    /// Backend bibliográfico esperado por el documento. Valores válidos: "biber", "bibtex".
+    pub bibliography_backend: Option<String>,
 }
 
 pub trait CompilationBackend: Send + Sync {

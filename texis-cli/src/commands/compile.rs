@@ -26,11 +26,17 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
     latex_gen.generate(&model, &build_dir)?;
 
     // Compilar
+    let bibliography_backend = match model.latex_config.bibliography_backend {
+        texis_core::project::model::BibliographyBackend::Biber => "biber",
+        texis_core::project::model::BibliographyBackend::Bibtex => "bibtex",
+    };
+
     let options = CompilationOptions {
         draft,
         clean_temp: false,
         max_runs: None,
         latex_engine: Some(engine_str.to_string()),
+        bibliography_backend: Some(bibliography_backend.to_string()),
     };
 
     let result = match backend_name {
