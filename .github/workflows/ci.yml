@@ -36,7 +36,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
 
       # En Linux (con deps Tauri instaladas) testamos todo el workspace.
       # En macOS/Windows solo texis-core y texis-cli para evitar problemas de linking de Tauri.
