@@ -63,8 +63,12 @@ fn translate_line(line: &str) -> Option<UserError> {
         });
     }
 
-    // biber/bibliography errors
-    if line.contains("Please (re)run Biber") || line.contains("biber") && line.contains("error") {
+    // biber hard errors.
+    // NOTE: do NOT include "Please (re)run Biber" here — that biblatex warning
+    // is a re-run hint that latexmk handles internally. It appears in intermediate
+    // log output before biber has run and would cause false user errors.
+    // The compiler's bibliography_pending_in_log() handles that separately.
+    if line.contains("biber") && line.contains("error") {
         return Some(UserError {
             message: "Error en la bibliografía (biber).".to_string(),
             suggestion: Some(
