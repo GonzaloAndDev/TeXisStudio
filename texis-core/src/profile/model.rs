@@ -45,6 +45,11 @@ pub struct ProfileVerification {
     /// Intervalo máximo recomendado de re-revisión en días.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub review_interval_days: Option<u32>,
+    /// URL o referencia a la ejecución de CI que respaldó el status 'verified'.
+    /// Obligatorio para perfiles con status: verified (ver POL_VERIFIED_NO_CI_EVIDENCE).
+    /// Ejemplo: "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/actions/runs/12345"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ci_evidence: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

@@ -13,6 +13,10 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
+/// Versión de schema compartida por todos los artefactos de exportación.
+/// Centralizada aquí para evitar drift entre artefactos (ver Hallazgo #6 auditoría v2.2).
+const ARTIFACT_SCHEMA_VERSION: &str = "1.0.0";
+
 /// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
 #[tauri::command]
 pub fn create_project(
@@ -630,7 +634,7 @@ pub fn export_delivery(
         })).collect();
 
         let report = serde_json::json!({
-            "schema_version": "1.0",
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
             "generator": "TeXisStudio",
             "export_mode": mode,
@@ -716,7 +720,7 @@ pub fn export_delivery(
             "subset": f.subset,
         })).collect();
         let pf_report = serde_json::json!({
-            "schema_version": "1.0",
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
             "pdf_exists": postflight.pdf_exists,
             "passed": postflight.passed,
@@ -759,7 +763,7 @@ pub fn export_delivery(
             "field": i.field,
         })).collect();
         let pr_json = serde_json::json!({
-            "schema_version": "1.0",
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
             "profile_id": policy_report.profile_id,
             "profile_status": format!("{:?}", policy_report.profile_status).to_lowercase(),
@@ -781,18 +785,78 @@ pub fn export_delivery(
         }
     }
 
-    // 10. texis.version.json
+    // 10. profile.lock.sha256 — hash del profile.lock.yaml si existe (P2.5)
+    {
+        use texis_core::profile::lock::{check_lock_status, LockStatus};
+        if check_lock_status(&project_dir) == LockStatus::Locked {
+            let lock_path = project_dir.join("profile.lock.yaml");
+            if let Ok(lock_bytes) = std::fs::read(&lock_path) {
+                use sha2::{Digest, Sha256};
+                let hash = Sha256::digest(&lock_bytes);
+                let hex: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
+                let sha_info = serde_json::json!({
+                    "schema_version": ARTIFACT_SCHEMA_VERSION,
+                    "file": "profile.lock.yaml",
+                    "sha256": hex,
+                    "generated_at": chrono::Utc::now().to_rfc3339(),
+                });
+                let sha_bytes = serde_json::to_string_pretty(&sha_info).map_err(err)?.into_bytes();
+                add_file(&mut zip, "profile.lock.sha256.json", &sha_bytes, &mut manifest_entries)?;
+            }
+        }
+    }
+
+    // 11. compiler.info.json — información del compilador LaTeX (P2.5)
+    {
+        let latex_info = texis_core::compiler::detector::LatexInstallation::detect();
+        let compiler_info = serde_json::json!({
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+            "engine": if latex_info.has_xelatex { "xelatex" } else { "unknown" },
+            "backend": if latex_info.has_latexmk { "latexmk" } else { "direct" },
+            "latexmk_version": latex_info.latexmk_version,
+            "texlive_year": latex_info.texlive_year,
+            "has_xelatex": latex_info.has_xelatex,
+            "has_latexmk": latex_info.has_latexmk,
+            "has_biber": latex_info.has_biber,
+            "has_tectonic": latex_info.has_tectonic,
+            "tectonic_version": latex_info.tectonic_version,
+        });
+        let ci_bytes = serde_json::to_string_pretty(&compiler_info).map_err(err)?.into_bytes();
+        add_file(&mut zip, "compiler.info.json", &ci_bytes, &mut manifest_entries)?;
+    }
+
+    // 12. latex_packages_report.json — paquetes LaTeX detectados en el log (P2.5)
+    {
+        let log_path = project_dir.join("build").join("main.log");
+        let packages = if log_path.exists() {
+            extract_latex_packages_from_log(&std::fs::read_to_string(&log_path).unwrap_or_default())
+        } else {
+            vec![]
+        };
+        let pkg_report = serde_json::json!({
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
+            "generated_at": chrono::Utc::now().to_rfc3339(),
+            "log_available": log_path.exists(),
+            "package_count": packages.len(),
+            "packages": packages,
+        });
+        let pkg_bytes = serde_json::to_string_pretty(&pkg_report).map_err(err)?.into_bytes();
+        add_file(&mut zip, "latex_packages_report.json", &pkg_bytes, &mut manifest_entries)?;
+    }
+
+    // 13. texis.version.json
     {
         let version_info = serde_json::json!({
             "texis_app_version": env!("CARGO_PKG_VERSION"),
-            "schema_version": "1.0.0",
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
         });
         let ver_bytes = serde_json::to_string_pretty(&version_info).map_err(err)?.into_bytes();
         add_file(&mut zip, "texis.version.json", &ver_bytes, &mut manifest_entries)?;
     }
 
-    // 11. build.log — log de la última compilación si existe
+    // 14. build.log — log de la última compilación si existe
     {
         let log_path = project_dir.join("build").join("main.log");
         if log_path.exists() {
@@ -801,10 +865,10 @@ pub fn export_delivery(
         }
     }
 
-    // 12. manifest.sha256.json
+    // 15. manifest.sha256.json
     {
         let manifest = serde_json::json!({
-            "schema_version": "1.0",
+            "schema_version": ARTIFACT_SCHEMA_VERSION,
             "created_at": chrono::Utc::now().to_rfc3339(),
             "generator": "TeXisStudio",
             "export_mode": mode,
@@ -815,7 +879,7 @@ pub fn export_delivery(
         zip.write_all(&manifest_bytes).map_err(err)?;
     }
 
-    // 7. README.txt
+    // 16. README.txt
     {
         let warnings_count = validation.issues.iter()
             .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning))
@@ -839,6 +903,9 @@ pub fn export_delivery(
                postflight_report.json             → Verificación del PDF\n\
                policy_report.json                 → Política del perfil institucional\n\
                compilation_reproducibility.json   → Declaración de reproducibilidad\n\
+               compiler.info.json                 → Información del compilador LaTeX\n\
+               latex_packages_report.json         → Paquetes LaTeX detectados\n\
+               profile.lock.sha256.json           → Hash SHA-256 del perfil congelado\n\
                texis.version.json                 → Versión del generador\n\
                profile.lock.yaml                  → Perfil congelado (si existe)\n\
                build.log                          → Log de compilación (si existe)\n\
@@ -902,6 +969,36 @@ fn add_dir_to_zip(
         zip.write_all(&bytes).map_err(err)?;
     }
     Ok(())
+}
+
+/// Extrae nombres de paquetes LaTeX del log de compilación.
+///
+/// Busca líneas del tipo `(path/to/package.sty` o `(path/to/class.cls` y
+/// extrae solo el nombre del archivo sin extensión. Elimina duplicados y ordena.
+fn extract_latex_packages_from_log(log: &str) -> Vec<String> {
+    use std::collections::BTreeSet;
+    let mut pkgs: BTreeSet<String> = BTreeSet::new();
+    for line in log.lines() {
+        let trimmed = line.trim();
+        // LaTeX log format: lines starting with ( for file loading
+        if trimmed.starts_with('(') {
+            let inner = trimmed.trim_start_matches('(').trim();
+            // Extract the filename part (before any space or newline)
+            let filepath = inner.split_whitespace().next().unwrap_or("").trim_end_matches(')');
+            if filepath.ends_with(".sty") || filepath.ends_with(".cls") || filepath.ends_with(".def") {
+                // Get just the filename without path and extension
+                let fname = std::path::Path::new(filepath)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
+                if !fname.is_empty() && fname.len() > 1 {
+                    pkgs.insert(fname);
+                }
+            }
+        }
+    }
+    pkgs.into_iter().collect()
 }
 
 /// Actualiza los ajustes tipográficos del proyecto (fuente, papel, interlineado, márgenes).

@@ -10,6 +10,7 @@ import {
 import { api } from "../lib/tauri";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
+import { fetchProfileCatalog, type CatalogProfile } from "../services/profileCatalog";
 
 // ── Catálogo de elementos ──────────────────────────────────────────────────────
 
@@ -940,15 +941,7 @@ function StylesTab() {
 
 // ── CommunityTab ──────────────────────────────────────────────────────────────
 
-const CATALOG_URL = "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download/catalog.json";
-
-interface CatalogProfile {
-  id: string; name: string; description?: string; author?: string;
-  tags: string[]; continent: string; country: string;
-  institution?: string; city?: string;
-  bibliography_style?: string; download_url: string; version?: string;
-  sha256?: string;
-}
+// CatalogProfile and catalog URL are now in services/profileCatalog.ts
 
 function CommunityTab({ installedIds, onInstalled }: {
   installedIds: Set<string>;
@@ -972,11 +965,12 @@ function CommunityTab({ installedIds, onInstalled }: {
   async function fetchCatalog() {
     setCatLoading(true); setCatError(null);
     try {
-      const res = await fetch(CATALOG_URL);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setCatalog(data.profiles ?? []);
+      const result = await fetchProfileCatalog();
+      setCatalog(result.profiles);
       setCatLoaded(true);
+      if (result.skippedCount > 0) {
+        console.warn(`[LibraryView] ${result.skippedCount} perfil(es) omitido(s) en el catálogo por validación.`);
+      }
     } catch (e) {
       setCatError(`No se pudo cargar el catálogo: ${e}. Verifica tu conexión.`);
     } finally {
@@ -989,7 +983,7 @@ function CommunityTab({ installedIds, onInstalled }: {
   async function handleInstall(cp: CatalogProfile) {
     setDownloading(cp.id); setOpError(null); setOpSuccess(null);
     try {
-      const installed = await api.fetchRemoteProfile(cp.download_url, cp.sha256);
+      const installed = await api.fetchRemoteProfile(cp.download_url, cp.sha256 ?? undefined);
       onInstalled(installed);
       setOpSuccess(`✓ "${installed.name}" instalado correctamente.`);
     } catch (e) { setOpError(String(e)); }

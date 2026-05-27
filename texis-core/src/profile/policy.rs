@@ -222,6 +222,29 @@ fn check_verified(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
             field: Some("verification.verified_by".to_string()),
         });
     }
+
+    // POL_VERIFIED_NO_CI_EVIDENCE — evidencia de CI obligatoria (P1.8/P3)
+    //
+    // Un perfil 'verified' debe respaldar su afirmación con una URL a la ejecución
+    // de CI que lo verificó. Sin este campo, 'verified' es solo una etiqueta editorial,
+    // no una afirmación técnica verificable.
+    let has_ci_evidence = ver
+        .and_then(|v| v.ci_evidence.as_deref())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false);
+    if !has_ci_evidence {
+        issues.push(PolicyIssue {
+            severity: PolicySeverity::Error,
+            code: "POL_VERIFIED_NO_CI_EVIDENCE".to_string(),
+            message: format!(
+                "El perfil '{}' tiene status 'verified' pero no declara \
+                 verification.ci_evidence. Se requiere una URL a la ejecución \
+                 de CI que generó el PDF y ejecutó el postflight completo.",
+                profile.id
+            ),
+            field: Some("verification.ci_evidence".to_string()),
+        });
+    }
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -327,6 +350,51 @@ mod tests {
         let p = reviewed_profile_complete("test.reviewed.ok");
         let report = ProfilePolicyValidator::validate(&p);
         assert!(!report.has_errors(), "perfil reviewed completo no debe tener errores");
+    }
+
+    fn verified_profile_complete(id: &str) -> Profile {
+        let mut p = reviewed_profile_complete(id);
+        p.status = ProfileStatus::Verified;
+        if let Some(v) = &mut p.verification {
+            v.verified_at = Some("2026-05-27".to_string());
+            v.verified_by = Some("TeXisStudio CI — automated LaTeX compilation + postflight".to_string());
+            v.ci_evidence = Some("https://github.com/GonzaloAndDev/TeXisStudio-Profiles/actions/runs/1".to_string());
+        }
+        p
+    }
+
+    #[test]
+    fn verified_completo_sin_errores() {
+        let p = verified_profile_complete("test.verified.ok");
+        let report = ProfilePolicyValidator::validate(&p);
+        assert!(!report.has_errors(), "perfil verified completo no debe tener errores: {:?}", report.issues);
+    }
+
+    #[test]
+    fn verified_sin_ci_evidence_produce_error() {
+        let mut p = verified_profile_complete("test.verified.no-ci");
+        if let Some(v) = &mut p.verification {
+            v.ci_evidence = None;
+        }
+        let report = ProfilePolicyValidator::validate(&p);
+        assert!(
+            report.issues.iter().any(|i| i.code == "POL_VERIFIED_NO_CI_EVIDENCE"),
+            "verified sin ci_evidence debe producir POL_VERIFIED_NO_CI_EVIDENCE"
+        );
+        assert!(report.has_errors());
+    }
+
+    #[test]
+    fn verified_sin_verified_at_produce_error() {
+        let mut p = verified_profile_complete("test.verified.no-at");
+        if let Some(v) = &mut p.verification {
+            v.verified_at = None;
+        }
+        let report = ProfilePolicyValidator::validate(&p);
+        assert!(
+            report.issues.iter().any(|i| i.code == "POL_VERIFIED_NO_VERIFIED_AT"),
+            "verified sin verified_at debe producir POL_VERIFIED_NO_VERIFIED_AT"
+        );
     }
 
     #[test]
