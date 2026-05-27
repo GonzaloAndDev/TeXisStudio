@@ -25,7 +25,7 @@ impl Default for ProfileStatus {
 /// `verified_at` / `verified_by` → verificación automatizada completa (CI + sample).
 /// Los campos legacy `verified_at`/`verified_by` se preservan para compatibilidad con
 /// perfiles existentes que los usan para indicar revisión.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 pub struct ProfileVerification {
     /// Fecha de la última verificación automatizada (ISO 8601).
     #[serde(default, skip_serializing_if = "Option::is_none")]

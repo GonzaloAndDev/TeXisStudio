@@ -278,6 +278,7 @@ mod tests {
             reviewed_by: Some("reviewer".to_string()),
             source_urls: vec!["https://example.edu/thesis-guide".to_string()],
             review_interval_days: Some(365),
+            ci_evidence: None,
         });
         p
     }
