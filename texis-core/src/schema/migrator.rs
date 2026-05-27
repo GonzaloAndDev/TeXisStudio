@@ -86,6 +86,7 @@ mod tests {
                 bibliography_style: "apa".to_string(),
                 packages_required: vec![],
                 typography: Default::default(),
+                page_layout: None,
             },
             sections: vec![],
             file_states: HashMap::new(),

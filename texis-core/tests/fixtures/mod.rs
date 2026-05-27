@@ -55,6 +55,7 @@ pub fn generic_thesis_model() -> ProjectModel {
             bibliography_style: "apa".to_string(),
             packages_required: vec![],
             typography: Default::default(),
+                page_layout: None,
         },
         sections: vec![
             ProjectSection {
