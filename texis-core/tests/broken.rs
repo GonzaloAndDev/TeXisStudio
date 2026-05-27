@@ -54,7 +54,7 @@ fn proyecto_valido_sin_errores() {
     std::fs::create_dir_all(dir.path().join("content").join("bibliography")).unwrap();
     std::fs::write(
         dir.path().join("content").join("bibliography").join("references.bib"),
-        "@article{test, author={Test}, title={Test}, year={2026}}",
+        "@article{test, author={Test}, title={Test}, journal={Journal of Testing}, year={2026}}",
     ).unwrap();
 
     let model = fixtures::generic_thesis_model();
