@@ -405,16 +405,22 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
             "\\newcommand{{\\tesisComite}}{{{}}}\n",
             joined
         ));
-        // Comandos individuales para plantillas de portada avanzadas
+        // Comandos individuales para plantillas de portada avanzadas.
+        // En TeX, `\tesisComite1` NO es un nombre de macro válido por sintaxis directa:
+        // se tokeniza como `\tesisComite` + `1`. Por eso definimos los nombres
+        // dinámicos con `\csname ... \endcsname`, de modo que las plantillas que
+        // realmente necesiten acceso indexado usen:
+        //   \csname tesisComite1\endcsname
+        //   \csname tesisComite1Rol\endcsname
         for (i, m) in model.student.committee.iter().enumerate() {
             out.push_str(&format!(
-                "\\newcommand{{\\tesisComite{}}}{{{}}}\n",
+                "\\expandafter\\def\\csname tesisComite{}\\endcsname{{{}}}\n",
                 i + 1,
                 latex_escape(&m.full_name)
             ));
             if let Some(r) = &m.role {
                 out.push_str(&format!(
-                    "\\newcommand{{\\tesisComite{}Rol}}{{{}}}\n",
+                    "\\expandafter\\def\\csname tesisComite{}Rol\\endcsname{{{}}}\n",
                     i + 1,
                     latex_escape(r)
                 ));
