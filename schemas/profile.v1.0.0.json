@@ -1,0 +1,370 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Profile",
+  "type": "object",
+  "required": [
+    "bibliography_backend",
+    "bibliography_style",
+    "document_class",
+    "id",
+    "latex_engine",
+    "name",
+    "sections"
+  ],
+  "properties": {
+    "schema_version": {
+      "default": "",
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "author": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "license": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "Confianza verificada del perfil. Visible en UI para que el estudiante sepa si el perfil tiene fuente oficial trazada o es experimental.",
+      "default": "experimental",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ProfileStatus"
+        }
+      ]
+    },
+    "verification": {
+      "description": "Metadatos de verificación contra fuentes oficiales.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ProfileVerification"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "document_class": {
+      "$ref": "#/definitions/ProfileDocumentClass"
+    },
+    "latex_engine": {
+      "type": "string"
+    },
+    "compiler": {
+      "default": "",
+      "type": "string"
+    },
+    "bibliography_backend": {
+      "type": "string"
+    },
+    "bibliography_style": {
+      "type": "string"
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "page_layout": {
+      "description": "Layout de página declarado por el perfil. Consumido por el generador cuando page_layout está presente y tiene precedencia sobre los defaults.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ProfilePageLayout"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "element_aliases": {
+      "description": "Aliases de element_id para compatibilidad con perfiles externos. Ejemplo: { \"cover\": \"title_page\", \"toc\": \"table_of_contents\" } El loader aplica estos aliases (más los built-in) al cargar el perfil.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "max_words": {
+      "description": "Límite de palabras del cuerpo principal (excluye preliminares y bibliografía). Cambridge: 80 000, Oxford DPhil: 100 000. None = sin límite declarado.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "max_abstract_words": {
+      "description": "Límite de palabras del resumen / abstract. Cambridge y Oxford: 300. None = sin límite declarado.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProfileSectionDef"
+      }
+    },
+    "pdf_requirements": {
+      "description": "Requisitos de formato PDF (PDF/A, etc.). None = sin requisitos declarados.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PdfRequirements"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ProfileStatus": {
+      "type": "string",
+      "enum": [
+        "experimental",
+        "draft",
+        "reviewed",
+        "verified",
+        "stale",
+        "deprecated"
+      ]
+    },
+    "ProfileVerification": {
+      "description": "Metadatos de verificación y revisión de un perfil institucional.\n\n`reviewed_at` / `reviewed_by` → revisión humana con trazabilidad de fuentes. `verified_at` / `verified_by` → verificación automatizada completa (CI + sample). Los campos legacy `verified_at`/`verified_by` se preservan para compatibilidad con perfiles existentes que los usan para indicar revisión.",
+      "type": "object",
+      "properties": {
+        "verified_at": {
+          "description": "Fecha de la última verificación automatizada (ISO 8601).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified_by": {
+          "description": "Nombre o alias del verificador en la última verificación automatizada.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_at": {
+          "description": "Fecha de la última revisión humana (ISO 8601). Semántica más precisa que verified_at.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_by": {
+          "description": "Nombre o alias del revisor humano.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_urls": {
+          "description": "URLs de las fuentes institucionales oficiales consultadas.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "review_interval_days": {
+          "description": "Intervalo máximo recomendado de re-revisión en días.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ProfileDocumentClass": {
+      "type": "object",
+      "required": [
+        "name",
+        "options"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ProfilePageLayout": {
+      "type": "object",
+      "properties": {
+        "paper": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "margins": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ProfileMargins"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line_spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float"
+        }
+      }
+    },
+    "ProfileMargins": {
+      "type": "object",
+      "properties": {
+        "top": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bottom": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "left": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "right": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ProfileSectionDef": {
+      "type": "object",
+      "required": [
+        "element_id",
+        "id",
+        "placement",
+        "required"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "element_id": {
+          "type": "string"
+        },
+        "placement": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "guidance": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "PdfRequirements": {
+      "description": "Requisitos de formato PDF declarados por el perfil institucional.",
+      "type": "object",
+      "properties": {
+        "pdfa": {
+          "description": "Requisitos de conformidad PDF/A.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PdfaRequirement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "PdfaRequirement": {
+      "description": "Requisito de conformidad PDF/A.",
+      "type": "object",
+      "required": [
+        "required"
+      ],
+      "properties": {
+        "required": {
+          "description": "Si es true, el perfil exige PDF/A en la entrega final.",
+          "type": "boolean"
+        },
+        "level": {
+          "description": "Nivel de PDF/A requerido, ej. \"PDF/A-1b\", \"PDF/A-2b\".",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}
