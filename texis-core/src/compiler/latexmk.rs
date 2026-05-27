@@ -42,6 +42,7 @@ impl CompilationBackend for LatexmkBackend {
         let mut cmd = Command::new("latexmk");
         cmd.current_dir(build_dir)
             .arg(engine_flag)
+            .arg("-bibtex")          // run biber/bibtex as needed (required for biblatex)
             .arg("-interaction=nonstopmode")
             .arg("-file-line-error");
 
