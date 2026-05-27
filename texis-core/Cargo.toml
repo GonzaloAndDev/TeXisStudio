@@ -15,6 +15,7 @@ regex       = { workspace = true }
 chrono      = { workspace = true }
 jsonschema  = { workspace = true }
 schemars    = { workspace = true }
+sha2        = "0.10"
 
 [dev-dependencies]
 insta       = { workspace = true }

@@ -692,11 +692,11 @@ pub fn export_delivery(
             model.student.full_name,
             model.profile_id,
             if validation_errors.is_empty() { "x" } else { " " },
-            if validation_errors.is_empty() { "✓ sin errores" } else { &format!("✗ {} error(es)", validation_errors.len()) },
+            &(if validation_errors.is_empty() { "✓ sin errores".to_string() } else { format!("✗ {} error(es)", validation_errors.len()) }),
             if postflight.passed { "x" } else { " " },
             if postflight.passed { "✓ pasó" } else { "✗ falló" },
             if postflight.all_fonts_embedded { "x" } else { " " },
-            if postflight.all_fonts_embedded { "✓" } else { &format!("✗ {}", postflight.non_embedded_fonts.join(", ")) },
+            &(if postflight.all_fonts_embedded { "✓".to_string() } else { format!("✗ {}", postflight.non_embedded_fonts.join(", ")) }),
         );
         add_file(&mut zip, "submission_checklist.md", checklist.as_bytes(), &mut manifest_entries)?;
     }
