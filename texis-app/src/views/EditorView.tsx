@@ -2011,7 +2011,6 @@ function CitationPickerModal({
           ))}
         </div>
       </div>
-    </div>
   );
 }
 

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconCheck, IconDoc, IconDownload, IconRefresh, IconX,
+  IconDoc, IconDownload, IconRefresh,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
