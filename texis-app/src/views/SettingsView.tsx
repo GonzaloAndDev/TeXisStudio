@@ -807,6 +807,7 @@ function VocabularyPacksPanel() {
   const [newRepoUrl, setNewRepoUrl]     = useState("");
   const [repoError, setRepoError]       = useState<string | null>(null);
   const [showAddRepo, setShowAddRepo]   = useState(false);
+  const [langFilter, setLangFilter]     = useState<"all" | "es" | "en">("all");
 
   useEffect(() => { loadOfficialCatalog(); }, []);
 
@@ -819,10 +820,13 @@ function VocabularyPacksPanel() {
     } catch (e) { setRepoError(String(e)); }
   }
 
-  const allPacks = [
+  const allPacksRaw = [
     ...officialPacks,
     ...customRepos.flatMap((r) => (r.packs ?? []).map((p) => ({ ...p, _repoId: r.id }))),
   ];
+  const allPacks = langFilter === "all"
+    ? allPacksRaw
+    : allPacksRaw.filter((p) => (p.base_language_hint ?? "").toLowerCase() === langFilter);
 
   const inputStyle: React.CSSProperties = {
     padding: "6px 10px", borderRadius: "var(--r-sm)",
@@ -874,11 +878,30 @@ function VocabularyPacksPanel() {
         </div>
       )}
 
+      {/* Language filter tabs */}
+      {allPacksRaw.length > 0 && (
+        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+          {(["all", "es", "en"] as const).map((f) => {
+            const count = f === "all" ? allPacksRaw.length : allPacksRaw.filter((p) => (p.base_language_hint ?? "") === f).length;
+            return (
+              <button
+                key={f}
+                onClick={() => setLangFilter(f)}
+                className={`btn btn-sm ${langFilter === f ? "btn-accent" : "btn-ghost"}`}
+                style={{ fontSize: 11, padding: "2px 10px" }}
+              >
+                {f === "all" ? `Todos (${count})` : f === "es" ? `Español (${count})` : `English (${count})`}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Official + custom packs list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
         {allPacks.length === 0 && !catalogLoading && (
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", padding: "8px 0" }}>
-            Sin paquetes disponibles. Recarga el catálogo.
+            {allPacksRaw.length > 0 ? `Sin paquetes para "${langFilter}". Prueba otro filtro.` : "Sin paquetes disponibles. Recarga el catálogo."}
           </div>
         )}
         {allPacks.map((pack) => {
