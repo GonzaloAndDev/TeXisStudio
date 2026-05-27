@@ -93,6 +93,7 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
             bibliography_style: "apa".to_string(),
             packages_required: vec![],
             typography: LatexTypography::default(),
+            page_layout: None,
         },
         sections: vec![
             ProjectSection {
