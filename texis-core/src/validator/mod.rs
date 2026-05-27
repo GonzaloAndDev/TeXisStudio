@@ -1,6 +1,8 @@
 pub mod academic;
 pub mod bibliography;
+pub mod crossref;
 pub mod report;
+pub mod structural;
 pub mod technical;
 
 pub use report::{IssueSeverity, ValidationIssue, ValidationReport};
@@ -37,6 +39,15 @@ impl Validator {
 
         let bib = bibliography::validate(model, project_dir);
         all_issues.extend(bib.issues);
+
+        // P5A — referencias cruzadas y estructura basada en perfil
+        let xref = crossref::validate(model);
+        all_issues.extend(xref.issues);
+
+        if let Some(p) = profile {
+            let struc = structural::validate(model, p);
+            all_issues.extend(struc.issues);
+        }
 
         Ok(ValidationReport::new(all_issues))
     }

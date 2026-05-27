@@ -2894,6 +2894,9 @@ export default function EditorView() {
             >
               <IconRefresh size={13} /> Versiones
             </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title="Ver progreso y generar reporte de revisión">
+              Progreso
+            </button>
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>

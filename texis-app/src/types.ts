@@ -620,3 +620,18 @@ export interface ProfileLockStatus {
   locked: boolean;
   lock: ProfileLockData | null;
 }
+
+// ── P5A — Progreso de secciones ──────────────────────────────────
+
+export interface SectionProgress {
+  id: string;
+  element_id: string;
+  title: string;
+  placement: SectionPlacement;
+  status: SectionStatus;
+  enabled: boolean;
+  word_count: number;
+  has_notes: boolean;
+  notes: string | null;
+  block_count: number;
+}

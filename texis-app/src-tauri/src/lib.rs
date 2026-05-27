@@ -22,6 +22,8 @@ pub fn run() {
             commands::project::update_typography,
             commands::project::export_delivery,
             commands::project::check_pdf_postflight,
+            commands::project::generate_review_report,
+            commands::project::get_section_progress,
             commands::compiler::compile_project,
             commands::compiler::cancel_compile,
             commands::system::create_profile,

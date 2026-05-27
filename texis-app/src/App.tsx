@@ -6,6 +6,7 @@ import EditorView from "./views/EditorView";
 import HomeView from "./views/HomeView";
 import LibraryView from "./views/LibraryView";
 import ProfileWizardView from "./views/ProfileWizardView";
+import ProgressView from "./views/ProgressView";
 import SetupLatexView from "./views/SetupLatexView";
 import SettingsView from "./views/SettingsView";
 import WizardView from "./views/WizardView";
@@ -172,6 +173,7 @@ export default function App() {
           <Route path="/demo" element={<DemoLoader />} />
           <Route path="/project/:id" element={<EditorView />} />
           <Route path="/project/:id/compile" element={<CompileView />} />
+          <Route path="/project/:id/progress" element={<ProgressView />} />
           <Route path="/library" element={<LibraryView />} />
           <Route path="/new-profile" element={<ProfileWizardView />} />
           <Route path="/new-profile/:id" element={<ProfileWizardView />} />

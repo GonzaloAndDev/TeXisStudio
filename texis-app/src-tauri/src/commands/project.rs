@@ -1359,3 +1359,167 @@ fn check_critical_dependencies_for_export(
 
     Ok(())
 }
+
+// ── P5A — Reporte de revisión para asesor ─────────────────────────────────────
+
+/// Genera un reporte Markdown de revisión con estado de secciones,
+/// notas del autor, issues de validación y estructura del documento.
+/// Diseñado para compartir con el asesor o exportar como borrador de revisión.
+#[tauri::command]
+pub fn generate_review_report(
+    app: tauri::AppHandle,
+    project_path: String,
+) -> Result<String, String> {
+    use texis_core::project::model::SectionStatus;
+    use texis_core::validator::Validator;
+
+    let project_dir = PathBuf::from(&project_path);
+    let project_yaml = project_dir.join("tesis.project.yaml");
+    let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+    let profile = load_profile_for_model(&app, &model);
+
+    let validation = Validator::new()
+        .validate_with_profile(&model, &project_dir, profile.as_deref())
+        .map_err(err)?;
+
+    let mut md = String::new();
+
+    // ── Encabezado ──
+    md.push_str(&format!("# Reporte de revisión: {}\n\n", model.metadata.title));
+    md.push_str(&format!("**Autor:** {}  \n", model.student.full_name));
+    if let Some(advisor) = model.student.advisor.as_deref() {
+        md.push_str(&format!("**Director:** {}  \n", advisor));
+    }
+    md.push_str(&format!("**Institución:** {}  \n", model.institution.name));
+    md.push_str(&format!("**Perfil activo:** {}  \n", model.profile_id));
+    md.push_str(&format!("**Fecha de reporte:** {}  \n\n", chrono::Utc::now().format("%Y-%m-%d")));
+
+    // ── Progreso de secciones ──
+    md.push_str("## Estado de secciones\n\n");
+    md.push_str("| Sección | Estado | Notas del autor |\n");
+    md.push_str("|---------|--------|----------------|\n");
+
+    let status_label = |s: &SectionStatus| match s {
+        SectionStatus::Draft    => "🟡 Borrador",
+        SectionStatus::InReview => "🔵 En revisión",
+        SectionStatus::Revised  => "🟠 Corrigiendo",
+        SectionStatus::Approved => "🟢 Aprobado",
+    };
+
+    for section in &model.sections {
+        if !section.enabled { continue; }
+        let title = section.title.as_deref().unwrap_or(section.element_id.as_str());
+        let notes = section.notes.as_deref().unwrap_or("—");
+        let words: usize = section.blocks.iter()
+            .filter_map(|b| match b {
+                texis_core::project::model::ContentBlock::Paragraph(p) => Some(p.content.split_whitespace().count()),
+                _ => None,
+            })
+            .sum();
+        let word_note = if words > 0 { format!(" ({} palabras)", words) } else { String::new() };
+        md.push_str(&format!("| {}{} | {} | {} |\n",
+            title, word_note, status_label(&section.status), notes));
+    }
+    md.push('\n');
+
+    // ── Resumen de validación ──
+    let errors: Vec<_>   = validation.issues.iter().filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error)).collect();
+    let warnings: Vec<_> = validation.issues.iter().filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning)).collect();
+
+    md.push_str("## Validación automática\n\n");
+    md.push_str(&format!("- **Errores:** {}  \n", errors.len()));
+    md.push_str(&format!("- **Advertencias:** {}  \n\n", warnings.len()));
+
+    if !errors.is_empty() {
+        md.push_str("### Errores\n\n");
+        for issue in &errors {
+            md.push_str(&format!("- **[{}]** {}  \n", issue.code, issue.message));
+            if let Some(s) = &issue.suggestion {
+                md.push_str(&format!("  > 💡 {}  \n", s));
+            }
+        }
+        md.push('\n');
+    }
+
+    if !warnings.is_empty() {
+        md.push_str("### Advertencias\n\n");
+        for issue in &warnings {
+            md.push_str(&format!("- **[{}]** {}  \n", issue.code, issue.message));
+            if let Some(s) = &issue.suggestion {
+                md.push_str(&format!("  > 💡 {}  \n", s));
+            }
+        }
+        md.push('\n');
+    }
+
+    if errors.is_empty() && warnings.is_empty() {
+        md.push_str("Sin issues detectados — el documento pasa todas las validaciones automáticas. ✓\n\n");
+    }
+
+    // ── Notas globales del asesor (placeholder) ──
+    md.push_str("## Observaciones del asesor\n\n");
+    md.push_str("_(Espacio para que el asesor añada sus observaciones)_\n\n");
+    md.push_str("---\n");
+    md.push_str("*Generado por TeXisStudio — solo para uso interno de revisión.*\n");
+
+    Ok(md)
+}
+
+// ── P5A — Resumen de progreso de secciones ────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct SectionProgress {
+    pub id: String,
+    pub element_id: String,
+    pub title: String,
+    pub placement: String,
+    pub status: String,
+    pub enabled: bool,
+    pub word_count: usize,
+    pub has_notes: bool,
+    pub notes: Option<String>,
+    pub block_count: usize,
+}
+
+/// Retorna el progreso editorial de todas las secciones del proyecto.
+#[tauri::command]
+pub fn get_section_progress(project_path: String) -> Result<Vec<SectionProgress>, String> {
+    let project_dir = PathBuf::from(&project_path);
+    let project_yaml = project_dir.join("tesis.project.yaml");
+    let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+
+    let progress = model.sections.iter().map(|s| {
+        let word_count: usize = s.blocks.iter()
+            .filter_map(|b| match b {
+                texis_core::project::model::ContentBlock::Paragraph(p) => Some(p.content.split_whitespace().count()),
+                texis_core::project::model::ContentBlock::Heading(h)   => Some(h.content.split_whitespace().count()),
+                _ => None,
+            })
+            .sum();
+        let status_str = match s.status {
+            texis_core::project::model::SectionStatus::Draft    => "draft",
+            texis_core::project::model::SectionStatus::InReview => "in_review",
+            texis_core::project::model::SectionStatus::Revised  => "revised",
+            texis_core::project::model::SectionStatus::Approved => "approved",
+        };
+        SectionProgress {
+            id: s.id.clone(),
+            element_id: s.element_id.clone(),
+            title: s.title.clone().unwrap_or_else(|| s.element_id.clone()),
+            placement: match s.placement {
+                texis_core::project::model::SectionPlacement::FrontMatter => "front_matter",
+                texis_core::project::model::SectionPlacement::Body        => "body",
+                texis_core::project::model::SectionPlacement::BackMatter  => "back_matter",
+                texis_core::project::model::SectionPlacement::Appendix    => "appendix",
+            }.to_string(),
+            status: status_str.to_string(),
+            enabled: s.enabled,
+            word_count,
+            has_notes: s.notes.as_ref().map(|n| !n.is_empty()).unwrap_or(false),
+            notes: s.notes.clone(),
+            block_count: s.blocks.len(),
+        }
+    }).collect();
+
+    Ok(progress)
+}

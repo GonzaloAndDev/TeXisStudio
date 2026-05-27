@@ -17,6 +17,7 @@ import type {
   ProfileUpdatePayload,
   ProjectModel,
   RecentProject,
+  SectionProgress,
   ValidationReport,
   ZoteroImportResult,
   ZoteroItem,
@@ -84,6 +85,8 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     },
   ] as ProfileInfo[],
   preview_bib_entry: "Smith, J. A., & Jones, M. B. (2024). Machine learning applications in academic writing. *Journal of Educational Technology*, *15*(3), 234–256. https://doi.org/10.1000/xyz123",
+  generate_review_report: "# Reporte de revisión: Mi Tesis\n\n**Autor:** Estudiante Ejemplo\n\n## Estado de secciones\n\n| Sección | Estado | Notas |\n|---------|--------|-------|\n| Introducción | 🟡 Borrador | — |\n\n## Validación automática\n\n- **Errores:** 0\n- **Advertencias:** 0\n\nSin issues detectados. ✓\n",
+  get_section_progress: [] as SectionProgress[],
 };
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -195,6 +198,12 @@ export const api = {
 
   checkPdfPostflight: (projectPath: string): Promise<PdfPostflightResult> =>
     call("check_pdf_postflight", { projectPath }),
+
+  generateReviewReport: (projectPath: string): Promise<string> =>
+    call("generate_review_report", { projectPath }),
+
+  getSectionProgress: (projectPath: string): Promise<SectionProgress[]> =>
+    call("get_section_progress", { projectPath }),
 
   updateTypography: (
     projectPath: string,
