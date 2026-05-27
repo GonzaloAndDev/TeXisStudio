@@ -73,8 +73,15 @@ impl ProfileLock {
             if n == 0 { break; }
             hasher.update(&buf[..n]);
         }
-        Ok(format!("{:x}", hasher.finalize()))
+        Ok(bytes_to_hex(&hasher.finalize()))
     }
+}
+
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
+        s.push_str(&format!("{:02x}", b));
+        s
+    })
 }
 
 /// Estado del lock para la UI.
@@ -101,7 +108,7 @@ mod tests {
 
     fn sha256_str(data: &[u8]) -> String {
         use sha2::{Digest, Sha256};
-        format!("{:x}", Sha256::digest(data))
+        bytes_to_hex(&Sha256::digest(data))
     }
 
     #[test]
