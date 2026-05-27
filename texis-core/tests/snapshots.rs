@@ -3,6 +3,7 @@
 
 mod fixtures;
 
+use std::fs;
 use texis_core::LaTeXGenerator;
 use texis_core::project::model::CommitteeMember;
 
@@ -39,7 +40,9 @@ fn committee_commands_use_csname_for_indexed_members() {
     ];
 
     let latex_gen = LaTeXGenerator::new().unwrap();
-    let output = latex_gen.generate_main_tex_string(&model).unwrap();
+    let temp_dir = tempfile::tempdir().unwrap();
+    latex_gen.generate(&model, temp_dir.path()).unwrap();
+    let output = fs::read_to_string(temp_dir.path().join("configuracion/datos_tesis.tex")).unwrap();
 
     assert!(output.contains("\\newcommand{\\tesisComite}{"));
     assert!(output.contains("Prof. Alice Johnson"));
