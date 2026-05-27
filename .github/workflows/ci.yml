@@ -4,6 +4,7 @@ on: [push, pull_request]
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -38,7 +39,13 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Unit tests (lib)
-        run: cargo test --workspace --lib
+        run: cargo test --workspace --lib 2>&1 | tee /tmp/test_output.txt; exit ${PIPESTATUS[0]:-$?}
+        shell: bash
+
+      - name: Show test output on failure
+        if: failure()
+        run: cat /tmp/test_output.txt 2>/dev/null || echo "No output file"
+        shell: bash
 
       - name: Integration tests (snapshots + broken)
         run: cargo test --workspace --test snapshots --test broken
