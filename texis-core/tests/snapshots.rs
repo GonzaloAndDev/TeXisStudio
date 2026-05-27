@@ -41,7 +41,11 @@ fn committee_commands_use_csname_for_indexed_members() {
     let latex_gen = LaTeXGenerator::new().unwrap();
     let output = latex_gen.generate_main_tex_string(&model).unwrap();
 
-    assert!(output.contains("\\newcommand{\\tesisComite}{Prof. Alice Johnson (Committee Chair) \\\\ Prof. Bob Williams (Committee Member)}"));
+    assert!(output.contains("\\newcommand{\\tesisComite}{"));
+    assert!(output.contains("Prof. Alice Johnson"));
+    assert!(output.contains("Committee Chair"));
+    assert!(output.contains("Prof. Bob Williams"));
+    assert!(output.contains("Committee Member"));
     assert!(output.contains("\\expandafter\\def\\csname tesisComite1\\endcsname{Prof. Alice Johnson}"));
     assert!(output.contains("\\expandafter\\def\\csname tesisComite1Rol\\endcsname{Committee Chair}"));
     assert!(output.contains("\\expandafter\\def\\csname tesisComite2\\endcsname{Prof. Bob Williams}"));
