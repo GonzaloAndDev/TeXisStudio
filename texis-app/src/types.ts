@@ -480,6 +480,45 @@ export interface LangCatalog {
   schema_version: string;
   updated_at: string;
   packages: LangPackEntry[];
+  vocabulary_packs?: VocabPackEntry[];
+}
+
+// ── Vocabulary packs (domain-specific, independent of base language) ──
+
+/** Entry in catalog.json vocabulary_packs — a domain-specific wordlist */
+export interface VocabPackEntry {
+  id: string;               // e.g. "es-engineering", "en-mathematics"
+  name: string;             // Display name
+  type: "vocabulary";
+  status: LangStatus;
+  version: string;
+  base_language_hint?: string;  // Suggested pairing (non-binding)
+  description: string;
+  pack_url: string;         // URL to the pack.yaml
+}
+
+/** Locally installed vocabulary pack */
+export interface InstalledVocabPack {
+  id: string;
+  version: string;
+  installed_at: string;
+  entry: VocabPackEntry;
+  /** Terms loaded from the pack */
+  terms: string[];
+}
+
+/**
+ * A custom external vocabulary repository.
+ * Any URL pointing to a catalog.json with vocabulary_packs section.
+ * Fully independent — users add their own repos without affecting the core repo.
+ */
+export interface CustomVocabRepo {
+  id: string;           // user-assigned alias
+  url: string;          // URL to a catalog.json compatible file
+  added_at: string;
+  last_synced_at?: string;
+  packs?: VocabPackEntry[];
+  error?: string;
 }
 
 // ── PDF Postflight ───────────────────────────────────────────────
