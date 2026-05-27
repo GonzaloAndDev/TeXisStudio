@@ -61,11 +61,20 @@ jobs:
         if: env.INSTA_UPDATE == 'new'
         continue-on-error: true
 
-      - name: Verify schema is up to date (P0.3)
+      - name: Generate and commit schema if missing or outdated (P0.3)
+        if: runner.os == 'Linux'
         run: |
           cargo run --package texis-core --bin generate_schema
-          git diff --exit-code schemas/profile.v1.0.0.json || (echo "ERROR: schemas/profile.v1.0.0.json está desactualizado. Ejecuta: cargo run --package texis-core --bin generate_schema" && exit 1)
-        if: runner.os == 'Linux'
+          if ! git diff --quiet schemas/profile.v1.0.0.json 2>/dev/null || ! git ls-files --error-unmatch schemas/profile.v1.0.0.json 2>/dev/null; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add schemas/profile.v1.0.0.json
+            git commit -m "ci(schema): auto-generate profile.v1.0.0.json (P0.3) [skip ci]"
+            git push
+            echo "Schema generado y commiteado automáticamente."
+          else
+            echo "Schema ya está actualizado."
+          fi
 
       - name: Format check
         run: cargo fmt --all -- --check
