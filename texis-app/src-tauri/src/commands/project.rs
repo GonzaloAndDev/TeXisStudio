@@ -183,7 +183,7 @@ pub fn validate_project(
 
     let validator = Validator::new();
     let report = validator
-        .validate_with_profile(&model, &path, profile.as_deref())
+        .validate_with_profile(&model, &path, profile.as_ref())
         .map_err(err)?;
 
     let issues: Vec<Value> = report
@@ -478,11 +478,11 @@ pub fn export_delivery(
 
     // ── P1.9: Bloqueo de dependencias críticas en modo final ─────
     if mode == "final" {
-        check_critical_dependencies_for_export(&model, profile.as_deref())?;
+        check_critical_dependencies_for_export(&model, profile.as_ref())?;
     }
 
     let validation = Validator::new()
-        .validate_with_profile(&model, &project_dir, profile.as_deref())
+        .validate_with_profile(&model, &project_dir, profile.as_ref())
         .map_err(err)?;
 
     let validation_errors: Vec<_> = validation
@@ -1379,7 +1379,7 @@ pub fn generate_review_report(
     let profile = load_profile_for_model(&app, &model);
 
     let validation = Validator::new()
-        .validate_with_profile(&model, &project_dir, profile.as_deref())
+        .validate_with_profile(&model, &project_dir, profile.as_ref())
         .map_err(err)?;
 
     let mut md = String::new();
