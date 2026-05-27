@@ -44,11 +44,15 @@ enum Commands {
     ImportProfile { pack_file: PathBuf },
     /// Validar un paquete de perfil
     ValidatePack { pack_file: PathBuf },
-    /// Exportar para entrega
+    /// Exportar paquete de entrega final con artefactos de evidencia
     ExportDelivery {
         project_dir: PathBuf,
-        #[arg(long)]
+        /// Directorio de salida para el ZIP generado
+        #[arg(long, default_value = ".")]
         output: PathBuf,
+        /// Modo de exportación: draft | review | final
+        #[arg(long, default_value = "draft")]
+        mode: String,
     },
 }
 
@@ -73,8 +77,8 @@ fn main() {
         Commands::ValidatePack { pack_file } => {
             commands::validate::run_pack(&pack_file)
         }
-        Commands::ExportDelivery { project_dir, output } => {
-            commands::export::run_delivery(&project_dir, &output)
+        Commands::ExportDelivery { project_dir, output, mode } => {
+            commands::export::run_delivery(&project_dir, &output, &mode)
         }
     };
 

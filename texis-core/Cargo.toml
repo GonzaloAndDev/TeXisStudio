@@ -16,6 +16,7 @@ chrono      = { workspace = true }
 jsonschema  = { workspace = true }
 schemars    = { workspace = true }
 sha2        = "0.10"
+zip         = { workspace = true }
 
 [dev-dependencies]
 insta       = { workspace = true }

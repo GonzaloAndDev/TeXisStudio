@@ -19,6 +19,7 @@ schemars     = { version = "0.8", features = ["preserve_order"] }
 thiserror    = "1"
 anyhow       = "1"
 walkdir      = "2"
+zip          = "2"
 regex        = "1"
 chrono       = { version = "0.4", features = ["serde"] }
 clap         = { version = "4", features = ["derive"] }

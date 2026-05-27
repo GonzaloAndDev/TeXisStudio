@@ -1,4 +1,5 @@
 pub mod bibliography;
+pub mod exporter;
 pub mod compiler;
 pub mod element;
 pub mod error;

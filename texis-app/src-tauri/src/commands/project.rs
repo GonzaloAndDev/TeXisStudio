@@ -13,10 +13,6 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// Versión de schema compartida por todos los artefactos de exportación.
-/// Centralizada aquí para evitar drift entre artefactos (ver Hallazgo #6 auditoría v2.2).
-const ARTIFACT_SCHEMA_VERSION: &str = "1.0.0";
-
 /// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
 #[tauri::command]
 pub fn create_project(
@@ -465,18 +461,14 @@ pub fn export_delivery(
     output_path: String,
     export_mode: Option<String>,
 ) -> Result<Value, String> {
-    use sha2::{Digest, Sha256};
-    use std::fs::File;
-    use std::io::{BufWriter, Write};
-    use zip::write::SimpleFileOptions;
-    use zip::ZipWriter;
+    use texis_core::exporter::{DeliveryInput, DeliveryOptions};
 
     let mode = export_mode.as_deref().unwrap_or("draft");
     let project_dir = PathBuf::from(&project_path);
     let project_yaml = project_dir.join("tesis.project.yaml");
     let pdf_path = project_dir.join("build").join("main.pdf");
 
-    // ── Cargar modelo y validar ───────────────────────────────────
+    // ── Cargar modelo y perfil ────────────────────────────────────
     let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
     let profile = load_profile_for_model(&app, &model);
 
@@ -485,6 +477,7 @@ pub fn export_delivery(
         check_critical_dependencies_for_export(&model, profile.as_ref())?;
     }
 
+    // ── Validación ───────────────────────────────────────────────
     let validation = Validator::new()
         .validate_with_profile(&model, &project_dir, profile.as_ref())
         .map_err(err)?;
@@ -507,7 +500,7 @@ pub fn export_delivery(
         }
     }
 
-    // ── Postflight PDF (review y final) ──────────────────────────
+    // ── Postflight PDF ───────────────────────────────────────────
     let postflight = PdfChecker::check(&pdf_path);
 
     if mode == "final" {
@@ -531,412 +524,32 @@ pub fn export_delivery(
         }
     }
 
-    // ── Construir el nombre del ZIP ───────────────────────────────
-    let slug: String = model
-        .metadata
-        .title
-        .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' { c.to_ascii_lowercase() } else { '_' })
-        .take(40)
-        .collect::<String>()
-        .trim_matches('_')
-        .to_string();
-    let mode_suffix = if mode == "draft" { "_borrador" } else { "" };
-    let zip_name = format!(
-        "{}{}_entrega.zip",
-        if slug.is_empty() { "tesis".to_string() } else { slug },
-        mode_suffix
-    );
-    let zip_path = PathBuf::from(&output_path).join(&zip_name);
+    // ── Delegar generación del ZIP al módulo compartido ──────────
+    let output_dir = PathBuf::from(&output_path);
+    std::fs::create_dir_all(&output_dir).map_err(err)?;
 
-    // ── Crear ZIP ────────────────────────────────────────────────
-    let file = File::create(&zip_path).map_err(err)?;
-    let writer = BufWriter::new(file);
-    let mut zip = ZipWriter::new(writer);
-    let opts =
-        SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-
-    // Manifest (se construye al mismo tiempo que se agregan archivos)
-    let mut manifest_entries: Vec<serde_json::Value> = vec![];
-
-    let add_file = |zip: &mut ZipWriter<BufWriter<File>>,
-                    entry_name: &str,
-                    bytes: &[u8],
-                    manifest: &mut Vec<serde_json::Value>|
-     -> Result<(), String> {
-        let hash = format!("{:x}", Sha256::digest(bytes));
-        zip.start_file(entry_name, opts).map_err(err)?;
-        zip.write_all(bytes).map_err(err)?;
-        manifest.push(serde_json::json!({
-            "path": entry_name,
-            "sha256": hash,
-            "bytes": bytes.len(),
-        }));
-        Ok(())
+    let input = DeliveryInput {
+        project_dir: &project_dir,
+        model: &model,
+        profile: profile.as_ref(),
+        validation: &validation,
+        postflight: &postflight,
+    };
+    let options = DeliveryOptions {
+        output_dir: &output_dir,
+        mode,
+        app_version: env!("CARGO_PKG_VERSION"),
     };
 
-    // 1. PDF compilado
-    if pdf_path.exists() {
-        let bytes = std::fs::read(&pdf_path).map_err(err)?;
-        add_file(&mut zip, "thesis.pdf", &bytes, &mut manifest_entries)?;
-    }
+    let result = texis_core::exporter::create_delivery_package(&input, &options)
+        .map_err(err)?;
 
-    // 2. Fuentes LaTeX (sources/)
-    let build_dir = project_dir.join("build");
-    let exclude_build = [
-        "main.pdf", "main.aux", "main.log", "main.bbl", "main.bcf",
-        "main.blg", "main.run.xml", "main.toc", "main.out", "main.fls",
-        "main.fdb_latexmk", "main.synctex.gz",
-    ];
-    if build_dir.exists() {
-        for entry in walkdir::WalkDir::new(&build_dir).into_iter().filter_map(|e| e.ok()) {
-            let path = entry.path();
-            if path.is_dir() { continue; }
-            let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if exclude_build.contains(&fname) { continue; }
-            if let Ok(rel) = path.strip_prefix(&build_dir) {
-                let entry_name = format!("sources/{}", rel.to_string_lossy().replace('\\', "/"));
-                let bytes = std::fs::read(path).map_err(err)?;
-                add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries)?;
-            }
-        }
-    }
-
-    // 3. Contenido (bibliografía, figuras)
-    let content_dir = project_dir.join("content");
-    if content_dir.exists() {
-        for entry in walkdir::WalkDir::new(&content_dir).into_iter().filter_map(|e| e.ok()) {
-            let path = entry.path();
-            if path.is_dir() { continue; }
-            if let Ok(rel) = path.strip_prefix(&content_dir) {
-                let entry_name = format!("content/{}", rel.to_string_lossy().replace('\\', "/"));
-                let bytes = std::fs::read(path).map_err(err)?;
-                add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries)?;
-            }
-        }
-    }
-
-    // 4. compliance_report.json
-    {
-        let pf_issues_json: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-        })).collect();
-
-        let validation_issues_json: Vec<_> = validation.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-            "section_id": i.section_id,
-        })).collect();
-
-        let report = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-            "generator": "TeXisStudio",
-            "export_mode": mode,
-            "project": {
-                "title": model.metadata.title,
-                "author": model.student.full_name,
-                "profile_id": model.profile_id,
-                "year": model.metadata.year,
-            },
-            "preflight": {
-                "passed": validation_errors.is_empty(),
-                "total_issues": validation.issues.len(),
-                "errors": validation_errors.len(),
-                "issues": validation_issues_json,
-            },
-            "postflight_pdf": {
-                "passed": postflight.passed,
-                "pdf_exists": postflight.pdf_exists,
-                "all_fonts_embedded": postflight.all_fonts_embedded,
-                "non_embedded_fonts": postflight.non_embedded_fonts,
-                "metadata": postflight.metadata,
-                "tools_available": postflight.tools_available,
-                "tools_missing": postflight.tools_missing,
-                "issues": pf_issues_json,
-            },
-            "disclaimer": "Este reporte cubre las validaciones automáticas disponibles. Algunos requisitos institucionales requieren confirmación manual con el programa, departamento o escuela de posgrado."
-        });
-
-        let report_bytes = serde_json::to_string_pretty(&report).map_err(err)?.into_bytes();
-        add_file(&mut zip, "compliance_report.json", &report_bytes, &mut manifest_entries)?;
-    }
-
-    // 5. submission_checklist.md
-    {
-        let checklist = format!(
-            "# Lista de verificación de entrega\n\n\
-             Generado por TeXisStudio el {}\n\n\
-             ## Proyecto\n\
-             - **Título:** {}\n\
-             - **Autor:** {}\n\
-             - **Perfil institucional:** {}\n\n\
-             ## Verificaciones automáticas\n\
-             - [{}] Validación de estructura: {}\n\
-             - [{}] Postflight PDF: {}\n\
-             - [{}] Fuentes incrustadas: {}\n\n\
-             ## Verificaciones manuales requeridas\n\
-             - [ ] Confirmar requisitos específicos del programa o departamento\n\
-             - [ ] Confirmar nombre exacto del grado y título según el programa\n\
-             - [ ] Confirmar nombre del director/comité según formato institucional\n\
-             - [ ] Confirmar copyright, licencia y restricciones de embargo\n\
-             - [ ] Confirmar material de terceros con permisos documentados\n\
-             - [ ] Confirmar sistema de entrega institucional (portal, email, físico)\n\
-             - [ ] Confirmar plazo de entrega y procedimiento de registro\n\n\
-             ---\n\
-             _Este paquete fue generado por TeXisStudio. Las validaciones automáticas\n\
-             no reemplazan la revisión del programa, departamento o escuela de posgrado._\n",
-            chrono::Utc::now().format("%Y-%m-%d"),
-            model.metadata.title,
-            model.student.full_name,
-            model.profile_id,
-            if validation_errors.is_empty() { "x" } else { " " },
-            &(if validation_errors.is_empty() { "✓ sin errores".to_string() } else { format!("✗ {} error(es)", validation_errors.len()) }),
-            if postflight.passed { "x" } else { " " },
-            if postflight.passed { "✓ pasó" } else { "✗ falló" },
-            if postflight.all_fonts_embedded { "x" } else { " " },
-            &(if postflight.all_fonts_embedded { "✓".to_string() } else { format!("✗ {}", postflight.non_embedded_fonts.join(", ")) }),
-        );
-        add_file(&mut zip, "submission_checklist.md", checklist.as_bytes(), &mut manifest_entries)?;
-    }
-
-    // 6. postflight_report.json — postflight completo serializable
-    {
-        let pf_issues_full: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-        })).collect();
-        let fonts_full: Vec<_> = postflight.fonts.iter().map(|f| serde_json::json!({
-            "name": f.name,
-            "font_type": f.font_type,
-            "embedded": f.embedded,
-            "subset": f.subset,
-        })).collect();
-        let pf_report = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-            "pdf_exists": postflight.pdf_exists,
-            "passed": postflight.passed,
-            "all_fonts_embedded": postflight.all_fonts_embedded,
-            "non_embedded_fonts": postflight.non_embedded_fonts,
-            "tools_available": postflight.tools_available,
-            "tools_missing": postflight.tools_missing,
-            "fonts": fonts_full,
-            "issues": pf_issues_full,
-            "metadata": postflight.metadata,
-        });
-        let pf_bytes = serde_json::to_string_pretty(&pf_report).map_err(err)?.into_bytes();
-        add_file(&mut zip, "postflight_report.json", &pf_bytes, &mut manifest_entries)?;
-    }
-
-    // 7. compilation_reproducibility.json — D5: declarar, no prometer reproducibilidad
-    {
-        let latex_info = texis_core::compiler::detector::LatexInstallation::detect();
-        let repro = serde_json::json!({
-            "compilation_reproducibility": "not_guaranteed",
-            "note": "La compilación LaTeX puede producir PDFs binariamente distintos entre entornos aunque el fuente sea idéntico.",
-            "profile_id": model.profile_id,
-            "compiler": if latex_info.has_xelatex { "xelatex" } else if latex_info.has_latexmk { "latexmk" } else { "unknown" },
-            "compiler_version": latex_info.latexmk_version,
-            "texlive_year": latex_info.texlive_year,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-        });
-        let repro_bytes = serde_json::to_string_pretty(&repro).map_err(err)?.into_bytes();
-        add_file(&mut zip, "compilation_reproducibility.json", &repro_bytes, &mut manifest_entries)?;
-    }
-
-    // 8. policy_report.json — PolicyReport del ProfilePolicyValidator (D1-bis)
-    if let Some(ref p) = profile {
-        use texis_core::profile::ProfilePolicyValidator;
-        let policy_report = ProfilePolicyValidator::validate(p);
-        let issues_json: Vec<_> = policy_report.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "field": i.field,
-        })).collect();
-        let pr_json = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-            "profile_id": policy_report.profile_id,
-            "profile_status": format!("{:?}", policy_report.profile_status).to_lowercase(),
-            "has_errors": policy_report.has_errors(),
-            "has_warnings": policy_report.has_warnings(),
-            "issues": issues_json,
-        });
-        let pr_bytes = serde_json::to_string_pretty(&pr_json).map_err(err)?.into_bytes();
-        add_file(&mut zip, "policy_report.json", &pr_bytes, &mut manifest_entries)?;
-    }
-
-    // 9. profile.lock.yaml — si el proyecto tiene perfil congelado (P1.7)
-    {
-        use texis_core::profile::lock::{check_lock_status, LockStatus};
-        if check_lock_status(&project_dir) == LockStatus::Locked {
-            let lock_path = project_dir.join("profile.lock.yaml");
-            let lock_bytes = std::fs::read(&lock_path).map_err(err)?;
-            add_file(&mut zip, "profile.lock.yaml", &lock_bytes, &mut manifest_entries)?;
-        }
-    }
-
-    // 10. profile.lock.sha256 — hash del profile.lock.yaml si existe (P2.5)
-    {
-        use texis_core::profile::lock::{check_lock_status, LockStatus};
-        if check_lock_status(&project_dir) == LockStatus::Locked {
-            let lock_path = project_dir.join("profile.lock.yaml");
-            if let Ok(lock_bytes) = std::fs::read(&lock_path) {
-                use sha2::{Digest, Sha256};
-                let hash = Sha256::digest(&lock_bytes);
-                let hex: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
-                let sha_info = serde_json::json!({
-                    "schema_version": ARTIFACT_SCHEMA_VERSION,
-                    "file": "profile.lock.yaml",
-                    "sha256": hex,
-                    "generated_at": chrono::Utc::now().to_rfc3339(),
-                });
-                let sha_bytes = serde_json::to_string_pretty(&sha_info).map_err(err)?.into_bytes();
-                add_file(&mut zip, "profile.lock.sha256.json", &sha_bytes, &mut manifest_entries)?;
-            }
-        }
-    }
-
-    // 11. compiler.info.json — información del compilador LaTeX (P2.5)
-    {
-        let latex_info = texis_core::compiler::detector::LatexInstallation::detect();
-        let compiler_info = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-            "engine": if latex_info.has_xelatex { "xelatex" } else { "unknown" },
-            "backend": if latex_info.has_latexmk { "latexmk" } else { "direct" },
-            "latexmk_version": latex_info.latexmk_version,
-            "texlive_year": latex_info.texlive_year,
-            "has_xelatex": latex_info.has_xelatex,
-            "has_latexmk": latex_info.has_latexmk,
-            "has_biber": latex_info.has_biber,
-            "has_tectonic": latex_info.has_tectonic,
-            "tectonic_version": latex_info.tectonic_version,
-        });
-        let ci_bytes = serde_json::to_string_pretty(&compiler_info).map_err(err)?.into_bytes();
-        add_file(&mut zip, "compiler.info.json", &ci_bytes, &mut manifest_entries)?;
-    }
-
-    // 12. latex_packages_report.json — paquetes LaTeX detectados en el log (P2.5)
-    {
-        let log_path = project_dir.join("build").join("main.log");
-        let packages = if log_path.exists() {
-            extract_latex_packages_from_log(&std::fs::read_to_string(&log_path).unwrap_or_default())
-        } else {
-            vec![]
-        };
-        let pkg_report = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-            "log_available": log_path.exists(),
-            "package_count": packages.len(),
-            "packages": packages,
-        });
-        let pkg_bytes = serde_json::to_string_pretty(&pkg_report).map_err(err)?.into_bytes();
-        add_file(&mut zip, "latex_packages_report.json", &pkg_bytes, &mut manifest_entries)?;
-    }
-
-    // 13. texis.version.json
-    {
-        let version_info = serde_json::json!({
-            "texis_app_version": env!("CARGO_PKG_VERSION"),
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "generated_at": chrono::Utc::now().to_rfc3339(),
-        });
-        let ver_bytes = serde_json::to_string_pretty(&version_info).map_err(err)?.into_bytes();
-        add_file(&mut zip, "texis.version.json", &ver_bytes, &mut manifest_entries)?;
-    }
-
-    // 14. build.log — log de la última compilación si existe
-    {
-        let log_path = project_dir.join("build").join("main.log");
-        if log_path.exists() {
-            let log_bytes = std::fs::read(&log_path).map_err(err)?;
-            add_file(&mut zip, "build.log", &log_bytes, &mut manifest_entries)?;
-        }
-    }
-
-    // 15. manifest.sha256.json
-    {
-        let manifest = serde_json::json!({
-            "schema_version": ARTIFACT_SCHEMA_VERSION,
-            "created_at": chrono::Utc::now().to_rfc3339(),
-            "generator": "TeXisStudio",
-            "export_mode": mode,
-            "files": manifest_entries,
-        });
-        let manifest_bytes = serde_json::to_string_pretty(&manifest).map_err(err)?.into_bytes();
-        zip.start_file("manifest.sha256.json", opts).map_err(err)?;
-        zip.write_all(&manifest_bytes).map_err(err)?;
-    }
-
-    // 16. README.txt
-    {
-        let warnings_count = validation.issues.iter()
-            .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning))
-            .count();
-        let readme = format!(
-            "TeXisStudio — Paquete de entrega\n{sep}\n\n\
-             Título:     {title}\n\
-             Autor:      {author}\n\
-             Perfil:     {profile}\n\
-             Modo:       {mode_str}\n\
-             Generado:   {date}\n\n\
-             Estado:\n\
-               Validación preflight: {pf_state} ({errs} errores, {warns} avisos)\n\
-               Postflight PDF:       {post_state}\n\
-               Fuentes incrustadas:  {fonts_state}\n\n\
-             Contenido del ZIP:\n\
-               thesis.pdf                         → PDF compilado\n\
-               sources/                           → Archivos fuente LaTeX\n\
-               content/                           → Bibliografía e imágenes\n\
-               compliance_report.json             → Reporte de cumplimiento\n\
-               postflight_report.json             → Verificación del PDF\n\
-               policy_report.json                 → Política del perfil institucional\n\
-               compilation_reproducibility.json   → Declaración de reproducibilidad\n\
-               compiler.info.json                 → Información del compilador LaTeX\n\
-               latex_packages_report.json         → Paquetes LaTeX detectados\n\
-               profile.lock.sha256.json           → Hash SHA-256 del perfil congelado\n\
-               texis.version.json                 → Versión del generador\n\
-               profile.lock.yaml                  → Perfil congelado (si existe)\n\
-               build.log                          → Log de compilación (si existe)\n\
-               submission_checklist.md            → Lista de verificación\n\
-               manifest.sha256.json               → Hashes SHA-256 de todos los archivos\n\n\
-             AVISO: Este paquete incluye validaciones automáticas. Algunos requisitos\n\
-             institucionales requieren confirmación manual con tu programa o escuela.\n",
-            sep = "=".repeat(60),
-            title = model.metadata.title,
-            author = model.student.full_name,
-            profile = model.profile_id,
-            mode_str = mode.to_uppercase(),
-            date = chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
-            pf_state = if validation_errors.is_empty() { "OK" } else { "ERRORES" },
-            errs = validation_errors.len(),
-            warns = warnings_count,
-            post_state = if postflight.passed { "OK" } else { "PROBLEMAS" },
-            fonts_state = if postflight.all_fonts_embedded { "OK" } else { "NO INCRUSTADAS" },
-        );
-        add_file(&mut zip, "README.txt", readme.as_bytes(), &mut manifest_entries)?;
-    }
-
-    zip.finish().map_err(err)?;
-
-    let zip_path_str = zip_path.to_string_lossy().to_string();
     Ok(serde_json::json!({
-        "zip_path": zip_path_str,
-        "export_mode": mode,
-        "validation_errors": validation_errors.len(),
-        "postflight_passed": postflight.passed,
-        "all_fonts_embedded": postflight.all_fonts_embedded,
+        "zip_path": result.zip_path.to_string_lossy(),
+        "export_mode": result.export_mode,
+        "validation_errors": result.validation_errors,
+        "postflight_passed": result.postflight_passed,
+        "all_fonts_embedded": result.all_fonts_embedded,
     }))
 }
 
@@ -969,36 +582,6 @@ fn add_dir_to_zip(
         zip.write_all(&bytes).map_err(err)?;
     }
     Ok(())
-}
-
-/// Extrae nombres de paquetes LaTeX del log de compilación.
-///
-/// Busca líneas del tipo `(path/to/package.sty` o `(path/to/class.cls` y
-/// extrae solo el nombre del archivo sin extensión. Elimina duplicados y ordena.
-fn extract_latex_packages_from_log(log: &str) -> Vec<String> {
-    use std::collections::BTreeSet;
-    let mut pkgs: BTreeSet<String> = BTreeSet::new();
-    for line in log.lines() {
-        let trimmed = line.trim();
-        // LaTeX log format: lines starting with ( for file loading
-        if trimmed.starts_with('(') {
-            let inner = trimmed.trim_start_matches('(').trim();
-            // Extract the filename part (before any space or newline)
-            let filepath = inner.split_whitespace().next().unwrap_or("").trim_end_matches(')');
-            if filepath.ends_with(".sty") || filepath.ends_with(".cls") || filepath.ends_with(".def") {
-                // Get just the filename without path and extension
-                let fname = std::path::Path::new(filepath)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("")
-                    .to_string();
-                if !fname.is_empty() && fname.len() > 1 {
-                    pkgs.insert(fname);
-                }
-            }
-        }
-    }
-    pkgs.into_iter().collect()
 }
 
 /// Actualiza los ajustes tipográficos del proyecto (fuente, papel, interlineado, márgenes).
