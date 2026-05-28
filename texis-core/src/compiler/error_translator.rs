@@ -2,14 +2,21 @@ use super::UserError;
 
 /// Traduce líneas del log de LaTeX a mensajes de error en lenguaje humano.
 ///
-/// Clasifica los errores por dominio:
-///  [Entorno]      herramientas, motores, fuentes, paquetes LaTeX faltantes
+/// CRITERIO DE INCLUSIÓN: solo se incluyen patrones que correspondan a errores
+/// FATALES que impiden la generación del PDF. Patrones que aparecen en
+/// compilaciones exitosas (warnings de layout, fallbacks de fuente, etc.)
+/// NO se incluyen aquí porque romperían el check user_errors.is_empty()
+/// que usa la detección de éxito por evidencia física en latexmk.rs.
+///
+/// Clasificación por dominio:
 ///  [Contenido]    errores en el documento del usuario (LaTeX mal escrito)
 ///  [Bibliografía] errores de biber/biblatex
+///  [Entorno]      herramientas o paquetes faltantes
 ///  [Plantilla]    errores internos de la plantilla generada por TeXisStudio
 ///
-/// IMPORTANTE: "Please (re)run Biber" NO se clasifica como error de usuario
-/// (es un aviso intermedio que latexmk resuelve internamente).
+/// NOTA sobre "Overfull \\hbox": warning de layout, NO incluir.
+/// NOTA sobre "Font ... not loadable": fallback informativo de XeLaTeX, NO incluir.
+/// NOTA sobre "Please (re)run Biber": aviso intermedio, NO incluir (ver latexmk.rs).
 pub fn translate_log(log: &str) -> Vec<UserError> {
     let mut errors: Vec<UserError> = Vec::new();
 
@@ -27,44 +34,44 @@ pub fn translate_log(log: &str) -> Vec<UserError> {
 }
 
 fn translate_line(line: &str) -> Option<UserError> {
-    // ── [Contenido] Archivo no encontrado ────────────────────────────────────
-    if line.contains("! LaTeX Error: File") && line.contains("not found") && !line.contains(".sty") {
-        let file = extract_quoted(line).unwrap_or_else(|| "desconocido".to_string());
-        return Some(UserError {
-            message: format!("[Contenido] Archivo no encontrado: '{}'", file),
-            suggestion: Some(format!(
-                "Verifica que '{}' existe en la ruta correcta. \
-                 Si es una imagen, ponla en content/figures/.",
-                file
-            )),
-            raw_log_line: Some(line.to_string()),
-        });
-    }
+    // Solo patrones de errores FATALES que impiden la compilación.
 
-    // ── [Entorno] Paquete .sty no encontrado ─────────────────────────────────
-    if line.contains("! LaTeX Error: File") && line.contains(".sty") && line.contains("not found") {
-        let pkg = extract_quoted(line)
-            .map(|s| s.replace(".sty", ""))
-            .unwrap_or_else(|| "desconocido".to_string());
-        return Some(UserError {
-            message: format!("[Entorno] Paquete LaTeX faltante: '{}'", pkg),
-            suggestion: Some(format!(
-                "Instala el paquete '{}'. \
-                 En Linux: sudo apt-get install texlive-latex-extra. \
-                 En macOS (MacTeX): tlmgr install {}.",
-                pkg, pkg
-            )),
-            raw_log_line: Some(line.to_string()),
-        });
+    // ── [Contenido] Archivo no encontrado (imagen, incluye, etc.) ─────────────
+    // Patrón: "! LaTeX Error: File 'X' not found."
+    if line.contains("! LaTeX Error: File") && line.contains("not found") {
+        let file = extract_quoted(line).unwrap_or_else(|| "desconocido".to_string());
+        let is_sty = file.ends_with(".sty") || file.ends_with(".cls");
+        if is_sty {
+            return Some(UserError {
+                message: format!("[Entorno] Paquete LaTeX faltante: '{}'", file.replace(".sty", "").replace(".cls", "")),
+                suggestion: Some(
+                    "Instala el paquete en tu distribución TeX Live o MiKTeX. \
+                     En Linux: sudo apt-get install texlive-latex-extra."
+                        .to_string(),
+                ),
+                raw_log_line: Some(line.to_string()),
+            });
+        } else {
+            return Some(UserError {
+                message: format!("[Contenido] Archivo no encontrado: '{}'", file),
+                suggestion: Some(format!(
+                    "Verifica que '{}' existe en la ruta correcta. \
+                     Si es una imagen, ponla en content/figures/.",
+                    file
+                )),
+                raw_log_line: Some(line.to_string()),
+            });
+        }
     }
 
     // ── [Contenido] Comando LaTeX desconocido ─────────────────────────────────
+    // Patrón: "! Undefined control sequence."
     if line.contains("! Undefined control sequence") {
         return Some(UserError {
             message: "[Contenido] Comando LaTeX desconocido.".to_string(),
             suggestion: Some(
                 "Revisa que el paquete que define este comando está habilitado. \
-                 Si usas un bloque RawLatex, verifica la sintaxis del comando."
+                 Si usas un bloque RawLatex, verifica la sintaxis."
                     .to_string(),
             ),
             raw_log_line: Some(line.to_string()),
@@ -72,44 +79,26 @@ fn translate_line(line: &str) -> Option<UserError> {
     }
 
     // ── [Contenido] Símbolo matemático fuera de entorno ──────────────────────
+    // Patrón: "! Missing $ inserted."
     if line.contains("! Missing $ inserted") {
         return Some(UserError {
             message: "[Contenido] Símbolo matemático fuera de un entorno de ecuación.".to_string(),
             suggestion: Some(
-                "Envuelve el contenido matemático en $...$ (en línea) o en un bloque \
-                 de ecuación. Si el texto contiene guiones bajos, usa \\_."
+                "Envuelve el contenido matemático en $...$ o en un bloque de ecuación."
                     .to_string(),
             ),
             raw_log_line: Some(line.to_string()),
         });
     }
 
-    // ── [Contenido] Entorno o llave sin cerrar ────────────────────────────────
+    // ── [Contenido] Entorno o argumento sin cerrar ────────────────────────────
+    // Patrón: "Runaway argument" / "! Emergency stop"
     if line.contains("Runaway argument") || line.contains("! Emergency stop") {
         return Some(UserError {
             message: "[Contenido] Argumento o entorno LaTeX sin cerrar.".to_string(),
             suggestion: Some(
                 "Revisa que todos los bloques tienen su cierre: \
-                 llaves {}, corchetes [], y entornos \\begin{}...\\end{}."
-                    .to_string(),
-            ),
-            raw_log_line: Some(line.to_string()),
-        });
-    }
-
-    // NOTA: "Overfull \\hbox" es un WARNING de layout, NO un error de compilación.
-    // Aparece frecuentemente en documentos bien formados y no impide la generación del PDF.
-    // No lo incluimos en user_errors para no romper el check user_errors.is_empty()
-    // que usa la detección de éxito por evidencia física en latexmk.rs.
-
-    // ── [Entorno] Fuente no encontrada ────────────────────────────────────────
-    if line.contains("Font") && (line.contains("not found") || line.contains("not loadable")) {
-        let font = extract_quoted(line).unwrap_or_else(|| "desconocida".to_string());
-        return Some(UserError {
-            message: format!("[Entorno] Fuente no encontrada: '{}'", font),
-            suggestion: Some(
-                "Instala la fuente en el sistema o cambia la configuración tipográfica \
-                 del proyecto a una fuente disponible (ej. Latin Modern)."
+                 llaves {}, corchetes [] y entornos \\begin{}...\\end{}."
                     .to_string(),
             ),
             raw_log_line: Some(line.to_string()),
@@ -117,50 +106,14 @@ fn translate_line(line: &str) -> Option<UserError> {
     }
 
     // ── [Bibliografía] Error duro de biber ───────────────────────────────────
-    // NOTA: "Please (re)run Biber" NO va aquí — es un aviso intermedio.
-    // Ver bibliography_pending_in_log() en latexmk.rs.
+    // NOTA: NO incluir "Please (re)run Biber" — aviso intermedio, no fatal.
+    // Solo capturamos líneas que explícitamente contienen "error" junto con biber.
     if (line.contains("biber") || line.contains("Biber")) && line.contains("error") {
         return Some(UserError {
             message: "[Bibliografía] Error en el procesamiento de la bibliografía.".to_string(),
             suggestion: Some(
                 "Verifica que references.bib existe en content/bibliography/ \
                  con entradas bien formadas (author, title, year, llaves balanceadas)."
-                    .to_string(),
-            ),
-            raw_log_line: Some(line.to_string()),
-        });
-    }
-
-    // ── [Bibliografía] Clave de cita no definida ──────────────────────────────
-    if line.contains("LaTeX Warning: Citation") && line.contains("undefined") {
-        let key = extract_quoted(line).unwrap_or_else(|| "?".to_string());
-        return Some(UserError {
-            message: format!("[Bibliografía] Clave de cita no definida: '{}'", key),
-            suggestion: Some(format!(
-                "La cita '{}' no existe en references.bib. \
-                 Verifica que la clave en el documento coincide exactamente \
-                 (distingue mayúsculas/minúsculas).",
-                key
-            )),
-            raw_log_line: Some(line.to_string()),
-        });
-    }
-
-    // ── [Plantilla] Error de paquete LaTeX ────────────────────────────────────
-    if line.contains("! Package") && line.contains("Error:") {
-        let pkg = line
-            .trim_start_matches("! Package ")
-            .split("Error:")
-            .next()
-            .unwrap_or("")
-            .trim()
-            .to_string();
-        return Some(UserError {
-            message: format!("[Plantilla] Error en paquete LaTeX: {}", pkg),
-            suggestion: Some(
-                "Este error proviene de la plantilla. Si cambiaste el perfil o la \
-                 tipografía recientemente, verifica la configuración. Si persiste, \
-                 reporta el issue con el log de compilación completo."
                     .to_string(),
             ),
             raw_log_line: Some(line.to_string()),
@@ -218,22 +171,36 @@ mod tests {
     }
 
     #[test]
-    fn traduce_cita_no_definida() {
-        let log = "LaTeX Warning: Citation 'smith2020' on page 1 undefined";
-        let errors = translate_log(log);
-        assert!(!errors.is_empty());
-        assert!(errors[0].message.contains("[Bibliografía]"));
-        assert!(errors[0].message.contains("smith2020"));
-    }
-
-    #[test]
     fn no_falso_positivo_please_rerun_biber() {
-        // "Please (re)run Biber" NO debe generar UserError — es aviso intermedio.
+        // "Please (re)run Biber" NO debe generar UserError — aviso intermedio.
         let log = "Package biblatex Warning: Please (re)run Biber on the file: main";
         let errors = translate_log(log);
         assert!(
             errors.is_empty(),
             "Please (re)run Biber no debe generar UserError: {:?}", errors
+        );
+    }
+
+    #[test]
+    fn no_falso_positivo_font_not_loadable() {
+        // "Font ... not loadable" es un fallback informativo de XeLaTeX, no un error fatal.
+        // NO debe generar UserError (aparece en compilaciones exitosas).
+        let log = "Font \\zf@basefont=LM Roman/OT1/m/n/10 not loadable: TFM file not found";
+        let errors = translate_log(log);
+        assert!(
+            errors.is_empty(),
+            "Font fallback warning no debe generar UserError: {:?}", errors
+        );
+    }
+
+    #[test]
+    fn no_falso_positivo_overfull_hbox() {
+        // "Overfull \\hbox" es un warning de layout, no un error fatal.
+        let log = "Overfull \\hbox (12.5pt too wide) in paragraph at lines 123--145";
+        let errors = translate_log(log);
+        assert!(
+            errors.is_empty(),
+            "Overfull hbox no debe generar UserError: {:?}", errors
         );
     }
 
@@ -246,7 +213,6 @@ mod tests {
 
     #[test]
     fn deduplica_errores_repetidos() {
-        // Mismo error repetido → solo una entrada en la lista
         let log = "! Undefined control sequence.\n! Undefined control sequence.";
         let errors = translate_log(log);
         assert_eq!(errors.len(), 1, "Debe deduplicar errores consecutivos idénticos");
