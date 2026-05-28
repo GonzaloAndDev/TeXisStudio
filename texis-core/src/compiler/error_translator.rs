@@ -60,7 +60,10 @@ fn translate_line(line: &str, next_line: Option<&str>) -> Option<UserError> {
 
     // ── [Contenido] Comando LaTeX desconocido ─────────────────────────────────
     if line.contains("! Undefined control sequence") {
+        // Usamos next_line SOLO si es una línea de contexto LaTeX (empieza con "l.")
+        // para no capturar otras líneas de error como si fueran el nombre del comando.
         let cmd = next_line
+            .filter(|l| l.trim_start().starts_with("l."))
             .and_then(|l| l.split_whitespace().last())
             .map(|s| format!(" ('{}')", s))
             .unwrap_or_default();
