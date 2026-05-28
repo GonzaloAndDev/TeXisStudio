@@ -97,18 +97,10 @@ fn translate_line(line: &str) -> Option<UserError> {
         });
     }
 
-    // ── [Contenido] Texto/imagen demasiado ancho ──────────────────────────────
-    if line.contains("Overfull \\hbox") && line.contains("too wide") {
-        return Some(UserError {
-            message: "[Contenido] Texto o imagen demasiado ancho para los márgenes.".to_string(),
-            suggestion: Some(
-                "Si es una imagen, usa \\linewidth. \
-                 Si es una URL larga, usa el paquete url o \\allowbreak."
-                    .to_string(),
-            ),
-            raw_log_line: Some(line.to_string()),
-        });
-    }
+    // NOTA: "Overfull \\hbox" es un WARNING de layout, NO un error de compilación.
+    // Aparece frecuentemente en documentos bien formados y no impide la generación del PDF.
+    // No lo incluimos en user_errors para no romper el check user_errors.is_empty()
+    // que usa la detección de éxito por evidencia física en latexmk.rs.
 
     // ── [Entorno] Fuente no encontrada ────────────────────────────────────────
     if line.contains("Font") && (line.contains("not found") || line.contains("not loadable")) {
