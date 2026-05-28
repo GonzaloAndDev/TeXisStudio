@@ -29,8 +29,10 @@ pub fn translate_log(log: &str) -> Vec<UserError> {
 
         // Intentamos traducir. Algunas reglas miran líneas de contexto adelante.
         if let Some(err) = translate_line(line, lines.get(i + 1).copied()) {
-            // Deduplicar: no agregar el mismo código dos veces seguidas
-            if errors.last().map(|e: &UserError| &e.message) != Some(&err.message) {
+            // Deduplicar: no agregar el mismo mensaje dos veces seguidas.
+            // Usamos bool intermedio para evitar conflicto de borrow en errors.
+            let is_dup = errors.last().map(|e| e.message == err.message).unwrap_or(false);
+            if !is_dup {
                 errors.push(err);
             }
         }
