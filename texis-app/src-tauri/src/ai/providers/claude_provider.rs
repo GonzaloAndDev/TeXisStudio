@@ -1,4 +1,3 @@
-use crate::ai::action::AiProposedAction;
 use crate::ai::conversation::AiRole;
 use crate::ai::request::AiRequest;
 use crate::ai::response::{AiProviderError, AiResponse, AiUsage};
@@ -52,6 +51,7 @@ struct ClaudeError {
     error: ClaudeErrorBody,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct ClaudeErrorBody {
     message: String,

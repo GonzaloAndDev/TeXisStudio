@@ -554,6 +554,7 @@ pub fn export_delivery(
 }
 
 /// Agrega recursivamente un directorio al ZIP, excluyendo archivos por nombre.
+#[allow(dead_code)]
 fn add_dir_to_zip(
     zip: &mut zip::ZipWriter<impl std::io::Write + std::io::Seek>,
     dir: &std::path::Path,

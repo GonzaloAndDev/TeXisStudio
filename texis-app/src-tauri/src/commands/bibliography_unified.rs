@@ -7,8 +7,7 @@ use texis_core::bibliography::{
     exporters::{BibLaTeXExporter, CslJsonExporter, RisExporter},
     merger::RecordMerger,
     model::{BibliographicRecord, provider},
-    normalization::{normalize_doi, normalize_isbn},
-    registry::{BibliographyRegistry, RegistryError},
+    normalization::normalize_doi,
 };
 use std::collections::HashSet;
 

@@ -88,7 +88,7 @@ fn generate_content(
     generator: &GeneratorKind,
     template: &ProjectTemplate,
     metadata: &ProjectMetadata,
-    root: &Path,
+    _root: &Path,
 ) -> String {
     match generator {
         GeneratorKind::MainTex => generate_main_tex(template, metadata),
@@ -101,7 +101,7 @@ fn generate_content(
     }
 }
 
-fn generate_main_tex(template: &ProjectTemplate, metadata: &ProjectMetadata) -> String {
+fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) -> String {
     use crate::texis_project::model::DocumentTypeHint;
 
     let doc_class = match &template.document_type {

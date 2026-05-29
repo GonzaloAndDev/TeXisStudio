@@ -12,6 +12,7 @@ pub enum AiProviderId {
 }
 
 impl AiProviderId {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             AiProviderId::OpenAi => "openai",

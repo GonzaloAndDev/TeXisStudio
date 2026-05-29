@@ -1,5 +1,5 @@
 use super::action::AiProposedAction;
-use super::safety::{AiRiskLevel, AiSafetyDecision};
+use super::safety::AiSafetyDecision;
 use serde::{Deserialize, Serialize};
 
 /// Respuesta completa del AIEngine al frontend.

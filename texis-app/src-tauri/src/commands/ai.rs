@@ -4,7 +4,7 @@
 // El frontend es responsable de mostrar el preview y pedir confirmación.
 
 use crate::ai::action::AiActionMode;
-use crate::ai::context::{AiContextPackage, AiContextScope};
+use crate::ai::context::AiContextPackage;
 use crate::ai::conversation::AiMessage;
 use crate::ai::engine::AiEngine;
 use crate::ai::request::AiProviderId;

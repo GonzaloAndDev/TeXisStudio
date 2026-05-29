@@ -8,6 +8,7 @@
 // 5. ✅ Campos obligatorios por entry type    (en validator/bibliography.rs)
 // 6.    DOI check remoto contra Crossref      (opcional, requiere conexión — P4 futuro)
 
+#[allow(deprecated)]
 use super::manager::BibManager;
 use super::parser::BibEntry;
 use crate::project::model::{ContentBlock, ProjectModel};
@@ -29,6 +30,7 @@ impl BibValidationResult {
     }
 }
 
+#[allow(deprecated)]
 pub fn validate_citations(model: &ProjectModel, bib: &BibManager) -> BibValidationResult {
     let mut missing_keys = Vec::new();
 

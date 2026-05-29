@@ -73,6 +73,7 @@ impl AiSafetyDecision {
         }
     }
 
+    #[allow(dead_code)]
     pub fn high(reason: impl Into<String>) -> Self {
         Self {
             risk_level: AiRiskLevel::High,

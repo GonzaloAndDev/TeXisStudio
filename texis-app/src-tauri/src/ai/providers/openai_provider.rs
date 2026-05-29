@@ -1,4 +1,3 @@
-use crate::ai::action::AiProposedAction;
 use crate::ai::request::AiRequest;
 use crate::ai::response::{AiProviderError, AiResponse, AiUsage};
 use crate::ai::safety::AiSafetyPolicy;
@@ -31,6 +30,7 @@ struct OaiResponse {
     usage: Option<OaiUsage>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OaiChoice {
     message: OaiMessage,
@@ -49,6 +49,7 @@ struct OaiError {
     error: OaiErrorBody,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OaiErrorBody {
     message: String,

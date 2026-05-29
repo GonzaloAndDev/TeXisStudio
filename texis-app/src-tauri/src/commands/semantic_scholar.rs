@@ -24,6 +24,7 @@ const TIMEOUT_SECS: u64 = 15;
 
 // ── Response types ────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct S2Paper {
     #[serde(rename = "paperId")]
@@ -49,6 +50,7 @@ struct S2Paper {
     fields_of_study: Option<Vec<String>>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct S2ExternalIds {
     #[serde(rename = "DOI")]
@@ -59,6 +61,7 @@ struct S2ExternalIds {
     pubmed: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct S2Author {
     name: Option<String>,
@@ -78,6 +81,7 @@ struct S2OaPdf {
     url: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct S2SearchResponse {
     data: Vec<S2Paper>,

@@ -172,6 +172,7 @@ pub enum AiProposedAction {
 }
 
 /// Elementos del proyecto que la IA puede analizar pero nunca modificar.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ProtectedProjectElement {
     MainTex,

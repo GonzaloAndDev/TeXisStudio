@@ -76,17 +76,17 @@ impl ProjectDependencyGraph {
                 let p = resolve_tex_path(cap, dir, root, ".tex");
                 (p, DependencyKind::Include)
             }),
-            (r"\\includegraphics\s*(?:\[[^\]]*\])?\{([^}]+)\}", |cap, dir, root| {
+            (r"\\includegraphics\s*(?:\[[^\]]*\])?\{([^}]+)\}", |cap, dir, _root| {
                 (dir.join(cap), DependencyKind::IncludeGraphics)
             }),
-            (r"\\addbibresource\{([^}]+)\}", |cap, dir, root| {
+            (r"\\addbibresource\{([^}]+)\}", |cap, dir, _root| {
                 (dir.join(cap), DependencyKind::BibResource)
             }),
-            (r"\\bibliography\{([^}]+)\}", |cap, dir, root| {
+            (r"\\bibliography\{([^}]+)\}", |cap, dir, _root| {
                 let p = dir.join(format!("{}.bib", cap.trim_end_matches(".bib")));
                 (p, DependencyKind::BibResource)
             }),
-            (r"\\loadglsentries\{([^}]+)\}", |cap, dir, root| {
+            (r"\\loadglsentries\{([^}]+)\}", |cap, dir, _root| {
                 (dir.join(cap), DependencyKind::GlossaryInput)
             }),
             (r"\\usepackage(?:\[[^\]]*\])?\{([^}]+)\}", |cap, _, _| {
@@ -249,7 +249,7 @@ impl ProjectDependencyGraph {
     }
 }
 
-fn resolve_tex_path(name: &str, parent_dir: &Path, root: &Path, ext: &str) -> PathBuf {
+fn resolve_tex_path(name: &str, parent_dir: &Path, _root: &Path, ext: &str) -> PathBuf {
     let name = name.trim();
     let base = if name.ends_with(ext) {
         parent_dir.join(name)

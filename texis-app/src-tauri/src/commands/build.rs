@@ -4,10 +4,9 @@ use serde::Serialize;
 use std::path::PathBuf;
 use texis_core::build_engine::{
     engine::BuildEngine,
-    plan::BuildMode,
     toolchain::detect_toolchain,
 };
-use texis_core::texis_project::model::{BuildConfig, LatexEngine, BibliographyTool, TexisProject};
+use texis_core::texis_project::model::{BuildConfig, LatexEngine, TexisProject};
 
 #[derive(Serialize)]
 pub struct BuildResultSummary {

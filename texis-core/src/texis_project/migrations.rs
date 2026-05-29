@@ -125,7 +125,7 @@ impl MigrationRunner {
     fn create_backup(
         &self,
         persistence: &ProjectPersistence,
-        project_root: &Path,
+        _project_root: &Path,
     ) -> Result<std::path::PathBuf, MigrationError> {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
         let backup_dir = persistence

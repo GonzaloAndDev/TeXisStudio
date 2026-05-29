@@ -17,6 +17,7 @@ pub struct AiMessage {
     pub content: String,
 }
 
+#[allow(dead_code)]
 impl AiMessage {
     pub fn user(content: impl Into<String>) -> Self {
         Self { role: AiRole::User, content: content.into() }
@@ -31,6 +32,7 @@ impl AiMessage {
 
 /// Conversación independiente por proveedor.
 /// Cada tab de proveedor en la UI mantiene su propia instancia.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiConversation {
     pub id: AiConversationId,
@@ -38,6 +40,7 @@ pub struct AiConversation {
     pub messages: Vec<AiMessage>,
 }
 
+#[allow(dead_code)]
 impl AiConversation {
     pub fn new(provider_id: impl Into<String>) -> Self {
         Self {

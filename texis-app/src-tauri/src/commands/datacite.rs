@@ -31,6 +31,7 @@ struct DataCiteData {
     attributes: DataCiteAttributes,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct DataCiteAttributes {
     doi: Option<String>,

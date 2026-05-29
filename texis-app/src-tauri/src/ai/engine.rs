@@ -1,13 +1,12 @@
 use super::action::{AiActionMode, AiProposedAction};
 use super::context::{text_contains_credentials, AiContextPackage};
-use super::conversation::{AiConversation, AiMessage};
+use super::conversation::AiMessage;
 use super::providers::{
     claude_provider::ClaudeProvider, gemini_provider::GeminiProvider,
     openai_provider::OpenAiProvider,
 };
 use super::request::{AiProviderId, AiRequest};
 use super::response::{AiProviderError, AiResponse};
-use super::safety::AiSafetyPolicy;
 
 pub struct AiEngine;
 
@@ -197,7 +196,7 @@ pub fn extract_action(
     }
 }
 
-fn build_system_prompt(mode: &AiActionMode, provider: &AiProviderId) -> String {
+fn build_system_prompt(mode: &AiActionMode, _provider: &AiProviderId) -> String {
     let base = base_system_prompt();
     let mode_instructions = mode_prompt(mode);
     format!("{}\n\n{}", base, mode_instructions)

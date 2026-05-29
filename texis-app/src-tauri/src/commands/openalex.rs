@@ -21,6 +21,7 @@ const TIMEOUT_SECS: u64 = 15;
 
 // ── Response types ────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OpenAlexWork {
     id: Option<String>,
@@ -77,6 +78,7 @@ struct Biblio {
     last_page: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OpenAccess {
     is_oa: Option<bool>,
@@ -91,12 +93,14 @@ struct Concept {
     score: Option<f32>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OpenAlexListResponse {
     results: Vec<OpenAlexWork>,
     meta: Option<OpenAlexMeta>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct OpenAlexMeta {
     count: Option<u64>,
@@ -164,7 +168,7 @@ fn work_to_record(work: &OpenAlexWork) -> BibliographicRecord {
 
     // Autores (desde authorships, ordenados por position)
     if let Some(authorships) = &work.authorships {
-        let mut sorted = authorships.clone_sorted_by_position();
+        let sorted = authorships.clone_sorted_by_position();
         record.authors = sorted
             .iter()
             .filter_map(|a| a.author.as_ref())
