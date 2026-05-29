@@ -11,8 +11,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      INSTA_UPDATE: new
     steps:
       - uses: actions/checkout@v4
 
@@ -67,11 +65,6 @@ jobs:
           TEXIS_PROFILES_PATH: ${{ github.workspace }}/texis-profiles
           TEXIS_INTERNAL_PROFILES_PATH: ${{ github.workspace }}/profiles
 
-      - name: Accept new snapshots (CI only)
-        run: cargo insta review --accept
-        if: env.INSTA_UPDATE == 'new'
-        continue-on-error: true
-
       - name: Generate schema and fail on drift (P0.3)
         if: runner.os == 'Linux'
         run: |
@@ -94,11 +87,10 @@ jobs:
 
       - name: Format check
         run: cargo fmt --all -- --check
-        continue-on-error: true
 
       # Clippy: continue-on-error mientras haya lints preexistentes sin corregir.
       # El output va a stderr/stdout del step — visible en el log del job.
-      - name: Clippy
+      - name: Clippy (advisory while legacy lints remain)
         run: cargo clippy --workspace -- -D warnings
         continue-on-error: true
 
