@@ -1,7 +1,9 @@
 // Comandos Tauri para GlossaryEngine.
 
 use std::path::PathBuf;
-use texis_core::glossary::{AcronymEntry, GlossaryEntry, GlossaryEntryStatus, GlossaryParser, GlossaryRegistry};
+use texis_core::glossary::{
+    AcronymEntry, GlossaryEntry, GlossaryEntryStatus, GlossaryParser, GlossaryRegistry,
+};
 use texis_core::project::{loader::ProjectLoader, model::ContentBlock};
 
 fn err(e: impl std::fmt::Display) -> String {

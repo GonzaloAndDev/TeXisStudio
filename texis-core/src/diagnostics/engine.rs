@@ -366,8 +366,8 @@ lazy_static::lazy_static! {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::model::DiagnosticSeverity;
+    use super::*;
 
     #[test]
     fn parses_file_not_found() {
