@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -6,7 +6,10 @@ import {
 } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { CloudFolder, ProfileInfo, ProfileStatus } from "../types";
+import { useSettingsStore } from "../stores/settings";
+import { useLangPacksStore } from "../stores/languagePacks";
+import { useVocabPacksStore } from "../stores/vocabularyPacks";
+import type { AcademicLevel, CloudFolder, LangPackEntry, ProfileInfo, ProfileStatus, VocabPackEntry } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
 import { documentDir } from "@tauri-apps/api/path";
@@ -47,6 +50,143 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     status: "draft" as ProfileStatus,
   },
 ];
+
+const ACADEMIC_LEVEL_OPTIONS: Array<{ id: AcademicLevel; label: string }> = [
+  { id: "licenciatura", label: "Licenciatura" },
+  { id: "especialidad", label: "Especialidad" },
+  { id: "maestria", label: "Maestría" },
+  { id: "doctorado", label: "Doctorado" },
+  { id: "posdoctorado", label: "Posdoctorado" },
+];
+
+function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+}
+
+function defaultAcademicLevelForDocType(docType: string): AcademicLevel {
+  switch (docType) {
+    case "tesina":
+      return "licenciatura";
+    case "especialidad":
+      return "especialidad";
+    case "posdoctorado":
+      return "posdoctorado";
+    default:
+      return "licenciatura";
+  }
+}
+
+function recommendProfile(
+  profiles: ProfileInfo[],
+  docType: string,
+  institution: string,
+  academicLevel: string,
+  discipline: string,
+  programName: string,
+) {
+  const institutionNorm = normalize(institution);
+  const disciplineNorm = normalize(discipline);
+  const programNorm = normalize(programName);
+  const levelNorm = normalize(academicLevel);
+
+  const ranked = profiles
+    .map((profile) => {
+      const haystack = normalize([
+        profile.name,
+        profile.description ?? "",
+        profile.meta,
+        ...(profile.tags ?? []),
+      ].join(" "));
+
+      let score = 0;
+      const reasons: string[] = [];
+
+      if (institutionNorm && haystack.includes(institutionNorm)) {
+        score += 4;
+        reasons.push(`coincide con ${institution.trim()}`);
+      }
+      if (levelNorm && haystack.includes(levelNorm)) {
+        score += 3;
+        reasons.push(`cubre ${academicLevel}`);
+      }
+      if (disciplineNorm && haystack.includes(disciplineNorm)) {
+        score += 2;
+        reasons.push(`se alinea con el área ${discipline.trim()}`);
+      }
+      if (programNorm && haystack.includes(programNorm)) {
+        score += 2;
+        reasons.push(`menciona el programa ${programName.trim()}`);
+      }
+      if (docType === "tesina" && profile.id.includes("tesina")) {
+        score += 2;
+        reasons.push("está pensado para tesinas");
+      }
+      if (docType !== "tesina" && profile.id.includes("thesis")) {
+        score += 1;
+        reasons.push("sirve como base sólida para tesis");
+      }
+      if (profile.status === "verified") {
+        score += 2;
+        reasons.push("tiene verificación institucional");
+      } else if (profile.status === "reviewed") {
+        score += 1;
+        reasons.push("ya fue revisado por el equipo");
+      }
+
+      return { profile, score, reasons };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return ranked[0] ?? null;
+}
+
+function describePackKind(kind?: VocabPackEntry["pack_kind"]): string {
+  switch (kind) {
+    case "general":
+      return "general";
+    case "academic":
+      return "académico";
+    case "subject":
+      return "por materia";
+    case "program":
+      return "por programa";
+    case "discipline":
+    default:
+      return "por área";
+  }
+}
+
+function recommendVocabularyPacks(
+  packs: VocabPackEntry[],
+  language: string,
+  academicLevel: string,
+  discipline: string,
+  programName: string,
+) {
+  const langNorm = normalize(language);
+  const levelNorm = normalize(academicLevel);
+  const disciplineNorm = normalize(discipline);
+  const programNorm = normalize(programName);
+
+  return packs
+    .map((pack) => {
+      let score = 0;
+      if (normalize(pack.base_language_hint ?? "") === langNorm) score += 4;
+      if ((pack.pack_kind ?? "discipline") === "general") score += 1;
+      if ((pack.pack_kind ?? "discipline") === "academic") score += 2;
+      if (disciplineNorm && normalize(pack.discipline ?? "").includes(disciplineNorm)) score += 4;
+      if (programNorm && normalize(pack.program_name ?? "").includes(programNorm)) score += 5;
+      if (levelNorm && (pack.target_levels ?? []).some((level) => normalize(level) === levelNorm)) score += 2;
+      return { pack, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+}
 
 const S = {
   shell: { flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" } as const,
@@ -275,13 +415,31 @@ function StepDatos({
         <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>¿Quién</em> y ¿dónde?
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 540 }}>
-        Datos básicos. Se usan para la portada y los metadatos del PDF.
+        Datos básicos. Se usan para la portada, la recomendación de perfil y los metadatos del PDF.
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820 }}>
         <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
         <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
         <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM" />
         <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>Nivel académico</label>
+          <select
+            value={form.academic_level ?? "licenciatura"}
+            onChange={(e) => onChange("academic_level", e.target.value)}
+            style={{
+              padding: "8px 12px", borderRadius: "var(--r-md)",
+              border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+              fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
+            }}
+          >
+            {ACADEMIC_LEVEL_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+        <InputField label="Área o disciplina" value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder="Ingeniería eléctrica" />
+        <InputField label="Programa" value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder="Doctorado en Ciencias" />
         <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
         <div /> {/* grid spacer */}
       </div>
@@ -320,16 +478,27 @@ const PLACEMENT_SHORT: Record<string, string> = {
 
 // Paso 3: selección de perfil con preview de secciones
 function StepPerfil({
-  profiles, selected, onSelect, docType, institution,
+  profiles, selected, onSelect, docType, institution, academicLevel, discipline, programName,
 }: {
-  profiles: ProfileInfo[]; selected: string; onSelect: (id: string) => void; docType: string; institution: string;
+  profiles: ProfileInfo[];
+  selected: string;
+  onSelect: (id: string) => void;
+  docType: string;
+  institution: string;
+  academicLevel: string;
+  discipline: string;
+  programName: string;
 }) {
   const selProfile = profiles.find((p) => p.id === selected);
-  const institutionText = institution.trim().toLowerCase();
-  const recommendedProfile =
-    profiles.find((p) => institutionText && p.name.toLowerCase().includes(institutionText)) ??
-    profiles.find((p) => docType === "tesina" ? p.id.includes("tesina") : p.id.includes("thesis")) ??
-    profiles[0];
+  const recommended = recommendProfile(
+    profiles,
+    docType,
+    institution,
+    academicLevel,
+    discipline,
+    programName,
+  );
+  const recommendedProfile = recommended?.profile;
 
   return (
     <div style={{ display: "flex", gap: 24, maxWidth: 900, alignItems: "flex-start" }}>
@@ -349,8 +518,8 @@ function StepPerfil({
           }}>
             <strong>Recomendación inicial:</strong> {recommendedProfile.name}
             <div style={{ color: "var(--fg-muted)", marginTop: 4 }}>
-              {institution.trim()
-                ? `La elegimos porque se parece a ${institution.trim()} y al tipo de trabajo que seleccionaste.`
+              {recommended?.reasons.length
+                ? `La elegimos porque ${recommended.reasons.join(", ")}.`
                 : "La elegimos como punto de partida seguro para este tipo de trabajo."}
             </div>
           </div>
@@ -460,6 +629,8 @@ function StepReview({
   advisors,
   coAuthors,
   outputPath,
+  documentLanguage,
+  suggestedVocab,
 }: {
   docType: string;
   form: Record<string, string>;
@@ -467,14 +638,20 @@ function StepReview({
   advisors: string[];
   coAuthors: string[];
   outputPath: string;
+  documentLanguage: string;
+  suggestedVocab: VocabPackEntry[];
 }) {
   const summaryRows = [
     ["Trabajo", docType],
+    ["Nivel", form.academic_level || "Pendiente"],
     ["Título", form.title || "Pendiente"],
     ["Autoría", form.full_name || "Pendiente"],
     ["Institución", form.institution || "Pendiente"],
     ["Facultad / departamento", form.faculty || "Opcional"],
+    ["Área", form.discipline || "Opcional"],
+    ["Programa", form.program_name || "Opcional"],
     ["Perfil", profile?.name ?? "Pendiente"],
+    ["Idioma del documento", documentLanguage.toUpperCase()],
     ["Carpeta de destino", outputPath || "Pendiente"],
   ];
 
@@ -517,6 +694,114 @@ function StepReview({
             </div>
           </div>
         </div>
+        <div style={{ marginTop: 6 }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+            Apoyos lingüísticos sugeridos
+          </div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+            {suggestedVocab.length > 0
+              ? suggestedVocab.map((pack) => pack.name).join(", ")
+              : "Podrás activar vocabularios académicos o disciplinares después desde Configuración."}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StepLanguageSupport({
+  documentLanguage,
+  onDocumentLanguage,
+  availableLanguages,
+  recommendedPacks,
+}: {
+  documentLanguage: string;
+  onDocumentLanguage: (lang: string) => void;
+  availableLanguages: LangPackEntry[];
+  recommendedPacks: VocabPackEntry[];
+}) {
+  const quickChoices = [
+    { id: "es", name: "Español", note: "Bundled por defecto" },
+    { id: "en", name: "English", note: "Bundled por defecto" },
+    ...availableLanguages
+      .filter((entry) => !["es", "en"].includes(entry.id))
+      .slice(0, 6)
+      .map((entry) => ({
+        id: entry.id,
+        name: entry.native_name || entry.name,
+        note: entry.capabilities.spelling ? "Instalable para corrección" : "Disponible en catálogo",
+      })),
+  ];
+
+  const uniqueChoices = quickChoices.filter(
+    (entry, index, list) => list.findIndex((item) => item.id === entry.id) === index,
+  );
+
+  return (
+    <>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
+        Elige el <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>idioma principal</em> y tus apoyos
+      </h1>
+      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 620 }}>
+        Esto no cambia la estructura del documento; solo nos ayuda a recomendar corrección ortográfica, gramática y vocabularios útiles para tu área.
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, maxWidth: 820 }}>
+        {uniqueChoices.map((choice) => (
+          <button
+            key={choice.id}
+            type="button"
+            onClick={() => onDocumentLanguage(choice.id)}
+            style={{
+              textAlign: "left",
+              padding: "14px 16px",
+              borderRadius: "var(--r-lg)",
+              border: `1px solid ${documentLanguage === choice.id ? "var(--accent)" : "var(--border-soft)"}`,
+              background: documentLanguage === choice.id ? "var(--accent-tint)" : "var(--bg-panel)",
+              boxShadow: documentLanguage === choice.id ? "0 0 0 3px var(--accent-soft)" : "none",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{choice.name}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 4 }}>{choice.note}</div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 24, maxWidth: 820, padding: "16px 18px", borderRadius: "var(--r-lg)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 8 }}>
+          Pila sugerida para {documentLanguage.toUpperCase()}
+        </div>
+        <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 12 }}>
+          Lo recomendable es combinar un diccionario general del idioma con vocabularios académicos y, si aplica, uno específico de tu área o programa.
+        </div>
+        {recommendedPacks.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+            {recommendedPacks.map((pack) => (
+              <div
+                key={pack.id}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "var(--r-md)",
+                  background: "var(--bg-app)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{pack.name}</span>
+                  <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                  {pack.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+            No hay un vocabulario específico que coincida todavía con tu selección. Podrás activar uno general y añadir tu propio vocabulario después desde Configuración.
+          </div>
+        )}
       </div>
     </>
   );
@@ -525,14 +810,25 @@ function StepReview({
 export default function WizardView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { lang: savedUiLang, spellLang: savedSpellLang, setLang, setSpellLang } = useSettingsStore();
+  const { catalog, loadCatalog } = useLangPacksStore();
+  const { officialPacks, loadOfficialCatalog } = useVocabPacksStore();
   const [step, setStep] = useState(0);
   const [docType, setDocType] = useState("tesis");
   const [profileId, setProfileId] = useState(
     searchParams.get("profile") ?? "generic.thesis"
   );
   const [form, setForm] = useState<Record<string, string>>({
-    title: "", full_name: "", institution: "", faculty: "", city: "Ciudad de México",
+    title: "",
+    full_name: "",
+    institution: "",
+    faculty: "",
+    city: "Ciudad de México",
+    academic_level: defaultAcademicLevelForDocType("tesis"),
+    discipline: "",
+    program_name: "",
   });
+  const [documentLanguage, setDocumentLanguage] = useState(savedSpellLang ?? savedUiLang ?? "es");
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
@@ -547,17 +843,41 @@ export default function WizardView() {
     api.getProfiles()
       .then((loaded) => { if (loaded.length > 0) setProfiles(loaded); })
       .catch(() => {}); // silencioso, usa BUILTIN_PROFILES como fallback
+    loadCatalog().catch(() => {});
+    loadOfficialCatalog().catch(() => {});
   }, []);
 
   useEffect(() => {
     if (docType === "tesina") {
       setProfileId("generic.tesina");
-      return;
-    }
-    if (["tesis", "especialidad", "posdoctorado"].includes(docType)) {
+    } else if (["tesis", "especialidad", "posdoctorado"].includes(docType)) {
       setProfileId("generic.thesis");
     }
+    setForm((prev) => ({
+      ...prev,
+      academic_level:
+        docType === "tesis" && prev.academic_level && prev.academic_level !== "especialidad" && prev.academic_level !== "posdoctorado"
+          ? prev.academic_level
+          : defaultAcademicLevelForDocType(docType),
+    }));
   }, [docType]);
+
+  const availableLanguages = useMemo(
+    () => (catalog?.packages ?? []).filter((entry) => entry.capabilities.spelling || entry.capabilities.ui),
+    [catalog],
+  );
+
+  const suggestedVocab = useMemo(
+    () =>
+      recommendVocabularyPacks(
+        officialPacks,
+        documentLanguage,
+        form.academic_level ?? "licenciatura",
+        form.discipline ?? "",
+        form.program_name ?? "",
+      ),
+    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks],
+  );
 
   async function handlePickFolder() {
     const picked = await api.pickFolder();
@@ -566,8 +886,9 @@ export default function WizardView() {
 
   const steps = [
     { name: "Tipo de trabajo", hint: docType ? docType : "Tesina · Tesis · Posgrado" },
-    { name: "Contexto académico", hint: form.institution || "Institución, autoría y comité" },
+    { name: "Contexto académico", hint: form.institution || "Institución, grado y comité" },
     { name: "Perfil recomendado", hint: profiles.find((p) => p.id === profileId)?.name ?? "Estructura y normas" },
+    { name: "Idioma y apoyo", hint: documentLanguage.toUpperCase() },
     { name: "Revisión final", hint: "Resumen antes de crear el proyecto" },
   ];
 
@@ -589,13 +910,17 @@ export default function WizardView() {
       const filledCoAuthors = coAuthors
         .filter((c) => c.trim())
         .map((c) => ({ full_name: c.trim() }));
+      const seededKeywords = [form.discipline.trim(), form.program_name.trim()].filter(Boolean);
 
       const enriched = {
         ...model,
         metadata: {
           ...model.metadata,
           title: form.title.trim(),
+          academic_level: (form.academic_level as AcademicLevel) || model.metadata.academic_level,
+          language: documentLanguage,
           city: form.city.trim() || "Ciudad de México",
+          keywords: seededKeywords.length > 0 ? seededKeywords : model.metadata.keywords,
         },
         institution: {
           ...model.institution,
@@ -609,6 +934,12 @@ export default function WizardView() {
           co_authors: filledCoAuthors,
         },
       };
+      if (["es", "en"].includes(documentLanguage) || availableLanguages.some((entry) => entry.id === documentLanguage)) {
+        setSpellLang(documentLanguage);
+      }
+      if (["es", "en"].includes(documentLanguage)) {
+        setLang(documentLanguage);
+      }
       await api.saveProject(result.project_path, enriched);
       const saved = await api.getProject(result.project_path);
       useProjectStore.getState().openProject(saved, result.project_path);
@@ -688,9 +1019,20 @@ export default function WizardView() {
               onSelect={setProfileId}
               docType={docType}
               institution={form.institution ?? ""}
+              academicLevel={form.academic_level ?? "licenciatura"}
+              discipline={form.discipline ?? ""}
+              programName={form.program_name ?? ""}
             />
           )}
           {step === 3 && (
+            <StepLanguageSupport
+              documentLanguage={documentLanguage}
+              onDocumentLanguage={setDocumentLanguage}
+              availableLanguages={availableLanguages}
+              recommendedPacks={suggestedVocab.map((entry) => entry.pack)}
+            />
+          )}
+          {step === 4 && (
             <StepReview
               docType={docType}
               form={form}
@@ -698,6 +1040,8 @@ export default function WizardView() {
               advisors={advisors}
               coAuthors={coAuthors}
               outputPath={outputPath}
+              documentLanguage={documentLanguage}
+              suggestedVocab={suggestedVocab.map((entry) => entry.pack)}
             />
           )}
 
