@@ -844,6 +844,7 @@ export default function WizardView() {
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
@@ -905,12 +906,13 @@ export default function WizardView() {
   ];
 
   async function handleCreate() {
+    setCreateError(null);
     if (!form.title.trim()) {
-      alert("Escribe un título para el proyecto.");
+      setCreateError("Escribe un título para el proyecto antes de continuar.");
       return;
     }
     if (!outputPath.trim()) {
-      alert("Escribe la carpeta donde guardar el proyecto.");
+      setCreateError("Selecciona una carpeta donde guardar el proyecto.");
       return;
     }
     setCreating(true);
@@ -958,7 +960,7 @@ export default function WizardView() {
       navigate(`/project/${encodeURIComponent(result.project_path)}`);
     } catch (e) {
       console.error("Error creando proyecto:", e);
-      alert(`Error al crear proyecto: ${e}`);
+      setCreateError(`No se pudo crear el proyecto: ${e}`);
       setCreating(false);
     }
   }
@@ -1181,13 +1183,20 @@ export default function WizardView() {
                   Continuar <IconChevronR size={13} />
                 </button>
               ) : (
-                <button
-                  className="btn btn-accent"
-                  onClick={handleCreate}
-                  disabled={creating || !form.title.trim()}
-                >
-                  {creating ? "Creando…" : <><IconFile size={13} /> Crear proyecto</>}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+                  {createError && (
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "8px 12px", borderRadius: "var(--r-md)", border: "1px solid var(--build-err)" }}>
+                      {createError}
+                    </div>
+                  )}
+                  <button
+                    className="btn btn-accent"
+                    onClick={handleCreate}
+                    disabled={creating || !form.title.trim()}
+                  >
+                    {creating ? "Creando…" : <><IconFile size={13} /> Crear proyecto</>}
+                  </button>
+                </div>
               )}
             </div>
           </div>

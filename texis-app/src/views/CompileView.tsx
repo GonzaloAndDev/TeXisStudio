@@ -35,6 +35,8 @@ export default function CompileView() {
   const [exportResult, setExportResult] = useState<ExportDeliveryResult | null>(null);
   const [postflightResult, setPostflightResult] = useState<PdfPostflightResult | null>(null);
   const [postflightBusy, setPostflightBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [postflightError, setPostflightError] = useState<string | null>(null);
   const [showTechnicalLog, setShowTechnicalLog] = useState(userMode === "advanced");
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
@@ -163,6 +165,7 @@ export default function CompileView() {
     const folder = await api.pickFolder();
     if (!folder) return;
     setExportBusy(true);
+    setExportError(null);
     setExportResult(null);
     setExportedZip(null);
     try {
@@ -170,7 +173,7 @@ export default function CompileView() {
       setExportResult(res);
       setExportedZip(res.zip_path);
     } catch (e) {
-      alert(`Error al exportar: ${e}`);
+      setExportError(`Error al exportar: ${e}`);
     } finally {
       setExportBusy(false);
     }
@@ -179,12 +182,13 @@ export default function CompileView() {
   async function doPostflightCheck() {
     if (!activeProjectPath) return;
     setPostflightBusy(true);
+    setPostflightError(null);
     setPostflightResult(null);
     try {
       const res = await api.checkPdfPostflight(activeProjectPath);
       setPostflightResult(res);
     } catch (e) {
-      alert(`Error en verificación PDF: ${e}`);
+      setPostflightError(`Error en verificación PDF: ${e}`);
     } finally {
       setPostflightBusy(false);
     }
@@ -576,6 +580,16 @@ export default function CompileView() {
                       {postflightBusy ? "Verificando…" : "Verificar PDF"}
                     </button>
                   </div>
+                  {exportError && (
+                    <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "7px 10px", borderRadius: "var(--r-sm)" }}>
+                      {exportError}
+                    </div>
+                  )}
+                  {postflightError && (
+                    <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "7px 10px", borderRadius: "var(--r-sm)" }}>
+                      {postflightError}
+                    </div>
+                  )}
 
                   {exportedZip && (
                     <div style={{

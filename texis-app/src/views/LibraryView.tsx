@@ -26,6 +26,12 @@ export default function LibraryView() {
   const [editing, setEditing]       = useState(false);
   const [importing, setImporting]   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<ProfileInfo | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 4000);
+  }
 
   useEffect(() => {
     api.getProfiles()
@@ -47,8 +53,8 @@ export default function LibraryView() {
       const imported = await api.importProfile(src);
       setProfiles((prev) => [...prev, imported]);
       setSelected(imported);
-      alert(`✓ Perfil '${imported.name}' importado correctamente.`);
-    } catch (e) { alert(`Error al importar: ${e}`); }
+      showToast(`Perfil '${imported.name}' importado correctamente.`);
+    } catch (e) { showToast(`Error al importar: ${e}`, false); }
     finally { setImporting(false); }
   }
 
@@ -59,8 +65,8 @@ export default function LibraryView() {
       const destPath = Array.isArray(dest) ? dest[0] : dest;
       if (!destPath) return;
       const result = await api.exportProfile(profile.id, destPath);
-      alert(`✓ Perfil exportado en:\n${result.exported_to}`);
-    } catch (e) { alert(`Error al exportar: ${e}`); }
+      showToast(`Perfil exportado en: ${result.exported_to}`);
+    } catch (e) { showToast(`Error al exportar: ${e}`, false); }
   }
 
   async function handleDelete(profile: ProfileInfo) {
@@ -69,7 +75,7 @@ export default function LibraryView() {
       await api.deleteProfile(profile.id);
       setProfiles((prev) => prev.filter((p) => p.id !== profile.id));
       if (selected?.id === profile.id) setSelected(null);
-    } catch (e) { alert(`Error al eliminar: ${e}`); }
+    } catch (e) { showToast(`Error al eliminar: ${e}`, false); }
   }
 
   function handleSaveEdit(updated: ProfileInfo) {
@@ -90,6 +96,17 @@ export default function LibraryView() {
 
   return (
     <>
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
+          padding: "10px 18px", borderRadius: "var(--r-lg)",
+          background: toast.ok ? "var(--build-ok)" : "var(--build-err)",
+          color: "#fff", fontSize: "var(--fs-sm)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+          pointerEvents: "none",
+        }}>
+          {toast.ok ? "✓ " : "✗ "}{toast.msg}
+        </div>
+      )}
       <TxAppbar
         left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Biblioteca</span></>}
         center={null}
