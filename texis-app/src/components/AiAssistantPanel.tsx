@@ -281,27 +281,19 @@ export function AiAssistantPanel({
       const riskLevel = result.safety?.risk_level;
 
       if (result.proposed_action && riskLevel === "auto_with_notification") {
-        // Aplicar inmediatamente y notificar — sin diálogo de confirmación
-        const action = result.proposed_action as any;
-        if (action.kind === "replace_selection" && onApplyReplacement && aiSelection) {
-          onApplyReplacement(action.original ?? "", action.replacement ?? "");
-          store.setChangeNotification({ description: `Texto editado: "${store.actionMode.replace(/_/g, " ")}"` });
-        } else if (action.kind === "insert_at_cursor") {
-          // Toda inserción requiere preview y confirmación explícita del usuario.
-          store.setPendingAction({
-            proposed: result.proposed_action as any,
-            safety: {
-              ...(result.safety as any),
-              requires_preview: true,
-              requires_user_confirmation: true,
-              can_apply_automatically: false,
-            },
-            messageIndex: history.length + 1,
-          });
-          return;
-        }
-        // Auto-dismiss notification after 5 seconds
-        setTimeout(() => store.setChangeNotification(null), 5000);
+        // Aunque el backend lo clasifique como auto-notify, en la app exigimos
+        // preview y confirmación antes de persistir cualquier cambio AI.
+        store.setPendingAction({
+          proposed: result.proposed_action as any,
+          safety: {
+            ...(result.safety as any),
+            requires_preview: true,
+            requires_user_confirmation: true,
+            can_apply_automatically: false,
+            reason: "TeXisStudio te muestra el cambio antes de aplicarlo para evitar escrituras directas al documento.",
+          },
+          messageIndex: history.length + 1,
+        });
       } else if (result.proposed_action && result.safety?.requires_user_confirmation) {
         // Mostrar preview y pedir confirmación
         store.setPendingAction({
@@ -333,6 +325,15 @@ export function AiAssistantPanel({
       onApplyReplacement?.(pending.proposed.original, content);
     } else if (kind === "insert_at_cursor") {
       onInsertAtCursor?.(content);
+    }
+
+    if (pending.safety.risk_level === "auto_with_notification") {
+      const description =
+        kind === "replace_selection"
+          ? `Texto editado: "${store.actionMode.replace(/_/g, " ")}"`
+          : "Contenido insertado tras tu confirmación";
+      store.setChangeNotification({ description });
+      setTimeout(() => store.setChangeNotification(null), 5000);
     }
 
     store.setPendingAction(null);

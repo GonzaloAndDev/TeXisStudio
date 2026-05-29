@@ -41,6 +41,7 @@ export function AiHelpButton({
   function handleClick() {
     store.setUiContext({ activePanel: panel });
     store.setActionMode(mode);
+    store.setContextScope("none");
     store.setDraftInput(question);
     store.openPanel();
   }
