@@ -1,9 +1,11 @@
 # TeXisStudio Master Specification v1.0
 
 > **Estado:** Contrato técnico de implementación.
-> **Fecha:** 27 de mayo de 2026.
+> **Fecha original:** 27 de mayo de 2026. **Última actualización:** 29 de mayo de 2026.
 > **Audiencia:** desarrolladores e ingenieros (Rust/Tauri/React/Qt), revisores de arquitectura, agentes de implementación.
 > **Propósito:** servir como fuente única de verdad para implementar TeXisStudio sin tener que inventar decisiones fundamentales.
+>
+> **Cambios en la actualización 2026-05-29:** §3.3 Tectonic como toolchain soportada y recomendada por defecto. §20.12-20.13 Tectonic como backend del BuildEngine, selector de backend en UI, resumen de compilación en terminal. §33.6 guía de instalación por OS. §25.5 AIEngine (asistente de IA integrado, multi-proveedor, seguridad por diseño). §35 autoevaluación actualizada. Objetivos de producto no negociables documentados al final del §35.
 
 ---
 
@@ -179,7 +181,17 @@ Cuando un dato del usuario contradice un dato derivado (p. ej. editó el `.bib` 
 
 ## 3.3 Plataformas objetivo
 
-macOS (Apple Silicon e Intel), Windows 10/11, Linux (glibc). Toolchains TeX soportadas: TeX Live, MiKTeX, TinyTeX.
+macOS (Apple Silicon e Intel), Windows 10/11, Linux (glibc).
+
+Toolchains TeX soportadas:
+
+| Toolchain | Plataformas | Notas |
+|---|---|---|
+| TeX Live / MacTeX | macOS, Linux, Windows | Distribución completa. Recomendada para tesis exigentes (física avanzada, matemáticas de posgrado, perfiles institucionales estrictos). |
+| MiKTeX | Windows (nativo), macOS, Linux | Descarga paquetes bajo demanda. Buena opción en Windows. |
+| Tectonic | macOS, Windows, Linux | Motor autónomo moderno. Descarga solo los paquetes necesarios. Cubre ~80% de las tesis sin instalación de gigabytes. Puede coexistir con TeX Live/MiKTeX en el mismo sistema. |
+
+**Decisión de producto:** Tectonic es la opción recomendada por defecto para nuevos usuarios. TeX Live/MacTeX/MiKTeX se presentan como la opción para tesis de alta exigencia o cuando Tectonic no logra compilar un paquete específico. La app detecta todos los backends disponibles y permite al usuario elegir cuál usar desde la UI de compilación.
 
 ---
 
@@ -1893,8 +1905,9 @@ LaTeX compila en múltiples pasadas con múltiples herramientas que deben ejecut
 
 | Herramienta | Rol |
 |---|---|
-| `pdflatex`, `xelatex`, `lualatex` | Motor LaTeX principal |
-| `latexmk` | Orchestrator externo (no usado directamente; el BuildEngine reimplementa la lógica) |
+| `pdflatex`, `xelatex`, `lualatex` | Motor LaTeX principal (vía TeX Live / MacTeX / MiKTeX) |
+| `latexmk` | Orchestrator de TeX Live/MiKTeX (backend "TeX Live" en la UI) |
+| `tectonic` | Motor LaTeX autónomo. Backend independiente, sin `latexmk` ni Perl. |
 | `biber` | Procesador bibliográfico para BibLaTeX |
 | `bibtex` | Procesador bibliográfico legacy |
 | `makeglossaries` | Generador de glosarios |
@@ -2017,7 +2030,30 @@ pub struct BuildResult {
 - **UI:** `BuildOutputPanel` muestra el log en tiempo real; `DiagnosticsPanel` muestra el resultado; `StatusBar` indica éxito/fallo/duración.
 - **ExportEngine:** invocado tras build exitoso en modo `Full` para generar el delivery package.
 
-## 20.12 Criterios de aceptación
+## 20.12 Tectonic como backend
+
+**Estado: implementado** — `texis-app/src-tauri/src/commands/compiler.rs`.
+
+Tectonic se usa como backend alternativo a `latexmk`. Su integración difiere en varios aspectos:
+
+| Aspecto | latexmk (TeX Live) | Tectonic |
+|---|---|---|
+| Pasadas múltiples | Sí (configurables) | Automáticas (Tectonic gestiona internamente) |
+| Biber | Requiere paso explícito | Integrado si detecta BibLaTeX |
+| Paquetes faltantes | Error: paquete no encontrado | Descarga bajo demanda en primera compilación |
+| Perl | Requerido | No requerido |
+| Instalación | TeX Live/MacTeX/MiKTeX completo | Binario único |
+
+**Selector de backend en UI:** cuando el sistema tiene ambos backends instalados, la UI de compilación muestra un selector visible (Auto / Tectonic / TeX Live) independientemente del modo de usuario (básico o avanzado). En modo básico con un solo backend, el selector está oculto — no hay decisión que tomar.
+
+**Resumen de compilación en terminal:** al finalizar cada compilación (exitosa o fallida), el proceso imprime en la terminal:
+```
+[TeXisStudio] Compilación OK — Fin: 18:42:07 UTC — Duración: 0m 14s 382ms
+```
+
+**Detección de plataforma:** el comando `get_platform` (Rust: `std::env::consts::OS`) retorna el OS actual (`"macos"` | `"windows"` | `"linux"`) para que la UI de setup muestre solo las opciones de instalación válidas y las instrucciones específicas del sistema operativo.
+
+## 20.13 Criterios de aceptación
 
 | ID | Criterio |
 |---|---|
@@ -2027,6 +2063,8 @@ pub struct BuildResult {
 | AC-BUILD-4 | `BuildStepResult::needs_rerun()` detecta el patrón "Label(s) may have changed". |
 | AC-BUILD-5 | PDF vacío o ausente tras compilación produce `BuildFailureKind`. |
 | AC-BUILD-6 | `BuildMode::Clean` elimina archivos auxiliares sin tocar `.tex`, `.bib`, ni assets. |
+| AC-BUILD-7 | Con dos backends instalados, el selector Auto/Tectonic/TeX Live es visible para cualquier usuario. |
+| AC-BUILD-8 | Al finalizar compilación, el terminal muestra hora de fin y duración. |
 
 ---
 
@@ -2553,6 +2591,143 @@ Cuando el usuario selecciona "Insertar" en AssetsPanel, BibliographyPanel o Tabl
 | AC-EDIT-2 | Click en PDF navega al archivo:línea correcto en el editor. |
 | AC-EDIT-3 | Líneas con diagnósticos tienen marcador en gutter con mensaje al hover. |
 | AC-EDIT-4 | Snippet `fig` inserta bloque completo con placeholders navegables. |
+
+---
+
+# 25.5 AIEngine — Asistente de IA integrado
+
+**Estado: implementado** — `texis-app/src-tauri/src/ai/` (engine, action, context, conversation, request, response, safety, providers) + `texis-app/src/components/AiAssistantPanel.tsx`, `AiHelpButton.tsx` + `texis-app/src/stores/ai.ts` + `texis-app/src/services/aiService.ts`.
+
+## 25.5.1 Propósito y problema real
+
+Un tesista que no conoce LaTeX no sabe qué significa un error de compilación, qué comando usar para insertar una tabla, ni cómo estructurar su argumento. El AIEngine provee un asistente contextual que responde esas preguntas sin salir de la app, y que puede proponer cambios en el documento con previsualización y confirmación explícita.
+
+**Principio rector del AIEngine:**
+
+> La IA nunca modifica el documento sin confirmación del usuario. Su autoridad máxima es mostrar en el chat. La autoridad del usuario es siempre superior.
+
+## 25.5.2 Proveedores soportados
+
+| Proveedor | ID | Modelo por defecto |
+|---|---|---|
+| OpenAI | `openai` | `gpt-4o-mini` |
+| Claude (Anthropic) | `claude` | `claude-sonnet-4-6` |
+| Gemini (Google) | `gemini` | `gemini-2.0-flash` |
+
+Las API keys se almacenan **solo en memoria de sesión** — nunca se persisten en disco ni en `.texisstudio/`. Al cerrar la app, se pierden. Si el usuario las necesita en cada sesión, debe ingresarlas de nuevo. Esto es intencional: protege las claves si el proyecto se comparte o se sube a un repositorio.
+
+## 25.5.3 Modos de acción (AiActionMode)
+
+Los modos se agrupan por nivel de riesgo:
+
+### Chat / consulta (Low — solo responde, no toca el documento)
+
+| Modo | Descripción |
+|---|---|
+| `ask` | Pregunta libre. |
+| `explain_latex_error` | Explica un error de compilación en lenguaje humano. |
+| `learn_latex` | Explica el LaTeX que la app genera: qué hace un comando, por qué se usa ese paquete. |
+| `app_help` | Ayuda sobre cómo usar TeXisStudio. |
+| `review_content` | Revisa coherencia y rigor del contenido académico. |
+| `suggest_sources` | Sugiere fuentes bibliográficas relevantes (solo lista, no inserta). |
+| `analyze_argument` | Analiza la solidez del argumento central. |
+| `check_consistency` | Verifica consistencia entre hipótesis, metodología y conclusiones. |
+| `suggest_structure` | Sugiere cómo estructurar un capítulo o sección. |
+| `simulate_examiner` | Actúa como sinodal simulado: preguntas críticas para preparar la defensa. |
+
+### Edición automática con notificación (AutoWithNotification)
+
+Aplica directamente sobre texto que el autor ya escribió. La app muestra qué cambió y ofrece deshacer. Solo para texto existente, nunca para contenido nuevo estructurado.
+
+| Modo | Requiere selección |
+|---|---|
+| `improve_writing` | Sí |
+| `shorten_text` | Sí |
+| `expand_text` | Sí |
+| `rewrite_text` | Sí |
+| `convert_to_latex` | Sí |
+| `add_paragraph` | No |
+
+### Inserciones estructuradas con confirmación (Medium)
+
+Preview + confirmación explícita antes de tocar el documento. Para elementos que no existían.
+
+`insert_citation`, `add_bibliography_entry`, `insert_cross_reference`, `insert_table`, `insert_figure_placeholder`, `insert_equation`, `add_glossary_entry`, `add_acronym`, `insert_code_block`, `generate_abstract`, `generate_caption`.
+
+## 25.5.4 Contexto de UI (AiUiContext)
+
+El asistente recibe automáticamente el contexto de dónde está el usuario sin que él lo explique:
+
+```typescript
+interface AiUiContext {
+  activePanel?: string;         // "editor" | "compile" | "library" | ...
+  activeSectionType?: string;   // tipo de sección activa en el editor
+  profileId?: string;           // perfil institucional activo
+  hasErrors?: boolean;          // si hay errores de compilación
+  lastErrorMessage?: string;    // último mensaje de error
+}
+```
+
+Este contexto se inyecta automáticamente en el prompt cuando el modo es `app_help`.
+
+## 25.5.5 AiHelpButton — ayuda contextual por panel
+
+Cada panel de la app puede incluir un `AiHelpButton` que abre el asistente con el modo y la pregunta correctos preconfigurados:
+
+```tsx
+<AiHelpButton
+  panel="bibliography"
+  question="¿Cómo agrego una referencia a mi documento?"
+  mode="app_help"
+  variant="ghost" | "inline" | "chip"
+/>
+```
+
+Esto permite que cualquier usuario encuentre ayuda en el momento preciso en que la necesita, sin saber que existe un asistente de IA ni tener que navegar a él manualmente.
+
+## 25.5.6 Trigger post-compilación
+
+Cuando una compilación falla, `CompileView` activa automáticamente un banner que ofrece abrir el asistente con el modo `explain_latex_error` y el contexto del log de compilación. El usuario no tiene que buscar el botón — la ayuda aparece cuando es relevante.
+
+## 25.5.7 Seguridad y privacidad del AIEngine
+
+- Las API keys **nunca** se persisten en disco.
+- El texto del documento **no** se envía a los proveedores de IA sin confirmación explícita del usuario.
+- Los modos `Low` (chat) no tocan el documento — garantía del sistema, no solo del prompt.
+- `ProtectedProjectElement` define los elementos que la IA puede analizar pero nunca modificar: `MainTex`, `Preamble`, `BuildConfiguration`, `DocumentProfile`, `PackageRegistry`, etc.
+- `AiSafetyPolicy` evalúa el riesgo de cada acción propuesta antes de aplicarla.
+
+## 25.5.8 Historial independiente por proveedor
+
+Cada proveedor (OpenAI, Claude, Gemini) mantiene su propio historial de conversación. Cambiar de proveedor no borra el historial del anterior; cada pestaña de proveedor en la UI conserva su contexto.
+
+## 25.5.9 Lo que NO debe hacer el AIEngine
+
+- No aplica cambios sin `AutoWithNotification` o confirmación explícita.
+- No envía contenido completo del documento sin permiso por sesión.
+- No persiste API keys en ningún archivo del proyecto ni del sistema.
+- No activa funciones de riesgo `High` o `Forbidden` (eliminaciones, cambios estructurales irreversibles).
+
+## 25.5.10 Integración con el flujo neófito-first
+
+El AIEngine es una pieza clave del objetivo de hacer TeXisStudio usable por personas que no conocen LaTeX:
+
+- `learn_latex`: explica el LaTeX que la app genera, para quien quiere entender lo que hay debajo sin obligación de aprenderlo.
+- `explain_latex_error`: convierte errores crípticos de compilación en instrucciones comprensibles.
+- `app_help` + `AiHelpButton`: elimina la necesidad de buscar documentación externa.
+- `simulate_examiner`: prepara al estudiante para su defensa desde la propia app.
+
+## 25.5.11 Criterios de aceptación
+
+| ID | Criterio |
+|---|---|
+| AC-AI-1 | Las API keys no aparecen en ningún archivo del proyecto ni del sistema después de cerrar la app. |
+| AC-AI-2 | Un modo `Low` (chat) no produce ningún cambio en archivos del proyecto. |
+| AC-AI-3 | Un modo `AutoWithNotification` muestra la notificación de cambio y ofrece deshacer. |
+| AC-AI-4 | Un modo `Medium` muestra preview del cambio propuesto y requiere confirmación antes de aplicar. |
+| AC-AI-5 | `explain_latex_error` se activa desde CompileView al detectar un error de compilación. |
+| AC-AI-6 | `AiHelpButton` abre el panel con el modo y pregunta correctos sin input adicional del usuario. |
+| AC-AI-7 | El historial de OpenAI se conserva al cambiar a Claude y viceversa. |
 
 ---
 
@@ -3133,9 +3308,18 @@ Comportamiento:
 ```text
 Comportamiento:
   - ToolchainDetector al abrir el proyecto o al intentar compilar.
-  - Diagnóstico Error: "xelatex no encontrado en el sistema."
-  - Sugerencia: "Instala TeX Live: brew install texlive (macOS) / tlmgr (genérico)"
+  - Diagnóstico Error: "No se encontró ningún motor LaTeX instalado."
+  - La UI dirige al usuario a SetupLatexView, que detecta el OS automáticamente
+    y muestra las opciones válidas con instrucciones específicas:
+      macOS:   Tectonic (brew install tectonic) — recomendado para empezar
+               MacTeX   (brew install --cask mactex) — para tesis exigentes
+      Linux:   Tectonic (curl install) — recomendado para empezar
+               TeX Live (apt/dnf/pacman) — para tesis exigentes
+      Windows: Tectonic (winget install tectonic-typesetting.tectonic)
+               MiKTeX   (winget install MiKTeX.MiKTeX) — recomendado si se prefiere GUI
   - La compilación está bloqueada. El resto de la app funciona.
+  - Si hay un backend instalado pero no el otro, el selector de la UI
+    muestra solo el disponible sin opciones de cambio.
 ```
 
 ## 33.7 Biber no instalado
@@ -3517,12 +3701,13 @@ Esta tabla refleja el estado real del documento y del sistema, sin maquillarlo.
 | ReferenceEngine | ✅ Completo | ✅ | Bajo | — |
 | GlossaryEngine | ✅ Especificado | ❌ Registry pendiente | Alto | GlossaryRegistry, integración con BUILD |
 | PackageEngine | ✅ Especificado | ❌ No implementado | **Alto** | Detección, conflictos, reordenamiento |
-| BuildEngine | ✅ Completo | ✅ | Bajo | latexmk como alternativa, SyncTeX |
+| BuildEngine | ✅ Completo | ✅ | Bajo | SyncTeX; Tectonic implementado como backend alternativo |
 | DependencyGraph | ✅ Completo | ✅ | Bajo | — |
 | DiagnosticsEngine | ✅ Completo | ✅ | Bajo | Más patrones de makeglossaries/makeindex |
 | Command System | ✅ Completo | ✅ (dispatcher + RenameLabelCommand) | Bajo | Implementar más Command concretos |
 | UI/UX Architecture | ✅ Completo (spec) | ⚠️ Parcial (React/Tauri existente) | Medio | Conectar nuevos engines a paneles |
 | Editor Integration | ✅ Especificado | ⚠️ Parcial | Medio | Autocompletado \cite, \ref, \gls |
+| AIEngine | ✅ Especificado (§25.5) | ✅ (panel, providers, safety, context, AiHelpButton) | Bajo | Modelo de contexto de documento más rico para modos Medium |
 | Plugin Architecture | ✅ Completo | ✅ (trait + registry) | Bajo | Plugins concretos (Mermaid, Pandoc, etc.) |
 | Seguridad | ✅ Completo | ✅ | Bajo | Keychain nativo de plataforma (macOS/Win/Linux) |
 | Privacidad | ✅ Completo | ✅ | Bajo | — |
@@ -3547,4 +3732,13 @@ Esta tabla refleja el estado real del documento y del sistema, sin maquillarlo.
 - Plugins de terceros en sandbox solo para v2.0+. Decisión correcta.
 - `latexmk` como herramienta independiente que no reemplaza el BuildEngine propio. Decisión correcta: el BuildEngine tiene mejor control sobre el ciclo y sobre los diagnósticos.
 - `bibliography-index.json` no regenerable. Es la única decisión que requiere educación al usuario (que entienda por qué no puede borrar ese archivo).
+- API keys del AIEngine solo en memoria de sesión. Decisión correcta: protege las claves si el proyecto se comparte o se versiona.
+- Tectonic como opción recomendada por defecto (no TeX Live completo). Decisión correcta para el objetivo neófito-first: cubre el 80% de los casos con instalación mínima, y puede coexistir con la distribución completa si se necesita.
+
+## Objetivos de producto no negociables
+
+Toda decisión de diseño, implementación y priorización debe evaluarse contra estos dos objetivos:
+
+1. **Tesis altamente profesional con LaTeX para personas que no lo conocen en lo más mínimo.** La app hace el trabajo técnico; el usuario hace el trabajo académico.
+2. **Funcional para cualquier nivel y programa de cualquier institución de renombre en el mundo.** Perfiles, plantillas, validaciones y herramientas deben poder cubrir desde una tesina de licenciatura hasta un doctorado en física teórica en cualquier universidad seria del planeta.
 ```
