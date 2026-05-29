@@ -380,7 +380,7 @@ export default function CompileView() {
                 </div>
                 {readiness && (
                   <div style={{ marginTop: 10 }}>
-                    <ReadinessOverview readiness={readiness} />
+                    <ReadinessOverview readiness={readiness} showPending={userMode === "basic"} />
                   </div>
                 )}
               </div>

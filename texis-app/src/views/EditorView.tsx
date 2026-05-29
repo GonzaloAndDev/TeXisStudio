@@ -508,13 +508,13 @@ export default function EditorView() {
   const projectName = activeProject.metadata.title;
   const toolbarItems: [ContentBlock["type"], React.ReactNode, string][] = userMode === "basic"
     ? [
-        ["paragraph", <IconText size={12} />, "Párrafo"],
-        ["heading", <IconHeading size={12} />, "Título"],
-        ["list", <IconList size={12} />, "Lista"],
-        ["citation", <IconMore size={12} />, "Cita"],
-        ["figure", <IconImage size={12} />, "Figura"],
-        ["table", <IconTable size={12} />, "Tabla"],
-        ["equation", <IconSigma size={12} />, "Ecuación"],
+        ["paragraph", <IconText size={12} />, "Agregar texto"],
+        ["heading", <IconHeading size={12} />, "Agregar título"],
+        ["list", <IconList size={12} />, "Agregar lista"],
+        ["citation", <IconMore size={12} />, "Agregar cita"],
+        ["figure", <IconImage size={12} />, "Agregar figura"],
+        ["table", <IconTable size={12} />, "Agregar tabla"],
+        ["equation", <IconSigma size={12} />, "Agregar ecuación"],
       ]
     : [
         ["paragraph", <IconText size={12} />, "Párrafo"],
@@ -631,10 +631,10 @@ export default function EditorView() {
                 key={type}
                 className="btn btn-ghost btn-sm"
                 onClick={() => addBlock(type)}
-                title={`${userMode === "basic" ? "Agregar" : "Insertar"} ${label}`}
+                title={label}
                 style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
               >
-                {icon}<span>{userMode === "basic" && type === "citation" ? "Agregar cita" : label}</span>
+                {icon}<span>{label}</span>
               </button>
             ))}
 
