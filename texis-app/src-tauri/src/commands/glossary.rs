@@ -1,5 +1,6 @@
 // Comandos Tauri para GlossaryEngine.
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use texis_core::glossary::{
     AcronymEntry, GlossaryEntry, GlossaryEntryStatus, GlossaryParser, GlossaryRegistry,
@@ -13,15 +14,14 @@ fn err(e: impl std::fmt::Display) -> String {
 /// Analiza el glosario del proyecto: entradas definidas, acrónimos y estado de uso.
 /// Soporta dos fuentes:
 /// 1. Bloques GlossaryEntry/AcronymEntry en el YAML del proyecto (fuente principal)
+///    — cruza definiciones con referencias `\gls{...}` en bloques RawLatex
 /// 2. glossary.tex / glossary/glossary.tex (fuente legacy)
 #[tauri::command]
 pub fn analyze_glossary(project_root: String) -> Result<serde_json::Value, String> {
     let root = PathBuf::from(&project_root);
 
     // ── Fuente 1: bloques del YAML del proyecto ──────────────────────────────
-    let yaml_registry = load_glossary_from_yaml(&root);
-
-    if let Some(registry) = yaml_registry {
+    if let Some(registry) = load_glossary_from_yaml(&root) {
         return Ok(registry_to_json(&registry));
     }
 
@@ -47,54 +47,115 @@ pub fn analyze_glossary(project_root: String) -> Result<serde_json::Value, Strin
     Ok(registry_to_json(&registry))
 }
 
-/// Lee el proyecto YAML y extrae GlossaryEntry/AcronymEntry de todos los bloques.
+/// Lee el proyecto YAML, extrae GlossaryEntry/AcronymEntry y cruza con
+/// referencias `\gls{...}` encontradas en bloques RawLatex del mismo proyecto.
+///
 /// Retorna None si no existe un proyecto YAML o no tiene entradas de glosario.
 fn load_glossary_from_yaml(root: &std::path::Path) -> Option<GlossaryRegistry> {
-    // Buscar el archivo del proyecto (*.project.yaml)
     let project_file = find_project_file(root)?;
 
     let loader = ProjectLoader;
     let model = loader.load_from_file(&project_file).ok()?;
 
-    let mut entries: Vec<GlossaryEntry> = Vec::new();
-    let mut acronyms: Vec<AcronymEntry> = Vec::new();
+    let mut defined_entries: Vec<GlossaryEntry> = Vec::new();
+    let mut defined_acronyms: Vec<AcronymEntry> = Vec::new();
+    let mut raw_latex_sources: Vec<String> = Vec::new();
 
     for section in &model.sections {
         for block in &section.blocks {
             match block {
                 ContentBlock::GlossaryEntry(g) => {
-                    entries.push(GlossaryEntry {
+                    defined_entries.push(GlossaryEntry {
                         key: g.id.clone(),
                         name: g.term.clone(),
                         name_plural: None,
                         description: g.definition.clone(),
                         symbol: None,
                         category: None,
-                        // Entradas YAML se renderizan directamente — no usan \gls{}
-                        status: GlossaryEntryStatus::Active,
+                        // Estado provisional; se recalcula abajo
+                        status: GlossaryEntryStatus::DefinedUnused,
                     });
                 }
                 ContentBlock::AcronymEntry(a) => {
-                    acronyms.push(AcronymEntry {
+                    defined_acronyms.push(AcronymEntry {
                         key: a.id.clone(),
                         short: a.acronym.clone(),
                         long: a.full_form.clone(),
                         long_plural: None,
                         description: a.description.clone(),
-                        // Acrónimos YAML se renderizan directamente — no usan \gls{}
-                        status: GlossaryEntryStatus::Active,
+                        status: GlossaryEntryStatus::DefinedUnused,
                     });
+                }
+                ContentBlock::RawLatex(r) if r.user_confirmed => {
+                    raw_latex_sources.push(r.content.clone());
                 }
                 _ => {}
             }
         }
     }
 
-    if entries.is_empty() && acronyms.is_empty() {
+    if defined_entries.is_empty() && defined_acronyms.is_empty() {
         return None;
     }
 
-    Some(GlossaryRegistry { entries, acronyms })
+    // Cruzar definiciones con referencias reales
+    let parser = GlossaryParser::new();
+    let refs: Vec<&str> = raw_latex_sources.iter().map(|s| s.as_str()).collect();
+    let referenced: HashSet<String> = parser.collect_references(&refs);
+
+    // Construir set de claves definidas (owned) antes de consumir los Vec
+    let defined_keys: HashSet<String> = defined_entries
+        .iter()
+        .map(|e| e.key.clone())
+        .chain(defined_acronyms.iter().map(|a| a.key.clone()))
+        .collect();
+
+    let entries: Vec<GlossaryEntry> = defined_entries
+        .into_iter()
+        .map(|mut e| {
+            e.status = if referenced.contains(&e.key) {
+                GlossaryEntryStatus::Active
+            } else {
+                GlossaryEntryStatus::DefinedUnused
+            };
+            e
+        })
+        .collect();
+
+    let acronyms: Vec<AcronymEntry> = defined_acronyms
+        .into_iter()
+        .map(|mut a| {
+            a.status = if referenced.contains(&a.key) {
+                GlossaryEntryStatus::Active
+            } else {
+                GlossaryEntryStatus::DefinedUnused
+            };
+            a
+        })
+        .collect();
+
+    // Detectar referencias a claves no definidas (UsedUndefined)
+    let undefined: Vec<GlossaryEntry> = referenced
+        .iter()
+        .filter(|k| !defined_keys.contains(*k))
+        .map(|k| GlossaryEntry {
+            key: k.clone(),
+            name: k.clone(),
+            name_plural: None,
+            description: String::new(),
+            symbol: None,
+            category: None,
+            status: GlossaryEntryStatus::UsedUndefined,
+        })
+        .collect();
+
+    let mut all_entries = entries;
+    all_entries.extend(undefined);
+
+    Some(GlossaryRegistry {
+        entries: all_entries,
+        acronyms,
+    })
 }
 
 fn find_project_file(root: &std::path::Path) -> Option<PathBuf> {

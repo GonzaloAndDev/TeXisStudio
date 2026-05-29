@@ -110,7 +110,10 @@ impl GlossaryParser {
             .collect()
     }
 
-    fn collect_references(&self, sources: &[&str]) -> HashSet<String> {
+    /// Extrae todas las claves de glosario/acrónimos referenciadas en un conjunto de fuentes.
+    /// Detecta: \gls{}, \Gls{}, \GLS{}, \glspl{}, \acrshort{}, \acrlong{}, \acrfull{}, \glssymbol{}.
+    /// Llamable desde fuera del módulo para analizar fuentes YAML o .tex.
+    pub fn collect_references(&self, sources: &[&str]) -> HashSet<String> {
         let re = Regex::new(
             r#"\\(?:gls|Gls|GLS|glspl|Glspl|GLSpl|acrshort|acrlong|acrfull|glssymbol)\{([^}]+)\}"#,
         )
@@ -166,5 +169,49 @@ mod tests {
         let body = r"Se usa \gls{api} en este documento.";
         let result = parser.parse(glossary, &[body]);
         assert_eq!(result.acronyms[0].status, GlossaryEntryStatus::Active);
+    }
+
+    // ── Tests para cruce de referencias YAML ──────────────────────────────────
+    // Estos tests validan que collect_references puede usarse desde fuera del
+    // módulo para cruzar definiciones YAML con referencias en bloques RawLatex.
+
+    #[test]
+    fn collect_references_detecta_gls_en_raw_latex() {
+        let parser = GlossaryParser::new();
+        let raw = r"En la ecuación~\eqref{ec:control} se usa \gls{amd} y \Gls{pid}.";
+        let refs = parser.collect_references(&[raw]);
+        assert!(refs.contains("amd"), "debe detectar \\gls{{amd}}");
+        assert!(refs.contains("pid"), "debe detectar \\Gls{{pid}}");
+        assert!(
+            !refs.contains("ec:control"),
+            "no debe recoger labels de ecuaciones"
+        );
+    }
+
+    #[test]
+    fn collect_references_detecta_acrshort_y_acrlong() {
+        let parser = GlossaryParser::new();
+        let raw = r"\acrshort{smc} y \acrlong{itae} están definidos.";
+        let refs = parser.collect_references(&[raw]);
+        assert!(refs.contains("smc"));
+        assert!(refs.contains("itae"));
+    }
+
+    #[test]
+    fn collect_references_vacio_sin_gls() {
+        let parser = GlossaryParser::new();
+        let raw = r"Este párrafo no tiene referencias de glosario.";
+        let refs = parser.collect_references(&[raw]);
+        assert!(refs.is_empty());
+    }
+
+    #[test]
+    fn collect_references_multiples_fuentes() {
+        let parser = GlossaryParser::new();
+        let src1 = r"Usamos \gls{amd} en la sección 3.";
+        let src2 = r"El \gls{pid} es el controlador base.";
+        let refs = parser.collect_references(&[src1, src2]);
+        assert!(refs.contains("amd"));
+        assert!(refs.contains("pid"));
     }
 }
