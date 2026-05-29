@@ -145,6 +145,8 @@ fn run_compiler_streaming(
     draft: bool,
     cancel: Arc<AtomicBool>,
 ) -> Result<Value, String> {
+    let compile_start = std::time::Instant::now();
+
     // Construir el comando
     let mut cmd = std::process::Command::new(backend);
     cmd.current_dir(build_dir)
@@ -310,6 +312,27 @@ fn run_compiler_streaming(
         "log_preview": &log[..log.len().min(8000)],
         "backend_used": backend,
     });
+
+    // Imprimir resumen de compilación en terminal
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let elapsed = compile_start.elapsed();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        // Formato simple sin dependencias externas: HH:MM:SS en UTC
+        let h = (now / 3600) % 24;
+        let m = (now / 60) % 60;
+        let s = now % 60;
+        let secs = elapsed.as_secs();
+        let ms = elapsed.subsec_millis();
+        let result_str = if success { "OK" } else { "FALLÓ" };
+        println!(
+            "[TeXisStudio] Compilación {result_str} — Fin: {:02}:{:02}:{:02} UTC — Duración: {}m {}s {}ms",
+            h, m, s, secs / 60, secs % 60, ms
+        );
+    }
 
     // Emitir evento de finalización para listeners no-await
     let _ = app.emit("compile://done", &payload);
