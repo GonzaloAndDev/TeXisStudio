@@ -264,12 +264,22 @@ fn check_placeholder_metadata(model: &ProjectModel, issues: &mut Vec<ValidationI
 /// Las secciones auto-generadas (portada, índice, referencias, listas) se omiten.
 fn check_required_sections_have_content(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
     const AUTO_GENERATED: &[&str] = &[
+        // Portada — nombres canónicos y aliases comunes
         "title_page",
+        "cover",
+        // Índices automáticos
         "table_of_contents",
+        "toc",
         "list_of_figures",
         "list_of_tables",
         "list_of_algorithms",
+        "list_of_listings",
+        // Bibliografía automática
         "references",
+        "bibliography",
+        // Glosario/acrónimos sin entradas manuales
+        "glossary",
+        "acronyms",
     ];
 
     for section in &model.sections {

@@ -30,12 +30,22 @@ pub fn validate(model: &ProjectModel, profile: &Profile) -> ValidationReport {
 // ── Secciones requeridas por el perfil ───────────────────────────────────────
 
 const AUTO_GENERATED_ELEMENTS: &[&str] = &[
+    // Portada — nombres canónicos y aliases comunes
     "title_page",
+    "cover",
+    // Índices automáticos
     "table_of_contents",
+    "toc",
     "list_of_figures",
     "list_of_tables",
     "list_of_algorithms",
+    "list_of_listings",
+    // Bibliografía automática
     "references",
+    "bibliography",
+    // Glosario/acrónimos cuando no tienen entradas manuales
+    "glossary",
+    "acronyms",
 ];
 
 fn check_profile_required_sections(
