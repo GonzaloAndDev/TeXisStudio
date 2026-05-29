@@ -15,10 +15,10 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct AiSendRequest {
-    pub provider: String,       // "openai" | "claude" | "gemini"
+    pub provider: String, // "openai" | "claude" | "gemini"
     pub model_id: String,
-    pub api_key: String,        // nunca se persiste, viene de la sesión del frontend
-    pub action_mode: String,    // snake_case del enum AiActionMode
+    pub api_key: String,     // nunca se persiste, viene de la sesión del frontend
+    pub action_mode: String, // snake_case del enum AiActionMode
     pub user_message: String,
     pub context: AiFrontendContext,
     pub history: Vec<AiFrontendMessage>,
@@ -26,7 +26,7 @@ pub struct AiSendRequest {
 
 #[derive(Deserialize)]
 pub struct AiFrontendContext {
-    pub scope: String,          // "none" | "current_selection" | "current_file" | "diagnostics" | "build_log"
+    pub scope: String, // "none" | "current_selection" | "current_file" | "diagnostics" | "build_log"
     pub selection: Option<String>,
     pub file_name: Option<String>,
     pub file_content: Option<String>,
@@ -36,7 +36,7 @@ pub struct AiFrontendContext {
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct AiFrontendMessage {
-    pub role: String,           // "user" | "assistant"
+    pub role: String, // "user" | "assistant"
     pub content: String,
 }
 
@@ -52,9 +52,13 @@ pub struct AiCommandResponse {
 
 impl AiCommandResponse {
     fn success(response: AiResponse) -> Self {
-        let proposed = response.proposed_action.as_ref()
+        let proposed = response
+            .proposed_action
+            .as_ref()
             .and_then(|a| serde_json::to_value(a).ok());
-        let safety = response.safety.as_ref()
+        let safety = response
+            .safety
+            .as_ref()
             .and_then(|s| serde_json::to_value(s).ok());
         Self {
             ok: true,
@@ -133,19 +137,13 @@ fn parse_action_mode(s: &str) -> Option<AiActionMode> {
 
 fn parse_context(ctx: AiFrontendContext) -> AiContextPackage {
     match ctx.scope.as_str() {
-        "current_selection" => {
-            AiContextPackage::with_selection(ctx.selection.unwrap_or_default())
-        }
+        "current_selection" => AiContextPackage::with_selection(ctx.selection.unwrap_or_default()),
         "current_file" => AiContextPackage::with_file(
             ctx.file_name.unwrap_or_else(|| "archivo.tex".to_string()),
             ctx.file_content.unwrap_or_default(),
         ),
-        "diagnostics" => {
-            AiContextPackage::with_diagnostics(ctx.diagnostics.unwrap_or_default())
-        }
-        "build_log" => {
-            AiContextPackage::with_build_log(ctx.build_log.unwrap_or_default())
-        }
+        "diagnostics" => AiContextPackage::with_diagnostics(ctx.diagnostics.unwrap_or_default()),
+        "build_log" => AiContextPackage::with_build_log(ctx.build_log.unwrap_or_default()),
         _ => AiContextPackage::none(),
     }
 }
@@ -169,16 +167,22 @@ fn parse_history(history: Vec<AiFrontendMessage>) -> Vec<AiMessage> {
 pub async fn ai_send_message(request: AiSendRequest) -> AiCommandResponse {
     let provider = match parse_provider(&request.provider) {
         Some(p) => p,
-        None => return AiCommandResponse::error(AiProviderError::ProviderError(
-            format!("Proveedor desconocido: '{}'", request.provider),
-        )),
+        None => {
+            return AiCommandResponse::error(AiProviderError::ProviderError(format!(
+                "Proveedor desconocido: '{}'",
+                request.provider
+            )))
+        }
     };
 
     let action_mode = match parse_action_mode(&request.action_mode) {
         Some(m) => m,
-        None => return AiCommandResponse::error(AiProviderError::ProviderError(
-            format!("Modo de acción desconocido: '{}'", request.action_mode),
-        )),
+        None => {
+            return AiCommandResponse::error(AiProviderError::ProviderError(format!(
+                "Modo de acción desconocido: '{}'",
+                request.action_mode
+            )))
+        }
     };
 
     // Validar que el mensaje no está vacío
@@ -259,10 +263,22 @@ mod tests {
 
     #[test]
     fn parse_action_mode_supports_modes_exposed_in_ui() {
-        assert!(matches!(parse_action_mode("rewrite_text"), Some(AiActionMode::RewriteText)));
-        assert!(matches!(parse_action_mode("review_content"), Some(AiActionMode::ReviewContent)));
-        assert!(matches!(parse_action_mode("insert_table"), Some(AiActionMode::InsertTable)));
-        assert!(matches!(parse_action_mode("add_acronym"), Some(AiActionMode::AddAcronym)));
+        assert!(matches!(
+            parse_action_mode("rewrite_text"),
+            Some(AiActionMode::RewriteText)
+        ));
+        assert!(matches!(
+            parse_action_mode("review_content"),
+            Some(AiActionMode::ReviewContent)
+        ));
+        assert!(matches!(
+            parse_action_mode("insert_table"),
+            Some(AiActionMode::InsertTable)
+        ));
+        assert!(matches!(
+            parse_action_mode("add_acronym"),
+            Some(AiActionMode::AddAcronym)
+        ));
     }
 
     #[test]

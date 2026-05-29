@@ -10,7 +10,7 @@ pub struct PluginRegistry {
 
 #[derive(Default)]
 struct CapabilityIndex {
-    asset_renderers: Vec<(Vec<String>, PluginId)>,   // (formatos, plugin_id)
+    asset_renderers: Vec<(Vec<String>, PluginId)>, // (formatos, plugin_id)
     export_providers: Vec<(Vec<String>, PluginId)>,
     bib_providers: Vec<PluginId>,
     dict_providers: Vec<(Vec<String>, PluginId)>,
@@ -64,31 +64,43 @@ impl PluginRegistry {
         for cap in plugin.capabilities() {
             match cap {
                 PluginCapability::AssetRenderer { formats } => {
-                    self.by_capability.asset_renderers.push((formats, id.clone()));
+                    self.by_capability
+                        .asset_renderers
+                        .push((formats, id.clone()));
                 }
                 PluginCapability::ExportProvider { formats } => {
-                    self.by_capability.export_providers.push((formats, id.clone()));
+                    self.by_capability
+                        .export_providers
+                        .push((formats, id.clone()));
                 }
                 PluginCapability::BibliographyProvider => {
                     self.by_capability.bib_providers.push(id.clone());
                 }
                 PluginCapability::DictionaryProvider { languages } => {
-                    self.by_capability.dict_providers.push((languages, id.clone()));
+                    self.by_capability
+                        .dict_providers
+                        .push((languages, id.clone()));
                 }
                 PluginCapability::DiagnosticProvider => {
                     self.by_capability.diagnostic_providers.push(id.clone());
                 }
                 PluginCapability::BuildStepProvider { step_name } => {
-                    self.by_capability.build_step_providers.push((step_name, id.clone()));
+                    self.by_capability
+                        .build_step_providers
+                        .push((step_name, id.clone()));
                 }
                 PluginCapability::TemplateProvider => {
                     self.by_capability.template_providers.push(id.clone());
                 }
                 PluginCapability::CommandProvider { commands } => {
-                    self.by_capability.command_providers.push((commands, id.clone()));
+                    self.by_capability
+                        .command_providers
+                        .push((commands, id.clone()));
                 }
                 PluginCapability::UiPanelProvider { panel_id } => {
-                    self.by_capability.ui_panel_providers.push((panel_id, id.clone()));
+                    self.by_capability
+                        .ui_panel_providers
+                        .push((panel_id, id.clone()));
                 }
             }
         }
@@ -116,7 +128,9 @@ impl PluginRegistry {
 
     /// Descarga un plugin llamando on_unload.
     pub fn unregister(&mut self, id: &str) -> Result<(), PluginError> {
-        let plugin = self.plugins.remove(id)
+        let plugin = self
+            .plugins
+            .remove(id)
             .ok_or_else(|| PluginError::NotFound(id.to_string()))?;
         self.disabled.remove(id);
         plugin.on_unload().map_err(|e| PluginError::LoadError {
@@ -124,15 +138,31 @@ impl PluginRegistry {
             message: e.to_string(),
         })?;
         // Limpiar índices
-        self.by_capability.asset_renderers.retain(|(_, pid)| pid != id);
-        self.by_capability.export_providers.retain(|(_, pid)| pid != id);
+        self.by_capability
+            .asset_renderers
+            .retain(|(_, pid)| pid != id);
+        self.by_capability
+            .export_providers
+            .retain(|(_, pid)| pid != id);
         self.by_capability.bib_providers.retain(|pid| pid != id);
-        self.by_capability.dict_providers.retain(|(_, pid)| pid != id);
-        self.by_capability.diagnostic_providers.retain(|pid| pid != id);
-        self.by_capability.build_step_providers.retain(|(_, pid)| pid != id);
-        self.by_capability.template_providers.retain(|pid| pid != id);
-        self.by_capability.command_providers.retain(|(_, pid)| pid != id);
-        self.by_capability.ui_panel_providers.retain(|(_, pid)| pid != id);
+        self.by_capability
+            .dict_providers
+            .retain(|(_, pid)| pid != id);
+        self.by_capability
+            .diagnostic_providers
+            .retain(|pid| pid != id);
+        self.by_capability
+            .build_step_providers
+            .retain(|(_, pid)| pid != id);
+        self.by_capability
+            .template_providers
+            .retain(|pid| pid != id);
+        self.by_capability
+            .command_providers
+            .retain(|(_, pid)| pid != id);
+        self.by_capability
+            .ui_panel_providers
+            .retain(|(_, pid)| pid != id);
         Ok(())
     }
 
@@ -157,8 +187,7 @@ impl PluginRegistry {
             .asset_renderers
             .iter()
             .filter(|(fmts, pid)| {
-                fmts.iter().any(|f| f.eq_ignore_ascii_case(format))
-                    && self.is_active(pid)
+                fmts.iter().any(|f| f.eq_ignore_ascii_case(format)) && self.is_active(pid)
             })
             .map(|(_, pid)| pid.as_str())
             .collect()
@@ -170,8 +199,7 @@ impl PluginRegistry {
             .export_providers
             .iter()
             .filter(|(fmts, pid)| {
-                fmts.iter().any(|f| f.eq_ignore_ascii_case(format))
-                    && self.is_active(pid)
+                fmts.iter().any(|f| f.eq_ignore_ascii_case(format)) && self.is_active(pid)
             })
             .map(|(_, pid)| pid.as_str())
             .collect()
@@ -187,30 +215,51 @@ impl PluginRegistry {
             .collect()
     }
 
-    pub fn total_registered(&self) -> usize { self.plugins.len() }
-    pub fn total_active(&self) -> usize { self.plugins.len() - self.disabled.len() }
+    pub fn total_registered(&self) -> usize {
+        self.plugins.len()
+    }
+    pub fn total_active(&self) -> usize {
+        self.plugins.len() - self.disabled.len()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::model::{PluginCapability, TexisPlugin, PluginPermissions};
+    use crate::plugin::model::{PluginCapability, PluginPermissions, TexisPlugin};
 
-    struct FakePlugin { id: String, formats: Vec<String> }
+    struct FakePlugin {
+        id: String,
+        formats: Vec<String>,
+    }
     impl TexisPlugin for FakePlugin {
-        fn id(&self) -> &str { &self.id }
-        fn name(&self) -> &str { "Fake" }
-        fn version(&self) -> &str { "1.0" }
-        fn description(&self) -> &str { "" }
+        fn id(&self) -> &str {
+            &self.id
+        }
+        fn name(&self) -> &str {
+            "Fake"
+        }
+        fn version(&self) -> &str {
+            "1.0"
+        }
+        fn description(&self) -> &str {
+            ""
+        }
         fn capabilities(&self) -> Vec<PluginCapability> {
-            vec![PluginCapability::AssetRenderer { formats: self.formats.clone() }]
+            vec![PluginCapability::AssetRenderer {
+                formats: self.formats.clone(),
+            }]
         }
     }
 
     #[test]
     fn register_and_retrieve() {
         let mut reg = PluginRegistry::new();
-        reg.register(Box::new(FakePlugin { id: "svg_renderer".to_string(), formats: vec!["svg".to_string()] })).unwrap();
+        reg.register(Box::new(FakePlugin {
+            id: "svg_renderer".to_string(),
+            formats: vec!["svg".to_string()],
+        }))
+        .unwrap();
         assert!(reg.get("svg_renderer").is_some());
         assert_eq!(reg.total_registered(), 1);
     }
@@ -218,15 +267,28 @@ mod tests {
     #[test]
     fn reject_duplicate_registration() {
         let mut reg = PluginRegistry::new();
-        reg.register(Box::new(FakePlugin { id: "p1".to_string(), formats: vec![] })).unwrap();
-        let err = reg.register(Box::new(FakePlugin { id: "p1".to_string(), formats: vec![] })).unwrap_err();
+        reg.register(Box::new(FakePlugin {
+            id: "p1".to_string(),
+            formats: vec![],
+        }))
+        .unwrap();
+        let err = reg
+            .register(Box::new(FakePlugin {
+                id: "p1".to_string(),
+                formats: vec![],
+            }))
+            .unwrap_err();
         assert!(matches!(err, PluginError::AlreadyLoaded(_)));
     }
 
     #[test]
     fn disable_and_enable() {
         let mut reg = PluginRegistry::new();
-        reg.register(Box::new(FakePlugin { id: "p1".to_string(), formats: vec!["svg".to_string()] })).unwrap();
+        reg.register(Box::new(FakePlugin {
+            id: "p1".to_string(),
+            formats: vec!["svg".to_string()],
+        }))
+        .unwrap();
         reg.disable("p1").unwrap();
         assert!(!reg.is_active("p1"));
         assert_eq!(reg.renderers_for("svg").len(), 0);
@@ -238,7 +300,11 @@ mod tests {
     #[test]
     fn unregister_cleans_capability_index() {
         let mut reg = PluginRegistry::new();
-        reg.register(Box::new(FakePlugin { id: "svg".to_string(), formats: vec!["svg".to_string()] })).unwrap();
+        reg.register(Box::new(FakePlugin {
+            id: "svg".to_string(),
+            formats: vec!["svg".to_string()],
+        }))
+        .unwrap();
         reg.unregister("svg").unwrap();
         assert_eq!(reg.renderers_for("svg").len(), 0);
         assert_eq!(reg.total_registered(), 0);
@@ -247,7 +313,11 @@ mod tests {
     #[test]
     fn renderers_for_format_case_insensitive() {
         let mut reg = PluginRegistry::new();
-        reg.register(Box::new(FakePlugin { id: "r".to_string(), formats: vec!["SVG".to_string()] })).unwrap();
+        reg.register(Box::new(FakePlugin {
+            id: "r".to_string(),
+            formats: vec!["SVG".to_string()],
+        }))
+        .unwrap();
         assert_eq!(reg.renderers_for("svg").len(), 1);
         assert_eq!(reg.renderers_for("SVG").len(), 1);
     }

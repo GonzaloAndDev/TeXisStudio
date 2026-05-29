@@ -13,26 +13,53 @@ impl Default for FieldPriorityRules {
         let mut rules = HashMap::new();
         // (campo → [proveedores en orden de prioridad])
         let defaults: &[(&str, &[&str])] = &[
-            ("title",          &["Crossref", "DataCite", "OpenAlex", "SemanticScholar", "Zotero"]),
-            ("authors",        &["Crossref", "DataCite", "OpenAlex", "SemanticScholar", "Zotero"]),
-            ("editors",        &["Crossref", "DataCite", "OpenAlex"]),
-            ("doi",            &["Crossref", "DataCite", "OpenAlex"]),
-            ("isbn",           &["Crossref", "DataCite"]),
-            ("issn",           &["Crossref", "OpenAlex"]),
-            ("year",           &["Crossref", "DataCite", "OpenAlex", "SemanticScholar"]),
-            ("date",           &["Crossref", "DataCite", "OpenAlex"]),
-            ("journal",        &["Crossref", "OpenAlex", "SemanticScholar"]),
-            ("booktitle",      &["Crossref", "OpenAlex"]),
-            ("publisher",      &["Crossref", "DataCite"]),
-            ("volume",         &["Crossref", "OpenAlex"]),
-            ("issue",          &["Crossref", "OpenAlex"]),
-            ("pages",          &["Crossref", "OpenAlex"]),
-            ("abstract_text",  &["SemanticScholar", "OpenAlex", "Crossref", "DataCite"]),
-            ("language",       &["Crossref", "OpenAlex", "DataCite"]),
-            ("license",        &["Crossref", "DataCite", "OpenAlex"]),
-            ("url",            &["Crossref", "DataCite", "OpenAlex", "SemanticScholar"]),
+            (
+                "title",
+                &[
+                    "Crossref",
+                    "DataCite",
+                    "OpenAlex",
+                    "SemanticScholar",
+                    "Zotero",
+                ],
+            ),
+            (
+                "authors",
+                &[
+                    "Crossref",
+                    "DataCite",
+                    "OpenAlex",
+                    "SemanticScholar",
+                    "Zotero",
+                ],
+            ),
+            ("editors", &["Crossref", "DataCite", "OpenAlex"]),
+            ("doi", &["Crossref", "DataCite", "OpenAlex"]),
+            ("isbn", &["Crossref", "DataCite"]),
+            ("issn", &["Crossref", "OpenAlex"]),
+            (
+                "year",
+                &["Crossref", "DataCite", "OpenAlex", "SemanticScholar"],
+            ),
+            ("date", &["Crossref", "DataCite", "OpenAlex"]),
+            ("journal", &["Crossref", "OpenAlex", "SemanticScholar"]),
+            ("booktitle", &["Crossref", "OpenAlex"]),
+            ("publisher", &["Crossref", "DataCite"]),
+            ("volume", &["Crossref", "OpenAlex"]),
+            ("issue", &["Crossref", "OpenAlex"]),
+            ("pages", &["Crossref", "OpenAlex"]),
+            (
+                "abstract_text",
+                &["SemanticScholar", "OpenAlex", "Crossref", "DataCite"],
+            ),
+            ("language", &["Crossref", "OpenAlex", "DataCite"]),
+            ("license", &["Crossref", "DataCite", "OpenAlex"]),
+            (
+                "url",
+                &["Crossref", "DataCite", "OpenAlex", "SemanticScholar"],
+            ),
             ("citation_count", &["OpenAlex", "SemanticScholar"]),
-            ("keywords",       &["OpenAlex", "Crossref"]),
+            ("keywords", &["OpenAlex", "Crossref"]),
         ];
         for (field, providers) in defaults {
             rules.insert(
@@ -59,17 +86,10 @@ impl FieldPriorityRules {
 }
 
 /// Combina registros de múltiples proveedores en uno solo con trazabilidad.
+#[derive(Default)]
 pub struct RecordMerger {
     #[allow(dead_code)]
     field_priority: FieldPriorityRules,
-}
-
-impl Default for RecordMerger {
-    fn default() -> Self {
-        Self {
-            field_priority: FieldPriorityRules::default(),
-        }
-    }
 }
 
 impl RecordMerger {
@@ -109,13 +129,11 @@ impl RecordMerger {
             }
             // Abstract: SemanticScholar y OpenAlex tienen mejores abstracts
             if base.abstract_text.is_none() && record.abstract_text.is_some() {
-                let should_take = match prov {
-                    "SemanticScholar" | "OpenAlex" => true,
-                    _ => false,
-                };
+                let should_take = matches!(prov, "SemanticScholar" | "OpenAlex");
                 if should_take {
                     base.abstract_text = record.abstract_text.clone();
-                    base.provenance.set_field_source("abstract_text", prov, Utc::now());
+                    base.provenance
+                        .set_field_source("abstract_text", prov, Utc::now());
                 }
             }
             // Citation count: solo OpenAlex y SemanticScholar
@@ -127,12 +145,14 @@ impl RecordMerger {
             // License
             if base.license.is_none() && record.license.is_some() {
                 base.license = record.license.clone();
-                base.provenance.set_field_source("license", prov, Utc::now());
+                base.provenance
+                    .set_field_source("license", prov, Utc::now());
             }
             // Keywords (enriquecer con más keywords)
             if base.keywords.is_empty() && !record.keywords.is_empty() {
                 base.keywords = record.keywords.clone();
-                base.provenance.set_field_source("keywords", prov, Utc::now());
+                base.provenance
+                    .set_field_source("keywords", prov, Utc::now());
             }
             // URL de acceso abierto
             if base.url.is_none() && record.url.is_some() {
@@ -193,8 +213,7 @@ impl RecordMerger {
             })
             .count();
 
-        let confidence =
-            base + (confirmations as f32 * 0.04) + (title_matches as f32 * 0.03);
+        let confidence = base + (confirmations as f32 * 0.04) + (title_matches as f32 * 0.03);
 
         confidence.min(1.0)
     }
@@ -205,10 +224,8 @@ fn title_similarity(a: &str, b: &str) -> f32 {
     if a.is_empty() || b.is_empty() {
         return 0.0;
     }
-    let a_words: std::collections::HashSet<&str> =
-        a.split_whitespace().collect();
-    let b_words: std::collections::HashSet<&str> =
-        b.split_whitespace().collect();
+    let a_words: std::collections::HashSet<&str> = a.split_whitespace().collect();
+    let b_words: std::collections::HashSet<&str> = b.split_whitespace().collect();
     let intersection = a_words.intersection(&b_words).count();
     let union = a_words.union(&b_words).count();
     if union == 0 {
@@ -223,7 +240,12 @@ mod tests {
     use super::*;
     use crate::bibliography::model::BibliographicRecord;
 
-    fn make(cite_key: &str, provider: &str, doi: Option<&str>, abstract_: Option<&str>) -> (String, BibliographicRecord) {
+    fn make(
+        cite_key: &str,
+        provider: &str,
+        doi: Option<&str>,
+        abstract_: Option<&str>,
+    ) -> (String, BibliographicRecord) {
         let mut r = BibliographicRecord::new(cite_key, RecordType::Article);
         r.doi = doi.map(|s| s.to_string());
         r.abstract_text = abstract_.map(|s| s.to_string());
@@ -253,7 +275,11 @@ mod tests {
             Some("A great abstract from S2.".to_string())
         );
         assert_eq!(
-            merged.provenance.field_sources.get("abstract_text").map(|s| s.provider.as_str()),
+            merged
+                .provenance
+                .field_sources
+                .get("abstract_text")
+                .map(|s| s.provider.as_str()),
             Some("SemanticScholar")
         );
     }

@@ -56,7 +56,11 @@ pub struct FileLocation {
 
 impl FileLocation {
     pub fn new(file: PathBuf, line: u32) -> Self {
-        Self { file, line: Some(line), column: None }
+        Self {
+            file,
+            line: Some(line),
+            column: None,
+        }
     }
 }
 
@@ -171,7 +175,10 @@ impl Diagnostic {
     }
 
     pub fn with_suggestion(mut self, desc: impl Into<String>, action: FixAction) -> Self {
-        self.suggestion = Some(FixSuggestion { description: desc.into(), action });
+        self.suggestion = Some(FixSuggestion {
+            description: desc.into(),
+            action,
+        });
         self
     }
 

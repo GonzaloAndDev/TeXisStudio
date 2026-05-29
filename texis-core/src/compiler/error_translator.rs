@@ -23,7 +23,10 @@ pub fn translate_log(log: &str) -> Vec<UserError> {
     for line in log.lines() {
         if let Some(err) = translate_line(line) {
             // Deduplicar: no agregar el mismo mensaje dos veces seguidas
-            let is_dup = errors.last().map(|e| e.message == err.message).unwrap_or(false);
+            let is_dup = errors
+                .last()
+                .map(|e| e.message == err.message)
+                .unwrap_or(false);
             if !is_dup {
                 errors.push(err);
             }
@@ -43,7 +46,10 @@ fn translate_line(line: &str) -> Option<UserError> {
         let is_sty = file.ends_with(".sty") || file.ends_with(".cls");
         if is_sty {
             return Some(UserError {
-                message: format!("[Entorno] Paquete LaTeX faltante: '{}'", file.replace(".sty", "").replace(".cls", "")),
+                message: format!(
+                    "[Entorno] Paquete LaTeX faltante: '{}'",
+                    file.replace(".sty", "").replace(".cls", "")
+                ),
                 suggestion: Some(
                     "Instala el paquete en tu distribución TeX Live o MiKTeX. \
                      En Linux: sudo apt-get install texlive-latex-extra."
@@ -84,8 +90,7 @@ fn translate_line(line: &str) -> Option<UserError> {
         return Some(UserError {
             message: "[Contenido] Símbolo matemático fuera de un entorno de ecuación.".to_string(),
             suggestion: Some(
-                "Envuelve el contenido matemático en $...$ o en un bloque de ecuación."
-                    .to_string(),
+                "Envuelve el contenido matemático en $...$ o en un bloque de ecuación.".to_string(),
             ),
             raw_log_line: Some(line.to_string()),
         });
@@ -177,7 +182,8 @@ mod tests {
         let errors = translate_log(log);
         assert!(
             errors.is_empty(),
-            "Please (re)run Biber no debe generar UserError: {:?}", errors
+            "Please (re)run Biber no debe generar UserError: {:?}",
+            errors
         );
     }
 
@@ -189,7 +195,8 @@ mod tests {
         let errors = translate_log(log);
         assert!(
             errors.is_empty(),
-            "Font fallback warning no debe generar UserError: {:?}", errors
+            "Font fallback warning no debe generar UserError: {:?}",
+            errors
         );
     }
 
@@ -200,7 +207,8 @@ mod tests {
         let errors = translate_log(log);
         assert!(
             errors.is_empty(),
-            "Overfull hbox no debe generar UserError: {:?}", errors
+            "Overfull hbox no debe generar UserError: {:?}",
+            errors
         );
     }
 
@@ -215,6 +223,10 @@ mod tests {
     fn deduplica_errores_repetidos() {
         let log = "! Undefined control sequence.\n! Undefined control sequence.";
         let errors = translate_log(log);
-        assert_eq!(errors.len(), 1, "Debe deduplicar errores consecutivos idénticos");
+        assert_eq!(
+            errors.len(),
+            1,
+            "Debe deduplicar errores consecutivos idénticos"
+        );
     }
 }

@@ -1,9 +1,9 @@
 use super::model::{ProjectConfig, SchemaVersion, WorkspaceState};
-use serde::{Deserialize, Serialize};
-use crate::bibliography::registry::BibliographyRegistry;
 use crate::asset::registry::AssetRegistry;
-use crate::reference::registry::LabelRegistry;
+use crate::bibliography::registry::BibliographyRegistry;
 use crate::error::{CoreError, CoreResult};
+use crate::reference::registry::LabelRegistry;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 // ── Estructura .texisstudio/ ──────────────────────────────────────────────────
@@ -36,21 +36,47 @@ impl ProjectPersistence {
 
     // ── Rutas ─────────────────────────────────────────────────────────────────
 
-    pub fn project_json(&self) -> PathBuf { self.texisstudio_dir.join("project.json") }
-    pub fn workspace_json(&self) -> PathBuf { self.texisstudio_dir.join("workspace.json") }
-    pub fn registries_dir(&self) -> PathBuf { self.texisstudio_dir.join("registries") }
-    pub fn cache_dir(&self) -> PathBuf { self.texisstudio_dir.join("cache") }
-    pub fn migrations_dir(&self) -> PathBuf { self.texisstudio_dir.join("migrations") }
-    pub fn logs_dir(&self) -> PathBuf { self.texisstudio_dir.join("logs") }
+    pub fn project_json(&self) -> PathBuf {
+        self.texisstudio_dir.join("project.json")
+    }
+    pub fn workspace_json(&self) -> PathBuf {
+        self.texisstudio_dir.join("workspace.json")
+    }
+    pub fn registries_dir(&self) -> PathBuf {
+        self.texisstudio_dir.join("registries")
+    }
+    pub fn cache_dir(&self) -> PathBuf {
+        self.texisstudio_dir.join("cache")
+    }
+    pub fn migrations_dir(&self) -> PathBuf {
+        self.texisstudio_dir.join("migrations")
+    }
+    pub fn logs_dir(&self) -> PathBuf {
+        self.texisstudio_dir.join("logs")
+    }
 
-    pub fn asset_index_json(&self) -> PathBuf { self.registries_dir().join("asset-index.json") }
-    pub fn label_registry_json(&self) -> PathBuf { self.registries_dir().join("label-registry.json") }
-    pub fn bibliography_index_json(&self) -> PathBuf { self.registries_dir().join("bibliography-index.json") }
-    pub fn applied_migrations_json(&self) -> PathBuf { self.migrations_dir().join("applied.json") }
+    pub fn asset_index_json(&self) -> PathBuf {
+        self.registries_dir().join("asset-index.json")
+    }
+    pub fn label_registry_json(&self) -> PathBuf {
+        self.registries_dir().join("label-registry.json")
+    }
+    pub fn bibliography_index_json(&self) -> PathBuf {
+        self.registries_dir().join("bibliography-index.json")
+    }
+    pub fn applied_migrations_json(&self) -> PathBuf {
+        self.migrations_dir().join("applied.json")
+    }
 
-    pub fn bib_cache_dir(&self) -> PathBuf { self.cache_dir().join("bibliography") }
-    pub fn dict_cache_dir(&self) -> PathBuf { self.cache_dir().join("dictionaries") }
-    pub fn diagnostics_cache_dir(&self) -> PathBuf { self.cache_dir().join("diagnostics") }
+    pub fn bib_cache_dir(&self) -> PathBuf {
+        self.cache_dir().join("bibliography")
+    }
+    pub fn dict_cache_dir(&self) -> PathBuf {
+        self.cache_dir().join("dictionaries")
+    }
+    pub fn diagnostics_cache_dir(&self) -> PathBuf {
+        self.cache_dir().join("diagnostics")
+    }
 
     // ── Inicialización ────────────────────────────────────────────────────────
 
@@ -79,28 +105,33 @@ impl ProjectPersistence {
     // ── ProjectConfig ─────────────────────────────────────────────────────────
 
     pub fn save_config(&self, config: &ProjectConfig) -> CoreResult<()> {
-        let json = serde_json::to_string_pretty(config)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json = serde_json::to_string_pretty(config).map_err(|e| CoreError::InvalidProject {
+            message: e.to_string(),
+        })?;
         atomic_write(&self.project_json(), json.as_bytes())
     }
 
     pub fn load_config(&self) -> CoreResult<ProjectConfig> {
         let path = self.project_json();
         if !path.exists() {
-            return Err(CoreError::FileNotFound { path: path.display().to_string() });
+            return Err(CoreError::FileNotFound {
+                path: path.display().to_string(),
+            });
         }
         let content = std::fs::read_to_string(&path).map_err(CoreError::Io)?;
-        let config: ProjectConfig = serde_json::from_str(&content)
-            .map_err(|e| CoreError::InvalidProject { message: format!("project.json inválido: {e}") })?;
+        let config: ProjectConfig =
+            serde_json::from_str(&content).map_err(|e| CoreError::InvalidProject {
+                message: format!("project.json inválido: {e}"),
+            })?;
 
         // Verificar compatibilidad de schema
-        if !SchemaVersion::CURRENT.is_backward_compatible(&config.schema_version) {
-            if config.schema_version.is_newer_than(&SchemaVersion::CURRENT) {
-                return Err(CoreError::UnsupportedSchemaVersion {
-                    version: config.schema_version.to_string(),
-                    current: SchemaVersion::CURRENT.to_string(),
-                });
-            }
+        if !SchemaVersion::CURRENT.is_backward_compatible(&config.schema_version)
+            && config.schema_version.is_newer_than(&SchemaVersion::CURRENT)
+        {
+            return Err(CoreError::UnsupportedSchemaVersion {
+                version: config.schema_version.to_string(),
+                current: SchemaVersion::CURRENT.to_string(),
+            });
         }
         Ok(config)
     }
@@ -108,14 +139,17 @@ impl ProjectPersistence {
     // ── WorkspaceState ────────────────────────────────────────────────────────
 
     pub fn save_workspace(&self, state: &WorkspaceState) -> CoreResult<()> {
-        let json = serde_json::to_string_pretty(state)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json = serde_json::to_string_pretty(state).map_err(|e| CoreError::InvalidProject {
+            message: e.to_string(),
+        })?;
         atomic_write(&self.workspace_json(), json.as_bytes())
     }
 
     pub fn load_workspace(&self) -> WorkspaceState {
         let path = self.workspace_json();
-        if !path.exists() { return WorkspaceState::default(); }
+        if !path.exists() {
+            return WorkspaceState::default();
+        }
         std::fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
@@ -126,14 +160,18 @@ impl ProjectPersistence {
     // No regenerable — contiene provenance y raw_payload que no están en el .bib
 
     pub fn save_bibliography(&self, registry: &BibliographyRegistry) -> CoreResult<()> {
-        let json = serde_json::to_string_pretty(registry)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json =
+            serde_json::to_string_pretty(registry).map_err(|e| CoreError::InvalidProject {
+                message: e.to_string(),
+            })?;
         atomic_write(&self.bibliography_index_json(), json.as_bytes())
     }
 
     pub fn load_bibliography(&self) -> BibliographyRegistry {
         let path = self.bibliography_index_json();
-        if !path.exists() { return BibliographyRegistry::new(); }
+        if !path.exists() {
+            return BibliographyRegistry::new();
+        }
         std::fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
@@ -143,14 +181,18 @@ impl ProjectPersistence {
     // ── AssetRegistry — regenerable ───────────────────────────────────────────
 
     pub fn save_assets(&self, registry: &AssetRegistry) -> CoreResult<()> {
-        let json = serde_json::to_string_pretty(registry)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json =
+            serde_json::to_string_pretty(registry).map_err(|e| CoreError::InvalidProject {
+                message: e.to_string(),
+            })?;
         atomic_write(&self.asset_index_json(), json.as_bytes())
     }
 
     pub fn load_assets(&self) -> AssetRegistry {
         let path = self.asset_index_json();
-        if !path.exists() { return AssetRegistry::new(); }
+        if !path.exists() {
+            return AssetRegistry::new();
+        }
         std::fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
@@ -160,14 +202,18 @@ impl ProjectPersistence {
     // ── LabelRegistry — regenerable ───────────────────────────────────────────
 
     pub fn save_labels(&self, registry: &LabelRegistry) -> CoreResult<()> {
-        let json = serde_json::to_string_pretty(registry)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json =
+            serde_json::to_string_pretty(registry).map_err(|e| CoreError::InvalidProject {
+                message: e.to_string(),
+            })?;
         atomic_write(&self.label_registry_json(), json.as_bytes())
     }
 
     pub fn load_labels(&self) -> LabelRegistry {
         let path = self.label_registry_json();
-        if !path.exists() { return LabelRegistry::new(); }
+        if !path.exists() {
+            return LabelRegistry::new();
+        }
         std::fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
@@ -178,7 +224,9 @@ impl ProjectPersistence {
 
     pub fn get_bib_cache(&self, doi: &str) -> Option<serde_json::Value> {
         let path = self.bib_cache_dir().join(doi_to_filename(doi));
-        if !path.exists() { return None; }
+        if !path.exists() {
+            return None;
+        }
         let content = std::fs::read_to_string(&path).ok()?;
         let cached: CachedPayload = serde_json::from_str(&content).ok()?;
 
@@ -186,12 +234,20 @@ impl ProjectPersistence {
         let age = chrono::Utc::now()
             .signed_duration_since(cached.fetched_at)
             .num_seconds();
-        if age > cached.ttl_seconds as i64 { return None; }
+        if age > cached.ttl_seconds as i64 {
+            return None;
+        }
 
         Some(cached.payload)
     }
 
-    pub fn set_bib_cache(&self, doi: &str, provider: &str, payload: serde_json::Value, ttl_days: u32) {
+    pub fn set_bib_cache(
+        &self,
+        doi: &str,
+        provider: &str,
+        payload: serde_json::Value,
+        ttl_days: u32,
+    ) {
         let path = self.bib_cache_dir().join(doi_to_filename(doi));
         let cached = CachedPayload {
             doi: doi.to_string(),
@@ -223,7 +279,9 @@ impl ProjectPersistence {
 
     pub fn load_applied_migrations(&self) -> Vec<AppliedMigration> {
         let path = self.applied_migrations_json();
-        if !path.exists() { return Vec::new(); }
+        if !path.exists() {
+            return Vec::new();
+        }
         std::fs::read_to_string(&path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
@@ -233,8 +291,10 @@ impl ProjectPersistence {
     pub fn record_migration(&self, migration: AppliedMigration) -> CoreResult<()> {
         let mut applied = self.load_applied_migrations();
         applied.push(migration);
-        let json = serde_json::to_string_pretty(&applied)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json =
+            serde_json::to_string_pretty(&applied).map_err(|e| CoreError::InvalidProject {
+                message: e.to_string(),
+            })?;
         atomic_write(&self.applied_migrations_json(), json.as_bytes())
     }
 
@@ -343,9 +403,9 @@ mod tests {
 
     #[test]
     fn save_and_load_config() {
-        use super::super::model::{ProjectConfig, ProjectMetadata, BuildConfig, SchemaVersion};
-        use uuid::Uuid;
+        use super::super::model::{BuildConfig, ProjectConfig, ProjectMetadata, SchemaVersion};
         use chrono::Utc;
+        use uuid::Uuid;
 
         let dir = tempfile::tempdir().unwrap();
         let p = setup(&dir);

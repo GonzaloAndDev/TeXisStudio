@@ -59,27 +59,27 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     let result = match cli.command {
-        Commands::Create { profile, name, output } => {
-            commands::create::run(&profile, &name, &output)
-        }
-        Commands::Validate { project_dir } => {
-            commands::validate::run_project(&project_dir)
-        }
-        Commands::Compile { project_dir, backend, draft } => {
-            commands::compile::run(&project_dir, &backend, draft)
-        }
+        Commands::Create {
+            profile,
+            name,
+            output,
+        } => commands::create::run(&profile, &name, &output),
+        Commands::Validate { project_dir } => commands::validate::run_project(&project_dir),
+        Commands::Compile {
+            project_dir,
+            backend,
+            draft,
+        } => commands::compile::run(&project_dir, &backend, draft),
         Commands::ExportProfile { profile_id, output } => {
             commands::export::run_profile(&profile_id, &output)
         }
-        Commands::ImportProfile { pack_file } => {
-            commands::import::run_profile(&pack_file)
-        }
-        Commands::ValidatePack { pack_file } => {
-            commands::validate::run_pack(&pack_file)
-        }
-        Commands::ExportDelivery { project_dir, output, mode } => {
-            commands::export::run_delivery(&project_dir, &output, &mode)
-        }
+        Commands::ImportProfile { pack_file } => commands::import::run_profile(&pack_file),
+        Commands::ValidatePack { pack_file } => commands::validate::run_pack(&pack_file),
+        Commands::ExportDelivery {
+            project_dir,
+            output,
+            mode,
+        } => commands::export::run_delivery(&project_dir, &output, &mode),
     };
 
     if let Err(e) = result {

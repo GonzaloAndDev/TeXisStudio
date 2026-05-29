@@ -81,7 +81,9 @@ impl PdfPostflightResult {
                 severity: PdfIssueSeverity::Error,
                 code: "PF_NO_PDF".to_string(),
                 message: "No se encontró el PDF compilado en build/main.pdf.".to_string(),
-                suggestion: Some("Compila el proyecto antes de ejecutar el postflight.".to_string()),
+                suggestion: Some(
+                    "Compila el proyecto antes de ejecutar el postflight.".to_string(),
+                ),
             }],
             passed: false,
             tools_available: vec![],

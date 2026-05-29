@@ -55,7 +55,9 @@ pub struct ProjectDependencyGraph {
 }
 
 impl ProjectDependencyGraph {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Escanea un archivo .tex y registra sus dependencias en el grafo.
     pub fn scan_file(&mut self, path: &Path, root: &Path) {
@@ -64,10 +66,16 @@ impl ProjectDependencyGraph {
             Err(_) => return,
         };
 
-        let from_id = self.get_or_create_node(path, ProjectNodeKind::TexFile { is_root: path.ends_with("main.tex") });
+        let from_id = self.get_or_create_node(
+            path,
+            ProjectNodeKind::TexFile {
+                is_root: path.ends_with("main.tex"),
+            },
+        );
 
         // Patrones a detectar
-        let patterns: &[(&str, fn(&str, &Path, &Path) -> (PathBuf, DependencyKind))] = &[
+        type PatternFn = fn(&str, &Path, &Path) -> (PathBuf, DependencyKind);
+        let patterns: &[(&str, PatternFn)] = &[
             (r"\\input\{([^}]+)\}", |cap, dir, root| {
                 let p = resolve_tex_path(cap, dir, root, ".tex");
                 (p, DependencyKind::Input)
@@ -76,9 +84,10 @@ impl ProjectDependencyGraph {
                 let p = resolve_tex_path(cap, dir, root, ".tex");
                 (p, DependencyKind::Include)
             }),
-            (r"\\includegraphics\s*(?:\[[^\]]*\])?\{([^}]+)\}", |cap, dir, _root| {
-                (dir.join(cap), DependencyKind::IncludeGraphics)
-            }),
+            (
+                r"\\includegraphics\s*(?:\[[^\]]*\])?\{([^}]+)\}",
+                |cap, dir, _root| (dir.join(cap), DependencyKind::IncludeGraphics),
+            ),
             (r"\\addbibresource\{([^}]+)\}", |cap, dir, _root| {
                 (dir.join(cap), DependencyKind::BibResource)
             }),
@@ -171,13 +180,17 @@ impl ProjectDependencyGraph {
 
     /// ¿Se necesita correr Biber dado los nodos cambiados?
     pub fn needs_biber_rerun(&self, changed: &[&ProjectNode]) -> bool {
-        changed.iter().any(|n| matches!(n.kind, ProjectNodeKind::BibFile))
+        changed
+            .iter()
+            .any(|n| matches!(n.kind, ProjectNodeKind::BibFile))
             || !self.aux_exists("bcf")
     }
 
     /// ¿Se necesita correr makeglossaries dado los nodos cambiados?
     pub fn needs_glossary_rerun(&self, changed: &[&ProjectNode]) -> bool {
-        changed.iter().any(|n| matches!(n.kind, ProjectNodeKind::GlossaryFile))
+        changed
+            .iter()
+            .any(|n| matches!(n.kind, ProjectNodeKind::GlossaryFile))
             || !self.aux_exists("glo")
     }
 
@@ -203,17 +216,20 @@ impl ProjectDependencyGraph {
             return id;
         }
         let id = Uuid::new_v4();
-        let node = ProjectNode { id, kind, path: path.to_path_buf() };
+        let node = ProjectNode {
+            id,
+            kind,
+            path: path.to_path_buf(),
+        };
         self.nodes.insert(id, node);
         self.by_path.insert(path.to_path_buf(), id);
         id
     }
 
     fn aux_exists(&self, ext: &str) -> bool {
-        self.nodes.values().any(|n| {
-            n.path.extension().and_then(|e| e.to_str()) == Some(ext)
-                && n.path.exists()
-        })
+        self.nodes
+            .values()
+            .any(|n| n.path.extension().and_then(|e| e.to_str()) == Some(ext) && n.path.exists())
     }
 
     fn dfs_cycles(
@@ -295,7 +311,10 @@ mod tests {
         let mut graph = ProjectDependencyGraph::new();
         graph.scan_file(&dir.path().join("main.tex"), dir.path());
 
-        assert!(graph.nodes.values().any(|n| matches!(n.kind, ProjectNodeKind::BibFile)));
+        assert!(graph
+            .nodes
+            .values()
+            .any(|n| matches!(n.kind, ProjectNodeKind::BibFile)));
     }
 
     #[test]

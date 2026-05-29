@@ -59,7 +59,15 @@ No es necesario versionarlo.
 /// Crea los subdirectorios de build/ y los archivos de proyecto en la raíz.
 /// build_dir debe ser el directorio build/ del proyecto.
 pub fn create_structure(build_dir: &Path) -> CoreResult<()> {
-    for subdir in &["configuracion", "preliminares", "capitulos", "backmatter", "anexos", "figuras", "pdf"] {
+    for subdir in &[
+        "configuracion",
+        "preliminares",
+        "capitulos",
+        "backmatter",
+        "anexos",
+        "figuras",
+        "pdf",
+    ] {
         std::fs::create_dir_all(build_dir.join(subdir)).map_err(CoreError::Io)?;
     }
 

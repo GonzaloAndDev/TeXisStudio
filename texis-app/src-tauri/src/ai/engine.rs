@@ -23,7 +23,9 @@ impl AiEngine {
         history: Vec<AiMessage>,
     ) -> Result<AiResponse, AiProviderError> {
         if text_contains_credentials(&user_message)
-            || history.iter().any(|m| text_contains_credentials(&m.content))
+            || history
+                .iter()
+                .any(|m| text_contains_credentials(&m.content))
         {
             return Err(AiProviderError::SafetyRejection(
                 "La conversación parece contener credenciales. Por seguridad, la solicitud fue cancelada."
@@ -58,15 +60,9 @@ impl AiEngine {
 
         // Despachar al proveedor correcto
         match provider_id {
-            AiProviderId::OpenAi => {
-                OpenAiProvider::new(api_key).send(&request).await
-            }
-            AiProviderId::Claude => {
-                ClaudeProvider::new(api_key).send(&request).await
-            }
-            AiProviderId::Gemini => {
-                GeminiProvider::new(api_key).send(&request).await
-            }
+            AiProviderId::OpenAi => OpenAiProvider::new(api_key).send(&request).await,
+            AiProviderId::Claude => ClaudeProvider::new(api_key).send(&request).await,
+            AiProviderId::Gemini => GeminiProvider::new(api_key).send(&request).await,
         }
     }
 }

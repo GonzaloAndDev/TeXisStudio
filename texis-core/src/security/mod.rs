@@ -10,10 +10,7 @@ pub mod policy {
     pub const REQUIRE_HTTPS: bool = true;
 
     /// Hosts permitidos para descargas de packs de idioma.
-    pub const ALLOWED_ASSET_HOSTS: &[&str] = &[
-        "raw.githubusercontent.com",
-        "cdn.jsdelivr.net",
-    ];
+    pub const ALLOWED_ASSET_HOSTS: &[&str] = &["raw.githubusercontent.com", "cdn.jsdelivr.net"];
 
     /// Sin telemetría por defecto. El usuario debe optar activamente.
     pub const TELEMETRY_DEFAULT: bool = false;
@@ -44,8 +41,14 @@ pub mod policy {
 /// Valida que una URL es segura para descargar.
 /// Retorna Ok(()) si es válida, Err con el motivo si no.
 pub fn validate_download_url(url: &str) -> Result<(), String> {
-    let parsed = url::Url::parse(url)
-        .map_err(|e| format!("URL inválida '{}': {}", url, e))?;
+    // Verificar path traversal en el string crudo ANTES de parsear.
+    // url::Url normaliza /../ durante el parse, lo que lo haría invisible
+    // en parsed.path(). Esta verificación lo detecta antes de la normalización.
+    if url.contains("/../") || url.contains("/..?") || url.ends_with("/..") {
+        return Err(format!("Path traversal detectado en URL: '{}'", url));
+    }
+
+    let parsed = url::Url::parse(url).map_err(|e| format!("URL inválida '{}': {}", url, e))?;
 
     if parsed.scheme() != "https" {
         return Err(format!(
@@ -54,7 +57,9 @@ pub fn validate_download_url(url: &str) -> Result<(), String> {
         ));
     }
 
-    let host = parsed.host_str().ok_or_else(|| format!("URL sin host: '{}'", url))?;
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| format!("URL sin host: '{}'", url))?;
 
     if !policy::ALLOWED_ASSET_HOSTS.contains(&host) {
         return Err(format!(
@@ -62,10 +67,6 @@ pub fn validate_download_url(url: &str) -> Result<(), String> {
             host,
             policy::ALLOWED_ASSET_HOSTS.join(", ")
         ));
-    }
-
-    if parsed.path().contains("..") {
-        return Err(format!("Path traversal detectado en URL: '{}'", url));
     }
 
     Ok(())
@@ -84,23 +85,19 @@ mod tests {
 
     #[test]
     fn http_url_rejected() {
-        assert!(validate_download_url(
-            "http://raw.githubusercontent.com/file.json"
-        ).is_err());
+        assert!(validate_download_url("http://raw.githubusercontent.com/file.json").is_err());
     }
 
     #[test]
     fn unknown_host_rejected() {
-        assert!(validate_download_url(
-            "https://malicious.example.com/payload.json"
-        ).is_err());
+        assert!(validate_download_url("https://malicious.example.com/payload.json").is_err());
     }
 
     #[test]
     fn path_traversal_rejected() {
-        assert!(validate_download_url(
-            "https://raw.githubusercontent.com/../../../etc/passwd"
-        ).is_err());
+        assert!(
+            validate_download_url("https://raw.githubusercontent.com/../../../etc/passwd").is_err()
+        );
     }
 
     #[test]

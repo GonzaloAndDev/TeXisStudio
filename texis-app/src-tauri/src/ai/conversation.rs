@@ -20,13 +20,22 @@ pub struct AiMessage {
 #[allow(dead_code)]
 impl AiMessage {
     pub fn user(content: impl Into<String>) -> Self {
-        Self { role: AiRole::User, content: content.into() }
+        Self {
+            role: AiRole::User,
+            content: content.into(),
+        }
     }
     pub fn assistant(content: impl Into<String>) -> Self {
-        Self { role: AiRole::Assistant, content: content.into() }
+        Self {
+            role: AiRole::Assistant,
+            content: content.into(),
+        }
     }
     pub fn system(content: impl Into<String>) -> Self {
-        Self { role: AiRole::System, content: content.into() }
+        Self {
+            role: AiRole::System,
+            content: content.into(),
+        }
     }
 }
 

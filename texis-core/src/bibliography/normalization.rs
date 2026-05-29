@@ -75,7 +75,7 @@ pub fn parse_authors_bibtex(raw: &str) -> Vec<PersonName> {
 
 fn parse_single_bibtex_name(name: &str) -> PersonName {
     // Eliminar llaves protectoras de LaTeX
-    let name = name.replace('{', "").replace('}', "");
+    let name = name.replace(['{', '}'], "");
     let name = name.trim();
 
     if let Some(comma_pos) = name.find(',') {
@@ -210,18 +210,21 @@ pub fn parse_date_str(raw: &str) -> ParsedDate {
 pub fn parse_crossref_date_parts(parts: &[Vec<i32>]) -> ParsedDate {
     let row = match parts.first() {
         Some(r) => r,
-        None => return ParsedDate { date: None, year: None },
+        None => {
+            return ParsedDate {
+                date: None,
+                year: None,
+            }
+        }
     };
-    let year = row.first().copied().map(|y| y as i32);
+    let year = row.first().copied();
     let month = row.get(1).copied().map(|m| m as u32);
     let day = row.get(2).copied().map(|d| d as u32);
 
-    let date = year
-        .zip(month)
-        .and_then(|(y, m)| {
-            let d = day.unwrap_or(1);
-            NaiveDate::from_ymd_opt(y, m, d)
-        });
+    let date = year.zip(month).and_then(|(y, m)| {
+        let d = day.unwrap_or(1);
+        NaiveDate::from_ymd_opt(y, m, d)
+    });
 
     ParsedDate { date, year }
 }
@@ -337,7 +340,9 @@ fn transliterate_to_ascii(c: char) -> Option<char> {
     match c {
         'a'..='z' => Some(c),
         'A'..='Z' => Some(c.to_ascii_lowercase()),
-        'á' | 'à' | 'â' | 'ã' | 'ä' | 'å' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' | 'Å' => Some('a'),
+        'á' | 'à' | 'â' | 'ã' | 'ä' | 'å' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' | 'Å' => {
+            Some('a')
+        }
         'é' | 'è' | 'ê' | 'ë' | 'É' | 'È' | 'Ê' | 'Ë' => Some('e'),
         'í' | 'ì' | 'î' | 'ï' | 'Í' | 'Ì' | 'Î' | 'Ï' => Some('i'),
         'ó' | 'ò' | 'ô' | 'õ' | 'ö' | 'Ó' | 'Ò' | 'Ô' | 'Õ' | 'Ö' => Some('o'),

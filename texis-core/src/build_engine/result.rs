@@ -17,12 +17,16 @@ pub struct BuildStepResult {
 impl BuildStepResult {
     /// Detecta "rerun necesario" en el log de LaTeX.
     pub fn needs_rerun(&self) -> bool {
-        RERUN_PATTERNS.iter().any(|p| self.stdout.contains(p) || self.stderr.contains(p))
+        RERUN_PATTERNS
+            .iter()
+            .any(|p| self.stdout.contains(p) || self.stderr.contains(p))
     }
 
     /// Detecta si biber/bibliografía necesita correrse.
     pub fn needs_biber(&self) -> bool {
-        BIBER_NEEDED_PATTERNS.iter().any(|p| self.stdout.contains(p))
+        BIBER_NEEDED_PATTERNS
+            .iter()
+            .any(|p| self.stdout.contains(p))
     }
 
     /// Detecta parada de emergencia (error fatal).
@@ -92,12 +96,18 @@ impl BuildResult {
 
     pub fn error_count(&self) -> usize {
         use crate::diagnostics::model::DiagnosticSeverity;
-        self.diagnostics.iter().filter(|d| d.severity == DiagnosticSeverity::Error).count()
+        self.diagnostics
+            .iter()
+            .filter(|d| d.severity == DiagnosticSeverity::Error)
+            .count()
     }
 
     pub fn warning_count(&self) -> usize {
         use crate::diagnostics::model::DiagnosticSeverity;
-        self.diagnostics.iter().filter(|d| d.severity == DiagnosticSeverity::Warning).count()
+        self.diagnostics
+            .iter()
+            .filter(|d| d.severity == DiagnosticSeverity::Warning)
+            .count()
     }
 }
 

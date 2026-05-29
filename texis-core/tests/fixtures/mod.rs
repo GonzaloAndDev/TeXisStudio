@@ -47,7 +47,11 @@ pub fn generic_thesis_model() -> ProjectModel {
         latex_config: LatexConfig {
             document_class: DocumentClassConfig {
                 name: "book".to_string(),
-                options: vec!["12pt".to_string(), "letterpaper".to_string(), "oneside".to_string()],
+                options: vec![
+                    "12pt".to_string(),
+                    "letterpaper".to_string(),
+                    "oneside".to_string(),
+                ],
             },
             engine: LatexEngine::Xelatex,
             compiler: CompilerKind::Latexmk,
@@ -55,7 +59,7 @@ pub fn generic_thesis_model() -> ProjectModel {
             bibliography_style: "apa".to_string(),
             packages_required: vec![],
             typography: Default::default(),
-                page_layout: None,
+            page_layout: None,
         },
         sections: vec![
             ProjectSection {
@@ -94,12 +98,12 @@ pub fn generic_thesis_model() -> ProjectModel {
                 required: true,
                 enabled: true,
                 label: Some("sec:introduccion".to_string()),
-                blocks: vec![
-                    ContentBlock::Paragraph(ParagraphBlock {
-                        id: "p1".to_string(),
-                        content: "Este trabajo presenta un análisis del 100% de las fuentes de agua en A&B.".to_string(),
-                    }),
-                ],
+                blocks: vec![ContentBlock::Paragraph(ParagraphBlock {
+                    id: "p1".to_string(),
+                    content:
+                        "Este trabajo presenta un análisis del 100% de las fuentes de agua en A&B."
+                            .to_string(),
+                })],
                 status: Default::default(),
                 notes: None,
                 fields: HashMap::new(),
@@ -136,7 +140,11 @@ pub fn broken_missing_image() -> (ProjectModel, TempDir) {
     let mut model = generic_thesis_model();
 
     // Agregar un bloque figura con imagen inexistente a la sección de introducción
-    let intro = model.sections.iter_mut().find(|s| s.id == "introduction").unwrap();
+    let intro = model
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "introduction")
+        .unwrap();
     intro.blocks.push(ContentBlock::Figure(FigureBlock {
         id: "fig1".to_string(),
         file: "missing_image.png".to_string(),
@@ -165,7 +173,11 @@ pub fn broken_duplicate_label() -> (ProjectModel, TempDir) {
     let dir = tempfile::tempdir().expect("tempdir");
 
     let mut model = generic_thesis_model();
-    let intro = model.sections.iter_mut().find(|s| s.id == "introduction").unwrap();
+    let intro = model
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "introduction")
+        .unwrap();
 
     intro.blocks.push(ContentBlock::Figure(FigureBlock {
         id: "fig1".to_string(),

@@ -39,22 +39,28 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
     let engine_str = match model.latex_config.engine {
         LatexEngine::Pdflatex => "pdflatex",
         LatexEngine::Lualatex => "lualatex",
-        LatexEngine::Xelatex  => "xelatex",
+        LatexEngine::Xelatex => "xelatex",
     };
 
     println!(
         "Exportando: '{}' — modo {} (motor: {})",
-        model.metadata.title, mode.to_uppercase(), engine_str
+        model.metadata.title,
+        mode.to_uppercase(),
+        engine_str
     );
 
     // ── 2. Validación preflight ───────────────────────────────────
     println!("Ejecutando validación preflight…");
     let validation = Validator::new().validate(&model, project_dir)?;
 
-    let error_count = validation.issues.iter()
+    let error_count = validation
+        .issues
+        .iter()
         .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error))
         .count();
-    let warn_count = validation.issues.iter()
+    let warn_count = validation
+        .issues
+        .iter()
         .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning))
         .count();
 
@@ -62,13 +68,17 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
 
     // ── 3. Gate de modo ───────────────────────────────────────────
     if (mode == "review" || mode == "final") && error_count > 0 {
-        let msgs: Vec<String> = validation.issues.iter()
+        let msgs: Vec<String> = validation
+            .issues
+            .iter()
             .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error))
             .map(|i| format!("  ✗ [{}] {}", i.code, i.message))
             .collect();
         bail!(
             "Exportación bloqueada en modo '{}' — {} error(es) de validación:\n{}",
-            mode, error_count, msgs.join("\n")
+            mode,
+            error_count,
+            msgs.join("\n")
         );
     }
 
@@ -92,7 +102,9 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
     let postflight = PdfChecker::check(&pdf_path);
 
     if postflight.pdf_exists {
-        let pf_errs = postflight.issues.iter()
+        let pf_errs = postflight
+            .issues
+            .iter()
             .filter(|i| matches!(i.severity, texis_core::postflight::PdfIssueSeverity::Error))
             .count();
         println!(
@@ -105,7 +117,9 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
             }
         );
         if mode == "final" && pf_errs > 0 {
-            let msgs: Vec<String> = postflight.issues.iter()
+            let msgs: Vec<String> = postflight
+                .issues
+                .iter()
                 .filter(|i| matches!(i.severity, texis_core::postflight::PdfIssueSeverity::Error))
                 .map(|i| format!("  ✗ [{}] {}", i.code, i.message))
                 .collect();

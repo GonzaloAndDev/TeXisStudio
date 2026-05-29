@@ -19,7 +19,11 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
     ValidationReport::new(issues)
 }
 
-fn check_missing_figures(model: &ProjectModel, project_dir: &Path, issues: &mut Vec<ValidationIssue>) {
+fn check_missing_figures(
+    model: &ProjectModel,
+    project_dir: &Path,
+    issues: &mut Vec<ValidationIssue>,
+) {
     let figures_dir = project_dir.join("content").join("figures");
 
     for section in &model.sections {
@@ -55,10 +59,7 @@ fn check_missing_bib(model: &ProjectModel, project_dir: &Path, issues: &mut Vec<
         .join("references.bib");
 
     // Solo alertar si hay sección de references y no existe el .bib
-    let has_references = model
-        .sections
-        .iter()
-        .any(|s| s.element_id == "references");
+    let has_references = model.sections.iter().any(|s| s.element_id == "references");
 
     if has_references && !bib_path.exists() {
         issues.push(ValidationIssue {
@@ -113,15 +114,19 @@ fn check_unsafe_figure_paths(model: &ProjectModel, issues: &mut Vec<ValidationIs
 fn check_invalid_label_format(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
     let is_valid_label = |s: &str| -> bool {
         !s.is_empty()
-            && s.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false)
-            && s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, ':' | '_' | '-' | '.'))
+            && s.chars()
+                .next()
+                .map(|c| c.is_ascii_alphabetic())
+                .unwrap_or(false)
+            && s.chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, ':' | '_' | '-' | '.'))
     };
 
     for section in &model.sections {
         for block in &section.blocks {
             let (label_opt, block_type) = match block {
-                ContentBlock::Figure(f)   => (Some(f.label.as_str()), "figura"),
-                ContentBlock::Table(t)    => (Some(t.label.as_str()), "tabla"),
+                ContentBlock::Figure(f) => (Some(f.label.as_str()), "figura"),
+                ContentBlock::Table(t) => (Some(t.label.as_str()), "tabla"),
                 ContentBlock::Equation(e) => (e.label.as_deref(), "ecuación"),
                 _ => (None, ""),
             };
@@ -213,9 +218,9 @@ mod tests {
     use super::*;
     use crate::project::model::{
         AcademicLevel, BibliographyBackend, CitationBlock, CitationType, CompilerKind,
-        ContentBlock, DocumentClassConfig, DocumentKind, FigureBlock,
-        FigureWidth, InstitutionData, LatexConfig, LatexEngine, ProjectMetadata, ProjectModel,
-        ProjectSection, RawLatexBlock, SectionPlacement, StudentData,
+        ContentBlock, DocumentClassConfig, DocumentKind, FigureBlock, FigureWidth, InstitutionData,
+        LatexConfig, LatexEngine, ProjectMetadata, ProjectModel, ProjectSection, RawLatexBlock,
+        SectionPlacement, StudentData,
     };
     use std::collections::HashMap;
 
@@ -244,25 +249,40 @@ mod tests {
             created_at: "".to_string(),
             updated_at: "".to_string(),
             metadata: ProjectMetadata {
-                title: "T".to_string(), subtitle: None,
+                title: "T".to_string(),
+                subtitle: None,
                 document_kind: DocumentKind::Tesis,
                 academic_level: AcademicLevel::Licenciatura,
                 language: "es".to_string(),
-                city: "x".to_string(), year: 2026, keywords: vec![],
+                city: "x".to_string(),
+                year: 2026,
+                keywords: vec![],
                 funding: None,
             },
             institution: InstitutionData {
-                name: "U".to_string(), faculty: None, department: None,
-                logo_path: None, country: "MX".to_string(),
+                name: "U".to_string(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".to_string(),
             },
             student: StudentData {
-                full_name: "A".to_string(), student_id: None, email: None,
-                advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
-                committee: vec![], orcid: None,
+                full_name: "A".to_string(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                co_advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                committee: vec![],
+                orcid: None,
             },
             profile_id: "generic.thesis".to_string(),
             latex_config: LatexConfig {
-                document_class: DocumentClassConfig { name: "book".to_string(), options: vec![] },
+                document_class: DocumentClassConfig {
+                    name: "book".to_string(),
+                    options: vec![],
+                },
                 engine: LatexEngine::Xelatex,
                 compiler: CompilerKind::Latexmk,
                 bibliography_backend: BibliographyBackend::Biber,
@@ -278,18 +298,24 @@ mod tests {
 
     fn fig(id: &str, file: &str, label: &str) -> ContentBlock {
         ContentBlock::Figure(FigureBlock {
-            id: id.to_string(), file: file.to_string(),
-            caption: "".to_string(), source: None,
-            width: FigureWidth::Full, label: label.to_string(),
+            id: id.to_string(),
+            file: file.to_string(),
+            caption: "".to_string(),
+            source: None,
+            width: FigureWidth::Full,
+            label: label.to_string(),
             include_in_list: false,
         })
     }
 
     fn citation(id: &str, key: &str) -> ContentBlock {
         ContentBlock::Citation(CitationBlock {
-            id: id.to_string(), citation_key: key.to_string(),
+            id: id.to_string(),
+            citation_key: key.to_string(),
             citation_type: CitationType::Parenthetical,
-            page: None, prefix: None, suffix: None,
+            page: None,
+            prefix: None,
+            suffix: None,
         })
     }
 
@@ -304,19 +330,24 @@ mod tests {
     // ── Rutas de figura ───────────────────────────────────────────
     #[test]
     fn figura_con_traversal_produce_error() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "../secret.png", "fig:ok")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "../secret.png", "fig:ok")],
+        )]);
         let mut issues = Vec::new();
         check_unsafe_figure_paths(&model, &mut issues);
-        assert!(issues.iter().any(|i| i.code == "E_UNSAFE_FIGURE_PATH"), "debe detectar '../'");
+        assert!(
+            issues.iter().any(|i| i.code == "E_UNSAFE_FIGURE_PATH"),
+            "debe detectar '../'"
+        );
     }
 
     #[test]
     fn figura_con_ruta_absoluta_produce_error() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "/etc/passwd", "fig:ok")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "/etc/passwd", "fig:ok")],
+        )]);
         let mut issues = Vec::new();
         check_unsafe_figure_paths(&model, &mut issues);
         assert!(issues.iter().any(|i| i.code == "E_UNSAFE_FIGURE_PATH"));
@@ -324,9 +355,10 @@ mod tests {
 
     #[test]
     fn figura_con_ruta_segura_no_produce_error() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "grafica.png", "fig:g1")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "grafica.png", "fig:g1")],
+        )]);
         let mut issues = Vec::new();
         check_unsafe_figure_paths(&model, &mut issues);
         assert!(issues.is_empty());
@@ -335,9 +367,10 @@ mod tests {
     // ── Formato de labels ─────────────────────────────────────────
     #[test]
     fn label_con_espacio_produce_warning() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "img.png", "fig mi figura")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "img.png", "fig mi figura")],
+        )]);
         let mut issues = Vec::new();
         check_invalid_label_format(&model, &mut issues);
         assert!(issues.iter().any(|i| i.code == "W_INVALID_LABEL"));
@@ -345,9 +378,10 @@ mod tests {
 
     #[test]
     fn label_que_empieza_con_numero_produce_warning() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "img.png", "1fig")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "img.png", "1fig")],
+        )]);
         let mut issues = Vec::new();
         check_invalid_label_format(&model, &mut issues);
         assert!(issues.iter().any(|i| i.code == "W_INVALID_LABEL"));
@@ -355,9 +389,10 @@ mod tests {
 
     #[test]
     fn label_valido_no_produce_warning() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![fig("f1", "img.png", "fig:mi-grafica.1")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![fig("f1", "img.png", "fig:mi-grafica.1")],
+        )]);
         let mut issues = Vec::new();
         check_invalid_label_format(&model, &mut issues);
         assert!(issues.is_empty());
@@ -366,9 +401,10 @@ mod tests {
     // ── Citation keys ─────────────────────────────────────────────
     #[test]
     fn citation_key_con_espacio_produce_error() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![citation("c1", "smith 2020")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![citation("c1", "smith 2020")],
+        )]);
         let mut issues = Vec::new();
         check_invalid_citation_keys(&model, &mut issues);
         assert!(issues.iter().any(|i| i.code == "E_INVALID_CITATION_KEY"));
@@ -376,9 +412,10 @@ mod tests {
 
     #[test]
     fn citation_key_valida_no_produce_error() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![citation("c1", "smith2020")])
-        ]);
+        let model = model_with_sections(vec![section_with(
+            "intro",
+            vec![citation("c1", "smith2020")],
+        )]);
         let mut issues = Vec::new();
         check_invalid_citation_keys(&model, &mut issues);
         assert!(issues.is_empty());
@@ -387,9 +424,7 @@ mod tests {
     // ── raw_latex sin confirmar ───────────────────────────────────
     #[test]
     fn raw_latex_sin_confirmar_produce_warning() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![raw_latex("r1", false)])
-        ]);
+        let model = model_with_sections(vec![section_with("intro", vec![raw_latex("r1", false)])]);
         let mut issues = Vec::new();
         check_unconfirmed_raw_latex(&model, &mut issues);
         assert!(issues.iter().any(|i| i.code == "W_UNCONFIRMED_RAW_LATEX"));
@@ -397,9 +432,7 @@ mod tests {
 
     #[test]
     fn raw_latex_confirmado_no_produce_warning() {
-        let model = model_with_sections(vec![
-            section_with("intro", vec![raw_latex("r1", true)])
-        ]);
+        let model = model_with_sections(vec![section_with("intro", vec![raw_latex("r1", true)])]);
         let mut issues = Vec::new();
         check_unconfirmed_raw_latex(&model, &mut issues);
         assert!(issues.is_empty());
@@ -422,7 +455,10 @@ fn check_duplicate_labels(model: &ProjectModel, issues: &mut Vec<ValidationIssue
                     issues.push(ValidationIssue {
                         severity: IssueSeverity::Error,
                         code: "E_DUPLICATE_LABEL".to_string(),
-                        message: format!("Label '{}' duplicado en la sección '{}'.", label, section.id),
+                        message: format!(
+                            "Label '{}' duplicado en la sección '{}'.",
+                            label, section.id
+                        ),
                         suggestion: Some(format!(
                             "Cambia el label '{}' para que sea único en todo el proyecto.",
                             label

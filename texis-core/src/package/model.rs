@@ -82,6 +82,9 @@ pub struct PackageAnalysis {
 impl PackageAnalysis {
     pub fn has_blocking_issues(&self) -> bool {
         self.conflicts.iter().any(|c| c.is_blocking)
-            || self.missing.iter().any(|r| r.priority == PackagePriority::Required && !r.already_declared)
+            || self
+                .missing
+                .iter()
+                .any(|r| r.priority == PackagePriority::Required && !r.already_declared)
     }
 }

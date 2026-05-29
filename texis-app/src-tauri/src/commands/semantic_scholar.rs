@@ -2,22 +2,19 @@
 // API: https://api.semanticscholar.org/graph/v1/paper/{id}
 // Rate limit: 100 req/5min sin API key, 1000 req/5min con API key.
 
+use chrono::Utc;
 use serde::Deserialize;
 use std::time::Duration;
-use texis_core::bibliography::model::{
-    BibliographicRecord, PersonName, RecordType, provider,
-};
-use texis_core::bibliography::normalization::{
-    clean_title, normalize_doi,
-};
-use chrono::Utc;
+use texis_core::bibliography::model::{provider, BibliographicRecord, PersonName, RecordType};
+use texis_core::bibliography::normalization::{clean_title, normalize_doi};
 
 const S2_BASE: &str = "https://api.semanticscholar.org/graph/v1/paper";
 const FIELDS: &str = "paperId,externalIds,title,abstract,authors,year,publicationDate,\
                        venue,journal,publicationTypes,openAccessPdf,\
                        citationCount,influentialCitationCount,isOpenAccess,fieldsOfStudy";
 const USER_AGENT: &str = concat!(
-    "TeXisStudio/", env!("CARGO_PKG_VERSION"),
+    "TeXisStudio/",
+    env!("CARGO_PKG_VERSION"),
     " (https://github.com/GonzaloAndDev/TeXisStudio; mailto:gaelsd25@gmail.com)"
 );
 const TIMEOUT_SECS: u64 = 15;
@@ -120,7 +117,7 @@ fn paper_to_record(paper: &S2Paper) -> BibliographicRecord {
     let record_type = paper
         .publication_types
         .as_deref()
-        .map(|types| map_s2_type(types))
+        .map(map_s2_type)
         .unwrap_or(RecordType::Unknown);
 
     // Citation key desde primer autor
@@ -236,13 +233,21 @@ pub async fn fetch_by_doi(
         .map_err(|e| format!("Error de red al consultar Semantic Scholar: {e}"))?;
 
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
-        return Err(format!("DOI no encontrado en Semantic Scholar: {doi_normalized}"));
+        return Err(format!(
+            "DOI no encontrado en Semantic Scholar: {doi_normalized}"
+        ));
     }
     if resp.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        return Err("Semantic Scholar: límite de peticiones excedido. Intenta de nuevo en 5 minutos.".to_string());
+        return Err(
+            "Semantic Scholar: límite de peticiones excedido. Intenta de nuevo en 5 minutos."
+                .to_string(),
+        );
     }
     if !resp.status().is_success() {
-        return Err(format!("Semantic Scholar respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "Semantic Scholar respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let raw: serde_json::Value = resp
@@ -254,7 +259,9 @@ pub async fn fetch_by_doi(
         .map_err(|e| format!("Error al deserializar respuesta de S2: {e}"))?;
 
     let mut record = paper_to_record(&paper);
-    record.provenance.set_raw_payload(provider::SEMANTIC_SCHOLAR, raw);
+    record
+        .provenance
+        .set_raw_payload(provider::SEMANTIC_SCHOLAR, raw);
     Ok(record)
 }
 
@@ -281,7 +288,10 @@ pub async fn search(
         return Err("Semantic Scholar: límite de peticiones excedido.".to_string());
     }
     if !resp.status().is_success() {
-        return Err(format!("Semantic Scholar respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "Semantic Scholar respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let response: S2SearchResponse = resp

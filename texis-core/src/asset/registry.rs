@@ -18,10 +18,19 @@ pub enum AssetType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum RasterFormat { Png, Jpg, Bmp, Tiff, WebP }
+pub enum RasterFormat {
+    Png,
+    Jpg,
+    Bmp,
+    Tiff,
+    WebP,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum VectorFormat { Svg, Eps }
+pub enum VectorFormat {
+    Svg,
+    Eps,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AssetStatus {
@@ -37,7 +46,7 @@ pub struct Asset {
     pub id: AssetId,
     pub canonical_name: String,
     pub original_path: PathBuf,
-    pub project_path: PathBuf,  // siempre relativa al root del proyecto
+    pub project_path: PathBuf, // siempre relativa al root del proyecto
     pub asset_type: AssetType,
     pub file_size_bytes: u64,
     pub checksum_sha256: String,
@@ -106,7 +115,9 @@ impl AssetRegistry {
 
     pub fn insert(&mut self, asset: Asset) -> Result<(), AssetError> {
         if self.by_canonical_name.contains_key(&asset.canonical_name) {
-            return Err(AssetError::DuplicateCanonicalName(asset.canonical_name.clone()));
+            return Err(AssetError::DuplicateCanonicalName(
+                asset.canonical_name.clone(),
+            ));
         }
         if let Some(existing_id) = self.by_checksum.get(&asset.checksum_sha256) {
             let existing_name = self.assets[existing_id].canonical_name.clone();
@@ -115,8 +126,10 @@ impl AssetRegistry {
                 existing_name,
             ));
         }
-        self.by_canonical_name.insert(asset.canonical_name.clone(), asset.id);
-        self.by_checksum.insert(asset.checksum_sha256.clone(), asset.id);
+        self.by_canonical_name
+            .insert(asset.canonical_name.clone(), asset.id);
+        self.by_checksum
+            .insert(asset.checksum_sha256.clone(), asset.id);
         self.assets.insert(asset.id, asset);
         Ok(())
     }
@@ -133,11 +146,15 @@ impl AssetRegistry {
     }
 
     pub fn find_by_canonical_name(&self, name: &str) -> Option<&Asset> {
-        self.by_canonical_name.get(name).and_then(|id| self.assets.get(id))
+        self.by_canonical_name
+            .get(name)
+            .and_then(|id| self.assets.get(id))
     }
 
     pub fn find_by_checksum(&self, checksum: &str) -> Option<&Asset> {
-        self.by_checksum.get(checksum).and_then(|id| self.assets.get(id))
+        self.by_checksum
+            .get(checksum)
+            .and_then(|id| self.assets.get(id))
     }
 
     pub fn all(&self) -> impl Iterator<Item = &Asset> {
@@ -189,7 +206,9 @@ impl AssetRegistry {
                         .strip_prefix(project_root)
                         .map(|p| p.to_path_buf())
                         .unwrap_or(new_path.clone());
-                    asset.status = AssetStatus::Moved { new_path: rel_path.clone() };
+                    asset.status = AssetStatus::Moved {
+                        new_path: rel_path.clone(),
+                    };
                     report.moved.push((id, rel_path));
                 } else {
                     asset.status = AssetStatus::Missing;
@@ -237,7 +256,9 @@ fn transliterate_char(c: char) -> Option<char> {
         'A'..='Z' => Some(c.to_ascii_lowercase()),
         ' ' | '\t' => Some('_'),
         '-' => Some('-'),
-        'á' | 'à' | 'â' | 'ã' | 'ä' | 'å' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' | 'Å' => Some('a'),
+        'á' | 'à' | 'â' | 'ã' | 'ä' | 'å' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' | 'Å' => {
+            Some('a')
+        }
         'é' | 'è' | 'ê' | 'ë' | 'É' | 'È' | 'Ê' | 'Ë' => Some('e'),
         'í' | 'ì' | 'î' | 'ï' | 'Í' | 'Ì' | 'Î' | 'Ï' => Some('i'),
         'ó' | 'ò' | 'ô' | 'õ' | 'ö' | 'Ó' | 'Ò' | 'Ô' | 'Õ' | 'Ö' => Some('o'),
@@ -261,13 +282,27 @@ fn infer_asset_type(path: &Path) -> AssetType {
         .map(|s| s.to_lowercase());
 
     match ext.as_deref() {
-        Some("png") => AssetType::RasterImage { format: RasterFormat::Png },
-        Some("jpg") | Some("jpeg") => AssetType::RasterImage { format: RasterFormat::Jpg },
-        Some("bmp") => AssetType::RasterImage { format: RasterFormat::Bmp },
-        Some("tiff") | Some("tif") => AssetType::RasterImage { format: RasterFormat::Tiff },
-        Some("webp") => AssetType::RasterImage { format: RasterFormat::WebP },
-        Some("svg") => AssetType::VectorImage { format: VectorFormat::Svg },
-        Some("eps") => AssetType::VectorImage { format: VectorFormat::Eps },
+        Some("png") => AssetType::RasterImage {
+            format: RasterFormat::Png,
+        },
+        Some("jpg") | Some("jpeg") => AssetType::RasterImage {
+            format: RasterFormat::Jpg,
+        },
+        Some("bmp") => AssetType::RasterImage {
+            format: RasterFormat::Bmp,
+        },
+        Some("tiff") | Some("tif") => AssetType::RasterImage {
+            format: RasterFormat::Tiff,
+        },
+        Some("webp") => AssetType::RasterImage {
+            format: RasterFormat::WebP,
+        },
+        Some("svg") => AssetType::VectorImage {
+            format: VectorFormat::Svg,
+        },
+        Some("eps") => AssetType::VectorImage {
+            format: VectorFormat::Eps,
+        },
         Some("pdf") => AssetType::Pdf,
         Some("tex") => AssetType::ExternalTex,
         _ => AssetType::Other,
@@ -320,11 +355,16 @@ mod tests {
     fn insert_rejects_duplicate_canonical_name() {
         let dir = tempfile::tempdir().unwrap();
         let png = make_temp_png(&dir, "a.png");
-        let a1 = Asset::from_file(&png, PathBuf::from("assets/a.png"), "a.png".to_string()).unwrap();
-        let a2 = Asset::from_file(&png, PathBuf::from("assets/b.png"), "a.png".to_string()).unwrap();
+        let a1 =
+            Asset::from_file(&png, PathBuf::from("assets/a.png"), "a.png".to_string()).unwrap();
+        let a2 =
+            Asset::from_file(&png, PathBuf::from("assets/b.png"), "a.png".to_string()).unwrap();
         let mut reg = AssetRegistry::new();
         reg.insert(a1).unwrap();
-        assert!(matches!(reg.insert(a2), Err(AssetError::DuplicateCanonicalName(_))));
+        assert!(matches!(
+            reg.insert(a2),
+            Err(AssetError::DuplicateCanonicalName(_))
+        ));
     }
 
     #[test]
@@ -332,12 +372,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let png_path = dir.path().join("test.png");
         std::fs::write(&png_path, b"data").unwrap();
-        let asset = Asset::from_file(
-            &png_path,
-            PathBuf::from("test.png"),
-            "test.png".to_string(),
-        )
-        .unwrap();
+        let asset =
+            Asset::from_file(&png_path, PathBuf::from("test.png"), "test.png".to_string()).unwrap();
         std::fs::remove_file(&png_path).unwrap();
 
         let mut reg = AssetRegistry::new();

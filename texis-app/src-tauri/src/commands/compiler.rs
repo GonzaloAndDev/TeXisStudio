@@ -5,11 +5,7 @@ use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
-use texis_core::{
-    compiler::error_translator,
-    project::loader::ProjectLoader,
-    LaTeXGenerator,
-};
+use texis_core::{compiler::error_translator, project::loader::ProjectLoader, LaTeXGenerator};
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -74,11 +70,13 @@ pub async fn compile_project(
     let engine_flag = match model.latex_config.engine {
         LatexEngine::Pdflatex => "-pdf",
         LatexEngine::Lualatex => "-lualatex",
-        LatexEngine::Xelatex  => "-xelatex",
+        LatexEngine::Xelatex => "-xelatex",
     };
 
     let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate_with_lang(&model, &build_dir, lang_config.as_ref()).map_err(err)?;
+    latex_gen
+        .generate_with_lang(&model, &build_dir, lang_config.as_ref())
+        .map_err(err)?;
 
     // ── Paso 2: seleccionar backend ───────────────────────────────
     let resolved_backend = resolve_backend(&backend_name)?;
@@ -110,24 +108,42 @@ pub fn cancel_compile(state: tauri::State<'_, CompileState>) {
 /// Elige el backend disponible: devuelve el nombre del binario a usar.
 fn resolve_backend(name: &str) -> Result<&'static str, String> {
     use std::process::Command;
-    let latexmk_ok  = Command::new("latexmk").arg("--version").output().is_ok();
+    let latexmk_ok = Command::new("latexmk").arg("--version").output().is_ok();
     let tectonic_ok = Command::new("tectonic").arg("--version").output().is_ok();
 
     match name {
         "latexmk" => {
-            if latexmk_ok { Ok("latexmk") }
-            else { Err("latexmk no está instalado. Instala TeX Live, MiKTeX, o usa Tectonic.".to_string()) }
+            if latexmk_ok {
+                Ok("latexmk")
+            } else {
+                Err(
+                    "latexmk no está instalado. Instala TeX Live, MiKTeX, o usa Tectonic."
+                        .to_string(),
+                )
+            }
         }
         "tectonic" => {
-            if tectonic_ok { Ok("tectonic") }
-            else { Err("Tectonic no está instalado. Visita https://tectonic-typesetting.github.io".to_string()) }
+            if tectonic_ok {
+                Ok("tectonic")
+            } else {
+                Err(
+                    "Tectonic no está instalado. Visita https://tectonic-typesetting.github.io"
+                        .to_string(),
+                )
+            }
         }
         "auto" => {
-            if latexmk_ok  { Ok("latexmk")  }
-            else if tectonic_ok { Ok("tectonic") }
-            else { Err("No se encontró ningún compilador LaTeX. Instala latexmk (TeX Live/MiKTeX) o Tectonic.".to_string()) }
+            if latexmk_ok {
+                Ok("latexmk")
+            } else if tectonic_ok {
+                Ok("tectonic")
+            } else {
+                Err("No se encontró ningún compilador LaTeX. Instala latexmk (TeX Live/MiKTeX) o Tectonic.".to_string())
+            }
         }
-        other => Err(format!("Backend '{other}' no reconocido. Usa: latexmk, tectonic o auto.")),
+        other => Err(format!(
+            "Backend '{other}' no reconocido. Usa: latexmk, tectonic o auto."
+        )),
     }
 }
 
@@ -180,8 +196,7 @@ fn run_compiler_streaming(
     let stderr = child.stderr.take().expect("stderr piped");
 
     // Compartir child para que el watchdog pueda matarlo
-    let child_shared: Arc<Mutex<Option<std::process::Child>>> =
-        Arc::new(Mutex::new(Some(child)));
+    let child_shared: Arc<Mutex<Option<std::process::Child>>> = Arc::new(Mutex::new(Some(child)));
     let timed_out = Arc::new(AtomicBool::new(false));
 
     // ── Watchdog thread ─────────────────────────────────────────────
@@ -193,8 +208,7 @@ fn run_compiler_streaming(
         let cancel_w = cancel.clone();
         let timeout_w = timed_out.clone();
         std::thread::spawn(move || {
-            let deadline =
-                std::time::Instant::now() + std::time::Duration::from_secs(300);
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(300);
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(500));
                 let elapsed = std::time::Instant::now() >= deadline;

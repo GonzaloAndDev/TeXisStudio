@@ -19,7 +19,11 @@ impl Validator {
         Self
     }
 
-    pub fn validate(&self, model: &ProjectModel, project_dir: &Path) -> CoreResult<ValidationReport> {
+    pub fn validate(
+        &self,
+        model: &ProjectModel,
+        project_dir: &Path,
+    ) -> CoreResult<ValidationReport> {
         self.validate_with_profile(model, project_dir, None)
     }
 

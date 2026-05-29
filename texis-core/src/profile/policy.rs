@@ -24,11 +24,15 @@ pub struct PolicyReport {
 
 impl PolicyReport {
     pub fn has_errors(&self) -> bool {
-        self.issues.iter().any(|i| i.severity == PolicySeverity::Error)
+        self.issues
+            .iter()
+            .any(|i| i.severity == PolicySeverity::Error)
     }
 
     pub fn has_warnings(&self) -> bool {
-        self.issues.iter().any(|i| i.severity == PolicySeverity::Warning)
+        self.issues
+            .iter()
+            .any(|i| i.severity == PolicySeverity::Warning)
     }
 }
 
@@ -87,10 +91,7 @@ impl ProfilePolicyValidator {
     ///
     /// Además de las reglas básicas, verifica que el `profile.id` coincide
     /// con una entrada en el catálogo. Usado en CI de TeXisStudio-Profiles.
-    pub fn validate_with_catalog(
-        profile: &Profile,
-        catalog_ids: &[String],
-    ) -> PolicyReport {
+    pub fn validate_with_catalog(profile: &Profile, catalog_ids: &[String]) -> PolicyReport {
         let mut report = Self::validate(profile);
 
         if !catalog_ids.contains(&profile.id) {
@@ -115,9 +116,7 @@ fn check_reviewed(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
     let ver = profile.verification.as_ref();
 
     // POL_REVIEWED_NO_SOURCE_URLS — fuentes oficiales obligatorias
-    let source_urls_ok = ver
-        .map(|v| !v.source_urls.is_empty())
-        .unwrap_or(false);
+    let source_urls_ok = ver.map(|v| !v.source_urls.is_empty()).unwrap_or(false);
     if !source_urls_ok {
         issues.push(PolicyIssue {
             severity: PolicySeverity::Error,
@@ -133,10 +132,18 @@ fn check_reviewed(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
 
     // POL_REVIEWED_NO_DATE — fecha de revisión obligatoria
     // Acepta reviewed_at (semánticamente correcto) o verified_at (legacy compatible, D9)
-    let has_date = ver.map(|v| {
-        v.reviewed_at.as_deref().map(|s| !s.is_empty()).unwrap_or(false)
-            || v.verified_at.as_deref().map(|s| !s.is_empty()).unwrap_or(false)
-    }).unwrap_or(false);
+    let has_date = ver
+        .map(|v| {
+            v.reviewed_at
+                .as_deref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
+                || v.verified_at
+                    .as_deref()
+                    .map(|s| !s.is_empty())
+                    .unwrap_or(false)
+        })
+        .unwrap_or(false);
     if !has_date {
         issues.push(PolicyIssue {
             severity: PolicySeverity::Error,
@@ -151,9 +158,7 @@ fn check_reviewed(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
     }
 
     // POL_REVIEWED_NO_INTERVAL — intervalo de re-revisión recomendado
-    let has_interval = ver
-        .and_then(|v| v.review_interval_days)
-        .is_some();
+    let has_interval = ver.and_then(|v| v.review_interval_days).is_some();
     if !has_interval {
         issues.push(PolicyIssue {
             severity: PolicySeverity::Warning,
@@ -260,7 +265,10 @@ mod tests {
         Profile::new_draft(
             id.to_string(),
             "Test Profile".to_string(),
-            ProfileDocumentClass { name: "book".to_string(), options: vec![] },
+            ProfileDocumentClass {
+                name: "book".to_string(),
+                options: vec![],
+            },
             "xelatex".to_string(),
             "biber".to_string(),
             "apa".to_string(),
@@ -287,7 +295,10 @@ mod tests {
     fn draft_no_produce_issues() {
         let p = draft_profile("test.draft");
         let report = ProfilePolicyValidator::validate(&p);
-        assert!(report.issues.is_empty(), "Draft no debe producir issues de política");
+        assert!(
+            report.issues.is_empty(),
+            "Draft no debe producir issues de política"
+        );
     }
 
     #[test]
@@ -298,7 +309,10 @@ mod tests {
         }
         let report = ProfilePolicyValidator::validate(&p);
         assert!(
-            report.issues.iter().any(|i| i.code == "POL_REVIEWED_NO_SOURCE_URLS"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_REVIEWED_NO_SOURCE_URLS"),
             "reviewed sin source_urls debe producir POL_REVIEWED_NO_SOURCE_URLS"
         );
         assert!(report.has_errors());
@@ -313,7 +327,10 @@ mod tests {
         }
         let report = ProfilePolicyValidator::validate(&p);
         assert!(
-            report.issues.iter().any(|i| i.code == "POL_REVIEWED_NO_DATE"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_REVIEWED_NO_DATE"),
             "reviewed sin fecha debe producir POL_REVIEWED_NO_DATE"
         );
     }
@@ -327,7 +344,10 @@ mod tests {
         }
         let report = ProfilePolicyValidator::validate(&p);
         assert!(
-            !report.issues.iter().any(|i| i.code == "POL_REVIEWED_NO_DATE"),
+            !report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_REVIEWED_NO_DATE"),
             "reviewed con legacy verified_at no debe producir error de fecha"
         );
     }
@@ -339,18 +359,30 @@ mod tests {
             v.review_interval_days = None;
         }
         let report = ProfilePolicyValidator::validate(&p);
-        let interval_issue = report.issues.iter().find(|i| i.code == "POL_REVIEWED_NO_INTERVAL");
-        assert!(interval_issue.is_some(), "debe producir POL_REVIEWED_NO_INTERVAL");
+        let interval_issue = report
+            .issues
+            .iter()
+            .find(|i| i.code == "POL_REVIEWED_NO_INTERVAL");
+        assert!(
+            interval_issue.is_some(),
+            "debe producir POL_REVIEWED_NO_INTERVAL"
+        );
         assert_eq!(interval_issue.unwrap().severity, PolicySeverity::Warning);
         // Sin errores adicionales (solo el warning de intervalo)
-        assert!(!report.has_errors(), "falta de intervalo es warning, no error");
+        assert!(
+            !report.has_errors(),
+            "falta de intervalo es warning, no error"
+        );
     }
 
     #[test]
     fn reviewed_completo_sin_issues_de_error() {
         let p = reviewed_profile_complete("test.reviewed.ok");
         let report = ProfilePolicyValidator::validate(&p);
-        assert!(!report.has_errors(), "perfil reviewed completo no debe tener errores");
+        assert!(
+            !report.has_errors(),
+            "perfil reviewed completo no debe tener errores"
+        );
     }
 
     fn verified_profile_complete(id: &str) -> Profile {
@@ -358,8 +390,11 @@ mod tests {
         p.status = ProfileStatus::Verified;
         if let Some(v) = &mut p.verification {
             v.verified_at = Some("2026-05-27".to_string());
-            v.verified_by = Some("TeXisStudio CI — automated LaTeX compilation + postflight".to_string());
-            v.ci_evidence = Some("https://github.com/GonzaloAndDev/TeXisStudio-Profiles/actions/runs/1".to_string());
+            v.verified_by =
+                Some("TeXisStudio CI — automated LaTeX compilation + postflight".to_string());
+            v.ci_evidence = Some(
+                "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/actions/runs/1".to_string(),
+            );
         }
         p
     }
@@ -368,7 +403,11 @@ mod tests {
     fn verified_completo_sin_errores() {
         let p = verified_profile_complete("test.verified.ok");
         let report = ProfilePolicyValidator::validate(&p);
-        assert!(!report.has_errors(), "perfil verified completo no debe tener errores: {:?}", report.issues);
+        assert!(
+            !report.has_errors(),
+            "perfil verified completo no debe tener errores: {:?}",
+            report.issues
+        );
     }
 
     #[test]
@@ -379,7 +418,10 @@ mod tests {
         }
         let report = ProfilePolicyValidator::validate(&p);
         assert!(
-            report.issues.iter().any(|i| i.code == "POL_VERIFIED_NO_CI_EVIDENCE"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_VERIFIED_NO_CI_EVIDENCE"),
             "verified sin ci_evidence debe producir POL_VERIFIED_NO_CI_EVIDENCE"
         );
         assert!(report.has_errors());
@@ -393,7 +435,10 @@ mod tests {
         }
         let report = ProfilePolicyValidator::validate(&p);
         assert!(
-            report.issues.iter().any(|i| i.code == "POL_VERIFIED_NO_VERIFIED_AT"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_VERIFIED_NO_VERIFIED_AT"),
             "verified sin verified_at debe producir POL_VERIFIED_NO_VERIFIED_AT"
         );
     }
@@ -404,7 +449,10 @@ mod tests {
         let catalog = vec!["other.profile".to_string()];
         let report = ProfilePolicyValidator::validate_with_catalog(&p, &catalog);
         assert!(
-            report.issues.iter().any(|i| i.code == "POL_ID_NOT_IN_CATALOG"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_ID_NOT_IN_CATALOG"),
             "id no en catálogo debe producir POL_ID_NOT_IN_CATALOG"
         );
     }
@@ -415,7 +463,10 @@ mod tests {
         let catalog = vec!["test.in.catalog".to_string()];
         let report = ProfilePolicyValidator::validate_with_catalog(&p, &catalog);
         assert!(
-            !report.issues.iter().any(|i| i.code == "POL_ID_NOT_IN_CATALOG"),
+            !report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_ID_NOT_IN_CATALOG"),
             "id en catálogo no debe producir error de catálogo"
         );
     }

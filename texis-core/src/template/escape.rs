@@ -8,17 +8,17 @@ pub fn latex_escape(input: &str) -> String {
     let mut output = String::with_capacity(input.len() * 2);
     for ch in input.chars() {
         match ch {
-            '&'  => output.push_str(r"\&"),
-            '%'  => output.push_str(r"\%"),
-            '$'  => output.push_str(r"\$"),
-            '#'  => output.push_str(r"\#"),
-            '_'  => output.push_str(r"\_"),
-            '{'  => output.push_str(r"\{"),
-            '}'  => output.push_str(r"\}"),
-            '~'  => output.push_str(r"\textasciitilde{}"),
-            '^'  => output.push_str(r"\textasciicircum{}"),
+            '&' => output.push_str(r"\&"),
+            '%' => output.push_str(r"\%"),
+            '$' => output.push_str(r"\$"),
+            '#' => output.push_str(r"\#"),
+            '_' => output.push_str(r"\_"),
+            '{' => output.push_str(r"\{"),
+            '}' => output.push_str(r"\}"),
+            '~' => output.push_str(r"\textasciitilde{}"),
+            '^' => output.push_str(r"\textasciicircum{}"),
             '\\' => output.push_str(r"\textbackslash{}"),
-            c    => output.push(c),
+            c => output.push(c),
         }
     }
     output

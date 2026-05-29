@@ -102,10 +102,7 @@ pub fn get_profiles(app: tauri::AppHandle) -> Result<Value, String> {
         ]));
     }
 
-    let result: Vec<Value> = profiles
-        .iter()
-        .map(|p| profile_to_json(p))
-        .collect();
+    let result: Vec<Value> = profiles.iter().map(|p| profile_to_json(p)).collect();
 
     Ok(serde_json::json!(result))
 }
@@ -129,8 +126,8 @@ pub fn get_profile_detail(app: tauri::AppHandle, profile_id: String) -> Result<V
 /// Copia/registra el perfil en el directorio de perfiles de la app.
 #[tauri::command]
 pub fn import_profile(app: tauri::AppHandle, source_path: String) -> Result<Value, String> {
-    use texis_core::profile::ProfileLoader;
     use std::path::Path;
+    use texis_core::profile::ProfileLoader;
 
     let src = Path::new(&source_path);
     let profiles_root = profiles_dir(&app);
@@ -141,7 +138,9 @@ pub fn import_profile(app: tauri::AppHandle, source_path: String) -> Result<Valu
     } else if src.file_name().and_then(|n| n.to_str()) == Some("profile.yaml") {
         src.to_path_buf()
     } else {
-        return Err("La ruta debe ser un directorio de perfil o un archivo profile.yaml.".to_string());
+        return Err(
+            "La ruta debe ser un directorio de perfil o un archivo profile.yaml.".to_string(),
+        );
     };
 
     if !profile_yaml.exists() {
@@ -180,7 +179,10 @@ pub fn export_profile(
     let src_dir = profiles_root.join(&profile_id);
 
     if !src_dir.exists() {
-        return Err(format!("Perfil '{}' no encontrado en el directorio de perfiles.", profile_id));
+        return Err(format!(
+            "Perfil '{}' no encontrado en el directorio de perfiles.",
+            profile_id
+        ));
     }
 
     let dest = PathBuf::from(&dest_path).join(format!("{}.texisprofile", profile_id));
@@ -207,7 +209,11 @@ pub fn update_profile(
     let yaml_path = profiles_root.join(&profile_id).join("profile.yaml");
 
     if !yaml_path.exists() {
-        return Err(format!("No se encontró el perfil '{}' en '{}'.", profile_id, yaml_path.display()));
+        return Err(format!(
+            "No se encontró el perfil '{}' en '{}'.",
+            profile_id,
+            yaml_path.display()
+        ));
     }
 
     // Cargar el perfil actual para preservar campos que el editor no toca
@@ -228,15 +234,19 @@ pub fn update_profile(
         name: payload.document_class,
         options: profile.document_class.options.clone(), // conservar opciones existentes
     };
-    profile.sections = payload.sections.iter().map(|s| ProfileSectionDef {
-        id: s.id.clone(),
-        element_id: s.element_id.clone(),
-        placement: s.placement.clone(),
-        required: s.required,
-        title: s.title.clone(),
-        label: s.label.clone(),
-        guidance: s.guidance.clone(),
-    }).collect();
+    profile.sections = payload
+        .sections
+        .iter()
+        .map(|s| ProfileSectionDef {
+            id: s.id.clone(),
+            element_id: s.element_id.clone(),
+            placement: s.placement.clone(),
+            required: s.required,
+            title: s.title.clone(),
+            label: s.label.clone(),
+            guidance: s.guidance.clone(),
+        })
+        .collect();
 
     loader.save_to_file(&profile, &yaml_path).map_err(err)?;
 
@@ -245,10 +255,7 @@ pub fn update_profile(
 
 /// Elimina un perfil instalado del directorio de perfiles.
 #[tauri::command]
-pub fn delete_profile(
-    app: tauri::AppHandle,
-    profile_id: String,
-) -> Result<(), String> {
+pub fn delete_profile(app: tauri::AppHandle, profile_id: String) -> Result<(), String> {
     // Rechazar profile_id con traversal, separadores de ruta o chars inválidos.
     // Se permite '.' para IDs como "apa7.basic" o "generic.thesis".
     let id_invalid = profile_id.is_empty()
@@ -256,8 +263,14 @@ pub fn delete_profile(
         || profile_id.contains("..")
         || profile_id.contains('/')
         || profile_id.contains('\\')
-        || !profile_id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false)
-        || !profile_id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
+        || !profile_id
+            .chars()
+            .next()
+            .map(|c| c.is_alphanumeric())
+            .unwrap_or(false)
+        || !profile_id
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
     if id_invalid {
         return Err(format!("ID de perfil inválido: '{}'.", profile_id));
     }
@@ -276,9 +289,12 @@ pub fn delete_profile(
 
     // Canonicalizar ambas rutas para detectar symlinks que salgan del sandbox
     let canon_root = profiles_root.canonicalize().map_err(err)?;
-    let canon_dir  = profile_dir.canonicalize().map_err(err)?;
+    let canon_dir = profile_dir.canonicalize().map_err(err)?;
     if !canon_dir.starts_with(&canon_root) {
-        return Err("Operación denegada: la ruta resuelta queda fuera del directorio de perfiles.".to_string());
+        return Err(
+            "Operación denegada: la ruta resuelta queda fuera del directorio de perfiles."
+                .to_string(),
+        );
     }
 
     std::fs::remove_dir_all(&profile_dir).map_err(err)?;
@@ -300,8 +316,14 @@ pub fn create_profile(
         || profile_id.contains("..")
         || profile_id.contains('/')
         || profile_id.contains('\\')
-        || !profile_id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false)
-        || !profile_id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
+        || !profile_id
+            .chars()
+            .next()
+            .map(|c| c.is_alphanumeric())
+            .unwrap_or(false)
+        || !profile_id
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'));
     if id_invalid {
         return Err(format!("ID de perfil inválido: '{}'.", profile_id));
     }
@@ -335,20 +357,24 @@ pub fn create_profile(
     );
 
     profile.schema_version = texis_core::schema::versions::CURRENT_SCHEMA_VERSION.to_string();
-    profile.description    = payload.description;
-    profile.author         = payload.author;
-    profile.version        = Some(payload.version.unwrap_or_else(|| "0.1.0".to_string()));
-    profile.license        = payload.license;
-    profile.tags           = payload.tags;
-    profile.sections       = payload.sections.iter().map(|s| ProfileSectionDef {
-        id:         s.id.clone(),
-        element_id: s.element_id.clone(),
-        placement:  s.placement.clone(),
-        required:   s.required,
-        title:      s.title.clone(),
-        label:      s.label.clone(),
-        guidance:   s.guidance.clone(),
-    }).collect();
+    profile.description = payload.description;
+    profile.author = payload.author;
+    profile.version = Some(payload.version.unwrap_or_else(|| "0.1.0".to_string()));
+    profile.license = payload.license;
+    profile.tags = payload.tags;
+    profile.sections = payload
+        .sections
+        .iter()
+        .map(|s| ProfileSectionDef {
+            id: s.id.clone(),
+            element_id: s.element_id.clone(),
+            placement: s.placement.clone(),
+            required: s.required,
+            title: s.title.clone(),
+            label: s.label.clone(),
+            guidance: s.guidance.clone(),
+        })
+        .collect();
 
     let yaml_path = profile_dir.join("profile.yaml");
     let loader = ProfileLoader;
@@ -367,40 +393,50 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         bib_style_label(&p.bibliography_style)
     );
 
-    let sections: Vec<Value> = p.sections.iter().map(|s| serde_json::json!({
-        "id": s.id,
-        "element_id": s.element_id,
-        "placement": s.placement,
-        "required": s.required,
-        "title": s.title,
-        "label": s.label,
-        "guidance": s.guidance,
-    })).collect();
+    let sections: Vec<Value> = p
+        .sections
+        .iter()
+        .map(|s| {
+            serde_json::json!({
+                "id": s.id,
+                "element_id": s.element_id,
+                "placement": s.placement,
+                "required": s.required,
+                "title": s.title,
+                "label": s.label,
+                "guidance": s.guidance,
+            })
+        })
+        .collect();
 
     let status_str = match p.status {
         texis_core::profile::ProfileStatus::Experimental => "experimental",
-        texis_core::profile::ProfileStatus::Draft        => "draft",
-        texis_core::profile::ProfileStatus::Reviewed     => "reviewed",
-        texis_core::profile::ProfileStatus::Verified     => "verified",
-        texis_core::profile::ProfileStatus::Stale        => "stale",
-        texis_core::profile::ProfileStatus::Deprecated   => "deprecated",
+        texis_core::profile::ProfileStatus::Draft => "draft",
+        texis_core::profile::ProfileStatus::Reviewed => "reviewed",
+        texis_core::profile::ProfileStatus::Verified => "verified",
+        texis_core::profile::ProfileStatus::Stale => "stale",
+        texis_core::profile::ProfileStatus::Deprecated => "deprecated",
     };
 
-    let verification = p.verification.as_ref().map(|v| serde_json::json!({
-        "verified_at": v.verified_at,
-        "verified_by": v.verified_by,
-        "reviewed_at": v.reviewed_at,
-        "reviewed_by": v.reviewed_by,
-        "source_urls": v.source_urls,
-        "review_interval_days": v.review_interval_days,
-    }));
+    let verification = p.verification.as_ref().map(|v| {
+        serde_json::json!({
+            "verified_at": v.verified_at,
+            "verified_by": v.verified_by,
+            "reviewed_at": v.reviewed_at,
+            "reviewed_by": v.reviewed_by,
+            "source_urls": v.source_urls,
+            "review_interval_days": v.review_interval_days,
+        })
+    });
 
-    let pdf_requirements = p.pdf_requirements.as_ref().map(|r| serde_json::json!({
-        "pdfa": r.pdfa.as_ref().map(|pdfa| serde_json::json!({
-            "required": pdfa.required,
-            "level": pdfa.level,
-        })),
-    }));
+    let pdf_requirements = p.pdf_requirements.as_ref().map(|r| {
+        serde_json::json!({
+            "pdfa": r.pdfa.as_ref().map(|pdfa| serde_json::json!({
+                "required": pdfa.required,
+                "level": pdfa.level,
+            })),
+        })
+    });
 
     serde_json::json!({
         "id": p.id,
@@ -444,21 +480,21 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<()
 
 fn engine_label(engine: &str) -> &str {
     match engine {
-        "xelatex"  => "XeLaTeX",
+        "xelatex" => "XeLaTeX",
         "pdflatex" => "pdfLaTeX",
         "lualatex" => "LuaLaTeX",
-        other      => other,
+        other => other,
     }
 }
 
 fn bib_style_label(style: &str) -> String {
     match style {
-        "apa"       => "APA 7".to_string(),
+        "apa" => "APA 7".to_string(),
         "vancouver" => "Vancouver".to_string(),
-        "ieee"      => "IEEE".to_string(),
-        "chicago"   => "Chicago".to_string(),
-        "mla"       => "MLA".to_string(),
-        other       => other.to_uppercase(),
+        "ieee" => "IEEE".to_string(),
+        "chicago" => "Chicago".to_string(),
+        "mla" => "MLA".to_string(),
+        other => other.to_uppercase(),
     }
 }
 
@@ -501,12 +537,17 @@ pub fn get_cloud_folders() -> Result<Value, String> {
 
     // Dropbox
     let dropbox_info = home
-        .join("AppData").join("Roaming").join("Dropbox").join("info.json");
+        .join("AppData")
+        .join("Roaming")
+        .join("Dropbox")
+        .join("info.json");
     if dropbox_info.exists() {
         if let Ok(content) = std::fs::read_to_string(&dropbox_info) {
             if let Ok(json) = serde_json::from_str::<Value>(&content) {
-                if let Some(path) = json["personal"]["path"].as_str()
-                    .or_else(|| json["business"]["path"].as_str()) {
+                if let Some(path) = json["personal"]["path"]
+                    .as_str()
+                    .or_else(|| json["business"]["path"].as_str())
+                {
                     let p = PathBuf::from(path);
                     if p.exists() {
                         folders.push(serde_json::json!({
@@ -541,26 +582,32 @@ pub fn run_system_doctor(
         requires_pdfa,
     );
 
-    let checks: Vec<Value> = report.checks.iter().map(|c| {
-        let status = match c.status {
-            doctor::ToolStatus::Available => "available",
-            doctor::ToolStatus::Missing   => "missing",
-            doctor::ToolStatus::Unknown   => "unknown",
-        };
-        let hint = c.install_hint.as_ref().map(|h| serde_json::json!({
-            "macos":   h.macos,
-            "linux":   h.linux,
-            "windows": h.windows,
-        }));
-        serde_json::json!({
-            "name":         c.name,
-            "status":       status,
-            "version":      c.version,
-            "description":  c.description,
-            "critical":     c.critical,
-            "install_hint": hint,
+    let checks: Vec<Value> = report
+        .checks
+        .iter()
+        .map(|c| {
+            let status = match c.status {
+                doctor::ToolStatus::Available => "available",
+                doctor::ToolStatus::Missing => "missing",
+                doctor::ToolStatus::Unknown => "unknown",
+            };
+            let hint = c.install_hint.as_ref().map(|h| {
+                serde_json::json!({
+                    "macos":   h.macos,
+                    "linux":   h.linux,
+                    "windows": h.windows,
+                })
+            });
+            serde_json::json!({
+                "name":         c.name,
+                "status":       status,
+                "version":      c.version,
+                "description":  c.description,
+                "critical":     c.critical,
+                "install_hint": hint,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(serde_json::json!({
         "checks":               checks,
@@ -585,12 +632,10 @@ pub fn check_profile_lock(project_path: String) -> Result<Value, String> {
                 "lock":   lock,
             }))
         }
-        LockStatus::Unlocked => {
-            Ok(serde_json::json!({
-                "locked": false,
-                "lock":   null,
-            }))
-        }
+        LockStatus::Unlocked => Ok(serde_json::json!({
+            "locked": false,
+            "lock":   null,
+        })),
     }
 }
 
@@ -623,22 +668,25 @@ pub fn create_profile_lock(
     };
 
     let status_str = match profile.status {
-        texis_core::profile::ProfileStatus::Draft        => "draft",
-        texis_core::profile::ProfileStatus::Reviewed     => "reviewed",
-        texis_core::profile::ProfileStatus::Verified     => "verified",
+        texis_core::profile::ProfileStatus::Draft => "draft",
+        texis_core::profile::ProfileStatus::Reviewed => "reviewed",
+        texis_core::profile::ProfileStatus::Verified => "verified",
         texis_core::profile::ProfileStatus::Experimental => "experimental",
-        texis_core::profile::ProfileStatus::Stale        => "stale",
-        texis_core::profile::ProfileStatus::Deprecated   => "deprecated",
+        texis_core::profile::ProfileStatus::Stale => "stale",
+        texis_core::profile::ProfileStatus::Deprecated => "deprecated",
     };
 
     let lock = ProfileLock {
-        profile_id:              profile_id.clone(),
-        profile_version:         profile.version.clone().unwrap_or_else(|| "0.1.0".to_string()),
-        profile_status_at_lock:  status_str.to_string(),
-        source:                  "TeXisStudio-Profiles".to_string(),
+        profile_id: profile_id.clone(),
+        profile_version: profile
+            .version
+            .clone()
+            .unwrap_or_else(|| "0.1.0".to_string()),
+        profile_status_at_lock: status_str.to_string(),
+        source: "TeXisStudio-Profiles".to_string(),
         sha256,
-        locked_at:               chrono::Utc::now().to_rfc3339(),
-        texis_core_version:      env!("CARGO_PKG_VERSION").to_string(),
+        locked_at: chrono::Utc::now().to_rfc3339(),
+        texis_core_version: env!("CARGO_PKG_VERSION").to_string(),
     };
 
     lock.save(&project_dir).map_err(|e| e.to_string())?;

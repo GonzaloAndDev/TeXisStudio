@@ -66,7 +66,9 @@ pub struct OpenAiProvider {
 
 impl OpenAiProvider {
     pub fn new(api_key: impl Into<String>) -> Self {
-        Self { api_key: api_key.into() }
+        Self {
+            api_key: api_key.into(),
+        }
     }
 
     pub async fn send(&self, request: &AiRequest) -> Result<AiResponse, AiProviderError> {
@@ -124,7 +126,10 @@ impl OpenAiProvider {
             if let Ok(oai_err) = serde_json::from_str::<OaiError>(&err_text) {
                 return Err(AiProviderError::ProviderError(oai_err.error.message));
             }
-            return Err(AiProviderError::ProviderError(format!("HTTP {}: {}", status, err_text)));
+            return Err(AiProviderError::ProviderError(format!(
+                "HTTP {}: {}",
+                status, err_text
+            )));
         }
 
         let oai_resp: OaiResponse = resp
@@ -139,8 +144,7 @@ impl OpenAiProvider {
             .unwrap_or_default();
 
         // Validar texto antes de retornar
-        AiSafetyPolicy::validate_response_text(&text)
-            .map_err(|e| AiProviderError::SafetyRejection(e))?;
+        AiSafetyPolicy::validate_response_text(&text).map_err(AiProviderError::SafetyRejection)?;
 
         let usage = oai_resp.usage.map(|u| AiUsage {
             prompt_tokens: u.prompt_tokens,

@@ -20,10 +20,12 @@ impl DiagnosticsEngine {
 
         // Deduplicar: mismo código + mismo archivo + misma línea
         diagnostics.sort_by(|a, b| {
-            a.code.cmp(&b.code)
-                .then(a.location.as_ref().and_then(|l| l.line).cmp(
-                    &b.location.as_ref().and_then(|l| l.line),
-                ))
+            a.code.cmp(&b.code).then(
+                a.location
+                    .as_ref()
+                    .and_then(|l| l.line)
+                    .cmp(&b.location.as_ref().and_then(|l| l.line)),
+            )
         });
         diagnostics.dedup_by(|a, b| {
             a.code == b.code
@@ -365,6 +367,7 @@ lazy_static::lazy_static! {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::model::DiagnosticSeverity;
 
     #[test]
     fn parses_file_not_found() {
@@ -387,7 +390,10 @@ mod tests {
     fn parses_undefined_citation_as_warning() {
         let log = "LaTeX Warning: Citation `smith2024' on page 5 undefined";
         let diags = DiagnosticsEngine::parse_latex_log(log, Path::new("/project"));
-        let d = diags.iter().find(|d| d.code == "W_UNDEFINED_CITATION").unwrap();
+        let d = diags
+            .iter()
+            .find(|d| d.code == "W_UNDEFINED_CITATION")
+            .unwrap();
         assert_eq!(d.severity, DiagnosticSeverity::Warning);
         assert!(!d.is_blocking);
         assert!(d.message.contains("smith2024"));
@@ -440,15 +446,22 @@ mod tests {
     fn biber_key_not_found_is_warning() {
         let log = "WARN - I didn't find a database entry for 'smith2024'";
         let diags = DiagnosticsEngine::parse_biber_log(log, Path::new("/project"));
-        let d = diags.iter().find(|d| d.code == "W_BIB_KEY_NOT_FOUND").unwrap();
+        let d = diags
+            .iter()
+            .find(|d| d.code == "W_BIB_KEY_NOT_FOUND")
+            .unwrap();
         assert_eq!(d.severity, DiagnosticSeverity::Warning);
     }
 
     #[test]
     fn clean_log_produces_no_diagnostics() {
-        let log = "Output written on main.pdf (42 pages, 123456 bytes).\nTranscript written on main.log.";
+        let log =
+            "Output written on main.pdf (42 pages, 123456 bytes).\nTranscript written on main.log.";
         let diags = DiagnosticsEngine::parse_latex_log(log, Path::new("/project"));
         let blocking: Vec<_> = diags.iter().filter(|d| d.is_blocking).collect();
-        assert!(blocking.is_empty(), "Un log limpio no debe tener errores bloqueantes");
+        assert!(
+            blocking.is_empty(),
+            "Un log limpio no debe tener errores bloqueantes"
+        );
     }
 }

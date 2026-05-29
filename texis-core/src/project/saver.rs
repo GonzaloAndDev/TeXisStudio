@@ -66,11 +66,19 @@ mod tests {
         let path = dir.path().join("tesis.project.yaml");
         let saver = ProjectSaver;
 
-        saver.save_to_file(&dummy_model("Primera versión"), &path).unwrap();
+        saver
+            .save_to_file(&dummy_model("Primera versión"), &path)
+            .unwrap();
 
         assert!(path.exists(), "El archivo final debe existir");
-        assert!(!path.with_extension("yaml.tmp").exists(), "No debe quedar .tmp");
-        assert!(!path.with_extension("yaml.bak").exists(), "En primer guardado no hay .bak");
+        assert!(
+            !path.with_extension("yaml.tmp").exists(),
+            "No debe quedar .tmp"
+        );
+        assert!(
+            !path.with_extension("yaml.bak").exists(),
+            "En primer guardado no hay .bak"
+        );
     }
 
     #[test]
@@ -79,12 +87,22 @@ mod tests {
         let path = dir.path().join("tesis.project.yaml");
         let saver = ProjectSaver;
 
-        saver.save_to_file(&dummy_model("Primera versión"), &path).unwrap();
-        saver.save_to_file(&dummy_model("Segunda versión"), &path).unwrap();
+        saver
+            .save_to_file(&dummy_model("Primera versión"), &path)
+            .unwrap();
+        saver
+            .save_to_file(&dummy_model("Segunda versión"), &path)
+            .unwrap();
 
         assert!(path.exists(), "El archivo final debe existir");
-        assert!(path.with_extension("yaml.bak").exists(), "Debe existir .bak tras segundo guardado");
-        assert!(!path.with_extension("yaml.tmp").exists(), "No debe quedar .tmp");
+        assert!(
+            path.with_extension("yaml.bak").exists(),
+            "Debe existir .bak tras segundo guardado"
+        );
+        assert!(
+            !path.with_extension("yaml.tmp").exists(),
+            "No debe quedar .tmp"
+        );
 
         // El .yaml final debe tener el título de la segunda versión
         let loader = ProjectLoader;
@@ -92,7 +110,9 @@ mod tests {
         assert_eq!(model.metadata.title, "Segunda versión");
 
         // El .bak debe tener el título de la primera versión
-        let bak = loader.load_from_file(&path.with_extension("yaml.bak")).unwrap();
+        let bak = loader
+            .load_from_file(&path.with_extension("yaml.bak"))
+            .unwrap();
         assert_eq!(bak.metadata.title, "Primera versión");
     }
 
@@ -110,7 +130,9 @@ mod tests {
         let model = loader.load_from_file(&path).unwrap();
         assert_eq!(model.metadata.title, "v3");
 
-        let bak = loader.load_from_file(&path.with_extension("yaml.bak")).unwrap();
+        let bak = loader
+            .load_from_file(&path.with_extension("yaml.bak"))
+            .unwrap();
         assert_eq!(bak.metadata.title, "v2");
     }
 }

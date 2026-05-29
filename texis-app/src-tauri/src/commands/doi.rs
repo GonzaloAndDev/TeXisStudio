@@ -10,7 +10,8 @@ use std::time::Duration;
 
 const CROSSREF_BASE: &str = "https://api.crossref.org/works/";
 const USER_AGENT: &str = concat!(
-    "TeXisStudio/", env!("CARGO_PKG_VERSION"),
+    "TeXisStudio/",
+    env!("CARGO_PKG_VERSION"),
     " (https://github.com/GonzaloAndDev/TeXisStudio; mailto:gaelsd25@gmail.com)"
 );
 const TIMEOUT_SECS: u64 = 15;
@@ -89,19 +90,21 @@ fn to_ascii_alpha(c: char) -> Option<char> {
     match c {
         'a'..='z' => Some(c),
         'A'..='Z' => Some(c.to_ascii_lowercase()),
-        'á'|'à'|'â'|'ã'|'ä'|'å'|'Á'|'À'|'Â'|'Ã'|'Ä'|'Å' => Some('a'),
-        'é'|'è'|'ê'|'ë'|'É'|'È'|'Ê'|'Ë' => Some('e'),
-        'í'|'ì'|'î'|'ï'|'Í'|'Ì'|'Î'|'Ï' => Some('i'),
-        'ó'|'ò'|'ô'|'õ'|'ö'|'Ó'|'Ò'|'Ô'|'Õ'|'Ö' => Some('o'),
-        'ú'|'ù'|'û'|'ü'|'Ú'|'Ù'|'Û'|'Ü' => Some('u'),
-        'ý'|'ÿ'|'Ý' => Some('y'),
-        'ñ'|'Ñ' => Some('n'),
-        'ç'|'Ç' => Some('c'),
+        'á' | 'à' | 'â' | 'ã' | 'ä' | 'å' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' | 'Å' => {
+            Some('a')
+        }
+        'é' | 'è' | 'ê' | 'ë' | 'É' | 'È' | 'Ê' | 'Ë' => Some('e'),
+        'í' | 'ì' | 'î' | 'ï' | 'Í' | 'Ì' | 'Î' | 'Ï' => Some('i'),
+        'ó' | 'ò' | 'ô' | 'õ' | 'ö' | 'Ó' | 'Ò' | 'Ô' | 'Õ' | 'Ö' => Some('o'),
+        'ú' | 'ù' | 'û' | 'ü' | 'Ú' | 'Ù' | 'Û' | 'Ü' => Some('u'),
+        'ý' | 'ÿ' | 'Ý' => Some('y'),
+        'ñ' | 'Ñ' => Some('n'),
+        'ç' | 'Ç' => Some('c'),
         'ß' => Some('s'),
-        'æ'|'Æ' => Some('a'),
-        'ø'|'Ø' => Some('o'),
-        'ð'|'Ð' => Some('d'),
-        'þ'|'Þ' => Some('t'),
+        'æ' | 'Æ' => Some('a'),
+        'ø' | 'Ø' => Some('o'),
+        'ð' | 'Ð' => Some('d'),
+        'þ' | 'Þ' => Some('t'),
         _ => None,
     }
 }
@@ -142,9 +145,15 @@ fn sanitize_bibtex_value(s: &str) -> String {
     let mut balanced = String::with_capacity(stripped.len());
     for c in stripped.chars() {
         match c {
-            '{' => { depth += 1; balanced.push(c); }
+            '{' => {
+                depth += 1;
+                balanced.push(c);
+            }
             '}' => {
-                if depth > 0 { depth -= 1; balanced.push(c); }
+                if depth > 0 {
+                    depth -= 1;
+                    balanced.push(c);
+                }
                 // llave de cierre sin apertura → se descarta
             }
             c => balanced.push(c),
@@ -173,7 +182,7 @@ fn escape_latex_text(s: &str) -> String {
             '\\' => out.push_str("\\textbackslash{}"),
             '~' => out.push_str("\\textasciitilde{}"),
             '^' => out.push_str("\\textasciicircum{}"),
-            c   => out.push(c),
+            c => out.push(c),
         }
     }
     out
@@ -196,8 +205,16 @@ fn percent_encode_doi_path(doi: &str) -> String {
             let encoded = c.encode_utf8(&mut buf);
             for byte in encoded.bytes() {
                 out.push('%');
-                out.push(char::from_digit((byte >> 4) as u32, 16).unwrap_or('0').to_ascii_uppercase());
-                out.push(char::from_digit((byte & 0xF) as u32, 16).unwrap_or('0').to_ascii_uppercase());
+                out.push(
+                    char::from_digit((byte >> 4) as u32, 16)
+                        .unwrap_or('0')
+                        .to_ascii_uppercase(),
+                );
+                out.push(
+                    char::from_digit((byte & 0xF) as u32, 16)
+                        .unwrap_or('0')
+                        .to_ascii_uppercase(),
+                );
             }
         }
     }
@@ -208,25 +225,27 @@ fn percent_encode_doi_path(doi: &str) -> String {
 
 fn crossref_type_to_bibtex(work_type: &str) -> &'static str {
     match work_type {
-        "journal-article"       => "article",
-        "book"                  => "book",
-        "monograph"             => "book",
-        "edited-book"           => "book",
-        "book-chapter"          => "incollection",
-        "proceedings-article"   => "inproceedings",
-        "proceedings"           => "proceedings",
-        "report"                => "techreport",
-        "report-component"      => "techreport",
-        "dataset"               => "misc",
-        "posted-content"        => "misc",  // preprints
-        "peer-review"           => "misc",
-        "dissertation"          => "phdthesis",
-        _                       => "misc",
+        "journal-article" => "article",
+        "book" => "book",
+        "monograph" => "book",
+        "edited-book" => "book",
+        "book-chapter" => "incollection",
+        "proceedings-article" => "inproceedings",
+        "proceedings" => "proceedings",
+        "report" => "techreport",
+        "report-component" => "techreport",
+        "dataset" => "misc",
+        "posted-content" => "misc", // preprints
+        "peer-review" => "misc",
+        "dissertation" => "phdthesis",
+        _ => "misc",
     }
 }
 
 fn extract_year(work: &CrossrefWork) -> Option<String> {
-    let date = work.published.as_ref()
+    let date = work
+        .published
+        .as_ref()
         .or(work.published_print.as_ref())
         .or(work.published_online.as_ref())?;
     let parts = date.date_parts.as_ref()?;
@@ -270,13 +289,20 @@ fn make_citation_key(work: &CrossrefWork) -> String {
 
     let slug = if family_slug.is_empty() {
         // Apellido sin representación ASCII (p.ej. 李) → usar primeros 8 chars del DOI
-        let doi_slug: String = work.doi.as_deref().unwrap_or("anon")
+        let doi_slug: String = work
+            .doi
+            .as_deref()
+            .unwrap_or("anon")
             .chars()
             .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
             .take(8)
             .collect::<String>()
             .to_lowercase();
-        if doi_slug.is_empty() { "anon".to_string() } else { doi_slug }
+        if doi_slug.is_empty() {
+            "anon".to_string()
+        } else {
+            doi_slug
+        }
     } else {
         family_slug
     };
@@ -293,9 +319,20 @@ fn render_bibtex(entry_type: &str, key: &str, fields: &[(&str, String, bool)]) -
     let max_name = fields.iter().map(|(k, _, _)| k.len()).max().unwrap_or(0);
     for (name, value, is_text) in fields {
         let html_clean = sanitize_bibtex_value(value);
-        let clean = if *is_text { escape_latex_text(&html_clean) } else { html_clean };
-        if clean.is_empty() { continue; }
-        out.push_str(&format!("  {:<width$} = {{{}}},\n", name, clean, width = max_name));
+        let clean = if *is_text {
+            escape_latex_text(&html_clean)
+        } else {
+            html_clean
+        };
+        if clean.is_empty() {
+            continue;
+        }
+        out.push_str(&format!(
+            "  {:<width$} = {{{}}},\n",
+            name,
+            clean,
+            width = max_name
+        ));
     }
     out.push('}');
     out
@@ -306,15 +343,31 @@ fn work_to_bibtex(work: &CrossrefWork) -> String {
     let entry_type = crossref_type_to_bibtex(work_type);
     let key = make_citation_key(work);
 
-    let title = work.title.as_deref().and_then(|t| t.first().cloned()).unwrap_or_default();
+    let title = work
+        .title
+        .as_deref()
+        .and_then(|t| t.first().cloned())
+        .unwrap_or_default();
     // Incluir subtítulo si existe
     let full_title = if let Some(subs) = work.subtitle.as_deref() {
         if let Some(sub) = subs.first() {
-            if !sub.is_empty() { format!("{}: {}", title, sub) } else { title }
-        } else { title }
-    } else { title };
+            if !sub.is_empty() {
+                format!("{}: {}", title, sub)
+            } else {
+                title
+            }
+        } else {
+            title
+        }
+    } else {
+        title
+    };
 
-    let authors = work.author.as_deref().map(format_authors).unwrap_or_default();
+    let authors = work
+        .author
+        .as_deref()
+        .map(format_authors)
+        .unwrap_or_default();
     let year = extract_year(work).unwrap_or_default();
     let doi = work.doi.as_deref().unwrap_or_default().to_string();
     let url = work.url.as_deref().unwrap_or_default().to_string();
@@ -324,79 +377,175 @@ fn work_to_bibtex(work: &CrossrefWork) -> String {
     // es_texto=false → HTML clean solo (doi, url, issn, isbn, year, volume, pages)
     let fields: Vec<(&str, String, bool)> = match entry_type {
         "article" => vec![
-            ("author",  authors,                                                                                                                   true),
-            ("title",   full_title,                                                                                                                true),
-            ("journal", work.container_title.as_deref().and_then(|t| t.first().cloned()).unwrap_or_default(),                                     true),
-            ("year",    year,                                                                                                                      false),
-            ("volume",  work.volume.as_deref().unwrap_or_default().to_string(),                                                                    false),
-            ("number",  work.issue.as_deref().unwrap_or_default().to_string(),                                                                     false),
-            ("pages",   work.page.as_deref().unwrap_or_default().to_string(),                                                                      false),
-            ("issn",    work.issn.as_deref().and_then(|v| v.first().cloned()).unwrap_or_default(),                                                 false),
-            ("doi",     doi,                                                                                                                       false),
-            ("url",     url,                                                                                                                       false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "journal",
+                work.container_title
+                    .as_deref()
+                    .and_then(|t| t.first().cloned())
+                    .unwrap_or_default(),
+                true,
+            ),
+            ("year", year, false),
+            (
+                "volume",
+                work.volume.as_deref().unwrap_or_default().to_string(),
+                false,
+            ),
+            (
+                "number",
+                work.issue.as_deref().unwrap_or_default().to_string(),
+                false,
+            ),
+            (
+                "pages",
+                work.page.as_deref().unwrap_or_default().to_string(),
+                false,
+            ),
+            (
+                "issn",
+                work.issn
+                    .as_deref()
+                    .and_then(|v| v.first().cloned())
+                    .unwrap_or_default(),
+                false,
+            ),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         "book" => vec![
-            ("author",    authors,                                                                                                                  true),
-            ("title",     full_title,                                                                                                               true),
-            ("publisher", work.publisher.as_deref().unwrap_or_default().to_string(),                                                               true),
-            ("year",      year,                                                                                                                     false),
-            ("edition",   work.edition_number.as_deref().unwrap_or_default().to_string(),                                                          false),
-            ("isbn",      work.isbn.as_deref().and_then(|v| v.first().cloned()).unwrap_or_default(),                                               false),
-            ("doi",       doi,                                                                                                                      false),
-            ("url",       url,                                                                                                                      false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "publisher",
+                work.publisher.as_deref().unwrap_or_default().to_string(),
+                true,
+            ),
+            ("year", year, false),
+            (
+                "edition",
+                work.edition_number
+                    .as_deref()
+                    .unwrap_or_default()
+                    .to_string(),
+                false,
+            ),
+            (
+                "isbn",
+                work.isbn
+                    .as_deref()
+                    .and_then(|v| v.first().cloned())
+                    .unwrap_or_default(),
+                false,
+            ),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         "incollection" => vec![
-            ("author",    authors,                                                                                                                  true),
-            ("title",     full_title,                                                                                                               true),
-            ("booktitle", work.container_title.as_deref().and_then(|t| t.first().cloned()).unwrap_or_default(),                                    true),
-            ("publisher", work.publisher.as_deref().unwrap_or_default().to_string(),                                                               true),
-            ("year",      year,                                                                                                                     false),
-            ("pages",     work.page.as_deref().unwrap_or_default().to_string(),                                                                    false),
-            ("doi",       doi,                                                                                                                      false),
-            ("url",       url,                                                                                                                      false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "booktitle",
+                work.container_title
+                    .as_deref()
+                    .and_then(|t| t.first().cloned())
+                    .unwrap_or_default(),
+                true,
+            ),
+            (
+                "publisher",
+                work.publisher.as_deref().unwrap_or_default().to_string(),
+                true,
+            ),
+            ("year", year, false),
+            (
+                "pages",
+                work.page.as_deref().unwrap_or_default().to_string(),
+                false,
+            ),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         "inproceedings" => vec![
-            ("author",    authors,                                                                                                                  true),
-            ("title",     full_title,                                                                                                               true),
-            ("booktitle", work.event.as_ref().and_then(|e| e.name.clone())
-                .or_else(|| work.container_title.as_deref().and_then(|t| t.first().cloned()))
-                .unwrap_or_default(),                                                                                                               true),
-            ("year",      year,                                                                                                                     false),
-            ("pages",     work.page.as_deref().unwrap_or_default().to_string(),                                                                    false),
-            ("publisher", work.publisher.as_deref().unwrap_or_default().to_string(),                                                               true),
-            ("doi",       doi,                                                                                                                      false),
-            ("url",       url,                                                                                                                      false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "booktitle",
+                work.event
+                    .as_ref()
+                    .and_then(|e| e.name.clone())
+                    .or_else(|| {
+                        work.container_title
+                            .as_deref()
+                            .and_then(|t| t.first().cloned())
+                    })
+                    .unwrap_or_default(),
+                true,
+            ),
+            ("year", year, false),
+            (
+                "pages",
+                work.page.as_deref().unwrap_or_default().to_string(),
+                false,
+            ),
+            (
+                "publisher",
+                work.publisher.as_deref().unwrap_or_default().to_string(),
+                true,
+            ),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         "techreport" => vec![
-            ("author",      authors,                                                                                                                true),
-            ("title",       full_title,                                                                                                             true),
-            ("institution", work.institution.as_deref()
-                .and_then(|i| i.first()).and_then(|i| i.name.clone())
-                .or_else(|| work.publisher.clone())
-                .unwrap_or_default(),                                                                                                               true),
-            ("year",        year,                                                                                                                   false),
-            ("number",      work.report_number.as_deref().unwrap_or_default().to_string(),                                                         false),
-            ("doi",         doi,                                                                                                                    false),
-            ("url",         url,                                                                                                                    false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "institution",
+                work.institution
+                    .as_deref()
+                    .and_then(|i| i.first())
+                    .and_then(|i| i.name.clone())
+                    .or_else(|| work.publisher.clone())
+                    .unwrap_or_default(),
+                true,
+            ),
+            ("year", year, false),
+            (
+                "number",
+                work.report_number
+                    .as_deref()
+                    .unwrap_or_default()
+                    .to_string(),
+                false,
+            ),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         "phdthesis" => vec![
-            ("author", authors,                                                                                                                     true),
-            ("title",  full_title,                                                                                                                  true),
-            ("school", work.institution.as_deref()
-                .and_then(|i| i.first()).and_then(|i| i.name.clone())
-                .or_else(|| work.publisher.clone())
-                .unwrap_or_default(),                                                                                                               true),
-            ("year",   year,                                                                                                                        false),
-            ("doi",    doi,                                                                                                                         false),
-            ("url",    url,                                                                                                                         false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            (
+                "school",
+                work.institution
+                    .as_deref()
+                    .and_then(|i| i.first())
+                    .and_then(|i| i.name.clone())
+                    .or_else(|| work.publisher.clone())
+                    .unwrap_or_default(),
+                true,
+            ),
+            ("year", year, false),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
         _ => vec![
-            ("author", authors,                                                                                                                     true),
-            ("title",  full_title,                                                                                                                  true),
-            ("year",   year,                                                                                                                        false),
-            ("note",   format!("Tipo original: {}", work_type),                                                                                    true),
-            ("doi",    doi,                                                                                                                         false),
-            ("url",    url,                                                                                                                         false),
+            ("author", authors, true),
+            ("title", full_title, true),
+            ("year", year, false),
+            ("note", format!("Tipo original: {}", work_type), true),
+            ("doi", doi, false),
+            ("url", url, false),
         ],
     };
 
@@ -416,7 +565,11 @@ fn normalize_doi(raw: &str) -> String {
 }
 
 async fn fetch_bibtex(doi_normalized: &str) -> Result<String, String> {
-    let url = format!("{}{}", CROSSREF_BASE, percent_encode_doi_path(doi_normalized));
+    let url = format!(
+        "{}{}",
+        CROSSREF_BASE,
+        percent_encode_doi_path(doi_normalized)
+    );
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(TIMEOUT_SECS))
@@ -435,7 +588,10 @@ async fn fetch_bibtex(doi_normalized: &str) -> Result<String, String> {
         return Err(format!("DOI no encontrado en Crossref: {doi_normalized}"));
     }
     if !resp.status().is_success() {
-        return Err(format!("Crossref respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "Crossref respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let crossref: CrossrefResponse = resp
@@ -484,7 +640,11 @@ pub async fn import_dois_batch(dois: Vec<String>) -> Result<Vec<BatchDoiResult>,
         .into_iter()
         .filter_map(|d| {
             let n = normalize_doi(&d);
-            if n.is_empty() || !seen.insert(n.clone()) { None } else { Some(n) }
+            if n.is_empty() || !seen.insert(n.clone()) {
+                None
+            } else {
+                Some(n)
+            }
         })
         .collect();
 
@@ -502,7 +662,11 @@ pub async fn import_dois_batch(dois: Vec<String>) -> Result<Vec<BatchDoiResult>,
                     bib.lines().next().and_then(|line| {
                         let after_brace = line.find('{').map(|i| &line[i + 1..])?;
                         let key = after_brace.trim_end_matches(',').trim().to_string();
-                        if key.is_empty() { None } else { Some(key) }
+                        if key.is_empty() {
+                            None
+                        } else {
+                            Some(key)
+                        }
                     })
                 });
                 BatchDoiResult {
@@ -537,11 +701,12 @@ pub async fn import_dois_batch(dois: Vec<String>) -> Result<Vec<BatchDoiResult>,
 /// Retorna texto con marcadores *cursiva* y **negrita** para rendering en UI.
 #[tauri::command]
 pub fn preview_bib_entry(bibtex: String, style: String) -> Result<String, String> {
-    use texis_core::bibliography::parser::BibParser;
     use texis_core::bibliography::formatter::format_entry;
+    use texis_core::bibliography::parser::BibParser;
 
     let entries = BibParser.parse_str(&bibtex);
-    let entry = entries.first()
+    let entry = entries
+        .first()
         .ok_or_else(|| "No se encontró ninguna entrada BibTeX válida.".to_string())?;
     Ok(format_entry(entry, &style))
 }
@@ -581,7 +746,9 @@ mod tests {
             }]),
             container_title: None,
             publisher: None,
-            published: Some(DateField { date_parts: Some(vec![vec![2024]]) }),
+            published: Some(DateField {
+                date_parts: Some(vec![vec![2024]]),
+            }),
             published_print: None,
             published_online: None,
             volume: None,
@@ -613,7 +780,9 @@ mod tests {
             }]),
             container_title: None,
             publisher: None,
-            published: Some(DateField { date_parts: Some(vec![vec![2023]]) }),
+            published: Some(DateField {
+                date_parts: Some(vec![vec![2023]]),
+            }),
             published_print: None,
             published_online: None,
             volume: None,
@@ -662,15 +831,13 @@ mod tests {
 // La capa anterior (fetch_bibtex / work_to_bibtex) se mantiene para compatibilidad
 // con la UI existente; esta capa nueva alimenta el BibliographyRegistry.
 
-use texis_core::bibliography::model::{
-    BibliographicRecord, PersonName, RecordType, provider,
-};
-use texis_core::bibliography::normalization::{
-    clean_title, generate_cite_key, map_crossref_type,
-    normalize_doi as norm_doi, normalize_isbn, parse_crossref_date_parts,
-};
 use chrono::Utc;
 use std::collections::HashSet;
+use texis_core::bibliography::model::{provider, BibliographicRecord, PersonName, RecordType};
+use texis_core::bibliography::normalization::{
+    clean_title, generate_cite_key, map_crossref_type, normalize_doi as norm_doi, normalize_isbn,
+    parse_crossref_date_parts,
+};
 
 fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRecord {
     let record_type = work
@@ -695,15 +862,9 @@ fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRec
         .and_then(|d| d.date_parts.as_deref())
         .and_then(|parts| parts.first())
         .and_then(|row| row.first())
-        .copied()
-        .map(|y| y as i32);
+        .copied();
 
-    let cite_key = generate_cite_key(
-        first_family,
-        year,
-        Some(doi_normalized),
-        &HashSet::new(),
-    );
+    let cite_key = generate_cite_key(first_family, year, Some(doi_normalized), &HashSet::new());
 
     let mut record = BibliographicRecord::new(cite_key, record_type);
     record.doi = Some(doi_normalized.to_string());
@@ -748,9 +909,7 @@ fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRec
                 } else if let Some(name) = &a.name {
                     PersonName::new_organization(name)
                 } else {
-                    PersonName::new_organization(
-                        a.family.as_deref().unwrap_or(""),
-                    )
+                    PersonName::new_organization(a.family.as_deref().unwrap_or(""))
                 }
             })
             .collect();
@@ -765,8 +924,8 @@ fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRec
     match &record.record_type {
         RecordType::Article => record.journal = container,
         RecordType::BookChapter | RecordType::ConferencePaper => {
-            record.booktitle = container
-                .or_else(|| work.event.as_ref().and_then(|e| e.name.clone()));
+            record.booktitle =
+                container.or_else(|| work.event.as_ref().and_then(|e| e.name.clone()));
         }
         RecordType::Thesis | RecordType::TechReport => {
             record.institution = work
@@ -791,11 +950,7 @@ fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRec
         .as_deref()
         .and_then(|v| v.first())
         .and_then(|s| normalize_isbn(s));
-    record.issn = work
-        .issn
-        .as_deref()
-        .and_then(|v| v.first())
-        .cloned();
+    record.issn = work.issn.as_deref().and_then(|v| v.first()).cloned();
 
     // Provenance
     record
@@ -809,7 +964,11 @@ fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRec
 /// Fetch interno que retorna BibliographicRecord (motor unificado).
 /// Conserva también el raw payload de Crossref para trazabilidad.
 pub async fn fetch_record(doi_normalized: &str) -> Result<BibliographicRecord, String> {
-    let url = format!("{}{}", CROSSREF_BASE, percent_encode_doi_path(doi_normalized));
+    let url = format!(
+        "{}{}",
+        CROSSREF_BASE,
+        percent_encode_doi_path(doi_normalized)
+    );
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(TIMEOUT_SECS))
@@ -851,11 +1010,9 @@ pub async fn import_doi_as_record(doi: String) -> Result<serde_json::Value, Stri
     if doi.trim().is_empty() {
         return Err("El DOI no puede estar vacío.".to_string());
     }
-    let normalized = norm_doi(doi.trim())
-        .ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
+    let normalized = norm_doi(doi.trim()).ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
     let record = fetch_record(&normalized).await?;
-    serde_json::to_value(&record)
-        .map_err(|e| format!("Error al serializar registro: {e}"))
+    serde_json::to_value(&record).map_err(|e| format!("Error al serializar registro: {e}"))
 }
 
 /// Búsqueda por título en Crossref.
@@ -913,7 +1070,10 @@ pub async fn search_by_title(query: &str, limit: u8) -> Result<Vec<Bibliographic
 
 /// Busca por título en Crossref y retorna resultados serializados.
 #[tauri::command]
-pub async fn search_crossref(query: String, limit: Option<u8>) -> Result<Vec<serde_json::Value>, String> {
+pub async fn search_crossref(
+    query: String,
+    limit: Option<u8>,
+) -> Result<Vec<serde_json::Value>, String> {
     if query.trim().is_empty() {
         return Err("La consulta no puede estar vacía.".to_string());
     }

@@ -59,7 +59,9 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
             severity: IssueSeverity::Error,
             code: "E_BIB_DUPLICATE_KEY".to_string(),
             message: format!("Citation key duplicada en references.bib: {}", dup),
-            suggestion: Some("Cada entrada en el .bib debe tener una citation key única.".to_string()),
+            suggestion: Some(
+                "Cada entrada en el .bib debe tener una citation key única.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -72,7 +74,9 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
                 "Las entradas '{}' y '{}' tienen el mismo DOI — posible duplicado.",
                 key1, key2
             ),
-            suggestion: Some("Verifica si son la misma fuente citada dos veces con distinta key.".to_string()),
+            suggestion: Some(
+                "Verifica si son la misma fuente citada dos veces con distinta key.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -169,27 +173,47 @@ pub fn validate(model: &ProjectModel, project_dir: &Path) -> ValidationReport {
 /// Los elementos con `|` son OR — basta con que uno esté presente.
 fn required_fields_for(entry_type: &str) -> &'static [&'static str] {
     match entry_type {
-        "article"                        => &["author", "title", "journal", "year"],
-        "book"                           => &["author|editor", "title", "publisher", "year"],
-        "booklet"                        => &["title"],
-        "inbook"                         => &["author|editor", "title", "chapter|pages", "publisher", "year"],
-        "incollection"                   => &["author", "title", "booktitle", "publisher", "year"],
-        "inproceedings" | "conference"   => &["author", "title", "booktitle", "year"],
-        "manual"                         => &["title"],
-        "mastersthesis"                  => &["author", "title", "school", "year"],
-        "phdthesis"                      => &["author", "title", "school", "year"],
-        "proceedings"                    => &["title", "year"],
-        "techreport"                     => &["author", "title", "institution", "year"],
-        "unpublished"                    => &["author", "title", "note"],
+        "article" => &["author", "title", "journal", "year"],
+        "book" => &["author|editor", "title", "publisher", "year"],
+        "booklet" => &["title"],
+        "inbook" => &[
+            "author|editor",
+            "title",
+            "chapter|pages",
+            "publisher",
+            "year",
+        ],
+        "incollection" => &["author", "title", "booktitle", "publisher", "year"],
+        "inproceedings" | "conference" => &["author", "title", "booktitle", "year"],
+        "manual" => &["title"],
+        "mastersthesis" => &["author", "title", "school", "year"],
+        "phdthesis" => &["author", "title", "school", "year"],
+        "proceedings" => &["title", "year"],
+        "techreport" => &["author", "title", "institution", "year"],
+        "unpublished" => &["author", "title", "note"],
         // misc / online / software / dataset: no required fields in BibTeX spec
         _ => &[],
     }
 }
 
 const KNOWN_ENTRY_TYPES: &[&str] = &[
-    "article", "book", "booklet", "conference", "inbook", "incollection",
-    "inproceedings", "manual", "mastersthesis", "misc", "phdthesis",
-    "proceedings", "techreport", "unpublished", "online", "software", "dataset",
+    "article",
+    "book",
+    "booklet",
+    "conference",
+    "inbook",
+    "incollection",
+    "inproceedings",
+    "manual",
+    "mastersthesis",
+    "misc",
+    "phdthesis",
+    "proceedings",
+    "techreport",
+    "unpublished",
+    "online",
+    "software",
+    "dataset",
 ];
 
 fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
@@ -217,7 +241,11 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
     for req in required_fields_for(&entry.entry_type) {
         let alternatives: Vec<&str> = req.split('|').collect();
         let present = alternatives.iter().any(|f| {
-            entry.fields.get(*f).map(|v| !v.trim().is_empty()).unwrap_or(false)
+            entry
+                .fields
+                .get(*f)
+                .map(|v| !v.trim().is_empty())
+                .unwrap_or(false)
         });
         if !present {
             let field_desc = alternatives.join(" o ");
@@ -241,7 +269,10 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
     // Formato del año: debe ser número de 4 dígitos entre 1000 y 2100
     let year = entry.year();
     if !year.is_empty() {
-        let valid = year.parse::<u32>().map(|y| (1000..=2100).contains(&y)).unwrap_or(false);
+        let valid = year
+            .parse::<u32>()
+            .map(|y| (1000..=2100).contains(&y))
+            .unwrap_or(false);
         if !valid {
             issues.push(ValidationIssue {
                 severity: IssueSeverity::Warning,
@@ -259,18 +290,24 @@ fn validate_entry_fields(entry: &BibEntry) -> Vec<ValidationIssue> {
 
     // Los artículos sin DOI ni URL tienen menor trazabilidad (recomendación APA7 e IEEE)
     if entry.entry_type == "article" {
-        let has_doi = entry.fields.get("doi").map(|v| !v.trim().is_empty()).unwrap_or(false);
-        let has_url = entry.fields.get("url").map(|v| !v.trim().is_empty()).unwrap_or(false);
+        let has_doi = entry
+            .fields
+            .get("doi")
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false);
+        let has_url = entry
+            .fields
+            .get("url")
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false);
         if !has_doi && !has_url {
             issues.push(ValidationIssue {
                 severity: IssueSeverity::Warning,
                 code: "W_BIB_ARTICLE_NO_DOI".to_string(),
-                message: format!(
-                    "El artículo '{}' no tiene DOI ni URL.",
-                    entry.key
-                ),
+                message: format!("El artículo '{}' no tiene DOI ni URL.", entry.key),
                 suggestion: Some(
-                    "APA 7 e IEEE recomiendan incluir el DOI. Agrega: doi = {10.xxxx/...}".to_string(),
+                    "APA 7 e IEEE recomiendan incluir el DOI. Agrega: doi = {10.xxxx/...}"
+                        .to_string(),
                 ),
                 automated: Some(true),
                 ..Default::default()
@@ -288,9 +325,8 @@ mod tests {
     use super::*;
     use crate::project::model::{
         AcademicLevel, BibliographyBackend, CitationBlock, CitationType, CompilerKind,
-        ContentBlock, DocumentClassConfig, DocumentKind, InstitutionData,
-        LatexConfig, LatexEngine, ProjectMetadata, ProjectModel, ProjectSection,
-        SectionPlacement, StudentData,
+        ContentBlock, DocumentClassConfig, DocumentKind, InstitutionData, LatexConfig, LatexEngine,
+        ProjectMetadata, ProjectModel, ProjectSection, SectionPlacement, StudentData,
     };
     use std::collections::HashMap;
     use tempfile::TempDir;
@@ -302,25 +338,40 @@ mod tests {
             created_at: "".to_string(),
             updated_at: "".to_string(),
             metadata: ProjectMetadata {
-                title: "T".to_string(), subtitle: None,
+                title: "T".to_string(),
+                subtitle: None,
                 document_kind: DocumentKind::Tesis,
                 academic_level: AcademicLevel::Licenciatura,
                 language: "es".to_string(),
-                city: "x".to_string(), year: 2026, keywords: vec![],
+                city: "x".to_string(),
+                year: 2026,
+                keywords: vec![],
                 funding: None,
             },
             institution: InstitutionData {
-                name: "U".to_string(), faculty: None, department: None,
-                logo_path: None, country: "MX".to_string(),
+                name: "U".to_string(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".to_string(),
             },
             student: StudentData {
-                full_name: "A".to_string(), student_id: None, email: None,
-                advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
-                committee: vec![], orcid: None,
+                full_name: "A".to_string(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                co_advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                committee: vec![],
+                orcid: None,
             },
             profile_id: "generic.thesis".to_string(),
             latex_config: LatexConfig {
-                document_class: DocumentClassConfig { name: "book".to_string(), options: vec![] },
+                document_class: DocumentClassConfig {
+                    name: "book".to_string(),
+                    options: vec![],
+                },
                 engine: LatexEngine::Xelatex,
                 compiler: CompilerKind::Latexmk,
                 bibliography_backend: BibliographyBackend::Biber,
@@ -335,14 +386,19 @@ mod tests {
     }
 
     fn section_with_citations(id: &str, keys: &[&str]) -> ProjectSection {
-        let blocks = keys.iter().map(|k| {
-            ContentBlock::Citation(CitationBlock {
-                id: k.to_string(),
-                citation_key: k.to_string(),
-                citation_type: CitationType::Parenthetical,
-                page: None, prefix: None, suffix: None,
+        let blocks = keys
+            .iter()
+            .map(|k| {
+                ContentBlock::Citation(CitationBlock {
+                    id: k.to_string(),
+                    citation_key: k.to_string(),
+                    citation_type: CitationType::Parenthetical,
+                    page: None,
+                    prefix: None,
+                    suffix: None,
+                })
             })
-        }).collect();
+            .collect();
         ProjectSection {
             id: id.to_string(),
             element_id: id.to_string(),
@@ -386,18 +442,24 @@ mod tests {
     #[test]
     fn article_sin_journal_produce_error() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @article{bad2020,
   author = {Perez, Luis},
   title  = {Sin revista},
   year   = {2020},
   doi    = {10.1000/x},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
-            report.issues.iter().any(|i| i.code == "E_BIB_MISSING_FIELD" && i.message.contains("bad2020")),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_BIB_MISSING_FIELD" && i.message.contains("bad2020")),
             "debe detectar campo 'journal' ausente en @article"
         );
     }
@@ -405,7 +467,9 @@ mod tests {
     #[test]
     fn article_completo_no_produce_error_de_campos() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @article{good2020,
   author  = {Lopez, Ana},
   title   = {Un estudio},
@@ -413,11 +477,15 @@ mod tests {
   year    = {2020},
   doi     = {10.1000/x},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
-            !report.issues.iter().any(|i| i.code == "E_BIB_MISSING_FIELD"),
+            !report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_BIB_MISSING_FIELD"),
             "artículo completo no debe emitir error de campo"
         );
     }
@@ -425,18 +493,24 @@ mod tests {
     #[test]
     fn book_con_editor_en_lugar_de_author_es_valido() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @book{handbook2021,
   editor    = {Garcia, Maria},
   title     = {Handbook},
   publisher = {Editorial},
   year      = {2021},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
-            !report.issues.iter().any(|i| i.code == "E_BIB_MISSING_FIELD"),
+            !report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_BIB_MISSING_FIELD"),
             "@book con editor (sin author) debe ser válido"
         );
     }
@@ -444,13 +518,16 @@ mod tests {
     #[test]
     fn year_invalido_produce_warning() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @misc{web,
   author = {Alguien},
   title  = {Algo},
   year   = {s.f.},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
@@ -462,18 +539,24 @@ mod tests {
     #[test]
     fn article_sin_doi_produce_warning() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @article{nodoi2022,
   author  = {Ramos, Pedro},
   title   = {Sin DOI},
   journal = {Revista Y},
   year    = {2022},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
-            report.issues.iter().any(|i| i.code == "W_BIB_ARTICLE_NO_DOI"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "W_BIB_ARTICLE_NO_DOI"),
             "artículo sin DOI ni URL debe producir W_BIB_ARTICLE_NO_DOI"
         );
     }
@@ -481,7 +564,9 @@ mod tests {
     #[test]
     fn article_con_url_no_produce_warning_doi() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @article{withurl2022,
   author  = {Torres, Eva},
   title   = {Con URL},
@@ -489,11 +574,15 @@ mod tests {
   year    = {2022},
   url     = {https://example.com/paper},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
-            !report.issues.iter().any(|i| i.code == "W_BIB_ARTICLE_NO_DOI"),
+            !report
+                .issues
+                .iter()
+                .any(|i| i.code == "W_BIB_ARTICLE_NO_DOI"),
             "artículo con URL (sin DOI) no debe producir W_BIB_ARTICLE_NO_DOI"
         );
     }
@@ -501,13 +590,16 @@ mod tests {
     #[test]
     fn tipo_desconocido_produce_warning() {
         let tmp = TempDir::new().unwrap();
-        write_bib(&tmp, r#"
+        write_bib(
+            &tmp,
+            r#"
 @webpage{sitio2023,
   author = {Alguien},
   title  = {Una pagina},
   year   = {2023},
 }
-"#);
+"#,
+        );
         let model = make_model(vec![]);
         let report = validate(&model, tmp.path());
         assert!(
@@ -522,7 +614,10 @@ mod tests {
         write_bib(&tmp, BIB_SIMPLE);
         let model = make_model(vec![section_with_citations("intro", &["smith2020"])]);
         let report = validate(&model, tmp.path());
-        assert!(!report.has_errors(), "no debe haber errores para cita válida");
+        assert!(
+            !report.has_errors(),
+            "no debe haber errores para cita válida"
+        );
     }
 
     #[test]
@@ -532,7 +627,10 @@ mod tests {
         let model = make_model(vec![section_with_citations("intro", &["nosuchkey2099"])]);
         let report = validate(&model, tmp.path());
         assert!(
-            report.issues.iter().any(|i| i.code == "E_CITATION_KEY_NOT_IN_BIB"),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_CITATION_KEY_NOT_IN_BIB"),
             "debe detectar cita inexistente"
         );
     }
@@ -545,7 +643,10 @@ mod tests {
         let model = make_model(vec![section_with_citations("intro", &["smith2020"])]);
         let report = validate(&model, tmp.path());
         assert!(
-            report.issues.iter().any(|i| i.code == "W_UNUSED_REFERENCE" && i.message.contains("jones2019")),
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "W_UNUSED_REFERENCE" && i.message.contains("jones2019")),
             "debe advertir sobre referencia no citada"
         );
     }
@@ -557,7 +658,10 @@ mod tests {
         let model = make_model(vec![section_with_citations("intro", &["smith2020"])]);
         let report = validate(&model, tmp.path());
         // El validador de bibliografía no emite nada — el validador técnico ya emite W_MISSING_BIB
-        assert!(report.issues.is_empty(), "sin .bib no debe emitir issues de bib-cross");
+        assert!(
+            report.issues.is_empty(),
+            "sin .bib no debe emitir issues de bib-cross"
+        );
     }
 
     #[test]

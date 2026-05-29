@@ -48,14 +48,20 @@ fn main() {
     }
 
     if !profiles_root.exists() {
-        eprintln!("ERROR: --profiles-root '{}' no existe.", profiles_root.display());
+        eprintln!(
+            "ERROR: --profiles-root '{}' no existe.",
+            profiles_root.display()
+        );
         std::process::exit(2);
     }
 
     // Cargar IDs del catalog.json si se provee
     let catalog_ids: Option<Vec<String>> = catalog_path.as_ref().and_then(|p| {
         if !p.exists() {
-            eprintln!("WARN: --catalog '{}' no existe. Se omite validación de catálogo.", p.display());
+            eprintln!(
+                "WARN: --catalog '{}' no existe. Se omite validación de catálogo.",
+                p.display()
+            );
             return None;
         }
         let text = std::fs::read_to_string(p).ok()?;
@@ -126,21 +132,35 @@ fn main() {
         if report.issues.is_empty() {
             println!("  ✓  {}  ({})", report.profile_id, profile_display);
         } else {
-            let errs = report.issues.iter().filter(|i| i.severity == texis_core::profile::policy::PolicySeverity::Error).count();
-            let warns = report.issues.iter().filter(|i| i.severity == texis_core::profile::policy::PolicySeverity::Warning).count();
+            let errs = report
+                .issues
+                .iter()
+                .filter(|i| i.severity == texis_core::profile::policy::PolicySeverity::Error)
+                .count();
+            let warns = report
+                .issues
+                .iter()
+                .filter(|i| i.severity == texis_core::profile::policy::PolicySeverity::Warning)
+                .count();
 
             if errs > 0 {
-                println!("  ✗  {}  ({})  → {} error(s), {} warning(s)", report.profile_id, profile_display, errs, warns);
+                println!(
+                    "  ✗  {}  ({})  → {} error(s), {} warning(s)",
+                    report.profile_id, profile_display, errs, warns
+                );
                 profiles_with_errors.push(report.profile_id.clone());
             } else {
-                println!("  ⚠  {}  ({})  → {} warning(s)", report.profile_id, profile_display, warns);
+                println!(
+                    "  ⚠  {}  ({})  → {} warning(s)",
+                    report.profile_id, profile_display, warns
+                );
             }
 
             for issue in &report.issues {
                 let prefix = match issue.severity {
-                    texis_core::profile::policy::PolicySeverity::Error   => "    [ERROR]  ",
+                    texis_core::profile::policy::PolicySeverity::Error => "    [ERROR]  ",
                     texis_core::profile::policy::PolicySeverity::Warning => "    [WARN]   ",
-                    texis_core::profile::policy::PolicySeverity::Info    => "    [INFO]   ",
+                    texis_core::profile::policy::PolicySeverity::Info => "    [INFO]   ",
                 };
                 println!("{}{}: {}", prefix, issue.code, issue.message);
             }
@@ -157,7 +177,10 @@ fn main() {
     );
 
     if total == 0 {
-        eprintln!("WARN: No se encontraron perfiles en '{}'. Verificar --profiles-root.", profiles_root.display());
+        eprintln!(
+            "WARN: No se encontraron perfiles en '{}'. Verificar --profiles-root.",
+            profiles_root.display()
+        );
         std::process::exit(2);
     }
 

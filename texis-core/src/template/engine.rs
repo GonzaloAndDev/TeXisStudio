@@ -30,13 +30,13 @@ impl TemplateEngine {
         template_str: &str,
         context: &HashMap<String, Value>,
     ) -> CoreResult<String> {
-        let template = self
-            .env
-            .template_from_str(template_str)
-            .map_err(|e| CoreError::Template {
-                template: template_str.chars().take(60).collect(),
-                message: e.to_string(),
-            })?;
+        let template =
+            self.env
+                .template_from_str(template_str)
+                .map_err(|e| CoreError::Template {
+                    template: template_str.chars().take(60).collect(),
+                    message: e.to_string(),
+                })?;
 
         template.render(context).map_err(|e| CoreError::Template {
             template: template_str.chars().take(60).collect(),
@@ -57,9 +57,7 @@ mod tests {
         let mut ctx = HashMap::new();
         ctx.insert("title".to_string(), Value::from("Análisis A&B"));
 
-        let result = engine
-            .render("{{ title | latex_escape }}", &ctx)
-            .unwrap();
+        let result = engine.render("{{ title | latex_escape }}", &ctx).unwrap();
 
         assert_eq!(result, r"Análisis A\&B");
         assert!(!result.starts_with('"'));
@@ -72,9 +70,7 @@ mod tests {
         let mut ctx = HashMap::new();
         ctx.insert("name".to_string(), Value::from("var_nombre"));
 
-        let result = engine
-            .render("{{ name | latex_escape }}", &ctx)
-            .unwrap();
+        let result = engine.render("{{ name | latex_escape }}", &ctx).unwrap();
 
         assert_eq!(result, r"var\_nombre");
     }

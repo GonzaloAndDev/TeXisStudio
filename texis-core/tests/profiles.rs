@@ -13,20 +13,16 @@ fn profiles_repo() -> PathBuf {
     }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     manifest
-        .parent()           // texis-core → raíz del workspace
+        .parent() // texis-core → raíz del workspace
         .expect("workspace root")
-        .parent()           // TeXisStudio → directorio padre
+        .parent() // TeXisStudio → directorio padre
         .expect("parent of TeXisStudio")
         .join("TeXisStudio-Profiles")
 }
 
 fn load_profile(rel_path: &str) -> texis_core::profile::Profile {
     let path = profiles_repo().join(rel_path);
-    assert!(
-        path.exists(),
-        "perfil no encontrado en: {}",
-        path.display()
-    );
+    assert!(path.exists(), "perfil no encontrado en: {}", path.display());
     let loader = ProfileLoader;
     loader
         .load_from_file(&path)
@@ -67,7 +63,9 @@ fn cambridge_apa7_status_reviewed() {
 #[test]
 fn cambridge_apa7_tiene_verification_con_source_urls() {
     let p = load_profile("europe/uk/cambridge/apa7/profile.yaml");
-    let v = p.verification.expect("Cambridge APA7 debe tener bloque verification");
+    let v = p
+        .verification
+        .expect("Cambridge APA7 debe tener bloque verification");
     assert!(
         !v.source_urls.is_empty(),
         "Cambridge APA7 debe tener al menos una source_url"
@@ -151,7 +149,9 @@ fn oxford_mhra_status_reviewed() {
 #[test]
 fn oxford_mhra_tiene_verification_con_source_urls() {
     let p = load_profile("europe/uk/oxford/mhra/profile.yaml");
-    let v = p.verification.expect("Oxford MHRA debe tener bloque verification");
+    let v = p
+        .verification
+        .expect("Oxford MHRA debe tener bloque verification");
     assert!(
         !v.source_urls.is_empty(),
         "Oxford MHRA debe tener al menos una source_url"
@@ -210,7 +210,9 @@ fn cambridge_apa7_max_words_80k() {
     let p = load_profile("europe/uk/cambridge/apa7/profile.yaml");
     let limit = p.max_words.expect("Cambridge APA7 debe declarar max_words");
     assert_eq!(limit, 80_000, "Cambridge: límite debe ser 80 000 palabras");
-    let abs = p.max_abstract_words.expect("Cambridge APA7 debe declarar max_abstract_words");
+    let abs = p
+        .max_abstract_words
+        .expect("Cambridge APA7 debe declarar max_abstract_words");
     assert_eq!(abs, 300, "Cambridge: resumen debe limitarse a 300 palabras");
 }
 
@@ -218,8 +220,13 @@ fn cambridge_apa7_max_words_80k() {
 fn oxford_mhra_max_words_100k() {
     let p = load_profile("europe/uk/oxford/mhra/profile.yaml");
     let limit = p.max_words.expect("Oxford MHRA debe declarar max_words");
-    assert_eq!(limit, 100_000, "Oxford DPhil: límite debe ser 100 000 palabras");
-    let abs = p.max_abstract_words.expect("Oxford MHRA debe declarar max_abstract_words");
+    assert_eq!(
+        limit, 100_000,
+        "Oxford DPhil: límite debe ser 100 000 palabras"
+    );
+    let abs = p
+        .max_abstract_words
+        .expect("Oxford MHRA debe declarar max_abstract_words");
     assert_eq!(abs, 300, "Oxford: resumen debe limitarse a 300 palabras");
 }
 
@@ -230,10 +237,7 @@ fn internal_profiles_dir() -> PathBuf {
         return PathBuf::from(p);
     }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manifest
-        .parent()
-        .expect("workspace root")
-        .join("profiles")
+    manifest.parent().expect("workspace root").join("profiles")
 }
 
 fn load_internal(id: &str) -> texis_core::profile::Profile {
@@ -335,8 +339,14 @@ fn perfiles_internos_tienen_secciones_minimas() {
             .iter()
             .any(|s| s.element_id == "title_page" && s.required);
         let has_refs = p.sections.iter().any(|s| s.element_id == "references");
-        assert!(has_cover, "perfil interno '{id}' debe tener title_page required");
-        assert!(has_refs, "perfil interno '{id}' debe tener sección references");
+        assert!(
+            has_cover,
+            "perfil interno '{id}' debe tener title_page required"
+        );
+        assert!(
+            has_refs,
+            "perfil interno '{id}' debe tener sección references"
+        );
     }
 }
 

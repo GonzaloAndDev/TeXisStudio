@@ -4,11 +4,18 @@ use std::path::PathBuf;
 
 /// Herramientas permitidas para ejecución. NUNCA ejecutar herramientas fuera de esta lista.
 pub const ALLOWED_TOOLS: &[&str] = &[
-    "pdflatex", "xelatex", "lualatex", "latexmk",
-    "biber", "bibtex",
-    "makeglossaries", "bib2gls",
-    "makeindex", "xindy",
-    "epstopdf", "rsvg-convert",
+    "pdflatex",
+    "xelatex",
+    "lualatex",
+    "latexmk",
+    "biber",
+    "bibtex",
+    "makeglossaries",
+    "bib2gls",
+    "makeindex",
+    "xindy",
+    "epstopdf",
+    "rsvg-convert",
     "pandoc",
 ];
 
@@ -32,7 +39,10 @@ impl Toolchain {
     }
 
     pub fn path_of(&self, tool: &str) -> Option<&PathBuf> {
-        self.tools.get(tool).filter(|t| t.available).map(|t| &t.path)
+        self.tools
+            .get(tool)
+            .filter(|t| t.available)
+            .map(|t| &t.path)
     }
 
     /// Verifica que todas las herramientas necesarias para el BuildConfig están disponibles.
@@ -60,7 +70,8 @@ impl Toolchain {
         if let Some(GlossaryTool::MakeGlossaries) = &config.glossary_tool {
             if !self.is_available("makeglossaries") {
                 missing.push(
-                    "makeglossaries no encontrado. Instala con: tlmgr install glossaries".to_string(),
+                    "makeglossaries no encontrado. Instala con: tlmgr install glossaries"
+                        .to_string(),
                 );
             }
         }
@@ -101,9 +112,7 @@ fn probe_tool(name: &str) -> ToolInfo {
         ("which", vec![name])
     };
 
-    let path_result = std::process::Command::new(cmd)
-        .args(&args)
-        .output();
+    let path_result = std::process::Command::new(cmd).args(&args).output();
 
     let (available, path) = match path_result {
         Ok(output) if output.status.success() => {
@@ -119,13 +128,14 @@ fn probe_tool(name: &str) -> ToolInfo {
     };
 
     // Intentar obtener versión
-    let version = if available {
-        probe_version(name)
-    } else {
-        None
-    };
+    let version = if available { probe_version(name) } else { None };
 
-    ToolInfo { name: name.to_string(), path, version, available }
+    ToolInfo {
+        name: name.to_string(),
+        path,
+        version,
+        available,
+    }
 }
 
 fn probe_version(tool: &str) -> Option<String> {
@@ -158,23 +168,34 @@ mod tests {
         assert!(ALLOWED_TOOLS.contains(&"xelatex"));
         assert!(ALLOWED_TOOLS.contains(&"biber"));
         assert!(ALLOWED_TOOLS.contains(&"makeglossaries"));
-        assert!(!ALLOWED_TOOLS.contains(&"bash"),
-            "bash NO debe estar en la lista de herramientas permitidas");
-        assert!(!ALLOWED_TOOLS.contains(&"sh"),
-            "sh NO debe estar en la lista de herramientas permitidas");
-        assert!(!ALLOWED_TOOLS.contains(&"python"),
-            "python NO debe estar en la lista de herramientas permitidas");
+        assert!(
+            !ALLOWED_TOOLS.contains(&"bash"),
+            "bash NO debe estar en la lista de herramientas permitidas"
+        );
+        assert!(
+            !ALLOWED_TOOLS.contains(&"sh"),
+            "sh NO debe estar en la lista de herramientas permitidas"
+        );
+        assert!(
+            !ALLOWED_TOOLS.contains(&"python"),
+            "python NO debe estar en la lista de herramientas permitidas"
+        );
     }
 
     #[test]
     fn validate_config_detects_missing_biber() {
-        let mut toolchain = Toolchain { tools: Default::default() };
-        toolchain.tools.insert("xelatex".to_string(), ToolInfo {
-            name: "xelatex".to_string(),
-            path: PathBuf::from("xelatex"),
-            version: None,
-            available: true,
-        });
+        let mut toolchain = Toolchain {
+            tools: Default::default(),
+        };
+        toolchain.tools.insert(
+            "xelatex".to_string(),
+            ToolInfo {
+                name: "xelatex".to_string(),
+                path: PathBuf::from("xelatex"),
+                version: None,
+                available: true,
+            },
+        );
         // biber no está en el toolchain
 
         let mut config = BuildConfig::default(); // usa Biber

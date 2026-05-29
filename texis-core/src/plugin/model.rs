@@ -1,4 +1,3 @@
-
 pub type PluginId = String;
 
 /// Capacidades que un plugin puede declarar.
@@ -37,11 +36,11 @@ pub struct PluginDependency {
 #[derive(Debug, Clone, Default)]
 pub struct PluginPermissions {
     pub requires_filesystem_access: bool,
-    pub filesystem_paths: Vec<String>,   // rutas específicas permitidas
+    pub filesystem_paths: Vec<String>, // rutas específicas permitidas
     pub requires_network_access: bool,
-    pub allowed_hosts: Vec<String>,       // hosts permitidos
+    pub allowed_hosts: Vec<String>, // hosts permitidos
     pub requires_process_spawn: bool,
-    pub allowed_processes: Vec<String>,   // procesos permitidos
+    pub allowed_processes: Vec<String>, // procesos permitidos
 }
 
 /// Trait principal que deben implementar todos los plugins.
@@ -56,11 +55,21 @@ pub trait TexisPlugin: Send + Sync + 'static {
     fn version(&self) -> &str;
     fn description(&self) -> &str;
     fn capabilities(&self) -> Vec<PluginCapability>;
-    fn dependencies(&self) -> Vec<PluginDependency> { Vec::new() }
-    fn permissions(&self) -> PluginPermissions { PluginPermissions::default() }
-    fn on_load(&self) -> Result<(), PluginError> { Ok(()) }
-    fn on_unload(&self) -> Result<(), PluginError> { Ok(()) }
-    fn is_enabled(&self) -> bool { true }
+    fn dependencies(&self) -> Vec<PluginDependency> {
+        Vec::new()
+    }
+    fn permissions(&self) -> PluginPermissions {
+        PluginPermissions::default()
+    }
+    fn on_load(&self) -> Result<(), PluginError> {
+        Ok(())
+    }
+    fn on_unload(&self) -> Result<(), PluginError> {
+        Ok(())
+    }
+    fn is_enabled(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -70,7 +79,10 @@ pub enum PluginError {
     #[error("Plugin '{plugin_id}': dependencia faltante '{dep}'")]
     MissingDependency { plugin_id: String, dep: String },
     #[error("Plugin '{plugin_id}': permiso denegado — '{permission}'")]
-    PermissionDenied { plugin_id: String, permission: String },
+    PermissionDenied {
+        plugin_id: String,
+        permission: String,
+    },
     #[error("Plugin no encontrado: '{0}'")]
     NotFound(String),
     #[error("Plugin '{0}' ya está cargado")]
@@ -83,11 +95,21 @@ mod tests {
 
     struct NoopPlugin;
     impl TexisPlugin for NoopPlugin {
-        fn id(&self) -> &str { "noop" }
-        fn name(&self) -> &str { "Noop Plugin" }
-        fn version(&self) -> &str { "1.0.0" }
-        fn description(&self) -> &str { "No hace nada" }
-        fn capabilities(&self) -> Vec<PluginCapability> { Vec::new() }
+        fn id(&self) -> &str {
+            "noop"
+        }
+        fn name(&self) -> &str {
+            "Noop Plugin"
+        }
+        fn version(&self) -> &str {
+            "1.0.0"
+        }
+        fn description(&self) -> &str {
+            "No hace nada"
+        }
+        fn capabilities(&self) -> Vec<PluginCapability> {
+            Vec::new()
+        }
     }
 
     #[test]

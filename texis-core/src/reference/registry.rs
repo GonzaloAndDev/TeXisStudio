@@ -50,10 +50,8 @@ impl LabelRegistry {
         self.remove_file_entries(path);
 
         let label_re = Regex::new(r"\\label\{([^}]+)\}").unwrap();
-        let ref_re = Regex::new(
-            r"\\(ref|pageref|cref|Cref|autoref|nameref|eqref|vref)\{([^}]+)\}",
-        )
-        .unwrap();
+        let ref_re =
+            Regex::new(r"\\(ref|pageref|cref|Cref|autoref|nameref|eqref|vref)\{([^}]+)\}").unwrap();
 
         // Escanear labels
         for (line_idx, line) in content.lines().enumerate() {
@@ -111,8 +109,7 @@ impl LabelRegistry {
     /// - Unused: label definido pero no referenciado
     /// - BrokenReference: referencia a label que no existe
     pub fn update_statuses(&mut self) -> ValidationReport {
-        let defined_keys: std::collections::HashSet<String> =
-            self.labels.keys().cloned().collect();
+        let defined_keys: std::collections::HashSet<String> = self.labels.keys().cloned().collect();
         let referenced_keys: std::collections::HashSet<String> =
             self.references.iter().map(|r| r.key.clone()).collect();
 
@@ -121,11 +118,9 @@ impl LabelRegistry {
 
         // Labels no referenciados
         for (key, entry) in &mut self.labels {
-            if matches!(entry.status, LabelStatus::Valid) {
-                if !referenced_keys.contains(key) {
-                    entry.status = LabelStatus::Unused;
-                    unused_labels.push(key.clone());
-                }
+            if matches!(entry.status, LabelStatus::Valid) && !referenced_keys.contains(key) {
+                entry.status = LabelStatus::Unused;
+                unused_labels.push(key.clone());
             }
         }
 
@@ -179,8 +174,7 @@ pub struct ValidationReport {
 
 impl ValidationReport {
     pub fn is_clean(&self) -> bool {
-        self.broken_references.is_empty()
-            && self.duplicate_labels.is_empty()
+        self.broken_references.is_empty() && self.duplicate_labels.is_empty()
     }
 }
 
@@ -211,8 +205,7 @@ fn infer_kind_from_key(key: &str) -> LabelKind {
 /// Busca la caption o título más cercano antes de la línea del label.
 fn extract_preceding_caption(content: &str, label_line_idx: usize) -> Option<String> {
     let caption_re = Regex::new(r"\\caption\{([^}]{1,100})\}").unwrap();
-    let section_re =
-        Regex::new(r"\\(?:chapter|section|subsection)\{([^}]{1,100})\}").unwrap();
+    let section_re = Regex::new(r"\\(?:chapter|section|subsection)\{([^}]{1,100})\}").unwrap();
 
     let lines: Vec<&str> = content.lines().collect();
     let search_from = label_line_idx.saturating_sub(10);
@@ -294,8 +287,7 @@ mod tests {
 
     #[test]
     fn extract_caption_from_preceding_lines() {
-        let content =
-            "\\begin{figure}\n\\caption{My figure}\n\\label{fig:test}\n\\end{figure}";
+        let content = "\\begin{figure}\n\\caption{My figure}\n\\label{fig:test}\n\\end{figure}";
         let mut reg = LabelRegistry::new();
         reg.scan_file(&path("main.tex"), content);
         let entry = reg.find_by_key("fig:test").unwrap();

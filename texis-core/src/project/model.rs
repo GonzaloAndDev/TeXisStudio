@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
 // ── ProjectModel ──────────────────────────────────────────────────
 

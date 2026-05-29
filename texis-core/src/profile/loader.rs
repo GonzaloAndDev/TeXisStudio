@@ -23,19 +23,36 @@ const BUILTIN_ALIASES: &[(&str, &str)] = &[
 /// IDs de sección con semántica conocida por el generador y los validadores (P1.4).
 /// Un element_id fuera de esta lista dispara un warning en stderr — no un error.
 const KNOWN_ELEMENT_IDS: &[&str] = &[
-    "cover", "title_page",
-    "toc", "table_of_contents",
-    "abstract", "abstract_es", "abstract_en", "abstract_fr", "abstract_pt",
+    "cover",
+    "title_page",
+    "toc",
+    "table_of_contents",
+    "abstract",
+    "abstract_es",
+    "abstract_en",
+    "abstract_fr",
+    "abstract_pt",
     "acknowledgements",
-    "list_of_figures", "list_of_tables", "list_of_algorithms", "list_of_listings",
-    "list_of_abbreviations", "list_of_acronyms",
-    "glossary", "nomenclature",
-    "introduction", "literature_review", "theoretical_framework",
+    "list_of_figures",
+    "list_of_tables",
+    "list_of_algorithms",
+    "list_of_listings",
+    "list_of_abbreviations",
+    "list_of_acronyms",
+    "glossary",
+    "nomenclature",
+    "introduction",
+    "literature_review",
+    "theoretical_framework",
     "methodology",
-    "results", "experimentation",
-    "discussion", "conclusions",
-    "bibliography", "references",
-    "appendix", "appendices",
+    "results",
+    "experimentation",
+    "discussion",
+    "conclusions",
+    "bibliography",
+    "references",
+    "appendix",
+    "appendices",
 ];
 
 pub struct ProfileLoader;
@@ -47,12 +64,11 @@ impl ProfileLoader {
     }
 
     pub fn load_from_str(&self, content: &str, source: &str) -> CoreResult<Profile> {
-        let mut profile: Profile = serde_yaml::from_str(content).map_err(|e| {
-            CoreError::YamlParse {
+        let mut profile: Profile =
+            serde_yaml::from_str(content).map_err(|e| CoreError::YamlParse {
                 path: source.to_string(),
                 message: e.to_string(),
-            }
-        })?;
+            })?;
 
         // Validar y migrar schema_version.
         // Perfiles sin schema_version (externos/legacy) quedan como Experimental.

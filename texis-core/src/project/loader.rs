@@ -14,12 +14,11 @@ impl ProjectLoader {
     }
 
     pub fn load_from_str(&self, content: &str, source: &str) -> CoreResult<ProjectModel> {
-        let mut model: ProjectModel = serde_yaml::from_str(content).map_err(|e| {
-            CoreError::YamlParse {
+        let mut model: ProjectModel =
+            serde_yaml::from_str(content).map_err(|e| CoreError::YamlParse {
                 path: source.to_string(),
                 message: e.to_string(),
-            }
-        })?;
+            })?;
 
         // Rechazar versiones completamente desconocidas.
         if !versions::is_acceptable(&model.schema_version) {

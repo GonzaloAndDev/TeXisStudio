@@ -9,7 +9,11 @@ pub enum CoreError {
     YamlParse { path: String, message: String },
 
     #[error("Error de validación de schema '{schema}' en '{path}': {message}")]
-    SchemaValidation { schema: String, path: String, message: String },
+    SchemaValidation {
+        schema: String,
+        path: String,
+        message: String,
+    },
 
     #[error("Perfil no encontrado: '{id}'")]
     ProfileNotFound { id: String },

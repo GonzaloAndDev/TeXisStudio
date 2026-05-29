@@ -2,19 +2,18 @@
 // API: https://api.openalex.org/works
 // Sin autenticación. Polite pool: incluir mailto en User-Agent.
 
+use chrono::Utc;
 use serde::Deserialize;
 use std::time::Duration;
-use texis_core::bibliography::model::{
-    BibliographicRecord, PersonName, RecordType, provider,
-};
+use texis_core::bibliography::model::{provider, BibliographicRecord, PersonName, RecordType};
 use texis_core::bibliography::normalization::{
     clean_title, map_openalex_type, normalize_doi, parse_date_str,
 };
-use chrono::Utc;
 
 const OPENALEX_BASE: &str = "https://api.openalex.org/works";
 const USER_AGENT: &str = concat!(
-    "TeXisStudio/", env!("CARGO_PKG_VERSION"),
+    "TeXisStudio/",
+    env!("CARGO_PKG_VERSION"),
     " (https://github.com/GonzaloAndDev/TeXisStudio; mailto:gaelsd25@gmail.com)"
 );
 const TIMEOUT_SECS: u64 = 15;
@@ -130,10 +129,7 @@ fn work_to_record(work: &OpenAlexWork) -> BibliographicRecord {
         .map(map_openalex_type)
         .unwrap_or(RecordType::Unknown);
 
-    let doi_normalized = work
-        .doi
-        .as_deref()
-        .and_then(normalize_doi);
+    let doi_normalized = work.doi.as_deref().and_then(normalize_doi);
 
     // Citation key
     let first_family = work
@@ -310,7 +306,10 @@ pub async fn fetch_by_doi(doi_normalized: &str) -> Result<BibliographicRecord, S
         return Err(format!("DOI no encontrado en OpenAlex: {doi_normalized}"));
     }
     if !resp.status().is_success() {
-        return Err(format!("OpenAlex respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "OpenAlex respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let raw: serde_json::Value = resp
@@ -327,10 +326,7 @@ pub async fn fetch_by_doi(doi_normalized: &str) -> Result<BibliographicRecord, S
 }
 
 /// Búsqueda por título. Retorna hasta `limit` resultados.
-pub async fn search_by_title(
-    query: &str,
-    limit: u8,
-) -> Result<Vec<BibliographicRecord>, String> {
+pub async fn search_by_title(query: &str, limit: u8) -> Result<Vec<BibliographicRecord>, String> {
     let url = format!(
         "{}?filter=title.search:{}&per-page={}",
         OPENALEX_BASE,
@@ -345,7 +341,10 @@ pub async fn search_by_title(
         .map_err(|e| format!("Error de red al buscar en OpenAlex: {e}"))?;
 
     if !resp.status().is_success() {
-        return Err(format!("OpenAlex respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "OpenAlex respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let list: OpenAlexListResponse = resp
@@ -370,17 +369,14 @@ pub async fn search_openalex(
     let records = search_by_title(&query, limit.unwrap_or(10)).await?;
     records
         .iter()
-        .map(|r| {
-            serde_json::to_value(r).map_err(|e| format!("Error al serializar: {e}"))
-        })
+        .map(|r| serde_json::to_value(r).map_err(|e| format!("Error al serializar: {e}")))
         .collect()
 }
 
 /// Enriquece un registro existente con datos de OpenAlex (abstract, citation_count, keywords).
 #[tauri::command]
 pub async fn enrich_from_openalex(doi: String) -> Result<serde_json::Value, String> {
-    let normalized = normalize_doi(doi.trim())
-        .ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
+    let normalized = normalize_doi(doi.trim()).ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
     let record = fetch_by_doi(&normalized).await?;
     serde_json::to_value(&record).map_err(|e| format!("Error al serializar: {e}"))
 }

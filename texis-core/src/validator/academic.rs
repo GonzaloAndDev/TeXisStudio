@@ -36,10 +36,10 @@ fn count_words(text: &str) -> u32 {
 fn block_text(block: &ContentBlock) -> Option<&str> {
     match block {
         ContentBlock::Paragraph(b) => Some(&b.content),
-        ContentBlock::Heading(b)   => Some(&b.content),
-        ContentBlock::Theorem(b)   => Some(&b.content),
-        ContentBlock::RawLatex(b)  => Some(&b.content),
-        ContentBlock::Code(b)      => Some(&b.content),
+        ContentBlock::Heading(b) => Some(&b.content),
+        ContentBlock::Theorem(b) => Some(&b.content),
+        ContentBlock::RawLatex(b) => Some(&b.content),
+        ContentBlock::Code(b) => Some(&b.content),
         _ => None,
     }
 }
@@ -75,11 +75,7 @@ fn count_abstract_words(model: &ProjectModel) -> u32 {
         .sum()
 }
 
-fn check_word_limits(
-    model: &ProjectModel,
-    profile: &Profile,
-    issues: &mut Vec<ValidationIssue>,
-) {
+fn check_word_limits(model: &ProjectModel, profile: &Profile, issues: &mut Vec<ValidationIssue>) {
     if let Some(limit) = profile.max_words {
         let count = count_body_words(model);
         if count > 0 {
@@ -112,8 +108,7 @@ fn check_word_limits(
                         "Te acercas al límite de palabras: {count} de {limit} ({pct}%)."
                     ),
                     suggestion: Some(
-                        "Revisa el alcance del trabajo antes de agregar más contenido."
-                            .to_string(),
+                        "Revisa el alcance del trabajo antes de agregar más contenido.".to_string(),
                     ),
                     profile_id: Some(profile.id.clone()),
                     rule_id: Some("word_limit.body".to_string()),
@@ -168,7 +163,9 @@ fn check_student_name(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
             severity: IssueSeverity::Error,
             code: "E_EMPTY_STUDENT_NAME".to_string(),
             message: "El nombre del autor está vacío.".to_string(),
-            suggestion: Some("Ingresa el nombre completo del autor en los datos del estudiante.".to_string()),
+            suggestion: Some(
+                "Ingresa el nombre completo del autor en los datos del estudiante.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -181,7 +178,9 @@ fn check_institution_name(model: &ProjectModel, issues: &mut Vec<ValidationIssue
             severity: IssueSeverity::Warning,
             code: "W_EMPTY_INSTITUTION".to_string(),
             message: "El nombre de la institución está vacío.".to_string(),
-            suggestion: Some("Ingresa el nombre de la institución en los datos institucionales.".to_string()),
+            suggestion: Some(
+                "Ingresa el nombre de la institución en los datos institucionales.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -201,7 +200,9 @@ fn check_has_body_sections(model: &ProjectModel, issues: &mut Vec<ValidationIssu
             severity: IssueSeverity::Warning,
             code: "W_NO_BODY_SECTIONS".to_string(),
             message: "El proyecto no tiene secciones de cuerpo principal habilitadas.".to_string(),
-            suggestion: Some("Agrega al menos un capítulo (introducción, marco teórico, etc.).".to_string()),
+            suggestion: Some(
+                "Agrega al menos un capítulo (introducción, marco teórico, etc.).".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -214,14 +215,16 @@ fn check_posgrado_committee(model: &ProjectModel, issues: &mut Vec<ValidationIss
     if matches!(
         model.metadata.academic_level,
         AcademicLevel::Doctorado | AcademicLevel::Posdoctorado
-    )
-        && model.student.committee.is_empty()
+    ) && model.student.committee.is_empty()
     {
         issues.push(ValidationIssue {
             severity: IssueSeverity::Warning,
             code: "W_PHD_NO_COMMITTEE".to_string(),
-            message: "Una tesis de doctorado generalmente requiere un comité sinodal o jurado.".to_string(),
-            suggestion: Some("Agrega los miembros del comité en el panel de metadatos del proyecto.".to_string()),
+            message: "Una tesis de doctorado generalmente requiere un comité sinodal o jurado."
+                .to_string(),
+            suggestion: Some(
+                "Agrega los miembros del comité en el panel de metadatos del proyecto.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -234,8 +237,11 @@ fn check_placeholder_metadata(model: &ProjectModel, issues: &mut Vec<ValidationI
         issues.push(ValidationIssue {
             severity: IssueSeverity::Error,
             code: "E_PLACEHOLDER_STUDENT_NAME".to_string(),
-            message: "El nombre del autor sigue siendo el valor predeterminado ('Autor').".to_string(),
-            suggestion: Some("Actualiza el nombre completo del autor en los metadatos del proyecto.".to_string()),
+            message: "El nombre del autor sigue siendo el valor predeterminado ('Autor')."
+                .to_string(),
+            suggestion: Some(
+                "Actualiza el nombre completo del autor en los metadatos del proyecto.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -244,7 +250,9 @@ fn check_placeholder_metadata(model: &ProjectModel, issues: &mut Vec<ValidationI
         issues.push(ValidationIssue {
             severity: IssueSeverity::Warning,
             code: "W_PLACEHOLDER_INSTITUTION".to_string(),
-            message: "El nombre de la institución sigue siendo el valor predeterminado ('Universidad').".to_string(),
+            message:
+                "El nombre de la institución sigue siendo el valor predeterminado ('Universidad')."
+                    .to_string(),
             suggestion: Some("Actualiza el nombre de tu institución en los metadatos.".to_string()),
             automated: Some(true),
             ..Default::default()
@@ -256,8 +264,12 @@ fn check_placeholder_metadata(model: &ProjectModel, issues: &mut Vec<ValidationI
 /// Las secciones auto-generadas (portada, índice, referencias, listas) se omiten.
 fn check_required_sections_have_content(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
     const AUTO_GENERATED: &[&str] = &[
-        "title_page", "table_of_contents", "list_of_figures",
-        "list_of_tables", "list_of_algorithms", "references",
+        "title_page",
+        "table_of_contents",
+        "list_of_figures",
+        "list_of_tables",
+        "list_of_algorithms",
+        "references",
     ];
 
     for section in &model.sections {
@@ -287,7 +299,9 @@ fn check_required_sections_have_content(model: &ProjectModel, issues: &mut Vec<V
 
 /// Avisa si no se ha asignado ningún director de tesis.
 fn check_has_advisor(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
-    let has_advisor = model.student.advisor
+    let has_advisor = model
+        .student
+        .advisor
         .as_deref()
         .map(|a| !a.trim().is_empty())
         .unwrap_or(false)
@@ -298,7 +312,9 @@ fn check_has_advisor(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
             severity: IssueSeverity::Warning,
             code: "W_NO_ADVISOR".to_string(),
             message: "No se ha especificado un director de tesis.".to_string(),
-            suggestion: Some("Ingresa el nombre del director en el panel de metadatos.".to_string()),
+            suggestion: Some(
+                "Ingresa el nombre del director en el panel de metadatos.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -319,16 +335,20 @@ fn check_posgrado_abstract(model: &ProjectModel, issues: &mut Vec<ValidationIssu
         return;
     }
 
-    let has_en_abstract = model.sections.iter().any(|s| {
-        s.enabled && s.element_id == "abstract_en" && !s.blocks.is_empty()
-    });
+    let has_en_abstract = model
+        .sections
+        .iter()
+        .any(|s| s.enabled && s.element_id == "abstract_en" && !s.blocks.is_empty());
 
     if !has_en_abstract {
         issues.push(ValidationIssue {
             severity: IssueSeverity::Warning,
             code: "W_POSGRADO_NO_ABSTRACT_EN".to_string(),
-            message: "Las tesis de posgrado generalmente requieren un abstract en inglés.".to_string(),
-            suggestion: Some("Activa y completa la sección 'Abstract' en el árbol de secciones.".to_string()),
+            message: "Las tesis de posgrado generalmente requieren un abstract en inglés."
+                .to_string(),
+            suggestion: Some(
+                "Activa y completa la sección 'Abstract' en el árbol de secciones.".to_string(),
+            ),
             automated: Some(true),
             ..Default::default()
         });
@@ -359,7 +379,11 @@ fn validate_orcid(orcid: &str) -> (bool, bool) {
     }
     let remainder = total % 11;
     let result = (12 - remainder) % 11;
-    let expected = if result == 10 { 'X' } else { char::from_digit(result, 10).unwrap() };
+    let expected = if result == 10 {
+        'X'
+    } else {
+        char::from_digit(result, 10).unwrap()
+    };
 
     (true, last == expected)
 }
@@ -380,9 +404,7 @@ fn check_orcid(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
                 "El ORCID iD '{orcid}' tiene formato incorrecto. \
                  El formato válido es XXXX-XXXX-XXXX-XXXX (16 dígitos con guiones)."
             ),
-            suggestion: Some(
-                "Verifica tu ORCID iD en https://orcid.org/my-orcid".to_string()
-            ),
+            suggestion: Some("Verifica tu ORCID iD en https://orcid.org/my-orcid".to_string()),
             automated: Some(true),
             ..Default::default()
         });
@@ -390,9 +412,7 @@ fn check_orcid(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
         issues.push(ValidationIssue {
             severity: IssueSeverity::Warning,
             code: "W_ORCID_CHECKSUM".to_string(),
-            message: format!(
-                "El ORCID iD '{orcid}' tiene un dígito de verificación incorrecto."
-            ),
+            message: format!("El ORCID iD '{orcid}' tiene un dígito de verificación incorrecto."),
             suggestion: Some(format!(
                 "Verifica que el ORCID es correcto en https://orcid.org/{orcid}"
             )),

@@ -49,7 +49,10 @@ pub struct AiContextPackage {
 
 impl AiContextPackage {
     pub fn none() -> Self {
-        Self { scope: Some(AiContextScope::None), ..Default::default() }
+        Self {
+            scope: Some(AiContextScope::None),
+            ..Default::default()
+        }
     }
 
     pub fn with_selection(selection: String) -> Self {
@@ -94,12 +97,18 @@ impl AiContextPackage {
 
         if let Some(sel) = &self.selection {
             let truncated = truncate(sel, MAX_CHARS);
-            parts.push(format!("## Selección actual del usuario\n```\n{}\n```", truncated));
+            parts.push(format!(
+                "## Selección actual del usuario\n```\n{}\n```",
+                truncated
+            ));
         }
         if let Some(content) = &self.current_file_content {
             let name = self.current_file_name.as_deref().unwrap_or("archivo.tex");
             let truncated = truncate(content, MAX_CHARS);
-            parts.push(format!("## Archivo activo: {}\n```latex\n{}\n```", name, truncated));
+            parts.push(format!(
+                "## Archivo activo: {}\n```latex\n{}\n```",
+                name, truncated
+            ));
         }
         if let Some(diag) = &self.diagnostics_summary {
             let truncated = truncate(diag, 2_000);
@@ -167,7 +176,8 @@ mod tests {
 
     #[test]
     fn file_context_includes_name_and_content() {
-        let ctx = AiContextPackage::with_file("main.tex".to_string(), "\\begin{document}".to_string());
+        let ctx =
+            AiContextPackage::with_file("main.tex".to_string(), "\\begin{document}".to_string());
         let block = ctx.to_prompt_block();
         assert!(block.contains("main.tex"));
         assert!(block.contains("\\begin{document}"));
@@ -187,6 +197,8 @@ mod tests {
 
     #[test]
     fn text_helper_flags_bearer_tokens() {
-        assert!(text_contains_credentials("Authorization: Bearer super-secret-token"));
+        assert!(text_contains_credentials(
+            "Authorization: Bearer super-secret-token"
+        ));
     }
 }

@@ -3,7 +3,7 @@ use super::result::{BuildFailureKind, BuildResult, BuildStepResult};
 use super::toolchain::{detect_toolchain, Toolchain};
 use crate::diagnostics::engine::DiagnosticsEngine;
 use crate::texis_project::model::TexisProject;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 use uuid::Uuid;
 
@@ -13,7 +13,9 @@ pub struct BuildEngine {
 
 impl BuildEngine {
     pub fn new() -> Self {
-        Self { toolchain: detect_toolchain() }
+        Self {
+            toolchain: detect_toolchain(),
+        }
     }
 
     /// Compila el proyecto en modo Full.
@@ -26,17 +28,15 @@ impl BuildEngine {
             return BuildResult::failed(
                 id,
                 BuildMode::Full,
-                BuildFailureKind::ToolNotFound { tool: missing[0].clone() },
+                BuildFailureKind::ToolNotFound {
+                    tool: missing[0].clone(),
+                },
             );
         }
 
         // Verificar que el archivo raíz existe
         if !project.root_file_abs().exists() {
-            return BuildResult::failed(
-                id,
-                BuildMode::Full,
-                BuildFailureKind::InvalidRootFile,
-            );
+            return BuildResult::failed(id, BuildMode::Full, BuildFailureKind::InvalidRootFile);
         }
 
         // Determinar si hay glosarios e índice
@@ -63,7 +63,9 @@ impl BuildEngine {
             return BuildResult::failed(
                 id,
                 BuildMode::Quick,
-                BuildFailureKind::ToolNotFound { tool: missing[0].clone() },
+                BuildFailureKind::ToolNotFound {
+                    tool: missing[0].clone(),
+                },
             );
         }
 
@@ -85,7 +87,9 @@ impl BuildEngine {
             return BuildResult::failed(
                 plan.id,
                 plan.mode,
-                BuildFailureKind::Unknown { message: e.to_string() },
+                BuildFailureKind::Unknown {
+                    message: e.to_string(),
+                },
             );
         }
 
@@ -106,11 +110,11 @@ impl BuildEngine {
             }
 
             // Detectar si ya no se necesita una tercera pasada (no hubo cambio de labels)
-            if matches!(step.kind, BuildStepKind::LatexCompile { pass: 2 }) {
-                if !step_result.needs_rerun() {
-                    // Marcar la tercera pasada como innecesaria
-                    // (la ejecutamos igual por simplicidad, latexmk lo haría igual)
-                }
+            if matches!(step.kind, BuildStepKind::LatexCompile { pass: 2 })
+                && !step_result.needs_rerun()
+            {
+                // Marcar la tercera pasada como innecesaria
+                // (la ejecutamos igual por simplicidad, latexmk lo haría igual)
             }
 
             step_results.push(step_result);
@@ -122,8 +126,7 @@ impl BuildEngine {
         let pdf_path = self.find_pdf(&plan.output_dir, &plan.root_file);
         let latex_success = step_results
             .iter()
-            .filter(|s| matches!(s.kind, BuildStepKind::LatexCompile { .. }))
-            .last()
+            .rfind(|s| matches!(s.kind, BuildStepKind::LatexCompile { .. }))
             .map(|s| s.success || pdf_path.is_some())
             .unwrap_or(false);
 
@@ -173,7 +176,10 @@ impl BuildEngine {
                 kind: step.kind.clone(),
                 exit_code: None,
                 stdout: String::new(),
-                stderr: format!("Herramienta '{}' no está en la lista de herramientas permitidas.", command_name),
+                stderr: format!(
+                    "Herramienta '{}' no está en la lista de herramientas permitidas.",
+                    command_name
+                ),
                 duration_ms: 0,
                 success: false,
             };
@@ -206,14 +212,15 @@ impl BuildEngine {
         }
     }
 
-    fn run_postflight(&self, output_dir: &PathBuf, root_file: &PathBuf) -> BuildStepResult {
+    fn run_postflight(&self, output_dir: &Path, root_file: &Path) -> BuildStepResult {
         let stem = root_file
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("main");
         let pdf_path = output_dir.join(format!("{}.pdf", stem));
 
-        let success = pdf_path.exists() && pdf_path.metadata().map(|m| m.len() > 0).unwrap_or(false);
+        let success =
+            pdf_path.exists() && pdf_path.metadata().map(|m| m.len() > 0).unwrap_or(false);
 
         BuildStepResult {
             kind: BuildStepKind::PostflightCheck,
@@ -229,10 +236,17 @@ impl BuildEngine {
         }
     }
 
-    fn find_pdf(&self, output_dir: &PathBuf, root_file: &PathBuf) -> Option<PathBuf> {
-        let stem = root_file.file_stem().and_then(|s| s.to_str()).unwrap_or("main");
+    fn find_pdf(&self, output_dir: &Path, root_file: &Path) -> Option<PathBuf> {
+        let stem = root_file
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("main");
         let pdf = output_dir.join(format!("{}.pdf", stem));
-        if pdf.exists() { Some(pdf) } else { None }
+        if pdf.exists() {
+            Some(pdf)
+        } else {
+            None
+        }
     }
 }
 

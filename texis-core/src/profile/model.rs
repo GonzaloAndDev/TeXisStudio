@@ -2,21 +2,16 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ProfileStatus {
+    #[default]
     Experimental,
     Draft,
     Reviewed,
     Verified,
     Stale,
     Deprecated,
-}
-
-impl Default for ProfileStatus {
-    fn default() -> Self {
-        ProfileStatus::Experimental
-    }
 }
 
 /// Metadatos de verificación y revisión de un perfil institucional.

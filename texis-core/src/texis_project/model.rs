@@ -20,7 +20,11 @@ pub struct SchemaVersion {
 }
 
 impl SchemaVersion {
-    pub const CURRENT: Self = Self { major: 1, minor: 0, patch: 0 };
+    pub const CURRENT: Self = Self {
+        major: 1,
+        minor: 0,
+        patch: 0,
+    };
 
     pub fn is_backward_compatible(&self, other: &SchemaVersion) -> bool {
         self.major == other.major && self.minor >= other.minor
@@ -314,16 +318,32 @@ mod tests {
 
     #[test]
     fn schema_version_backward_compatible_same_major() {
-        let current = SchemaVersion { major: 1, minor: 2, patch: 0 };
-        let older = SchemaVersion { major: 1, minor: 0, patch: 0 };
+        let current = SchemaVersion {
+            major: 1,
+            minor: 2,
+            patch: 0,
+        };
+        let older = SchemaVersion {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
         assert!(current.is_backward_compatible(&older));
         assert!(!older.is_backward_compatible(&current));
     }
 
     #[test]
     fn schema_version_incompatible_different_major() {
-        let v1 = SchemaVersion { major: 1, minor: 0, patch: 0 };
-        let v2 = SchemaVersion { major: 2, minor: 0, patch: 0 };
+        let v1 = SchemaVersion {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
+        let v2 = SchemaVersion {
+            major: 2,
+            minor: 0,
+            patch: 0,
+        };
         assert!(!v1.is_backward_compatible(&v2));
         assert!(!v2.is_backward_compatible(&v1));
     }
@@ -331,7 +351,10 @@ mod tests {
     #[test]
     fn build_config_default_shell_escape_is_false() {
         let cfg = BuildConfig::default();
-        assert!(!cfg.shell_escape, "shell_escape NUNCA debe estar activo por defecto");
+        assert!(
+            !cfg.shell_escape,
+            "shell_escape NUNCA debe estar activo por defecto"
+        );
     }
 
     #[test]

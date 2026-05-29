@@ -46,7 +46,11 @@ impl CompilationBackend for TectonicBackend {
         Command::new("tectonic").arg("--version").output().is_ok()
     }
 
-    fn compile(&self, build_dir: &Path, options: &CompilationOptions) -> CoreResult<CompilationResult> {
+    fn compile(
+        &self,
+        build_dir: &Path,
+        options: &CompilationOptions,
+    ) -> CoreResult<CompilationResult> {
         if !self.is_available() {
             return Err(CoreError::BackendUnavailable {
                 backend: "tectonic".to_string(),
@@ -89,7 +93,11 @@ impl CompilationBackend for TectonicBackend {
 
         let pdf_path = if success {
             let pdf = build_dir.join("main.pdf");
-            if pdf.exists() { Some(pdf) } else { None }
+            if pdf.exists() {
+                Some(pdf)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -107,8 +115,14 @@ impl CompilationBackend for TectonicBackend {
         // Tectonic genera menos archivos temporales que latexmk,
         // pero puede dejar logs y archivos intermedios.
         let to_clean = [
-            "main.log", "main.xdv", "main.aux", "main.toc",
-            "main.out", "main.bbl", "main.bcf", "main.blg",
+            "main.log",
+            "main.xdv",
+            "main.aux",
+            "main.toc",
+            "main.out",
+            "main.bbl",
+            "main.bcf",
+            "main.blg",
             "main.run.xml",
         ];
         for name in &to_clean {

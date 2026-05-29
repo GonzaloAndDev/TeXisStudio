@@ -27,7 +27,8 @@ fn profiles_dir(app: &tauri::AppHandle) -> PathBuf {
         }
     }
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent().and_then(|p| p.parent())
+        .parent()
+        .and_then(|p| p.parent())
         .map(|root| root.join("profiles"))
         .unwrap_or_else(|| PathBuf::from("profiles"))
 }
@@ -37,12 +38,18 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "{} · {} · {}",
         p.latex_engine, p.bibliography_backend, p.bibliography_style,
     );
-    let sections: Vec<Value> = p.sections.iter().map(|s| serde_json::json!({
-        "id": s.id, "element_id": s.element_id,
-        "placement": s.placement, "required": s.required,
-        "title": s.title, "label": s.label,
-        "guidance": s.guidance,
-    })).collect();
+    let sections: Vec<Value> = p
+        .sections
+        .iter()
+        .map(|s| {
+            serde_json::json!({
+                "id": s.id, "element_id": s.element_id,
+                "placement": s.placement, "required": s.required,
+                "title": s.title, "label": s.label,
+                "guidance": s.guidance,
+            })
+        })
+        .collect();
     serde_json::json!({
         "id": p.id, "name": p.name, "description": p.description,
         "meta": meta, "tags": p.tags, "sections_count": p.sections.len(),
@@ -65,8 +72,7 @@ pub async fn fetch_remote_profile(
     expected_sha256: Option<String>,
 ) -> Result<Value, String> {
     // 0. Validar URL con parser formal — exigir HTTPS y host presente
-    let parsed = reqwest::Url::parse(&url)
-        .map_err(|e| format!("URL inválida '{}': {}", url, e))?;
+    let parsed = reqwest::Url::parse(&url).map_err(|e| format!("URL inválida '{}': {}", url, e))?;
     if parsed.scheme() != "https" {
         return Err("Solo se permiten descargas mediante HTTPS.".to_string());
     }
@@ -80,14 +86,17 @@ pub async fn fetch_remote_profile(
         .build()
         .map_err(err)?;
 
-    let response = client.get(parsed).send().await.map_err(|e| {
-        format!("Error descargando desde '{}': {}", url, e)
-    })?;
+    let response = client
+        .get(parsed)
+        .send()
+        .await
+        .map_err(|e| format!("Error descargando desde '{}': {}", url, e))?;
 
     if !response.status().is_success() {
         return Err(format!(
             "El servidor respondió {} para '{}'.",
-            response.status(), url
+            response.status(),
+            url
         ));
     }
 
@@ -119,12 +128,9 @@ pub async fn fetch_remote_profile(
     if let Some(expected) = &expected_sha256 {
         let expected = expected.trim().to_lowercase();
         if !expected.is_empty() {
-            let valid_sha = expected.len() == 64
-                && expected.chars().all(|c| c.is_ascii_hexdigit());
+            let valid_sha = expected.len() == 64 && expected.chars().all(|c| c.is_ascii_hexdigit());
             if !valid_sha {
-                return Err(
-                    "El hash SHA-256 esperado no tiene un formato válido.".to_string(),
-                );
+                return Err("El hash SHA-256 esperado no tiene un formato válido.".to_string());
             }
             let digest = sha256_bytes(&bytes);
             if digest != expected {
@@ -140,15 +146,15 @@ pub async fn fetch_remote_profile(
     }
 
     // 3. Abrir el ZIP en memoria
-    let mut archive = zip::ZipArchive::new(Cursor::new(bytes.clone())).map_err(|e| {
-        format!("El archivo descargado no es un ZIP válido: {}", e)
-    })?;
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes.clone()))
+        .map_err(|e| format!("El archivo descargado no es un ZIP válido: {}", e))?;
 
     // Límite de número de entradas
     if archive.len() > MAX_ZIP_ENTRIES {
         return Err(format!(
             "El ZIP contiene demasiadas entradas ({}, máximo {}).",
-            archive.len(), MAX_ZIP_ENTRIES
+            archive.len(),
+            MAX_ZIP_ENTRIES
         ));
     }
 
@@ -166,7 +172,11 @@ pub async fn fetch_remote_profile(
         p.parent()
             .map(|d| {
                 let s = d.to_string_lossy().replace('\\', "/");
-                if s.is_empty() { s } else { format!("{}/", s) }
+                if s.is_empty() {
+                    s
+                } else {
+                    format!("{}/", s)
+                }
             })
             .unwrap_or_default()
     };
@@ -199,7 +209,8 @@ pub async fn fetch_remote_profile(
         }
 
         // Rechazar rutas vacías, absolutas o con path traversal
-        if relative.starts_with('/') || relative.split('/').any(|seg| seg == ".." || seg.is_empty()) {
+        if relative.starts_with('/') || relative.split('/').any(|seg| seg == ".." || seg.is_empty())
+        {
             continue;
         }
 
@@ -228,7 +239,8 @@ pub async fn fetch_remote_profile(
     }
 
     let loader = ProfileLoader;
-    let profile = loader.load_from_file(&temp_yaml)
+    let profile = loader
+        .load_from_file(&temp_yaml)
         .map_err(|e| format!("profile.yaml inválido: {}", e))?;
 
     // 7. Verificar que el perfil no esté ya instalado

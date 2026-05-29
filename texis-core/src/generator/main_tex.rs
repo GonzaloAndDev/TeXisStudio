@@ -37,18 +37,24 @@ pub fn generate(
     std::fs::write(build_dir.join("main.tex"), &main).map_err(CoreError::Io)?;
 
     let paquetes = render_paquetes(model, lang_config);
-    std::fs::write(build_dir.join("configuracion/paquetes.tex"), &paquetes).map_err(CoreError::Io)?;
+    std::fs::write(build_dir.join("configuracion/paquetes.tex"), &paquetes)
+        .map_err(CoreError::Io)?;
 
     let estilo = render_estilo(model);
     std::fs::write(build_dir.join("configuracion/estilo.tex"), &estilo).map_err(CoreError::Io)?;
 
     let datos = render_datos_tesis(model);
-    std::fs::write(build_dir.join("configuracion/datos_tesis.tex"), &datos).map_err(CoreError::Io)?;
+    std::fs::write(build_dir.join("configuracion/datos_tesis.tex"), &datos)
+        .map_err(CoreError::Io)?;
 
     Ok(())
 }
 
-pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_config: Option<&Value>) -> CoreResult<String> {
+pub fn render_to_string(
+    model: &ProjectModel,
+    _engine: &TemplateEngine,
+    _lang_config: Option<&Value>,
+) -> CoreResult<String> {
     let mut out = String::new();
 
     out.push_str(HEADER_COMMENT);
@@ -63,16 +69,24 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
         .filter(|o| {
             // Filtrar las opciones que el usuario puede sobreescribir
             let o = o.as_str();
-            let is_font_size   = matches!(o, "10pt" | "11pt" | "12pt");
-            let is_paper_size  = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
+            let is_font_size = matches!(o, "10pt" | "11pt" | "12pt");
+            let is_paper_size = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
             !(is_font_size && typo.font_size.is_some()
                 || is_paper_size && typo.paper_size.is_some())
         })
         .cloned()
         .collect();
-    if let Some(fs) = &typo.font_size  { options.push(fs.clone()); }
-    if let Some(ps) = &typo.paper_size { options.push(ps.clone()); }
-    out.push_str(&format!("\\documentclass[{}]{{{}}}\n\n", options.join(","), cls.name));
+    if let Some(fs) = &typo.font_size {
+        options.push(fs.clone());
+    }
+    if let Some(ps) = &typo.paper_size {
+        options.push(ps.clone());
+    }
+    out.push_str(&format!(
+        "\\documentclass[{}]{{{}}}\n\n",
+        options.join(","),
+        cls.name
+    ));
 
     // Archivos de configuración
     out.push_str("\\input{configuracion/paquetes}\n");
@@ -95,7 +109,9 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
         match section.placement {
             SectionPlacement::FrontMatter => {
                 if section.element_id == "title_page" {
-                    out.push_str("\n% ── Portada ──────────────────────────────────────────────────────\n");
+                    out.push_str(
+                        "\n% ── Portada ──────────────────────────────────────────────────────\n",
+                    );
                     out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id));
                 } else {
                     if !in_frontmatter {
@@ -104,10 +120,10 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
                     }
                     match section.element_id.as_str() {
                         "table_of_contents" => out.push_str("\n\\tableofcontents\n"),
-                        "list_of_figures"    => out.push_str("\\listoffigures\n"),
-                        "list_of_tables"     => out.push_str("\\listoftables\n"),
+                        "list_of_figures" => out.push_str("\\listoffigures\n"),
+                        "list_of_tables" => out.push_str("\\listoftables\n"),
                         "list_of_algorithms" => out.push_str("\\listofalgorithms\n"),
-                        "list_of_listings"   => out.push_str("\\lstlistoflistings\n"),
+                        "list_of_listings" => out.push_str("\\lstlistoflistings\n"),
                         _ => out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id)),
                     }
                 }
@@ -123,7 +139,11 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
                     out.push_str("\n\\mainmatter\n");
                     in_mainmatter = true;
                 }
-                out.push_str(&format!("\n\\input{{capitulos/{:02}_{}}}\n", body_idx + 1, section.id));
+                out.push_str(&format!(
+                    "\n\\input{{capitulos/{:02}_{}}}\n",
+                    body_idx + 1,
+                    section.id
+                ));
                 body_idx += 1;
             }
 
@@ -135,8 +155,10 @@ pub fn render_to_string(model: &ProjectModel, _engine: &TemplateEngine, _lang_co
                 match section.element_id.as_str() {
                     "references" => {
                         let cmd = match model.latex_config.bibliography_backend {
-                            BibliographyBackend::Biber  => "\\printbibliography[heading=bibintoc]",
-                            BibliographyBackend::Bibtex => "\\bibliography{bibliografia/referencias}",
+                            BibliographyBackend::Biber => "\\printbibliography[heading=bibintoc]",
+                            BibliographyBackend::Bibtex => {
+                                "\\bibliography{bibliografia/referencias}"
+                            }
                         };
                         out.push_str(&format!("\n{}\n", cmd));
                     }
@@ -169,15 +191,15 @@ fn render_geometry(model: &ProjectModel) -> String {
 
     let paper = layout
         .and_then(|l| l.paper.as_deref())
-        .or_else(|| model.latex_config.typography.paper_size.as_deref())
+        .or(model.latex_config.typography.paper_size.as_deref())
         .unwrap_or("letterpaper");
 
     // Márgenes asimétricos (institucionales) tienen prioridad
     if let Some(margins) = layout.and_then(|l| l.margins.as_ref()) {
-        let top    = margins.top.as_deref().unwrap_or("25.4mm");
+        let top = margins.top.as_deref().unwrap_or("25.4mm");
         let bottom = margins.bottom.as_deref().unwrap_or("25.4mm");
-        let left   = margins.left.as_deref().unwrap_or("25.4mm");
-        let right  = margins.right.as_deref().unwrap_or("25.4mm");
+        let left = margins.left.as_deref().unwrap_or("25.4mm");
+        let right = margins.right.as_deref().unwrap_or("25.4mm");
         return format!(
             "\\usepackage[{paper},top={top},bottom={bottom},left={left},right={right}]{{geometry}}\n"
         );
@@ -234,7 +256,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     // Bibliografía
     let bib_style = &model.latex_config.bibliography_style;
     let bib_backend = match &model.latex_config.bibliography_backend {
-        BibliographyBackend::Biber  => "biber",
+        BibliographyBackend::Biber => "biber",
         BibliographyBackend::Bibtex => "bibtex",
     };
     out.push_str(&format!(
@@ -268,7 +290,12 @@ fn render_estilo(model: &ProjectModel) -> String {
     // 1. line_spacing del perfil (page_layout.line_spacing, valor float: 1.0=single, 1.5=onehalf, 2.0=double)
     // 2. line_spacing del usuario (typography.line_spacing, string: "single"|"onehalf"|"double")
     // 3. Default: onehalf
-    let spacing_cmd = if let Some(spacing_f) = model.latex_config.page_layout.as_ref().and_then(|l| l.line_spacing) {
+    let spacing_cmd = if let Some(spacing_f) = model
+        .latex_config
+        .page_layout
+        .as_ref()
+        .and_then(|l| l.line_spacing)
+    {
         if spacing_f <= 1.0 {
             "\\singlespacing"
         } else if spacing_f >= 2.0 {
@@ -277,10 +304,16 @@ fn render_estilo(model: &ProjectModel) -> String {
             "\\onehalfspacing"
         }
     } else {
-        match model.latex_config.typography.line_spacing.as_deref().unwrap_or("onehalf") {
+        match model
+            .latex_config
+            .typography
+            .line_spacing
+            .as_deref()
+            .unwrap_or("onehalf")
+        {
             "single" => "\\singlespacing",
             "double" => "\\doublespacing",
-            _        => "\\onehalfspacing",
+            _ => "\\onehalfspacing",
         }
     };
     out.push_str(&format!("{}\n", spacing_cmd));
@@ -356,22 +389,18 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
             .map(|a| latex_escape(a))
             .collect::<Vec<_>>()
             .join(" \\\\ ");
-        out.push_str(&format!(
-            "\\newcommand{{\\tesisAsesores}}{{{}}}\n",
-            joined
-        ));
+        out.push_str(&format!("\\newcommand{{\\tesisAsesores}}{{{}}}\n", joined));
     }
     // Co-autores (trabajos grupales)
     if !model.student.co_authors.is_empty() {
-        let co = model.student.co_authors
+        let co = model
+            .student
+            .co_authors
             .iter()
             .map(|a| latex_escape(&a.full_name))
             .collect::<Vec<_>>()
             .join(", ");
-        out.push_str(&format!(
-            "\\newcommand{{\\tesisCoAutores}}{{{}}}\n",
-            co
-        ));
+        out.push_str(&format!("\\newcommand{{\\tesisCoAutores}}{{{}}}\n", co));
     }
     out.push_str(&format!(
         "\\newcommand{{\\tesisAnio}}{{{}}}\n",
@@ -394,17 +423,17 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
 
     // Comité sinodal / jurado
     if !model.student.committee.is_empty() {
-        let joined = model.student.committee.iter()
+        let joined = model
+            .student
+            .committee
+            .iter()
             .map(|m| match &m.role {
                 Some(r) => format!("{} ({})", latex_escape(&m.full_name), latex_escape(r)),
-                None    => latex_escape(&m.full_name),
+                None => latex_escape(&m.full_name),
             })
             .collect::<Vec<_>>()
             .join(" \\\\ ");
-        out.push_str(&format!(
-            "\\newcommand{{\\tesisComite}}{{{}}}\n",
-            joined
-        ));
+        out.push_str(&format!("\\newcommand{{\\tesisComite}}{{{}}}\n", joined));
         // Comandos individuales para plantillas de portada avanzadas.
         // En TeX, `\tesisComite1` NO es un nombre de macro válido por sintaxis directa:
         // se tokeniza como `\tesisComite` + `1`. Por eso definimos los nombres

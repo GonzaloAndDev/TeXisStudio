@@ -1,10 +1,10 @@
-/// Generación del paquete de entrega final (delivery package).
-///
-/// Recibe los resultados ya calculados (model, validation, postflight) y
-/// produce un ZIP con todos los artefactos de evidencia. El caller es
-/// responsable de ejecutar validate, compile y postflight antes de llamar aquí.
-///
-/// Esta es la fuente de verdad única. No duplicar en src-tauri ni en texis-cli.
+//! Generación del paquete de entrega final (delivery package).
+//!
+//! Recibe los resultados ya calculados (model, validation, postflight) y
+//! produce un ZIP con todos los artefactos de evidencia. El caller es
+//! responsable de ejecutar validate, compile y postflight antes de llamar aquí.
+//!
+//! Esta es la fuente de verdad única. No duplicar en src-tauri ni en texis-cli.
 
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -82,7 +82,9 @@ pub fn create_delivery_package(
         .filter(|i| matches!(i.severity, IssueSeverity::Error))
         .collect();
 
-    let warnings_count = validation.issues.iter()
+    let warnings_count = validation
+        .issues
+        .iter()
         .filter(|i| matches!(i.severity, IssueSeverity::Warning))
         .count();
 
@@ -91,7 +93,13 @@ pub fn create_delivery_package(
         .metadata
         .title
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' { c.to_ascii_lowercase() } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
         .take(40)
         .collect::<String>()
         .trim_matches('_')
@@ -99,7 +107,11 @@ pub fn create_delivery_package(
     let mode_suffix = if mode == "draft" { "_borrador" } else { "" };
     let zip_name = format!(
         "{}{}_entrega.zip",
-        if slug.is_empty() { "tesis".to_string() } else { slug },
+        if slug.is_empty() {
+            "tesis".to_string()
+        } else {
+            slug
+        },
         mode_suffix,
     );
     let zip_path = options.output_dir.join(&zip_name);
@@ -108,8 +120,7 @@ pub fn create_delivery_package(
     let file = std::fs::File::create(&zip_path).map_err(CoreError::Io)?;
     let writer = BufWriter::new(file);
     let mut zip = ZipWriter::new(writer);
-    let opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     let mut manifest_entries: Vec<serde_json::Value> = vec![];
 
@@ -125,9 +136,18 @@ pub fn create_delivery_package(
     // 2. Fuentes LaTeX (sources/)
     let build_dir = project_dir.join("build");
     let exclude_build = [
-        "main.pdf", "main.aux", "main.log", "main.bbl", "main.bcf",
-        "main.blg", "main.run.xml", "main.toc", "main.out", "main.fls",
-        "main.fdb_latexmk", "main.synctex.gz",
+        "main.pdf",
+        "main.aux",
+        "main.log",
+        "main.bbl",
+        "main.bcf",
+        "main.blg",
+        "main.run.xml",
+        "main.toc",
+        "main.out",
+        "main.fls",
+        "main.fdb_latexmk",
+        "main.synctex.gz",
     ];
     if build_dir.exists() {
         for entry in walkdir::WalkDir::new(&build_dir)
@@ -135,9 +155,13 @@ pub fn create_delivery_package(
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
-            if path.is_dir() { continue; }
+            if path.is_dir() {
+                continue;
+            }
             let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if exclude_build.contains(&fname) { continue; }
+            if exclude_build.contains(&fname) {
+                continue;
+            }
             if let Ok(rel) = path.strip_prefix(&build_dir) {
                 let entry_name = format!("sources/{}", rel.to_string_lossy().replace('\\', "/"));
                 let bytes = std::fs::read(path).map_err(CoreError::Io)?;
@@ -154,7 +178,9 @@ pub fn create_delivery_package(
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
-            if path.is_dir() { continue; }
+            if path.is_dir() {
+                continue;
+            }
             if let Ok(rel) = path.strip_prefix(&content_dir) {
                 let entry_name = format!("content/{}", rel.to_string_lossy().replace('\\', "/"));
                 let bytes = std::fs::read(path).map_err(CoreError::Io)?;
@@ -165,20 +191,32 @@ pub fn create_delivery_package(
 
     // 4. compliance_report.json
     {
-        let pf_issues_json: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-        })).collect();
+        let pf_issues_json: Vec<_> = postflight
+            .issues
+            .iter()
+            .map(|i| {
+                serde_json::json!({
+                    "severity": format!("{:?}", i.severity).to_lowercase(),
+                    "code": i.code,
+                    "message": i.message,
+                    "suggestion": i.suggestion,
+                })
+            })
+            .collect();
 
-        let validation_issues_json: Vec<_> = validation.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-            "section_id": i.section_id,
-        })).collect();
+        let validation_issues_json: Vec<_> = validation
+            .issues
+            .iter()
+            .map(|i| {
+                serde_json::json!({
+                    "severity": format!("{:?}", i.severity).to_lowercase(),
+                    "code": i.code,
+                    "message": i.message,
+                    "suggestion": i.suggestion,
+                    "section_id": i.section_id,
+                })
+            })
+            .collect();
 
         let report = serde_json::json!({
             "schema_version": ARTIFACT_SCHEMA_VERSION,
@@ -213,7 +251,13 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&report)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "compliance_report.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "compliance_report.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 5. submission_checklist.md
@@ -240,42 +284,72 @@ pub fn create_delivery_package(
              ---\n\
              _Este paquete fue generado por TeXisStudio. Las validaciones automáticas\n\
              no reemplazan la revisión del programa, departamento o escuela de posgrado._\n",
-            date       = chrono::Utc::now().format("%Y-%m-%d"),
-            title      = model.metadata.title,
-            author     = model.student.full_name,
+            date = chrono::Utc::now().format("%Y-%m-%d"),
+            title = model.metadata.title,
+            author = model.student.full_name,
             profile_id = model.profile_id,
-            v_mark  = if validation_errors.is_empty() { "x" } else { " " },
+            v_mark = if validation_errors.is_empty() {
+                "x"
+            } else {
+                " "
+            },
             v_state = if validation_errors.is_empty() {
                 "✓ sin errores".to_string()
             } else {
                 format!("✗ {} error(es)", validation_errors.len())
             },
-            pf_mark  = if postflight.passed { "x" } else { " " },
-            pf_state = if postflight.passed { "✓ pasó" } else { "✗ falló" },
-            f_mark   = if postflight.all_fonts_embedded { "x" } else { " " },
-            f_state  = if postflight.all_fonts_embedded {
+            pf_mark = if postflight.passed { "x" } else { " " },
+            pf_state = if postflight.passed {
+                "✓ pasó"
+            } else {
+                "✗ falló"
+            },
+            f_mark = if postflight.all_fonts_embedded {
+                "x"
+            } else {
+                " "
+            },
+            f_state = if postflight.all_fonts_embedded {
                 "✓".to_string()
             } else {
                 format!("✗ {}", postflight.non_embedded_fonts.join(", "))
             },
         );
-        add_file(&mut zip, "submission_checklist.md", checklist.as_bytes(), &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "submission_checklist.md",
+            checklist.as_bytes(),
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 6. postflight_report.json
     {
-        let pf_issues: Vec<_> = postflight.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "suggestion": i.suggestion,
-        })).collect();
-        let fonts: Vec<_> = postflight.fonts.iter().map(|f| serde_json::json!({
-            "name": f.name,
-            "font_type": f.font_type,
-            "embedded": f.embedded,
-            "subset": f.subset,
-        })).collect();
+        let pf_issues: Vec<_> = postflight
+            .issues
+            .iter()
+            .map(|i| {
+                serde_json::json!({
+                    "severity": format!("{:?}", i.severity).to_lowercase(),
+                    "code": i.code,
+                    "message": i.message,
+                    "suggestion": i.suggestion,
+                })
+            })
+            .collect();
+        let fonts: Vec<_> = postflight
+            .fonts
+            .iter()
+            .map(|f| {
+                serde_json::json!({
+                    "name": f.name,
+                    "font_type": f.font_type,
+                    "embedded": f.embedded,
+                    "subset": f.subset,
+                })
+            })
+            .collect();
         let report = serde_json::json!({
             "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
@@ -292,7 +366,13 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&report)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "postflight_report.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "postflight_report.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 7. compilation_reproducibility.json
@@ -311,19 +391,31 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&report)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "compilation_reproducibility.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "compilation_reproducibility.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 8. policy_report.json (solo si hay perfil)
     if let Some(p) = profile {
         use crate::profile::ProfilePolicyValidator;
         let policy = ProfilePolicyValidator::validate(p);
-        let issues: Vec<_> = policy.issues.iter().map(|i| serde_json::json!({
-            "severity": format!("{:?}", i.severity).to_lowercase(),
-            "code": i.code,
-            "message": i.message,
-            "field": i.field,
-        })).collect();
+        let issues: Vec<_> = policy
+            .issues
+            .iter()
+            .map(|i| {
+                serde_json::json!({
+                    "severity": format!("{:?}", i.severity).to_lowercase(),
+                    "code": i.code,
+                    "message": i.message,
+                    "field": i.field,
+                })
+            })
+            .collect();
         let report = serde_json::json!({
             "schema_version": ARTIFACT_SCHEMA_VERSION,
             "generated_at": chrono::Utc::now().to_rfc3339(),
@@ -336,7 +428,13 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&report)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "policy_report.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "policy_report.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 9. profile.lock.yaml
@@ -345,7 +443,13 @@ pub fn create_delivery_package(
         if check_lock_status(project_dir) == LockStatus::Locked {
             let lock_path = project_dir.join("profile.lock.yaml");
             let bytes = std::fs::read(&lock_path).map_err(CoreError::Io)?;
-            add_file(&mut zip, "profile.lock.yaml", &bytes, &mut manifest_entries, opts)?;
+            add_file(
+                &mut zip,
+                "profile.lock.yaml",
+                &bytes,
+                &mut manifest_entries,
+                opts,
+            )?;
         }
     }
 
@@ -366,7 +470,13 @@ pub fn create_delivery_package(
                 let bytes = serde_json::to_string_pretty(&info)
                     .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
                     .into_bytes();
-                add_file(&mut zip, "profile.lock.sha256.json", &bytes, &mut manifest_entries, opts)?;
+                add_file(
+                    &mut zip,
+                    "profile.lock.sha256.json",
+                    &bytes,
+                    &mut manifest_entries,
+                    opts,
+                )?;
             }
         }
     }
@@ -390,16 +500,20 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&info)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "compiler.info.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "compiler.info.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 12. latex_packages_report.json
     {
         let log_path = project_dir.join("build").join("main.log");
         let packages = if log_path.exists() {
-            extract_latex_packages_from_log(
-                &std::fs::read_to_string(&log_path).unwrap_or_default(),
-            )
+            extract_latex_packages_from_log(&std::fs::read_to_string(&log_path).unwrap_or_default())
         } else {
             vec![]
         };
@@ -413,7 +527,13 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&report)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "latex_packages_report.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "latex_packages_report.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 13. texis.version.json
@@ -426,7 +546,13 @@ pub fn create_delivery_package(
         let bytes = serde_json::to_string_pretty(&info)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?
             .into_bytes();
-        add_file(&mut zip, "texis.version.json", &bytes, &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "texis.version.json",
+            &bytes,
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 14. build.log
@@ -469,19 +595,33 @@ pub fn create_delivery_package(
                manifest.sha256.json               → Hashes SHA-256 de todos los archivos\n\n\
              AVISO: Este paquete incluye validaciones automáticas. Algunos requisitos\n\
              institucionales requieren confirmación manual con tu programa o escuela.\n",
-            sep        = "=".repeat(60),
-            title      = model.metadata.title,
-            author     = model.student.full_name,
+            sep = "=".repeat(60),
+            title = model.metadata.title,
+            author = model.student.full_name,
             profile_id = model.profile_id,
-            mode_str   = mode.to_uppercase(),
-            date       = chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
-            v_state    = if validation_errors.is_empty() { "OK" } else { "ERRORES" },
-            errs       = validation_errors.len(),
-            warns      = warnings_count,
-            pf_state   = if postflight.passed { "OK" } else { "PROBLEMAS" },
-            f_state    = if postflight.all_fonts_embedded { "OK" } else { "NO INCRUSTADAS" },
+            mode_str = mode.to_uppercase(),
+            date = chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"),
+            v_state = if validation_errors.is_empty() {
+                "OK"
+            } else {
+                "ERRORES"
+            },
+            errs = validation_errors.len(),
+            warns = warnings_count,
+            pf_state = if postflight.passed { "OK" } else { "PROBLEMAS" },
+            f_state = if postflight.all_fonts_embedded {
+                "OK"
+            } else {
+                "NO INCRUSTADAS"
+            },
         );
-        add_file(&mut zip, "README.txt", readme.as_bytes(), &mut manifest_entries, opts)?;
+        add_file(
+            &mut zip,
+            "README.txt",
+            readme.as_bytes(),
+            &mut manifest_entries,
+            opts,
+        )?;
     }
 
     // 16. manifest.sha256.json (siempre al final — lista todos los anteriores)
@@ -497,8 +637,7 @@ pub fn create_delivery_package(
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?;
         zip.start_file("manifest.sha256.json", opts)
             .map_err(|e| CoreError::Io(std::io::Error::other(e)))?;
-        zip.write_all(bytes.as_bytes())
-            .map_err(CoreError::Io)?;
+        zip.write_all(bytes.as_bytes()).map_err(CoreError::Io)?;
     }
 
     zip.finish()

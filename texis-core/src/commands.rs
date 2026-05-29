@@ -251,12 +251,7 @@ fn find_tex_files(root: &PathBuf) -> Vec<PathBuf> {
         .follow_links(false)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path()
-                .extension()
-                .and_then(|ext| ext.to_str())
-                == Some("tex")
-        })
+        .filter(|e| e.path().extension().and_then(|ext| ext.to_str()) == Some("tex"))
         .map(|e| e.path().to_path_buf())
         .collect()
 }
@@ -290,13 +285,23 @@ fn count_key_occurrences(content: &str, key: &str) -> usize {
         format!("\\eqref{{{}}}", key),
         format!("\\vref{{{}}}", key),
     ];
-    patterns.iter().map(|p| content.matches(p.as_str()).count()).sum()
+    patterns
+        .iter()
+        .map(|p| content.matches(p.as_str()).count())
+        .sum()
 }
 
 fn replace_key(content: &str, old_key: &str, new_key: &str) -> String {
     let prefixes = [
-        "\\label", "\\ref", "\\cref", "\\Cref", "\\autoref",
-        "\\pageref", "\\nameref", "\\eqref", "\\vref",
+        "\\label",
+        "\\ref",
+        "\\cref",
+        "\\Cref",
+        "\\autoref",
+        "\\pageref",
+        "\\nameref",
+        "\\eqref",
+        "\\vref",
     ];
     let mut result = content.to_string();
     for prefix in &prefixes {
@@ -323,9 +328,13 @@ mod tests {
 
     #[test]
     fn dispatcher_execute_and_undo() {
-        struct IncrementCmd { value: i32 }
+        struct IncrementCmd {
+            value: i32,
+        }
         impl Command for IncrementCmd {
-            fn name(&self) -> &str { "increment" }
+            fn name(&self) -> &str {
+                "increment"
+            }
             fn execute(&mut self, _: &mut CommandContext) -> Result<CommandResult, CommandError> {
                 self.value += 1;
                 Ok(self.value.to_string())
@@ -349,7 +358,9 @@ mod tests {
     fn dispatcher_redo_works() {
         struct NoopCmd;
         impl Command for NoopCmd {
-            fn name(&self) -> &str { "noop" }
+            fn name(&self) -> &str {
+                "noop"
+            }
             fn execute(&mut self, _: &mut CommandContext) -> Result<CommandResult, CommandError> {
                 Ok("done".to_string())
             }
@@ -369,10 +380,7 @@ mod tests {
 
     #[test]
     fn rename_label_single_file() {
-        let dir = setup_project(&[(
-            "main.tex",
-            "Some text \\label{fig:old} and \\ref{fig:old}",
-        )]);
+        let dir = setup_project(&[("main.tex", "Some text \\label{fig:old} and \\ref{fig:old}")]);
         let mut cmd = RenameLabelCommand::new("fig:old", "fig:new");
         let mut ctx = CommandContext::new(dir.path().to_path_buf());
         let result = cmd.execute(&mut ctx).unwrap();

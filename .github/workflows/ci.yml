@@ -88,11 +88,8 @@ jobs:
       - name: Format check
         run: cargo fmt --all -- --check
 
-      # Clippy: continue-on-error mientras haya lints preexistentes sin corregir.
-      # El output va a stderr/stdout del step — visible en el log del job.
-      - name: Clippy (advisory while legacy lints remain)
+      - name: Clippy (gate duro — sin deuda pendiente)
         run: cargo clippy --workspace -- -D warnings
-        continue-on-error: true
 
   frontend:
     runs-on: ubuntu-latest

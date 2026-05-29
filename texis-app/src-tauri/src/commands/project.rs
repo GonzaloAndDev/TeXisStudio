@@ -40,11 +40,13 @@ pub fn create_project(
     registry.load_from_dir(&prof_dir).map_err(err)?;
     let profile = registry
         .get(&profile_id)
-        .ok_or_else(|| format!(
-            "Perfil '{}' no encontrado en {}.",
-            profile_id,
-            prof_dir.display()
-        ))?
+        .ok_or_else(|| {
+            format!(
+                "Perfil '{}' no encontrado en {}.",
+                profile_id,
+                prof_dir.display()
+            )
+        })?
         .clone();
 
     // Crear estructura de directorios
@@ -170,10 +172,7 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
 
 /// Valida el proyecto y devuelve el reporte de issues.
 #[tauri::command]
-pub fn validate_project(
-    app: tauri::AppHandle,
-    project_path: String,
-) -> Result<Value, String> {
+pub fn validate_project(app: tauri::AppHandle, project_path: String) -> Result<Value, String> {
     let path = PathBuf::from(&project_path);
     let yaml_path = path.join("tesis.project.yaml");
     let loader = ProjectLoader;
@@ -288,9 +287,10 @@ pub fn append_bib_entry(project_path: String, bibtex: String) -> Result<String, 
 
         if let Some(ref doi) = new_doi {
             if !doi.is_empty() {
-                if let Some(dup) = existing_entries.iter().find(|e| {
-                    e.fields.get("doi").map(|d| d.to_lowercase()).as_deref() == Some(doi)
-                }) {
+                if let Some(dup) = existing_entries
+                    .iter()
+                    .find(|e| e.fields.get("doi").map(|d| d.to_lowercase()).as_deref() == Some(doi))
+                {
                     return Err(format!(
                         "El DOI '{doi}' ya está registrado como '{}'.",
                         dup.key
@@ -381,7 +381,10 @@ pub fn list_snapshots(project_path: String) -> Result<Value, String> {
 
     // Ordenar más reciente primero (por nombre, que tiene el timestamp al inicio)
     entries.sort_by(|a, b| {
-        b["filename"].as_str().unwrap_or("").cmp(a["filename"].as_str().unwrap_or(""))
+        b["filename"]
+            .as_str()
+            .unwrap_or("")
+            .cmp(a["filename"].as_str().unwrap_or(""))
     });
 
     Ok(serde_json::json!(entries))
@@ -392,7 +395,10 @@ pub fn list_snapshots(project_path: String) -> Result<Value, String> {
 #[tauri::command]
 pub fn restore_snapshot(project_path: String, snapshot_filename: String) -> Result<(), String> {
     // Seguridad: el nombre no puede contener separadores de ruta
-    if snapshot_filename.contains('/') || snapshot_filename.contains('\\') || snapshot_filename.contains("..") {
+    if snapshot_filename.contains('/')
+        || snapshot_filename.contains('\\')
+        || snapshot_filename.contains("..")
+    {
         return Err("Nombre de snapshot inválido.".to_string());
     }
 
@@ -421,7 +427,10 @@ pub fn restore_snapshot(project_path: String, snapshot_filename: String) -> Resu
 /// Elimina un snapshot del proyecto.
 #[tauri::command]
 pub fn delete_snapshot(project_path: String, snapshot_filename: String) -> Result<(), String> {
-    if snapshot_filename.contains('/') || snapshot_filename.contains('\\') || snapshot_filename.contains("..") {
+    if snapshot_filename.contains('/')
+        || snapshot_filename.contains('\\')
+        || snapshot_filename.contains("..")
+    {
         return Err("Nombre de snapshot inválido.".to_string());
     }
 
@@ -489,15 +498,16 @@ pub fn export_delivery(
         .collect();
 
     // ── Gate de modo review/final ─────────────────────────────────
-    if mode == "review" || mode == "final" {
-        if !validation_errors.is_empty() {
-            let msgs: Vec<String> = validation_errors.iter().map(|i| i.message.clone()).collect();
-            return Err(format!(
-                "Exportación bloqueada — {} error(es) de validación:\n{}",
-                msgs.len(),
-                msgs.join("\n")
-            ));
-        }
+    if (mode == "review" || mode == "final") && !validation_errors.is_empty() {
+        let msgs: Vec<String> = validation_errors
+            .iter()
+            .map(|i| i.message.clone())
+            .collect();
+        return Err(format!(
+            "Exportación bloqueada — {} error(es) de validación:\n{}",
+            msgs.len(),
+            msgs.join("\n")
+        ));
     }
 
     // ── Postflight PDF ───────────────────────────────────────────
@@ -519,7 +529,8 @@ pub fn export_delivery(
         }
         if !pdf_path.exists() {
             return Err(
-                "Exportación final bloqueada — no existe PDF compilado. Compila primero.".to_string(),
+                "Exportación final bloqueada — no existe PDF compilado. Compila primero."
+                    .to_string(),
             );
         }
     }
@@ -541,8 +552,7 @@ pub fn export_delivery(
         app_version: env!("CARGO_PKG_VERSION"),
     };
 
-    let result = texis_core::exporter::create_delivery_package(&input, &options)
-        .map_err(err)?;
+    let result = texis_core::exporter::create_delivery_package(&input, &options).map_err(err)?;
 
     Ok(serde_json::json!({
         "zip_path": result.zip_path.to_string_lossy(),
@@ -563,7 +573,9 @@ fn add_dir_to_zip(
     exclude_names: &[&str],
 ) -> Result<(), String> {
     use std::io::Write;
-    let walker = walkdir::WalkDir::new(dir).into_iter().filter_map(|e| e.ok());
+    let walker = walkdir::WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|e| e.ok());
     for entry in walker {
         let path = entry.path();
         let rel = path.strip_prefix(dir).map_err(err)?;
@@ -589,10 +601,10 @@ fn add_dir_to_zip(
 #[tauri::command]
 pub fn update_typography(
     project_path: String,
-    font_size:    Option<String>,
-    paper_size:   Option<String>,
+    font_size: Option<String>,
+    paper_size: Option<String>,
     line_spacing: Option<String>,
-    margin_cm:    Option<f32>,
+    margin_cm: Option<f32>,
 ) -> Result<(), String> {
     use texis_core::project::model::LatexTypography;
 
@@ -606,7 +618,9 @@ pub fn update_typography(
         margin_cm,
     };
 
-    ProjectSaver.save_to_file(&model, &project_yaml).map_err(err)
+    ProjectSaver
+        .save_to_file(&model, &project_yaml)
+        .map_err(err)
 }
 
 /// Actualiza el estado editorial y las notas internas de una sección.
@@ -618,14 +632,19 @@ pub fn update_section_meta(
     status: String,
     notes: Option<String>,
 ) -> Result<(), String> {
-    use texis_core::project::model::SectionStatus;
     use texis_core::project::model::ProjectSection;
+    use texis_core::project::model::SectionStatus;
 
-    fn apply(sections: &mut [ProjectSection], id: &str, status: &SectionStatus, notes: &Option<String>) -> bool {
+    fn apply(
+        sections: &mut [ProjectSection],
+        id: &str,
+        status: &SectionStatus,
+        notes: &Option<String>,
+    ) -> bool {
         for s in sections.iter_mut() {
             if s.id == id {
                 s.status = status.clone();
-                s.notes  = notes.clone();
+                s.notes = notes.clone();
                 return true;
             }
             if apply(&mut s.children, id, status, notes) {
@@ -637,9 +656,9 @@ pub fn update_section_meta(
 
     let new_status = match status.as_str() {
         "in_review" => SectionStatus::InReview,
-        "revised"   => SectionStatus::Revised,
-        "approved"  => SectionStatus::Approved,
-        _           => SectionStatus::Draft,
+        "revised" => SectionStatus::Revised,
+        "approved" => SectionStatus::Approved,
+        _ => SectionStatus::Draft,
     };
 
     let path = std::path::Path::new(&project_path);
@@ -650,7 +669,9 @@ pub fn update_section_meta(
         return Err(format!("Sección '{}' no encontrada", section_id));
     }
 
-    ProjectSaver.save_to_file(&model, &project_yaml).map_err(err)
+    ProjectSaver
+        .save_to_file(&model, &project_yaml)
+        .map_err(err)
 }
 
 /// Sanitiza la etiqueta de un snapshot para usarla como parte del nombre de archivo.
@@ -724,44 +745,44 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
     let map_placement = |s: &str| -> SectionPlacement {
         match s {
             "front_matter" => SectionPlacement::FrontMatter,
-            "back_matter"  => SectionPlacement::BackMatter,
-            "appendix"     => SectionPlacement::Appendix,
-            _              => SectionPlacement::Body,
+            "back_matter" => SectionPlacement::BackMatter,
+            "appendix" => SectionPlacement::Appendix,
+            _ => SectionPlacement::Body,
         }
     };
 
     let engine = match profile.latex_engine.as_str() {
         "pdflatex" => LatexEngine::Pdflatex,
         "lualatex" => LatexEngine::Lualatex,
-        _          => LatexEngine::Xelatex,
+        _ => LatexEngine::Xelatex,
     };
 
     let compiler = match profile.compiler.as_str() {
         "tectonic" => CompilerKind::Tectonic,
-        _          => CompilerKind::Latexmk,
+        _ => CompilerKind::Latexmk,
     };
 
     let bib_backend = match profile.bibliography_backend.as_str() {
         "bibtex" => BibliographyBackend::Bibtex,
-        _        => BibliographyBackend::Biber,
+        _ => BibliographyBackend::Biber,
     };
 
     let sections = profile
         .sections
         .iter()
         .map(|s| ProjectSection {
-            id:         s.id.clone(),
+            id: s.id.clone(),
             element_id: s.element_id.clone(),
-            title:      s.title.clone(),
-            placement:  map_placement(&s.placement),
-            required:   s.required,
-            enabled:    true,
-            label:      s.label.clone(),
-            status:     SectionStatus::Draft,
-            notes:      None,
-            blocks:     vec![],
-            fields:     HashMap::new(),
-            children:   vec![],
+            title: s.title.clone(),
+            placement: map_placement(&s.placement),
+            required: s.required,
+            enabled: true,
+            label: s.label.clone(),
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![],
+            fields: HashMap::new(),
+            children: vec![],
         })
         .collect();
 
@@ -771,47 +792,51 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
         created_at: now_iso8601(),
         updated_at: now_iso8601(),
         metadata: ProjectMetadata {
-            title:          name.to_string(),
-            subtitle:       None,
-            document_kind:  DocumentKind::Tesis,
+            title: name.to_string(),
+            subtitle: None,
+            document_kind: DocumentKind::Tesis,
             academic_level: AcademicLevel::Licenciatura,
-            language:       "es".to_string(),
-            city:           "Ciudad de México".to_string(),
-            year:           chrono::Utc::now().format("%Y").to_string().parse().unwrap_or(2026),
-            keywords:       vec![],
-            funding:        None,
+            language: "es".to_string(),
+            city: "Ciudad de México".to_string(),
+            year: chrono::Utc::now()
+                .format("%Y")
+                .to_string()
+                .parse()
+                .unwrap_or(2026),
+            keywords: vec![],
+            funding: None,
         },
         institution: InstitutionData {
-            name:       "Universidad".to_string(),
-            faculty:    None,
+            name: "Universidad".to_string(),
+            faculty: None,
             department: None,
-            logo_path:  None,
-            country:    "México".to_string(),
+            logo_path: None,
+            country: "México".to_string(),
         },
         student: StudentData {
-            full_name:  "Autor".to_string(),
+            full_name: "Autor".to_string(),
             student_id: None,
-            email:      None,
-            advisor:    None,
+            email: None,
+            advisor: None,
             co_advisor: None,
-            advisors:   vec![],
+            advisors: vec![],
             co_authors: vec![],
-            committee:  vec![],
-            orcid:      None,
+            committee: vec![],
+            orcid: None,
         },
         profile_id: profile.id.clone(),
         latex_config: LatexConfig {
             document_class: DocumentClassConfig {
-                name:    profile.document_class.name.clone(),
+                name: profile.document_class.name.clone(),
                 options: profile.document_class.options.clone(),
             },
             engine,
             compiler,
             bibliography_backend: bib_backend,
-            bibliography_style:   profile.bibliography_style.clone(),
-            packages_required:    profile.packages.clone(),
-            typography:           Default::default(),
-            page_layout:          map_profile_page_layout(profile),
+            bibliography_style: profile.bibliography_style.clone(),
+            packages_required: profile.packages.clone(),
+            typography: Default::default(),
+            page_layout: map_profile_page_layout(profile),
         },
         sections,
         file_states: HashMap::new(),
@@ -827,10 +852,10 @@ fn map_profile_page_layout(profile: &Profile) -> Option<texis_core::project::mod
     Some(PageLayout {
         paper: pl.paper.clone(),
         margins: pl.margins.as_ref().map(|m| PageMargins {
-            top:    m.top.clone(),
+            top: m.top.clone(),
             bottom: m.bottom.clone(),
-            left:   m.left.clone(),
-            right:  m.right.clone(),
+            left: m.left.clone(),
+            right: m.right.clone(),
         }),
         line_spacing: pl.line_spacing,
     })
@@ -848,7 +873,9 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
         return Err("El nombre del proyecto no puede estar vacío.".to_string());
     }
     if name.len() > 200 {
-        return Err("El nombre del proyecto es demasiado largo (máximo 200 caracteres).".to_string());
+        return Err(
+            "El nombre del proyecto es demasiado largo (máximo 200 caracteres).".to_string(),
+        );
     }
     // Windows trata mal los nombres que terminan en punto o espacio
     if name.ends_with('.') {
@@ -858,25 +885,30 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
         return Err("El nombre del proyecto no puede terminar en espacio.".to_string());
     }
     if name.contains("..") || name.contains('/') || name.contains('\\') {
-        return Err("El nombre del proyecto no puede contener separadores de ruta ni '..'.".to_string());
+        return Err(
+            "El nombre del proyecto no puede contener separadores de ruta ni '..'.".to_string(),
+        );
     }
     // Caracteres inválidos en Windows y caracteres de control
     for c in name.chars() {
         if c.is_control() || matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*') {
             return Err(format!(
-                "El nombre del proyecto contiene el carácter no permitido {:?}.", c
+                "El nombre del proyecto contiene el carácter no permitido {:?}.",
+                c
             ));
         }
     }
     // Nombres reservados de Windows (CON, NUL, COM1…COM9, LPT1…LPT9, etc.)
     let stem = name.split('.').next().unwrap_or(name).to_uppercase();
     let reserved = [
-        "CON", "PRN", "AUX", "NUL",
-        "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
-        "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9",
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
     ];
     if reserved.contains(&stem.as_str()) {
-        return Err(format!("'{}' es un nombre reservado del sistema operativo.", name));
+        return Err(format!(
+            "'{}' es un nombre reservado del sistema operativo.",
+            name
+        ));
     }
     Ok(())
 }
@@ -888,15 +920,30 @@ mod tests_validation {
     // ── validate_profile_id ───────────────────────────────────────
     #[test]
     fn profile_id_validos() {
-        for id in &["generic.thesis", "apa7.basic", "vancouver.health", "mx_unam_apa7", "a", "A1-b"] {
-            assert!(validate_profile_id(id).is_ok(), "debería ser válido: {}", id);
+        for id in &[
+            "generic.thesis",
+            "apa7.basic",
+            "vancouver.health",
+            "mx_unam_apa7",
+            "a",
+            "A1-b",
+        ] {
+            assert!(
+                validate_profile_id(id).is_ok(),
+                "debería ser válido: {}",
+                id
+            );
         }
     }
 
     #[test]
     fn profile_id_traversal_rechazado() {
         for id in &["../x", "a/../b", "a..b"] {
-            assert!(validate_profile_id(id).is_err(), "debería ser inválido: {}", id);
+            assert!(
+                validate_profile_id(id).is_err(),
+                "debería ser inválido: {}",
+                id
+            );
         }
     }
 
@@ -920,7 +967,11 @@ mod tests_validation {
     #[test]
     fn name_validos() {
         for name in &["Mi Tesis", "Tesis2026", "tesis-final", "proyecto.v2"] {
-            assert!(validate_safe_name(name).is_ok(), "debería ser válido: {}", name);
+            assert!(
+                validate_safe_name(name).is_ok(),
+                "debería ser válido: {}",
+                name
+            );
         }
     }
 
@@ -937,14 +988,22 @@ mod tests_validation {
     #[test]
     fn name_reservados_windows_rechazados() {
         for name in &["CON", "NUL", "COM1", "LPT9", "con.txt", "nul.yaml"] {
-            assert!(validate_safe_name(name).is_err(), "reservado debería rechazarse: {}", name);
+            assert!(
+                validate_safe_name(name).is_err(),
+                "reservado debería rechazarse: {}",
+                name
+            );
         }
     }
 
     #[test]
     fn name_chars_invalidos_rechazados() {
         for name in &["tesis<v>", "my:project", "tesis|final", "test*"] {
-            assert!(validate_safe_name(name).is_err(), "char inválido debería rechazarse: {}", name);
+            assert!(
+                validate_safe_name(name).is_err(),
+                "char inválido debería rechazarse: {}",
+                name
+            );
         }
     }
 }
@@ -962,10 +1021,18 @@ fn validate_profile_id(id: &str) -> Result<(), String> {
     if id.contains("..") || id.contains('/') || id.contains('\\') {
         return Err("El ID de perfil no puede contener '..', '/' ni '\\'.".to_string());
     }
-    if !id.chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false) {
+    if !id
+        .chars()
+        .next()
+        .map(|c| c.is_alphanumeric())
+        .unwrap_or(false)
+    {
         return Err("El ID de perfil debe empezar con una letra o número.".to_string());
     }
-    if !id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.')) {
+    if !id
+        .chars()
+        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'))
+    {
         return Err(format!(
             "El ID de perfil '{}' contiene caracteres no permitidos. Solo se permiten letras, números, '_', '-' y '.'.",
             id
@@ -989,7 +1056,7 @@ fn check_critical_dependencies_for_export(
         .or_else(|| {
             use texis_core::project::model::LatexEngine;
             Some(match &model.latex_config.engine {
-                LatexEngine::Xelatex  => "xelatex",
+                LatexEngine::Xelatex => "xelatex",
                 LatexEngine::Pdflatex => "pdflatex",
                 LatexEngine::Lualatex => "lualatex",
             })
@@ -1000,9 +1067,7 @@ fn check_critical_dependencies_for_export(
         .map(|p| p.bibliography_backend.as_str())
         .unwrap_or("biber");
 
-    let bib_style = profile
-        .map(|p| p.bibliography_style.as_str())
-        .unwrap_or("");
+    let bib_style = profile.map(|p| p.bibliography_style.as_str()).unwrap_or("");
 
     let requires_pdfa = profile
         .and_then(|p| p.pdf_requirements.as_ref())
@@ -1018,17 +1083,30 @@ fn check_critical_dependencies_for_export(
             .iter()
             .filter(|c| c.critical && c.status == doctor::ToolStatus::Missing)
             .map(|c| {
-                let hint = c.install_hint.as_ref().map(|h| {
-                    let platform = if cfg!(target_os = "macos") {
-                        h.macos.as_deref()
-                    } else if cfg!(target_os = "windows") {
-                        h.windows.as_deref()
+                let hint = c
+                    .install_hint
+                    .as_ref()
+                    .map(|h| {
+                        let platform = if cfg!(target_os = "macos") {
+                            h.macos.as_deref()
+                        } else if cfg!(target_os = "windows") {
+                            h.windows.as_deref()
+                        } else {
+                            h.linux.as_deref()
+                        };
+                        platform.map(|s| format!("  → {s}")).unwrap_or_default()
+                    })
+                    .unwrap_or_default();
+                format!(
+                    "- {} ({}){}",
+                    c.name,
+                    c.description,
+                    if hint.is_empty() {
+                        String::new()
                     } else {
-                        h.linux.as_deref()
-                    };
-                    platform.map(|s| format!("  → {s}")).unwrap_or_default()
-                }).unwrap_or_default();
-                format!("- {} ({}){}", c.name, c.description, if hint.is_empty() { String::new() } else { format!("\n{hint}") })
+                        format!("\n{hint}")
+                    }
+                )
             })
             .collect();
 
@@ -1066,14 +1144,20 @@ pub fn generate_review_report(
     let mut md = String::new();
 
     // ── Encabezado ──
-    md.push_str(&format!("# Reporte de revisión: {}\n\n", model.metadata.title));
+    md.push_str(&format!(
+        "# Reporte de revisión: {}\n\n",
+        model.metadata.title
+    ));
     md.push_str(&format!("**Autor:** {}  \n", model.student.full_name));
     if let Some(advisor) = model.student.advisor.as_deref() {
         md.push_str(&format!("**Director:** {}  \n", advisor));
     }
     md.push_str(&format!("**Institución:** {}  \n", model.institution.name));
     md.push_str(&format!("**Perfil activo:** {}  \n", model.profile_id));
-    md.push_str(&format!("**Fecha de reporte:** {}  \n\n", chrono::Utc::now().format("%Y-%m-%d")));
+    md.push_str(&format!(
+        "**Fecha de reporte:** {}  \n\n",
+        chrono::Utc::now().format("%Y-%m-%d")
+    ));
 
     // ── Progreso de secciones ──
     md.push_str("## Estado de secciones\n\n");
@@ -1081,31 +1165,57 @@ pub fn generate_review_report(
     md.push_str("|---------|--------|----------------|\n");
 
     let status_label = |s: &SectionStatus| match s {
-        SectionStatus::Draft    => "🟡 Borrador",
+        SectionStatus::Draft => "🟡 Borrador",
         SectionStatus::InReview => "🔵 En revisión",
-        SectionStatus::Revised  => "🟠 Corrigiendo",
+        SectionStatus::Revised => "🟠 Corrigiendo",
         SectionStatus::Approved => "🟢 Aprobado",
     };
 
     for section in &model.sections {
-        if !section.enabled { continue; }
-        let title = section.title.as_deref().unwrap_or(section.element_id.as_str());
+        if !section.enabled {
+            continue;
+        }
+        let title = section
+            .title
+            .as_deref()
+            .unwrap_or(section.element_id.as_str());
         let notes = section.notes.as_deref().unwrap_or("—");
-        let words: usize = section.blocks.iter()
+        let words: usize = section
+            .blocks
+            .iter()
             .filter_map(|b| match b {
-                texis_core::project::model::ContentBlock::Paragraph(p) => Some(p.content.split_whitespace().count()),
+                texis_core::project::model::ContentBlock::Paragraph(p) => {
+                    Some(p.content.split_whitespace().count())
+                }
                 _ => None,
             })
             .sum();
-        let word_note = if words > 0 { format!(" ({} palabras)", words) } else { String::new() };
-        md.push_str(&format!("| {}{} | {} | {} |\n",
-            title, word_note, status_label(&section.status), notes));
+        let word_note = if words > 0 {
+            format!(" ({} palabras)", words)
+        } else {
+            String::new()
+        };
+        md.push_str(&format!(
+            "| {}{} | {} | {} |\n",
+            title,
+            word_note,
+            status_label(&section.status),
+            notes
+        ));
     }
     md.push('\n');
 
     // ── Resumen de validación ──
-    let errors: Vec<_>   = validation.issues.iter().filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error)).collect();
-    let warnings: Vec<_> = validation.issues.iter().filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning)).collect();
+    let errors: Vec<_> = validation
+        .issues
+        .iter()
+        .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error))
+        .collect();
+    let warnings: Vec<_> = validation
+        .issues
+        .iter()
+        .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Warning))
+        .collect();
 
     md.push_str("## Validación automática\n\n");
     md.push_str(&format!("- **Errores:** {}  \n", errors.len()));
@@ -1134,7 +1244,9 @@ pub fn generate_review_report(
     }
 
     if errors.is_empty() && warnings.is_empty() {
-        md.push_str("Sin issues detectados — el documento pasa todas las validaciones automáticas. ✓\n\n");
+        md.push_str(
+            "Sin issues detectados — el documento pasa todas las validaciones automáticas. ✓\n\n",
+        );
     }
 
     // ── Notas globales del asesor (placeholder) ──
@@ -1169,38 +1281,49 @@ pub fn get_section_progress(project_path: String) -> Result<Vec<SectionProgress>
     let project_yaml = project_dir.join("tesis.project.yaml");
     let model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
 
-    let progress = model.sections.iter().map(|s| {
-        let word_count: usize = s.blocks.iter()
-            .filter_map(|b| match b {
-                texis_core::project::model::ContentBlock::Paragraph(p) => Some(p.content.split_whitespace().count()),
-                texis_core::project::model::ContentBlock::Heading(h)   => Some(h.content.split_whitespace().count()),
-                _ => None,
-            })
-            .sum();
-        let status_str = match s.status {
-            texis_core::project::model::SectionStatus::Draft    => "draft",
-            texis_core::project::model::SectionStatus::InReview => "in_review",
-            texis_core::project::model::SectionStatus::Revised  => "revised",
-            texis_core::project::model::SectionStatus::Approved => "approved",
-        };
-        SectionProgress {
-            id: s.id.clone(),
-            element_id: s.element_id.clone(),
-            title: s.title.clone().unwrap_or_else(|| s.element_id.clone()),
-            placement: match s.placement {
-                texis_core::project::model::SectionPlacement::FrontMatter => "front_matter",
-                texis_core::project::model::SectionPlacement::Body        => "body",
-                texis_core::project::model::SectionPlacement::BackMatter  => "back_matter",
-                texis_core::project::model::SectionPlacement::Appendix    => "appendix",
-            }.to_string(),
-            status: status_str.to_string(),
-            enabled: s.enabled,
-            word_count,
-            has_notes: s.notes.as_ref().map(|n| !n.is_empty()).unwrap_or(false),
-            notes: s.notes.clone(),
-            block_count: s.blocks.len(),
-        }
-    }).collect();
+    let progress = model
+        .sections
+        .iter()
+        .map(|s| {
+            let word_count: usize = s
+                .blocks
+                .iter()
+                .filter_map(|b| match b {
+                    texis_core::project::model::ContentBlock::Paragraph(p) => {
+                        Some(p.content.split_whitespace().count())
+                    }
+                    texis_core::project::model::ContentBlock::Heading(h) => {
+                        Some(h.content.split_whitespace().count())
+                    }
+                    _ => None,
+                })
+                .sum();
+            let status_str = match s.status {
+                texis_core::project::model::SectionStatus::Draft => "draft",
+                texis_core::project::model::SectionStatus::InReview => "in_review",
+                texis_core::project::model::SectionStatus::Revised => "revised",
+                texis_core::project::model::SectionStatus::Approved => "approved",
+            };
+            SectionProgress {
+                id: s.id.clone(),
+                element_id: s.element_id.clone(),
+                title: s.title.clone().unwrap_or_else(|| s.element_id.clone()),
+                placement: match s.placement {
+                    texis_core::project::model::SectionPlacement::FrontMatter => "front_matter",
+                    texis_core::project::model::SectionPlacement::Body => "body",
+                    texis_core::project::model::SectionPlacement::BackMatter => "back_matter",
+                    texis_core::project::model::SectionPlacement::Appendix => "appendix",
+                }
+                .to_string(),
+                status: status_str.to_string(),
+                enabled: s.enabled,
+                word_count,
+                has_notes: s.notes.as_ref().map(|n| !n.is_empty()).unwrap_or(false),
+                notes: s.notes.clone(),
+                block_count: s.blocks.len(),
+            }
+        })
+        .collect();
 
     Ok(progress)
 }
@@ -1219,14 +1342,23 @@ pub fn list_project_assets(project_path: String) -> Result<Value, String> {
     let mut files: Vec<serde_json::Value> = Vec::new();
     collect_assets_recursive(&assets_dir, &root, &mut files);
     files.sort_by(|a, b| {
-        a["name"].as_str().unwrap_or("").cmp(b["name"].as_str().unwrap_or(""))
+        a["name"]
+            .as_str()
+            .unwrap_or("")
+            .cmp(b["name"].as_str().unwrap_or(""))
     });
 
     Ok(serde_json::json!(files))
 }
 
-fn collect_assets_recursive(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<serde_json::Value>) {
-    let Ok(entries) = std::fs::read_dir(dir) else { return };
+fn collect_assets_recursive(
+    dir: &std::path::Path,
+    root: &std::path::Path,
+    out: &mut Vec<serde_json::Value>,
+) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
     let image_exts = ["png", "jpg", "jpeg", "pdf", "svg", "eps", "bmp", "tiff"];
 
     for entry in entries.flatten() {
@@ -1234,10 +1366,18 @@ fn collect_assets_recursive(dir: &std::path::Path, root: &std::path::Path, out: 
         if path.is_dir() {
             collect_assets_recursive(&path, root, out);
         } else {
-            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+            let ext = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_lowercase();
             if image_exts.contains(&ext.as_str()) {
                 let relative = path.strip_prefix(root).unwrap_or(&path);
-                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string();
                 out.push(serde_json::json!({
                     "name": name,
                     "path": relative.to_string_lossy().replace('\\', "/"),

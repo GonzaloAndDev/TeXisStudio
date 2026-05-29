@@ -2,19 +2,18 @@
 // API: https://api.datacite.org/dois/{doi}
 // No requiere autenticación. Accept: application/vnd.api+json
 
+use chrono::Utc;
 use serde::Deserialize;
 use std::time::Duration;
-use texis_core::bibliography::model::{
-    BibliographicRecord, PersonName, RecordType, provider,
-};
+use texis_core::bibliography::model::{provider, BibliographicRecord, PersonName, RecordType};
 use texis_core::bibliography::normalization::{
     clean_title, map_datacite_type, normalize_doi, normalize_isbn, parse_date_str,
 };
-use chrono::Utc;
 
 const DATACITE_BASE: &str = "https://api.datacite.org/dois/";
 const USER_AGENT: &str = concat!(
-    "TeXisStudio/", env!("CARGO_PKG_VERSION"),
+    "TeXisStudio/",
+    env!("CARGO_PKG_VERSION"),
     " (https://github.com/GonzaloAndDev/TeXisStudio; mailto:gaelsd25@gmail.com)"
 );
 const TIMEOUT_SECS: u64 = 15;
@@ -162,9 +161,9 @@ fn attrs_to_record(attrs: &DataCiteAttributes, doi_normalized: &str) -> Bibliogr
         .as_deref()
         .and_then(|cs| cs.first())
         .and_then(|c| {
-            c.family_name.as_deref().or_else(|| {
-                c.name.as_deref().and_then(|n| n.split(',').next())
-            })
+            c.family_name
+                .as_deref()
+                .or_else(|| c.name.as_deref().and_then(|n| n.split(',').next()))
         })
         .unwrap_or("unknown");
 
@@ -186,13 +185,11 @@ fn attrs_to_record(attrs: &DataCiteAttributes, doi_normalized: &str) -> Bibliogr
 
     // Publisher (puede ser string o objeto)
     record.publisher = attrs.publisher.as_ref().and_then(|p| {
-        if let Some(s) = p.as_str() {
-            Some(s.to_string())
-        } else if let Some(name) = p.get("name").and_then(|n| n.as_str()) {
-            Some(name.to_string())
-        } else {
-            None
-        }
+        p.as_str().map(|s| s.to_string()).or_else(|| {
+            p.get("name")
+                .and_then(|n| n.as_str())
+                .map(|s| s.to_string())
+        })
     });
 
     // Autores
@@ -203,9 +200,7 @@ fn attrs_to_record(attrs: &DataCiteAttributes, doi_normalized: &str) -> Bibliogr
                 let is_org = c.name_type.as_deref() == Some("Organizational");
                 if is_org {
                     PersonName::new_organization(c.name.as_deref().unwrap_or(""))
-                } else if let (Some(family), Some(given)) =
-                    (&c.family_name, &c.given_name)
-                {
+                } else if let (Some(family), Some(given)) = (&c.family_name, &c.given_name) {
                     let mut p = PersonName::new_person(family, given);
                     // ORCID
                     p.orcid = c.name_identifiers.as_deref().and_then(|ids| {
@@ -276,15 +271,12 @@ fn attrs_to_record(attrs: &DataCiteAttributes, doi_normalized: &str) -> Bibliogr
         .and_then(|r| r.rights_uri.clone());
 
     // ISBN desde identifiers
-    record.isbn = attrs
-        .identifiers
-        .as_deref()
-        .and_then(|ids| {
-            ids.iter()
-                .find(|id| id.identifier_type.as_deref() == Some("ISBN"))
-                .and_then(|id| id.identifier.as_deref())
-                .and_then(normalize_isbn)
-        });
+    record.isbn = attrs.identifiers.as_deref().and_then(|ids| {
+        ids.iter()
+            .find(|id| id.identifier_type.as_deref() == Some("ISBN"))
+            .and_then(|id| id.identifier.as_deref())
+            .and_then(normalize_isbn)
+    });
 
     // Container (journal/booktitle)
     if let Some(container) = &attrs.container {
@@ -326,7 +318,10 @@ async fn fetch_from_datacite(doi_normalized: &str) -> Result<BibliographicRecord
         return Err(format!("DOI no encontrado en DataCite: {doi_normalized}"));
     }
     if !resp.status().is_success() {
-        return Err(format!("DataCite respondió con error HTTP {}", resp.status()));
+        return Err(format!(
+            "DataCite respondió con error HTTP {}",
+            resp.status()
+        ));
     }
 
     let raw: serde_json::Value = resp
@@ -351,12 +346,10 @@ pub async fn import_doi_datacite(doi: String) -> Result<serde_json::Value, Strin
     if doi.trim().is_empty() {
         return Err("El DOI no puede estar vacío.".to_string());
     }
-    let normalized = normalize_doi(doi.trim())
-        .ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
+    let normalized = normalize_doi(doi.trim()).ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
 
     let record = fetch_from_datacite(&normalized).await?;
-    serde_json::to_value(&record)
-        .map_err(|e| format!("Error al serializar registro: {e}"))
+    serde_json::to_value(&record).map_err(|e| format!("Error al serializar registro: {e}"))
 }
 
 // ── Función pública para uso desde el motor bibliográfico ─────────────────────

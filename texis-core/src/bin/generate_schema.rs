@@ -12,8 +12,7 @@ fn main() {
     use texis_core::schema::versions::CURRENT_SCHEMA_VERSION;
 
     let schema = schema_for!(Profile);
-    let json = serde_json::to_string_pretty(&schema)
-        .expect("schema serialization failed");
+    let json = serde_json::to_string_pretty(&schema).expect("schema serialization failed");
 
     // Nombre del archivo derivado de la versión canónica (CURRENT_SCHEMA_VERSION).
     // Si cambia la versión en versions.rs, el artifact cambia de nombre automáticamente.

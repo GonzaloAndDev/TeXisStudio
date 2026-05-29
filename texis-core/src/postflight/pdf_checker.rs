@@ -1,4 +1,6 @@
-use super::model::{FontCheck, PdfaCheck, PdfIssue, PdfIssueSeverity, PdfMetadata, PdfPostflightResult};
+use super::model::{
+    FontCheck, PdfIssue, PdfIssueSeverity, PdfMetadata, PdfPostflightResult, PdfaCheck,
+};
 use std::path::Path;
 use std::process::Command;
 
@@ -23,12 +25,17 @@ impl PdfChecker {
             issues.push(PdfIssue {
                 severity: PdfIssueSeverity::Warning,
                 code: "PF_MISSING_PDFINFO".to_string(),
-                message: "pdfinfo no está disponible — no se pueden verificar metadatos del PDF.".to_string(),
-                suggestion: Some("Instala poppler-utils (Linux/macOS) o asegúrate de que TeX Live lo incluya.".to_string()),
+                message: "pdfinfo no está disponible — no se pueden verificar metadatos del PDF."
+                    .to_string(),
+                suggestion: Some(
+                    "Instala poppler-utils (Linux/macOS) o asegúrate de que TeX Live lo incluya."
+                        .to_string(),
+                ),
             });
-            let mut meta = PdfMetadata::default();
-            meta.file_size_bytes = std::fs::metadata(pdf_path).ok().map(|m| m.len());
-            meta
+            PdfMetadata {
+                file_size_bytes: std::fs::metadata(pdf_path).ok().map(|m| m.len()),
+                ..PdfMetadata::default()
+            }
         };
 
         // ── pdffonts ─────────────────────────────────────────────
@@ -56,16 +63,25 @@ impl PdfChecker {
             });
         }
 
-        if metadata.pages == Some(0) || metadata.pages.is_none() && tools_available.contains(&"pdfinfo".to_string()) {
+        if metadata.pages == Some(0)
+            || metadata.pages.is_none() && tools_available.contains(&"pdfinfo".to_string())
+        {
             issues.push(PdfIssue {
                 severity: PdfIssueSeverity::Error,
                 code: "PF_NO_PAGES".to_string(),
-                message: "El PDF no tiene páginas o no se pudo leer el número de páginas.".to_string(),
-                suggestion: Some("El archivo puede estar corrupto. Recompila desde cero.".to_string()),
+                message: "El PDF no tiene páginas o no se pudo leer el número de páginas."
+                    .to_string(),
+                suggestion: Some(
+                    "El archivo puede estar corrupto. Recompila desde cero.".to_string(),
+                ),
             });
         }
 
-        if metadata.title.as_deref().map(|t| t.trim().is_empty()).unwrap_or(true)
+        if metadata
+            .title
+            .as_deref()
+            .map(|t| t.trim().is_empty())
+            .unwrap_or(true)
             && tools_available.contains(&"pdfinfo".to_string())
         {
             issues.push(PdfIssue {
@@ -76,7 +92,11 @@ impl PdfChecker {
             });
         }
 
-        if metadata.author.as_deref().map(|a| a.trim().is_empty()).unwrap_or(true)
+        if metadata
+            .author
+            .as_deref()
+            .map(|a| a.trim().is_empty())
+            .unwrap_or(true)
             && tools_available.contains(&"pdfinfo".to_string())
         {
             issues.push(PdfIssue {
@@ -150,20 +170,20 @@ fn run_pdfinfo(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfMetadata {
             let k = key.trim();
             let v = val.trim().to_string();
             match k {
-                "Title"       => meta.title = if v.is_empty() { None } else { Some(v) },
-                "Author"      => meta.author = if v.is_empty() { None } else { Some(v) },
-                "Creator"     => meta.creator = if v.is_empty() { None } else { Some(v) },
-                "Producer"    => meta.producer = if v.is_empty() { None } else { Some(v) },
-                "CreationDate"=> meta.creation_date = if v.is_empty() { None } else { Some(v) },
-                "Pages"       => meta.pages = v.parse().ok(),
+                "Title" => meta.title = if v.is_empty() { None } else { Some(v) },
+                "Author" => meta.author = if v.is_empty() { None } else { Some(v) },
+                "Creator" => meta.creator = if v.is_empty() { None } else { Some(v) },
+                "Producer" => meta.producer = if v.is_empty() { None } else { Some(v) },
+                "CreationDate" => meta.creation_date = if v.is_empty() { None } else { Some(v) },
+                "Pages" => meta.pages = v.parse().ok(),
                 "PDF version" => meta.pdf_version = if v.is_empty() { None } else { Some(v) },
-                "Page size"   => meta.page_size = if v.is_empty() { None } else { Some(v) },
-                "Encrypted"   => meta.is_encrypted = v.to_lowercase().starts_with("yes"),
+                "Page size" => meta.page_size = if v.is_empty() { None } else { Some(v) },
+                "Encrypted" => meta.is_encrypted = v.to_lowercase().starts_with("yes"),
                 "Optimized" | "Linearized" => {
                     meta.is_linearized = v.to_lowercase().starts_with("yes");
                 }
-                "JavaScript"  => meta.has_javascript = v.to_lowercase().starts_with("yes"),
-                "File size"   => {
+                "JavaScript" => meta.has_javascript = v.to_lowercase().starts_with("yes"),
+                "File size" => {
                     // "12345 bytes"
                     if let Some(num) = v.split_whitespace().next() {
                         meta.file_size_bytes = num.parse().ok();
@@ -230,7 +250,7 @@ fn run_pdffonts(
         let emb_str = parts[n - 5];
         let sub_str = parts[n - 4];
         let embedded = emb_str == "yes";
-        let subset   = sub_str == "yes";
+        let subset = sub_str == "yes";
 
         // Name is everything before the type field. Type is the 2nd-to-last group
         // before encoding. This is complex; simpler heuristic: name ends before
@@ -263,7 +283,12 @@ fn run_pdffonts(
             });
         }
 
-        fonts.push(FontCheck { name, font_type, embedded, subset });
+        fonts.push(FontCheck {
+            name,
+            font_type,
+            embedded,
+            subset,
+        });
     }
 
     let all_embedded = non_embedded.is_empty();
@@ -351,7 +376,10 @@ fn run_verapdf(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfaCheck {
             code: "PF_PDFA_NON_COMPLIANT".to_string(),
             message: format!(
                 "El PDF declara ser PDF/A pero no es conforme{}.",
-                flavour.as_deref().map(|f| format!(" ({})", f)).unwrap_or_default()
+                flavour
+                    .as_deref()
+                    .map(|f| format!(" ({})", f))
+                    .unwrap_or_default()
             ),
             suggestion: Some(
                 "Verifica que todas las fuentes estén incrustadas, que las imágenes no usen \
@@ -361,7 +389,12 @@ fn run_verapdf(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfaCheck {
         });
     }
 
-    PdfaCheck { compliant, flavour, summary: summary_line, verapdf_version }
+    PdfaCheck {
+        compliant,
+        flavour,
+        summary: summary_line,
+        verapdf_version,
+    }
 }
 
 /// Extrae el identificador de flavour PDF/A de una cadena de texto.
@@ -371,7 +404,9 @@ fn extract_pdfa_flavour(s: &str) -> Option<String> {
     // Buscar patrón "PDFA_X_Y"
     if let Some(idx) = upper.find("PDFA_") {
         let rest = &upper[idx..];
-        let end = rest.find(|c: char| !c.is_ascii_alphanumeric() && c != '_').unwrap_or(rest.len());
+        let end = rest
+            .find(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+            .unwrap_or(rest.len());
         let candidate = &rest[..end];
         if candidate.len() >= 7 {
             return Some(candidate.to_string());
@@ -380,10 +415,10 @@ fn extract_pdfa_flavour(s: &str) -> Option<String> {
     // Buscar patrón "PDF/A-Xb" o "PDF/A-X"
     if let Some(idx) = upper.find("PDF/A-") {
         let rest = &upper[idx..];
-        let end = rest.find(|c: char| c == ' ' || c == '\n' || c == '\t' || c == ',').unwrap_or(rest.len());
+        let end = rest.find([' ', '\n', '\t', ',']).unwrap_or(rest.len());
         let candidate = &rest[..end.min(10)];
         if candidate.len() >= 6 {
-            return Some(candidate.replace('/', "_").replace('-', "_").to_string());
+            return Some(candidate.replace(['/', '-'], "_").to_string());
         }
     }
     None

@@ -1,6 +1,6 @@
 use super::model::{
-    GeneratorKind, ProjectMetadataTemplate, ProjectTemplate, TemplateBuildConfig,
-    TemplateContent, TemplateFile,
+    GeneratorKind, ProjectMetadataTemplate, ProjectTemplate, TemplateBuildConfig, TemplateContent,
+    TemplateFile,
 };
 use crate::texis_project::model::DocumentTypeHint;
 use std::path::PathBuf;
@@ -86,13 +86,15 @@ fn template_thesis_es() -> ProjectTemplate {
                 PathBuf::from("back/apendice-a.tex"),
                 "Apéndice A (opcional).",
             ),
-            managed(PathBuf::from("bibliography/references.bib"), GeneratorKind::BibFile),
-            managed(PathBuf::from("glossary/glossary.tex"), GeneratorKind::GlossaryFile),
-            static_file(
-                PathBuf::from("assets/images/.gitkeep"),
-                "",
-                false,
+            managed(
+                PathBuf::from("bibliography/references.bib"),
+                GeneratorKind::BibFile,
             ),
+            managed(
+                PathBuf::from("glossary/glossary.tex"),
+                GeneratorKind::GlossaryFile,
+            ),
+            static_file(PathBuf::from("assets/images/.gitkeep"), "", false),
         ],
         default_metadata: ProjectMetadataTemplate {
             title_placeholder: "Título de la tesis".to_string(),
@@ -136,14 +138,38 @@ fn template_thesis_en() -> ProjectTemplate {
             managed(PathBuf::from("main.tex"), GeneratorKind::MainTex),
             managed(PathBuf::from("preamble.tex"), GeneratorKind::PreambleTex),
             managed(PathBuf::from("metadata.tex"), GeneratorKind::MetadataTex),
-            placeholder(PathBuf::from("front/abstract.tex"), "Abstract (max. 300 words)."),
-            placeholder(PathBuf::from("front/acknowledgments.tex"), "Acknowledgments."),
-            placeholder(PathBuf::from("chapters/chapter-01-introduction.tex"), "Chapter 1: Introduction."),
-            placeholder(PathBuf::from("chapters/chapter-02-background.tex"), "Chapter 2: Background."),
-            placeholder(PathBuf::from("chapters/chapter-03-methodology.tex"), "Chapter 3: Methodology."),
-            placeholder(PathBuf::from("chapters/chapter-04-results.tex"), "Chapter 4: Results."),
-            placeholder(PathBuf::from("chapters/chapter-05-conclusion.tex"), "Chapter 5: Conclusion."),
-            managed(PathBuf::from("bibliography/references.bib"), GeneratorKind::BibFile),
+            placeholder(
+                PathBuf::from("front/abstract.tex"),
+                "Abstract (max. 300 words).",
+            ),
+            placeholder(
+                PathBuf::from("front/acknowledgments.tex"),
+                "Acknowledgments.",
+            ),
+            placeholder(
+                PathBuf::from("chapters/chapter-01-introduction.tex"),
+                "Chapter 1: Introduction.",
+            ),
+            placeholder(
+                PathBuf::from("chapters/chapter-02-background.tex"),
+                "Chapter 2: Background.",
+            ),
+            placeholder(
+                PathBuf::from("chapters/chapter-03-methodology.tex"),
+                "Chapter 3: Methodology.",
+            ),
+            placeholder(
+                PathBuf::from("chapters/chapter-04-results.tex"),
+                "Chapter 4: Results.",
+            ),
+            placeholder(
+                PathBuf::from("chapters/chapter-05-conclusion.tex"),
+                "Chapter 5: Conclusion.",
+            ),
+            managed(
+                PathBuf::from("bibliography/references.bib"),
+                GeneratorKind::BibFile,
+            ),
         ],
         default_metadata: ProjectMetadataTemplate {
             title_placeholder: "Thesis Title".to_string(),
@@ -177,13 +203,19 @@ fn template_article() -> ProjectTemplate {
         required_files: vec![
             managed(PathBuf::from("main.tex"), GeneratorKind::MainTex),
             managed(PathBuf::from("preamble.tex"), GeneratorKind::PreambleTex),
-            placeholder(PathBuf::from("sections/abstract.tex"), "Abstract / Resumen."),
+            placeholder(
+                PathBuf::from("sections/abstract.tex"),
+                "Abstract / Resumen.",
+            ),
             placeholder(PathBuf::from("sections/introduction.tex"), "Introducción."),
             placeholder(PathBuf::from("sections/methodology.tex"), "Metodología."),
             placeholder(PathBuf::from("sections/results.tex"), "Resultados."),
             placeholder(PathBuf::from("sections/discussion.tex"), "Discusión."),
             placeholder(PathBuf::from("sections/conclusion.tex"), "Conclusión."),
-            managed(PathBuf::from("bibliography/references.bib"), GeneratorKind::BibFile),
+            managed(
+                PathBuf::from("bibliography/references.bib"),
+                GeneratorKind::BibFile,
+            ),
         ],
         default_metadata: ProjectMetadataTemplate {
             title_placeholder: "Título del artículo".to_string(),
@@ -207,7 +239,11 @@ fn template_book() -> ProjectTemplate {
         "book",
         "Libro / Monografía",
         DocumentTypeHint::Book,
-        &["chapters/chapter-01.tex", "chapters/chapter-02.tex", "chapters/chapter-03.tex"],
+        &[
+            "chapters/chapter-01.tex",
+            "chapters/chapter-02.tex",
+            "chapters/chapter-03.tex",
+        ],
         "Capítulo",
     )
 }
@@ -217,7 +253,12 @@ fn template_technical_manual() -> ProjectTemplate {
         "technical_manual",
         "Manual técnico",
         DocumentTypeHint::TechnicalManual,
-        &["sections/overview.tex", "sections/installation.tex", "sections/usage.tex", "sections/reference.tex"],
+        &[
+            "sections/overview.tex",
+            "sections/installation.tex",
+            "sections/usage.tex",
+            "sections/reference.tex",
+        ],
         "Sección",
     )
 }
@@ -227,7 +268,12 @@ fn template_report() -> ProjectTemplate {
         "professional_report",
         "Reporte profesional",
         DocumentTypeHint::Report,
-        &["sections/executive-summary.tex", "sections/background.tex", "sections/findings.tex", "sections/recommendations.tex"],
+        &[
+            "sections/executive-summary.tex",
+            "sections/background.tex",
+            "sections/findings.tex",
+            "sections/recommendations.tex",
+        ],
         "Sección",
     )
 }
@@ -237,7 +283,12 @@ fn template_cv() -> ProjectTemplate {
         "cv",
         "Curriculum Vitae",
         DocumentTypeHint::Cv,
-        &["sections/education.tex", "sections/experience.tex", "sections/skills.tex", "sections/publications.tex"],
+        &[
+            "sections/education.tex",
+            "sections/experience.tex",
+            "sections/skills.tex",
+            "sections/publications.tex",
+        ],
         "Sección del CV",
     )
 }
@@ -256,10 +307,20 @@ fn make_simple(
         managed(PathBuf::from("preamble.tex"), GeneratorKind::PreambleTex),
     ];
     for s in sections {
-        let hint = format!("{}: {}.", section_hint, PathBuf::from(s).file_stem().and_then(|n| n.to_str()).unwrap_or(s));
+        let hint = format!(
+            "{}: {}.",
+            section_hint,
+            PathBuf::from(s)
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .unwrap_or(s)
+        );
         files.push(placeholder(PathBuf::from(s), &hint));
     }
-    files.push(managed(PathBuf::from("bibliography/references.bib"), GeneratorKind::BibFile));
+    files.push(managed(
+        PathBuf::from("bibliography/references.bib"),
+        GeneratorKind::BibFile,
+    ));
 
     ProjectTemplate {
         id: id.to_string(),
@@ -290,7 +351,9 @@ fn managed(path: PathBuf, generator: GeneratorKind) -> TemplateFile {
 fn placeholder(path: PathBuf, hint: &str) -> TemplateFile {
     TemplateFile {
         relative_path: path,
-        content: TemplateContent::Placeholder { hint: hint.to_string() },
+        content: TemplateContent::Placeholder {
+            hint: hint.to_string(),
+        },
         is_app_managed: false,
     }
 }

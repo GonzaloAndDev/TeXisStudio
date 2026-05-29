@@ -1,5 +1,5 @@
 use crate::texis_project::model::{BibliographyTool, BuildConfig, GlossaryTool, IndexTool};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 pub type BuildId = Uuid;
@@ -73,8 +73,8 @@ impl BuildPlanBuilder {
     /// Construye un plan de compilación Full para el proyecto dado.
     pub fn build_full(
         config: &BuildConfig,
-        root_file: &PathBuf,
-        project_root: &PathBuf,
+        root_file: &Path,
+        project_root: &Path,
         needs_glossary: bool,
         needs_index: bool,
     ) -> BuildPlan {
@@ -90,7 +90,7 @@ impl BuildPlanBuilder {
             kind: BuildStepKind::LatexCompile { pass: 1 },
             command: config.engine.to_string(),
             args: latex_args(config, root_file, &output_dir, false),
-            working_dir: project_root.clone(),
+            working_dir: project_root.to_path_buf(),
             timeout_secs: 120,
         });
 
@@ -104,7 +104,7 @@ impl BuildPlanBuilder {
                         format!("--output-directory={}", output_dir.display()),
                         stem.to_string(),
                     ],
-                    working_dir: project_root.clone(),
+                    working_dir: project_root.to_path_buf(),
                     timeout_secs: 60,
                 });
             }
@@ -113,7 +113,7 @@ impl BuildPlanBuilder {
                     kind: BuildStepKind::BibTeX,
                     command: "bibtex".to_string(),
                     args: vec![format!("{}/{}", output_dir.display(), stem)],
-                    working_dir: project_root.clone(),
+                    working_dir: project_root.to_path_buf(),
                     timeout_secs: 60,
                 });
             }
@@ -132,7 +132,7 @@ impl BuildPlanBuilder {
                             output_dir.display().to_string(),
                             stem.to_string(),
                         ],
-                        working_dir: project_root.clone(),
+                        working_dir: project_root.to_path_buf(),
                         timeout_secs: 30,
                     });
                 }
@@ -140,11 +140,8 @@ impl BuildPlanBuilder {
                     steps.push(BuildStep {
                         kind: BuildStepKind::Bib2Gls,
                         command: "bib2gls".to_string(),
-                        args: vec![
-                            format!("--dir={}", output_dir.display()),
-                            stem.to_string(),
-                        ],
-                        working_dir: project_root.clone(),
+                        args: vec![format!("--dir={}", output_dir.display()), stem.to_string()],
+                        working_dir: project_root.to_path_buf(),
                         timeout_secs: 30,
                     });
                 }
@@ -160,7 +157,7 @@ impl BuildPlanBuilder {
                         kind: BuildStepKind::MakeIndex,
                         command: "makeindex".to_string(),
                         args: vec![format!("{}/{}.idx", output_dir.display(), stem)],
-                        working_dir: project_root.clone(),
+                        working_dir: project_root.to_path_buf(),
                         timeout_secs: 30,
                     });
                 }
@@ -169,7 +166,7 @@ impl BuildPlanBuilder {
                         kind: BuildStepKind::Xindy,
                         command: "xindy".to_string(),
                         args: vec![format!("{}/{}.idx", output_dir.display(), stem)],
-                        working_dir: project_root.clone(),
+                        working_dir: project_root.to_path_buf(),
                         timeout_secs: 30,
                     });
                 }
@@ -182,7 +179,7 @@ impl BuildPlanBuilder {
             kind: BuildStepKind::LatexCompile { pass: 2 },
             command: config.engine.to_string(),
             args: latex_args(config, root_file, &output_dir, false),
-            working_dir: project_root.clone(),
+            working_dir: project_root.to_path_buf(),
             timeout_secs: 120,
         });
 
@@ -191,7 +188,7 @@ impl BuildPlanBuilder {
             kind: BuildStepKind::LatexCompile { pass: 3 },
             command: config.engine.to_string(),
             args: latex_args(config, root_file, &output_dir, false),
-            working_dir: project_root.clone(),
+            working_dir: project_root.to_path_buf(),
             timeout_secs: 120,
         });
 
@@ -200,7 +197,7 @@ impl BuildPlanBuilder {
             kind: BuildStepKind::PostflightCheck,
             command: "".to_string(),
             args: vec![],
-            working_dir: project_root.clone(),
+            working_dir: project_root.to_path_buf(),
             timeout_secs: 10,
         });
 
@@ -208,17 +205,13 @@ impl BuildPlanBuilder {
             id: Uuid::new_v4(),
             mode: BuildMode::Full,
             steps,
-            root_file: root_file.clone(),
+            root_file: root_file.to_path_buf(),
             output_dir,
         }
     }
 
     /// Plan Quick: solo una pasada LaTeX.
-    pub fn build_quick(
-        config: &BuildConfig,
-        root_file: &PathBuf,
-        project_root: &PathBuf,
-    ) -> BuildPlan {
+    pub fn build_quick(config: &BuildConfig, root_file: &Path, project_root: &Path) -> BuildPlan {
         let output_dir = project_root.join(&config.output_dir);
         BuildPlan {
             id: Uuid::new_v4(),
@@ -228,28 +221,24 @@ impl BuildPlanBuilder {
                     kind: BuildStepKind::LatexCompile { pass: 1 },
                     command: config.engine.to_string(),
                     args: latex_args(config, root_file, &output_dir, false),
-                    working_dir: project_root.clone(),
+                    working_dir: project_root.to_path_buf(),
                     timeout_secs: 120,
                 },
                 BuildStep {
                     kind: BuildStepKind::PostflightCheck,
                     command: "".to_string(),
                     args: vec![],
-                    working_dir: project_root.clone(),
+                    working_dir: project_root.to_path_buf(),
                     timeout_secs: 10,
                 },
             ],
-            root_file: root_file.clone(),
+            root_file: root_file.to_path_buf(),
             output_dir,
         }
     }
 
     /// Plan Draft: una pasada con draft=true.
-    pub fn build_draft(
-        config: &BuildConfig,
-        root_file: &PathBuf,
-        project_root: &PathBuf,
-    ) -> BuildPlan {
+    pub fn build_draft(config: &BuildConfig, root_file: &Path, project_root: &Path) -> BuildPlan {
         let output_dir = project_root.join(&config.output_dir);
         BuildPlan {
             id: Uuid::new_v4(),
@@ -258,10 +247,10 @@ impl BuildPlanBuilder {
                 kind: BuildStepKind::LatexCompile { pass: 1 },
                 command: config.engine.to_string(),
                 args: latex_args(config, root_file, &output_dir, true),
-                working_dir: project_root.clone(),
+                working_dir: project_root.to_path_buf(),
                 timeout_secs: 60,
             }],
-            root_file: root_file.clone(),
+            root_file: root_file.to_path_buf(),
             output_dir,
         }
     }
@@ -269,8 +258,8 @@ impl BuildPlanBuilder {
 
 fn latex_args(
     config: &BuildConfig,
-    root_file: &PathBuf,
-    output_dir: &PathBuf,
+    root_file: &Path,
+    output_dir: &Path,
     draft: bool,
 ) -> Vec<String> {
     let mut args = vec![
@@ -340,17 +329,17 @@ mod tests {
             true, // needs_glossary
             false,
         );
-        assert!(plan.steps.iter().any(|s| s.kind == BuildStepKind::MakeGlossaries));
+        assert!(plan
+            .steps
+            .iter()
+            .any(|s| s.kind == BuildStepKind::MakeGlossaries));
     }
 
     #[test]
     fn quick_plan_has_one_latex_pass() {
         let cfg = default_config();
-        let plan = BuildPlanBuilder::build_quick(
-            &cfg,
-            &PathBuf::from("main.tex"),
-            &PathBuf::from("/tmp"),
-        );
+        let plan =
+            BuildPlanBuilder::build_quick(&cfg, &PathBuf::from("main.tex"), &PathBuf::from("/tmp"));
         let latex_passes: Vec<_> = plan
             .steps
             .iter()
@@ -362,16 +351,28 @@ mod tests {
     #[test]
     fn shell_escape_off_by_default_in_args() {
         let cfg = default_config();
-        let args = latex_args(&cfg, &PathBuf::from("main.tex"), &PathBuf::from("/tmp/build"), false);
-        assert!(!args.iter().any(|a| a == "-shell-escape"),
-            "shell-escape NO debe estar en los args por defecto");
+        let args = latex_args(
+            &cfg,
+            &PathBuf::from("main.tex"),
+            &PathBuf::from("/tmp/build"),
+            false,
+        );
+        assert!(
+            !args.iter().any(|a| a == "-shell-escape"),
+            "shell-escape NO debe estar en los args por defecto"
+        );
     }
 
     #[test]
     fn shell_escape_only_when_explicitly_enabled() {
         let mut cfg = default_config();
         cfg.shell_escape = true;
-        let args = latex_args(&cfg, &PathBuf::from("main.tex"), &PathBuf::from("/tmp/build"), false);
+        let args = latex_args(
+            &cfg,
+            &PathBuf::from("main.tex"),
+            &PathBuf::from("/tmp/build"),
+            false,
+        );
         assert!(args.iter().any(|a| a == "-shell-escape"));
     }
 }

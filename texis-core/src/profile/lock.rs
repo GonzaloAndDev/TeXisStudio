@@ -70,7 +70,9 @@ impl ProfileLock {
         let mut buf = [0u8; 8192];
         loop {
             let n = file.read(&mut buf).map_err(CoreError::Io)?;
-            if n == 0 { break; }
+            if n == 0 {
+                break;
+            }
             hasher.update(&buf[..n]);
         }
         Ok(bytes_to_hex(&hasher.finalize()))
@@ -78,10 +80,12 @@ impl ProfileLock {
 }
 
 fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
-        s.push_str(&format!("{:02x}", b));
-        s
-    })
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
+            s.push_str(&format!("{:02x}", b));
+            s
+        })
 }
 
 /// Estado del lock para la UI.

@@ -1,13 +1,13 @@
-/// Almacenamiento seguro de credenciales por plataforma.
-/// Las claves de API NUNCA se guardan en texto plano en disco.
-///
-/// Backend por plataforma:
-///   macOS   → Keychain Services (Security framework)
-///   Windows → Windows Credential Manager
-///   Linux   → Secret Service API (libsecret / GNOME Keyring / KWallet)
-///
-/// Si el backend del SO no está disponible, se usa fallback a variable de entorno
-/// y se advierte al usuario.
+//! Almacenamiento seguro de credenciales por plataforma.
+//! Las claves de API NUNCA se guardan en texto plano en disco.
+//!
+//! Backend por plataforma:
+//!   macOS   → Keychain Services (Security framework)
+//!   Windows → Windows Credential Manager
+//!   Linux   → Secret Service API (libsecret / GNOME Keyring / KWallet)
+//!
+//! Si el backend del SO no está disponible, se usa fallback a variable de entorno
+//! y se advierte al usuario.
 
 use thiserror::Error;
 
@@ -60,13 +60,19 @@ pub struct InMemoryCredentialStore {
 
 impl Default for InMemoryCredentialStore {
     fn default() -> Self {
-        Self { store: std::sync::Mutex::new(std::collections::HashMap::new()) }
+        Self {
+            store: std::sync::Mutex::new(std::collections::HashMap::new()),
+        }
     }
 }
 
 impl InMemoryCredentialStore {
-    pub fn new() -> Self { Self::default() }
-    fn key(service: &str, key: &str) -> String { format!("{}:{}", service, key) }
+    pub fn new() -> Self {
+        Self::default()
+    }
+    fn key(service: &str, key: &str) -> String {
+        format!("{}:{}", service, key)
+    }
 }
 
 impl CredentialStore for InMemoryCredentialStore {
@@ -79,7 +85,12 @@ impl CredentialStore for InMemoryCredentialStore {
     }
 
     fn get(&self, service: &str, key: &str) -> CredentialResult<Option<String>> {
-        Ok(self.store.lock().unwrap().get(&Self::key(service, key)).cloned())
+        Ok(self
+            .store
+            .lock()
+            .unwrap()
+            .get(&Self::key(service, key))
+            .cloned())
     }
 
     fn delete(&self, service: &str, key: &str) -> CredentialResult<()> {
@@ -87,7 +98,9 @@ impl CredentialStore for InMemoryCredentialStore {
         Ok(())
     }
 
-    fn is_available(&self) -> bool { true }
+    fn is_available(&self) -> bool {
+        true
+    }
 }
 
 // ── Implementación con variable de entorno (fallback) ─────────────────────────
@@ -126,7 +139,9 @@ impl CredentialStore for EnvVarCredentialStore {
         ))
     }
 
-    fn is_available(&self) -> bool { true }
+    fn is_available(&self) -> bool {
+        true
+    }
 }
 
 // ── Store compuesto: intenta SO, fallback a env var ───────────────────────────
@@ -141,11 +156,17 @@ pub struct PlatformCredentialStore {
 
 impl PlatformCredentialStore {
     pub fn new(native: Option<Box<dyn CredentialStore>>) -> Self {
-        Self { native, fallback: EnvVarCredentialStore }
+        Self {
+            native,
+            fallback: EnvVarCredentialStore,
+        }
     }
 
     pub fn without_native() -> Self {
-        Self { native: None, fallback: EnvVarCredentialStore }
+        Self {
+            native: None,
+            fallback: EnvVarCredentialStore,
+        }
     }
 }
 
@@ -172,7 +193,10 @@ impl CredentialStore for PlatformCredentialStore {
     }
 
     fn is_available(&self) -> bool {
-        self.native.as_ref().map(|n| n.is_available()).unwrap_or(false)
+        self.native
+            .as_ref()
+            .map(|n| n.is_available())
+            .unwrap_or(false)
     }
 }
 
@@ -183,15 +207,28 @@ mod tests {
     #[test]
     fn in_memory_store_roundtrip() {
         let store = InMemoryCredentialStore::new();
-        store.set(service::TEXISSTUDIO, credential_key::SEMANTIC_SCHOLAR_API_KEY, "s2-abc123").unwrap();
-        let val = store.get(service::TEXISSTUDIO, credential_key::SEMANTIC_SCHOLAR_API_KEY).unwrap();
+        store
+            .set(
+                service::TEXISSTUDIO,
+                credential_key::SEMANTIC_SCHOLAR_API_KEY,
+                "s2-abc123",
+            )
+            .unwrap();
+        let val = store
+            .get(
+                service::TEXISSTUDIO,
+                credential_key::SEMANTIC_SCHOLAR_API_KEY,
+            )
+            .unwrap();
         assert_eq!(val, Some("s2-abc123".to_string()));
     }
 
     #[test]
     fn in_memory_store_delete() {
         let store = InMemoryCredentialStore::new();
-        store.set(service::TEXISSTUDIO, "test_key", "value").unwrap();
+        store
+            .set(service::TEXISSTUDIO, "test_key", "value")
+            .unwrap();
         store.delete(service::TEXISSTUDIO, "test_key").unwrap();
         let val = store.get(service::TEXISSTUDIO, "test_key").unwrap();
         assert_eq!(val, None);

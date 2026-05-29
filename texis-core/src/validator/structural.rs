@@ -30,8 +30,12 @@ pub fn validate(model: &ProjectModel, profile: &Profile) -> ValidationReport {
 // ── Secciones requeridas por el perfil ───────────────────────────────────────
 
 const AUTO_GENERATED_ELEMENTS: &[&str] = &[
-    "title_page", "table_of_contents", "list_of_figures",
-    "list_of_tables", "list_of_algorithms", "references",
+    "title_page",
+    "table_of_contents",
+    "list_of_figures",
+    "list_of_tables",
+    "list_of_algorithms",
+    "references",
 ];
 
 fn check_profile_required_sections(
@@ -45,7 +49,10 @@ fn check_profile_required_sections(
             continue;
         }
 
-        let found = model.sections.iter().find(|s| s.element_id == profile_sec.element_id);
+        let found = model
+            .sections
+            .iter()
+            .find(|s| s.element_id == profile_sec.element_id);
 
         match found {
             None => {
@@ -72,9 +79,12 @@ fn check_profile_required_sections(
                     code: "W_PROFILE_SECTION_DISABLED".to_string(),
                     message: format!(
                         "La sección '{}' es requerida por el perfil '{}' pero está desactivada.",
-                        label_for(profile_sec), profile.id
+                        label_for(profile_sec),
+                        profile.id
                     ),
-                    suggestion: Some("Activa la sección en el árbol de secciones del editor.".to_string()),
+                    suggestion: Some(
+                        "Activa la sección en el árbol de secciones del editor.".to_string(),
+                    ),
                     section_id: Some(model_sec.id.clone()),
                     rule_id: Some("profile.required_sections".to_string()),
                     profile_id: Some(profile.id.clone()),
@@ -88,9 +98,12 @@ fn check_profile_required_sections(
                     code: "W_PROFILE_SECTION_EMPTY".to_string(),
                     message: format!(
                         "La sección '{}' (requerida por el perfil '{}') está vacía.",
-                        label_for(profile_sec), profile.id
+                        label_for(profile_sec),
+                        profile.id
                     ),
-                    suggestion: Some("Agrega contenido en esta sección antes de la entrega final.".to_string()),
+                    suggestion: Some(
+                        "Agrega contenido en esta sección antes de la entrega final.".to_string(),
+                    ),
                     section_id: Some(model_sec.id.clone()),
                     rule_id: Some("profile.required_sections".to_string()),
                     profile_id: Some(profile.id.clone()),
@@ -104,18 +117,15 @@ fn check_profile_required_sections(
 }
 
 fn label_for(sec: &ProfileSectionDef) -> &str {
-    sec.title.as_deref()
+    sec.title
+        .as_deref()
         .or(sec.label.as_deref())
         .unwrap_or(sec.element_id.as_str())
 }
 
 // ── Abstract en inglés ────────────────────────────────────────────────────────
 
-fn check_abstract_en(
-    model: &ProjectModel,
-    profile: &Profile,
-    issues: &mut Vec<ValidationIssue>,
-) {
+fn check_abstract_en(model: &ProjectModel, profile: &Profile, issues: &mut Vec<ValidationIssue>) {
     // Solo verificar si el perfil declara abstract_en como sección requerida
     let profile_requires = profile
         .sections
@@ -126,9 +136,10 @@ fn check_abstract_en(
         return;
     }
 
-    let has_content = model.sections.iter().any(|s| {
-        s.enabled && s.element_id == "abstract_en" && has_text_content(s)
-    });
+    let has_content = model
+        .sections
+        .iter()
+        .any(|s| s.enabled && s.element_id == "abstract_en" && has_text_content(s));
 
     if !has_content {
         issues.push(ValidationIssue {
@@ -163,17 +174,19 @@ fn check_originality_declaration(
     profile: &Profile,
     issues: &mut Vec<ValidationIssue>,
 ) {
-    let profile_requires = profile.sections.iter().any(|s| {
-        s.required && ORIGINALITY_ELEMENT_IDS.contains(&s.element_id.as_str())
-    });
+    let profile_requires = profile
+        .sections
+        .iter()
+        .any(|s| s.required && ORIGINALITY_ELEMENT_IDS.contains(&s.element_id.as_str()));
 
     if !profile_requires {
         return;
     }
 
-    let has_declaration = model.sections.iter().any(|s| {
-        s.enabled && ORIGINALITY_ELEMENT_IDS.contains(&s.element_id.as_str())
-    });
+    let has_declaration = model
+        .sections
+        .iter()
+        .any(|s| s.enabled && ORIGINALITY_ELEMENT_IDS.contains(&s.element_id.as_str()));
 
     if !has_declaration {
         issues.push(ValidationIssue {
@@ -228,7 +241,7 @@ fn check_draft_sections(model: &ProjectModel, issues: &mut Vec<ValidationIssue>)
 fn has_text_content(section: &crate::project::model::ProjectSection) -> bool {
     section.blocks.iter().any(|b| match b {
         ContentBlock::Paragraph(p) => !p.content.trim().is_empty(),
-        ContentBlock::Heading(h)   => !h.content.trim().is_empty(),
+        ContentBlock::Heading(h) => !h.content.trim().is_empty(),
         _ => !section.blocks.is_empty(),
     })
 }
@@ -240,36 +253,53 @@ mod tests {
     use super::*;
     use crate::profile::model::{Profile, ProfileDocumentClass, ProfileSectionDef};
     use crate::project::model::{
-        AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock,
-        DocumentClassConfig, DocumentKind, InstitutionData, LatexConfig, LatexEngine,
-        ParagraphBlock, ProjectMetadata, ProjectModel, ProjectSection, SectionPlacement,
-        StudentData,
+        AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock, DocumentClassConfig,
+        DocumentKind, InstitutionData, LatexConfig, LatexEngine, ParagraphBlock, ProjectMetadata,
+        ProjectModel, ProjectSection, SectionPlacement, StudentData,
     };
     use std::collections::HashMap;
 
     fn bare_model(sections: Vec<ProjectSection>) -> ProjectModel {
         ProjectModel {
-            id: "test".into(), schema_version: "1.0.0".into(),
-            created_at: "".into(), updated_at: "".into(),
+            id: "test".into(),
+            schema_version: "1.0.0".into(),
+            created_at: "".into(),
+            updated_at: "".into(),
             metadata: ProjectMetadata {
-                title: "T".into(), subtitle: None,
+                title: "T".into(),
+                subtitle: None,
                 document_kind: DocumentKind::Tesis,
                 academic_level: AcademicLevel::Maestria,
-                language: "es".into(), city: "x".into(), year: 2024,
-                keywords: vec![], funding: None,
+                language: "es".into(),
+                city: "x".into(),
+                year: 2024,
+                keywords: vec![],
+                funding: None,
             },
             institution: InstitutionData {
-                name: "U".into(), faculty: None, department: None,
-                logo_path: None, country: "MX".into(),
+                name: "U".into(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".into(),
             },
             student: StudentData {
-                full_name: "A".into(), student_id: None, email: None,
-                advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
-                committee: vec![], orcid: None,
+                full_name: "A".into(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                co_advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                committee: vec![],
+                orcid: None,
             },
             profile_id: "test.profile".into(),
             latex_config: LatexConfig {
-                document_class: DocumentClassConfig { name: "book".into(), options: vec![] },
+                document_class: DocumentClassConfig {
+                    name: "book".into(),
+                    options: vec![],
+                },
                 engine: LatexEngine::Xelatex,
                 compiler: CompilerKind::Latexmk,
                 bibliography_backend: BibliographyBackend::Biber,
@@ -287,7 +317,10 @@ mod tests {
         let mut p = Profile::new_draft(
             "test.profile".into(),
             "Test Profile".into(),
-            ProfileDocumentClass { name: "book".into(), options: vec![] },
+            ProfileDocumentClass {
+                name: "book".into(),
+                options: vec![],
+            },
             "xelatex".into(),
             "biber".into(),
             "apa".into(),
@@ -298,7 +331,9 @@ mod tests {
                 id: eid.to_string(),
                 element_id: eid.to_string(),
                 required: true,
-                title: None, label: None, placement: "body".to_string(),
+                title: None,
+                label: None,
+                placement: "body".to_string(),
                 guidance: None,
             })
             .collect();
@@ -307,13 +342,26 @@ mod tests {
 
     fn model_section(element_id: &str, enabled: bool, with_content: bool) -> ProjectSection {
         let blocks = if with_content {
-            vec![ContentBlock::Paragraph(ParagraphBlock { id: "p".into(), content: "Texto de ejemplo.".into() })]
-        } else { vec![] };
+            vec![ContentBlock::Paragraph(ParagraphBlock {
+                id: "p".into(),
+                content: "Texto de ejemplo.".into(),
+            })]
+        } else {
+            vec![]
+        };
         ProjectSection {
-            id: element_id.into(), element_id: element_id.into(), title: None,
-            placement: SectionPlacement::Body, required: true, enabled,
-            label: None, status: Default::default(), notes: None, blocks,
-            fields: HashMap::new(), children: vec![],
+            id: element_id.into(),
+            element_id: element_id.into(),
+            title: None,
+            placement: SectionPlacement::Body,
+            required: true,
+            enabled,
+            label: None,
+            status: Default::default(),
+            notes: None,
+            blocks,
+            fields: HashMap::new(),
+            children: vec![],
         }
     }
 
@@ -322,8 +370,14 @@ mod tests {
         let profile = profile_with_sections(&["methodology"]);
         let model = bare_model(vec![model_section("methodology", true, true)]);
         let report = validate(&model, &profile);
-        assert!(!report.issues.iter().any(|i| i.code == "E_PROFILE_SECTION_MISSING"));
-        assert!(!report.issues.iter().any(|i| i.code == "W_PROFILE_SECTION_EMPTY"));
+        assert!(!report
+            .issues
+            .iter()
+            .any(|i| i.code == "E_PROFILE_SECTION_MISSING"));
+        assert!(!report
+            .issues
+            .iter()
+            .any(|i| i.code == "W_PROFILE_SECTION_EMPTY"));
     }
 
     #[test]
@@ -331,8 +385,13 @@ mod tests {
         let profile = profile_with_sections(&["methodology"]);
         let model = bare_model(vec![]);
         let report = validate(&model, &profile);
-        assert!(report.issues.iter().any(|i| i.code == "E_PROFILE_SECTION_MISSING"),
-            "debe emitir error por sección ausente");
+        assert!(
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_PROFILE_SECTION_MISSING"),
+            "debe emitir error por sección ausente"
+        );
     }
 
     #[test]
@@ -340,7 +399,10 @@ mod tests {
         let profile = profile_with_sections(&["methodology"]);
         let model = bare_model(vec![model_section("methodology", false, false)]);
         let report = validate(&model, &profile);
-        assert!(report.issues.iter().any(|i| i.code == "W_PROFILE_SECTION_DISABLED"));
+        assert!(report
+            .issues
+            .iter()
+            .any(|i| i.code == "W_PROFILE_SECTION_DISABLED"));
     }
 
     #[test]
@@ -348,7 +410,10 @@ mod tests {
         let profile = profile_with_sections(&["methodology"]);
         let model = bare_model(vec![model_section("methodology", true, false)]);
         let report = validate(&model, &profile);
-        assert!(report.issues.iter().any(|i| i.code == "W_PROFILE_SECTION_EMPTY"));
+        assert!(report
+            .issues
+            .iter()
+            .any(|i| i.code == "W_PROFILE_SECTION_EMPTY"));
     }
 
     #[test]
@@ -356,7 +421,12 @@ mod tests {
         let profile = profile_with_sections(&["abstract_en"]);
         let model = bare_model(vec![]);
         let report = validate(&model, &profile);
-        assert!(report.issues.iter().any(|i| i.code == "W_MISSING_ABSTRACT_EN"),
-            "debe advertir ausencia de abstract_en");
+        assert!(
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "W_MISSING_ABSTRACT_EN"),
+            "debe advertir ausencia de abstract_en"
+        );
     }
 }

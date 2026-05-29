@@ -27,8 +27,8 @@ pub fn run_project(project_dir: &Path) -> Result<()> {
 
     for issue in &report.issues {
         let prefix = match issue.severity {
-            texis_core::validator::IssueSeverity::Error      => "✗ ERROR",
-            texis_core::validator::IssueSeverity::Warning    => "⚠ WARN ",
+            texis_core::validator::IssueSeverity::Error => "✗ ERROR",
+            texis_core::validator::IssueSeverity::Warning => "⚠ WARN ",
             texis_core::validator::IssueSeverity::Suggestion => "→ SUGE ",
         };
         println!("[{}] [{}] {}", prefix, issue.code, issue.message);

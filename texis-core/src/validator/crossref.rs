@@ -32,15 +32,32 @@ pub fn validate(model: &ProjectModel) -> ValidationReport {
 fn collect_text_corpus(model: &ProjectModel) -> String {
     let mut corpus = String::new();
     for section in &model.sections {
-        if !section.enabled { continue; }
+        if !section.enabled {
+            continue;
+        }
         for block in &section.blocks {
             match block {
-                ContentBlock::Paragraph(b)  => { corpus.push(' '); corpus.push_str(&b.content); }
-                ContentBlock::Heading(b)    => { corpus.push(' '); corpus.push_str(&b.content); }
-                ContentBlock::RawLatex(b)   => { corpus.push(' '); corpus.push_str(&b.content); }
-                ContentBlock::Theorem(b)    => { corpus.push(' '); corpus.push_str(&b.content); }
-                ContentBlock::Code(b)       => { corpus.push(' '); corpus.push_str(&b.content); }
-                ContentBlock::Algorithm(b)  => {
+                ContentBlock::Paragraph(b) => {
+                    corpus.push(' ');
+                    corpus.push_str(&b.content);
+                }
+                ContentBlock::Heading(b) => {
+                    corpus.push(' ');
+                    corpus.push_str(&b.content);
+                }
+                ContentBlock::RawLatex(b) => {
+                    corpus.push(' ');
+                    corpus.push_str(&b.content);
+                }
+                ContentBlock::Theorem(b) => {
+                    corpus.push(' ');
+                    corpus.push_str(&b.content);
+                }
+                ContentBlock::Code(b) => {
+                    corpus.push(' ');
+                    corpus.push_str(&b.content);
+                }
+                ContentBlock::Algorithm(b) => {
                     corpus.push(' ');
                     corpus.push_str(&b.caption);
                     corpus.push(' ');
@@ -56,7 +73,9 @@ fn collect_text_corpus(model: &ProjectModel) -> String {
 /// Devuelve `true` si `label` aparece en el corpus dentro de llaves `{label}`,
 /// lo que captura `\ref{label}`, `\autoref{label}`, `\cref{label}`, etc.
 fn label_cited(corpus: &str, label: &str) -> bool {
-    if label.is_empty() { return true; }
+    if label.is_empty() {
+        return true;
+    }
     let pattern = format!("{{{}}}", label);
     corpus.contains(&pattern)
 }
@@ -69,10 +88,14 @@ fn check_figures(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validation
     let mut seen_labels: HashSet<String> = HashSet::new();
 
     for section in &model.sections {
-        if !section.enabled { continue; }
+        if !section.enabled {
+            continue;
+        }
         for block in &section.blocks {
             if let ContentBlock::Figure(fig) = block {
-                if fig.label.is_empty() || seen_labels.contains(&fig.label) { continue; }
+                if fig.label.is_empty() || seen_labels.contains(&fig.label) {
+                    continue;
+                }
                 seen_labels.insert(fig.label.clone());
 
                 if !label_cited(corpus, &fig.label) {
@@ -108,10 +131,14 @@ fn check_tables(model: &ProjectModel, corpus: &str, issues: &mut Vec<ValidationI
     let mut seen_labels: HashSet<String> = HashSet::new();
 
     for section in &model.sections {
-        if !section.enabled { continue; }
+        if !section.enabled {
+            continue;
+        }
         for block in &section.blocks {
             if let ContentBlock::Table(tbl) = block {
-                if tbl.label.is_empty() || seen_labels.contains(&tbl.label) { continue; }
+                if tbl.label.is_empty() || seen_labels.contains(&tbl.label) {
+                    continue;
+                }
                 seen_labels.insert(tbl.label.clone());
 
                 if !label_cited(corpus, &tbl.label) {
@@ -147,14 +174,18 @@ fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validati
     let mut seen_labels: HashSet<String> = HashSet::new();
 
     for section in &model.sections {
-        if !section.enabled { continue; }
+        if !section.enabled {
+            continue;
+        }
         for block in &section.blocks {
             if let ContentBlock::Equation(eq) = block {
                 let label = match eq.label.as_deref() {
                     Some(l) if !l.is_empty() => l,
                     _ => continue,
                 };
-                if seen_labels.contains(label) { continue; }
+                if seen_labels.contains(label) {
+                    continue;
+                }
                 seen_labels.insert(label.to_string());
 
                 if !label_cited(corpus, label) {
@@ -185,36 +216,54 @@ fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validati
 mod tests {
     use super::*;
     use crate::project::model::{
-        AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock,
-        DocumentClassConfig, DocumentKind, EquationBlock, FigureBlock, FigureWidth,
-        InstitutionData, LatexConfig, LatexEngine, ParagraphBlock, ProjectMetadata,
-        ProjectModel, ProjectSection, SectionPlacement, StudentData, TableBlock, TableStyle,
+        AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock, DocumentClassConfig,
+        DocumentKind, EquationBlock, FigureBlock, FigureWidth, InstitutionData, LatexConfig,
+        LatexEngine, ParagraphBlock, ProjectMetadata, ProjectModel, ProjectSection,
+        SectionPlacement, StudentData, TableBlock, TableStyle,
     };
     use std::collections::HashMap;
 
     fn bare_model(sections: Vec<ProjectSection>) -> ProjectModel {
         ProjectModel {
-            id: "test".into(), schema_version: "1.0.0".into(),
-            created_at: "".into(), updated_at: "".into(),
+            id: "test".into(),
+            schema_version: "1.0.0".into(),
+            created_at: "".into(),
+            updated_at: "".into(),
             metadata: ProjectMetadata {
-                title: "T".into(), subtitle: None,
+                title: "T".into(),
+                subtitle: None,
                 document_kind: DocumentKind::Tesis,
                 academic_level: AcademicLevel::Licenciatura,
-                language: "es".into(), city: "x".into(), year: 2024,
-                keywords: vec![], funding: None,
+                language: "es".into(),
+                city: "x".into(),
+                year: 2024,
+                keywords: vec![],
+                funding: None,
             },
             institution: InstitutionData {
-                name: "U".into(), faculty: None, department: None,
-                logo_path: None, country: "MX".into(),
+                name: "U".into(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".into(),
             },
             student: StudentData {
-                full_name: "A".into(), student_id: None, email: None,
-                advisor: None, co_advisor: None, advisors: vec![], co_authors: vec![],
-                committee: vec![], orcid: None,
+                full_name: "A".into(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                co_advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                committee: vec![],
+                orcid: None,
             },
             profile_id: "generic".into(),
             latex_config: LatexConfig {
-                document_class: DocumentClassConfig { name: "book".into(), options: vec![] },
+                document_class: DocumentClassConfig {
+                    name: "book".into(),
+                    options: vec![],
+                },
                 engine: LatexEngine::Xelatex,
                 compiler: CompilerKind::Latexmk,
                 bibliography_backend: BibliographyBackend::Biber,
@@ -230,118 +279,152 @@ mod tests {
 
     fn section(id: &str, blocks: Vec<ContentBlock>) -> ProjectSection {
         ProjectSection {
-            id: id.into(), element_id: id.into(), title: None,
-            placement: SectionPlacement::Body, required: false, enabled: true,
-            label: None, status: Default::default(), notes: None, blocks,
-            fields: HashMap::new(), children: vec![],
+            id: id.into(),
+            element_id: id.into(),
+            title: None,
+            placement: SectionPlacement::Body,
+            required: false,
+            enabled: true,
+            label: None,
+            status: Default::default(),
+            notes: None,
+            blocks,
+            fields: HashMap::new(),
+            children: vec![],
         }
     }
 
     fn paragraph(content: &str) -> ContentBlock {
-        ContentBlock::Paragraph(ParagraphBlock { id: "p1".into(), content: content.into() })
+        ContentBlock::Paragraph(ParagraphBlock {
+            id: "p1".into(),
+            content: content.into(),
+        })
     }
 
     fn figure(label: &str, caption: &str) -> ContentBlock {
         ContentBlock::Figure(FigureBlock {
-            id: "f1".into(), file: "img.png".into(),
-            caption: caption.into(), source: None,
-            width: FigureWidth::Full, label: label.into(),
+            id: "f1".into(),
+            file: "img.png".into(),
+            caption: caption.into(),
+            source: None,
+            width: FigureWidth::Full,
+            label: label.into(),
             include_in_list: true,
         })
     }
 
     fn table_block(label: &str) -> ContentBlock {
         ContentBlock::Table(TableBlock {
-            id: "t1".into(), caption: "Resultados".into(), source: None,
-            label: label.into(), include_in_list: true,
-            headers: vec![], rows: vec![], table_style: TableStyle::Simple,
+            id: "t1".into(),
+            caption: "Resultados".into(),
+            source: None,
+            label: label.into(),
+            include_in_list: true,
+            headers: vec![],
+            rows: vec![],
+            table_style: TableStyle::Simple,
         })
     }
 
     fn equation(label: Option<&str>) -> ContentBlock {
         ContentBlock::Equation(EquationBlock {
-            id: "e1".into(), latex_content: "E=mc^2".into(),
-            label: label.map(|s| s.into()), numbered: true,
+            id: "e1".into(),
+            latex_content: "E=mc^2".into(),
+            label: label.map(|s| s.into()),
+            numbered: true,
         })
     }
 
     #[test]
     fn figura_citada_no_produce_warning() {
-        let model = bare_model(vec![
-            section("intro", vec![
+        let model = bare_model(vec![section(
+            "intro",
+            vec![
                 paragraph("Como se muestra en la \\ref{fig:arch}, el sistema…"),
                 figure("fig:arch", "Arquitectura del sistema"),
-            ]),
-        ]);
+            ],
+        )]);
         let report = validate(&model);
         assert!(!report.issues.iter().any(|i| i.code == "W_FIGURE_NOT_CITED"));
     }
 
     #[test]
     fn figura_no_citada_produce_warning() {
-        let model = bare_model(vec![
-            section("intro", vec![
+        let model = bare_model(vec![section(
+            "intro",
+            vec![
                 paragraph("El sistema tiene tres módulos."),
                 figure("fig:arch", "Arquitectura del sistema"),
-            ]),
-        ]);
+            ],
+        )]);
         let report = validate(&model);
-        assert!(report.issues.iter().any(|i| i.code == "W_FIGURE_NOT_CITED"),
-            "debe advertir figura no citada");
+        assert!(
+            report.issues.iter().any(|i| i.code == "W_FIGURE_NOT_CITED"),
+            "debe advertir figura no citada"
+        );
     }
 
     #[test]
     fn tabla_citada_con_autoref() {
-        let model = bare_model(vec![
-            section("results", vec![
+        let model = bare_model(vec![section(
+            "results",
+            vec![
                 paragraph("Los datos aparecen en la \\autoref{tab:results}."),
                 table_block("tab:results"),
-            ]),
-        ]);
+            ],
+        )]);
         let report = validate(&model);
         assert!(!report.issues.iter().any(|i| i.code == "W_TABLE_NOT_CITED"));
     }
 
     #[test]
     fn tabla_no_citada_produce_warning() {
-        let model = bare_model(vec![
-            section("results", vec![
+        let model = bare_model(vec![section(
+            "results",
+            vec![
                 paragraph("Los resultados son positivos."),
                 table_block("tab:results"),
-            ]),
-        ]);
+            ],
+        )]);
         let report = validate(&model);
-        assert!(report.issues.iter().any(|i| i.code == "W_TABLE_NOT_CITED"),
-            "debe advertir tabla no citada");
+        assert!(
+            report.issues.iter().any(|i| i.code == "W_TABLE_NOT_CITED"),
+            "debe advertir tabla no citada"
+        );
     }
 
     #[test]
     fn ecuacion_sin_label_ignorada() {
-        let model = bare_model(vec![
-            section("theory", vec![equation(None)]),
-        ]);
+        let model = bare_model(vec![section("theory", vec![equation(None)])]);
         let report = validate(&model);
-        assert!(!report.issues.iter().any(|i| i.code == "W_EQUATION_NOT_CITED"));
+        assert!(!report
+            .issues
+            .iter()
+            .any(|i| i.code == "W_EQUATION_NOT_CITED"));
     }
 
     #[test]
     fn ecuacion_con_label_no_citada_produce_warning() {
-        let model = bare_model(vec![
-            section("theory", vec![
+        let model = bare_model(vec![section(
+            "theory",
+            vec![
                 paragraph("La energía es un concepto fundamental."),
                 equation(Some("eq:energy")),
-            ]),
-        ]);
+            ],
+        )]);
         let report = validate(&model);
-        assert!(report.issues.iter().any(|i| i.code == "W_EQUATION_NOT_CITED"),
-            "debe advertir ecuación no citada");
+        assert!(
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "W_EQUATION_NOT_CITED"),
+            "debe advertir ecuación no citada"
+        );
     }
 
     #[test]
     fn label_vacio_no_produce_warning() {
-        let model = bare_model(vec![
-            section("intro", vec![figure("", "Sin etiqueta")]),
-        ]);
+        let model = bare_model(vec![section("intro", vec![figure("", "Sin etiqueta")])]);
         let report = validate(&model);
         assert!(!report.issues.iter().any(|i| i.code == "W_FIGURE_NOT_CITED"));
     }

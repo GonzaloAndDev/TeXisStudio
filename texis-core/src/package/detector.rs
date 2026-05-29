@@ -1,8 +1,8 @@
-use std::collections::HashSet;
 use super::model::{
-    ConflictResolution, PackageAnalysis, PackageConflict, PackageRequirement,
-    PackagePriority, RequirementReason,
+    ConflictResolution, PackageAnalysis, PackageConflict, PackagePriority, PackageRequirement,
+    RequirementReason,
 };
+use std::collections::HashSet;
 
 // ── Reglas de detección ───────────────────────────────────────────────────────
 
@@ -15,34 +15,144 @@ struct DetectionRule {
 
 const DETECTION_RULES: &[DetectionRule] = &[
     // Gráficos
-    DetectionRule { pattern: r"\includegraphics",  package: "graphicx",    reason: RequirementReason::Asset,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{subfigure}", package: "subcaption",  reason: RequirementReason::Asset,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{figure}",    package: "graphicx",    reason: RequirementReason::Asset,          priority: PackagePriority::Recommended },
+    DetectionRule {
+        pattern: r"\includegraphics",
+        package: "graphicx",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{subfigure}",
+        package: "subcaption",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{figure}",
+        package: "graphicx",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Recommended,
+    },
     // Tablas
-    DetectionRule { pattern: r"\toprule",          package: "booktabs",    reason: RequirementReason::Table,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\midrule",          package: "booktabs",    reason: RequirementReason::Table,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\bottomrule",       package: "booktabs",    reason: RequirementReason::Table,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{tabularx}",  package: "tabularx",    reason: RequirementReason::Table,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{longtable}", package: "longtable",   reason: RequirementReason::Table,          priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{tblr}",      package: "tabularray",  reason: RequirementReason::Table,          priority: PackagePriority::Required },
+    DetectionRule {
+        pattern: r"\toprule",
+        package: "booktabs",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\midrule",
+        package: "booktabs",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\bottomrule",
+        package: "booktabs",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{tabularx}",
+        package: "tabularx",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{longtable}",
+        package: "longtable",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{tblr}",
+        package: "tabularray",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Required,
+    },
     // Referencias cruzadas
-    DetectionRule { pattern: r"\cref",             package: "cleveref",    reason: RequirementReason::CrossReference, priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\Cref",             package: "cleveref",    reason: RequirementReason::CrossReference, priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\autoref",          package: "hyperref",    reason: RequirementReason::CrossReference, priority: PackagePriority::Recommended },
+    DetectionRule {
+        pattern: r"\cref",
+        package: "cleveref",
+        reason: RequirementReason::CrossReference,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\Cref",
+        package: "cleveref",
+        reason: RequirementReason::CrossReference,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\autoref",
+        package: "hyperref",
+        reason: RequirementReason::CrossReference,
+        priority: PackagePriority::Recommended,
+    },
     // Glosarios
-    DetectionRule { pattern: r"\gls{",             package: "glossaries",  reason: RequirementReason::Glossary,       priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\newacronym",       package: "glossaries",  reason: RequirementReason::Glossary,       priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\printglossary",    package: "glossaries",  reason: RequirementReason::Glossary,       priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\makeglossaries",   package: "glossaries",  reason: RequirementReason::Glossary,       priority: PackagePriority::Required },
+    DetectionRule {
+        pattern: r"\gls{",
+        package: "glossaries",
+        reason: RequirementReason::Glossary,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\newacronym",
+        package: "glossaries",
+        reason: RequirementReason::Glossary,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\printglossary",
+        package: "glossaries",
+        reason: RequirementReason::Glossary,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\makeglossaries",
+        package: "glossaries",
+        reason: RequirementReason::Glossary,
+        priority: PackagePriority::Required,
+    },
     // Bibliografía
-    DetectionRule { pattern: r"\addbibresource",   package: "biblatex",    reason: RequirementReason::Bibliography,   priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\printbibliography",package: "biblatex",    reason: RequirementReason::Bibliography,   priority: PackagePriority::Required },
+    DetectionRule {
+        pattern: r"\addbibresource",
+        package: "biblatex",
+        reason: RequirementReason::Bibliography,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\printbibliography",
+        package: "biblatex",
+        reason: RequirementReason::Bibliography,
+        priority: PackagePriority::Required,
+    },
     // Código
-    DetectionRule { pattern: r"\begin{lstlisting}",package: "listings",    reason: RequirementReason::Code,           priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{minted}",    package: "minted",      reason: RequirementReason::Code,           priority: PackagePriority::Required },
+    DetectionRule {
+        pattern: r"\begin{lstlisting}",
+        package: "listings",
+        reason: RequirementReason::Code,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{minted}",
+        package: "minted",
+        reason: RequirementReason::Code,
+        priority: PackagePriority::Required,
+    },
     // Algoritmos
-    DetectionRule { pattern: r"\begin{algorithm}", package: "algorithm2e", reason: RequirementReason::Algorithm,      priority: PackagePriority::Required },
-    DetectionRule { pattern: r"\begin{algorithmic}",package:"algorithmicx",reason: RequirementReason::Algorithm,     priority: PackagePriority::Required },
+    DetectionRule {
+        pattern: r"\begin{algorithm}",
+        package: "algorithm2e",
+        reason: RequirementReason::Algorithm,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{algorithmic}",
+        package: "algorithmicx",
+        reason: RequirementReason::Algorithm,
+        priority: PackagePriority::Required,
+    },
 ];
 
 // ── Conflictos conocidos ──────────────────────────────────────────────────────
@@ -73,7 +183,9 @@ fn known_conflicts() -> Vec<PackageConflict> {
         PackageConflict {
             package_a: "tabularray".into(),
             package_b: "booktabs".into(),
-            description: "tabularray incluye la funcionalidad de booktabs. Considera usar solo tabularray.".into(),
+            description:
+                "tabularray incluye la funcionalidad de booktabs. Considera usar solo tabularray."
+                    .into(),
             resolution: ConflictResolution::Informational,
             is_blocking: false,
         },
@@ -82,10 +194,12 @@ fn known_conflicts() -> Vec<PackageConflict> {
 
 /// Verifica si cleveref está cargado antes de hyperref (debe ser después).
 fn check_cleveref_order(preamble: &str) -> Option<PackageConflict> {
-    let cleveref_pos = preamble.find(r"\usepackage{cleveref}")
+    let cleveref_pos = preamble
+        .find(r"\usepackage{cleveref}")
         .or_else(|| preamble.find(r"\usepackage[capitalise]{cleveref}"))
         .or_else(|| preamble.find(r"\usepackage[noabbrev]{cleveref}"));
-    let hyperref_pos = preamble.find(r"\usepackage{hyperref}")
+    let hyperref_pos = preamble
+        .find(r"\usepackage{hyperref}")
         .or_else(|| preamble.find(r"\usepackage[hidelinks]{hyperref}"))
         .or_else(|| preamble.find(r"\usepackage[colorlinks]{hyperref}"));
 
@@ -106,7 +220,9 @@ fn check_cleveref_order(preamble: &str) -> Option<PackageConflict> {
 pub struct PackageDetector;
 
 impl PackageDetector {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     /// Analiza el contenido del proyecto y retorna el análisis de paquetes.
     ///
@@ -123,7 +239,10 @@ impl PackageDetector {
         }
 
         PackageAnalysis {
-            missing: required.into_iter().filter(|r| !r.already_declared).collect(),
+            missing: required
+                .into_iter()
+                .filter(|r| !r.already_declared)
+                .collect(),
             declared: declared.into_iter().collect(),
             conflicts,
             requires_shell_escape,
@@ -134,21 +253,27 @@ impl PackageDetector {
         let mut packages = HashSet::new();
         for line in preamble.lines() {
             let line = line.trim();
-            if line.starts_with('%') { continue; }
+            if line.starts_with('%') {
+                continue;
+            }
             // Matchea \usepackage[opts]{pkg} y \usepackage{pkg}
             if let Some(start) = line.find(r"\usepackage") {
                 let after = &line[start + 11..];
                 // Saltar opciones opcionales [...]
                 let pkg_start = if after.starts_with('[') {
                     after.find(']').map(|i| i + 1).unwrap_or(0)
-                } else { 0 };
+                } else {
+                    0
+                };
                 let after_opts = &after[pkg_start..];
                 if after_opts.starts_with('{') {
                     if let Some(end) = after_opts.find('}') {
                         let pkg_list = &after_opts[1..end];
                         for pkg in pkg_list.split(',') {
                             let name = pkg.trim().to_string();
-                            if !name.is_empty() { packages.insert(name); }
+                            if !name.is_empty() {
+                                packages.insert(name);
+                            }
                         }
                     }
                 }
@@ -190,7 +315,9 @@ impl PackageDetector {
 }
 
 impl Default for PackageDetector {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -228,7 +355,10 @@ mod tests {
         let detector = PackageDetector::new();
         let preamble = "\\usepackage{cleveref}\n\\usepackage{hyperref}";
         let result = detector.analyze(&[], preamble);
-        assert!(result.conflicts.iter().any(|c| c.resolution == ConflictResolution::LoadOrderFix));
+        assert!(result
+            .conflicts
+            .iter()
+            .any(|c| c.resolution == ConflictResolution::LoadOrderFix));
     }
 
     #[test]

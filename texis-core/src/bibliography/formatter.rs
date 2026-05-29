@@ -20,16 +20,16 @@ use super::parser::BibEntry;
 /// Retorna texto con marcadores *cursiva* para rendering en UI.
 pub fn format_entry(entry: &BibEntry, style: &str) -> String {
     match style {
-        "apa"                => format_apa7(entry),
-        "ieee"               => format_ieee(entry),
-        "vancouver"          => format_vancouver(entry),
-        "verbose-note"       => format_chicago_notes(entry),
+        "apa" => format_apa7(entry),
+        "ieee" => format_ieee(entry),
+        "vancouver" => format_vancouver(entry),
+        "verbose-note" => format_chicago_notes(entry),
         "chicago-authordate" => format_chicago_authordate(entry),
-        "mla"                => format_mla9(entry),
-        "abnt"               => format_abnt(entry),
-        "gb7714-2015"        => format_gb7714(entry),
-        "mhra"               => format_mhra(entry),
-        _                    => format_generic(entry),
+        "mla" => format_mla9(entry),
+        "abnt" => format_abnt(entry),
+        "gb7714-2015" => format_gb7714(entry),
+        "mhra" => format_mhra(entry),
+        _ => format_generic(entry),
     }
 }
 
@@ -37,7 +37,7 @@ pub fn format_entry(entry: &BibEntry, style: &str) -> String {
 
 #[derive(Debug, Clone)]
 struct Author {
-    last:  String,
+    last: String,
     first: String,
 }
 
@@ -87,7 +87,8 @@ impl Author {
         if self.first.is_empty() {
             return self.last.to_uppercase();
         }
-        let inits: String = self.first
+        let inits: String = self
+            .first
             .split_whitespace()
             .filter_map(|w| w.chars().next())
             .map(|c| c.to_uppercase().to_string())
@@ -102,20 +103,29 @@ impl Author {
 fn parse_author_name(raw: &str) -> Author {
     let s = raw.trim();
     if s.starts_with('{') && s.ends_with('}') {
-        return Author { last: s[1..s.len() - 1].to_string(), first: String::new() };
+        return Author {
+            last: s[1..s.len() - 1].to_string(),
+            first: String::new(),
+        };
     }
     if let Some(comma) = s.find(',') {
         return Author {
-            last:  s[..comma].trim().to_string(),
+            last: s[..comma].trim().to_string(),
             first: s[comma + 1..].trim().to_string(),
         };
     }
     let parts: Vec<&str> = s.split_whitespace().collect();
     match parts.len() {
-        0 => Author { last: String::new(), first: String::new() },
-        1 => Author { last: parts[0].to_string(), first: String::new() },
+        0 => Author {
+            last: String::new(),
+            first: String::new(),
+        },
+        1 => Author {
+            last: parts[0].to_string(),
+            first: String::new(),
+        },
         _ => Author {
-            last:  parts.last().unwrap().to_string(),
+            last: parts.last().unwrap().to_string(),
             first: parts[..parts.len() - 1].join(" "),
         },
     }
@@ -144,7 +154,11 @@ fn field<'a>(entry: &'a BibEntry, key: &str) -> &'a str {
 }
 
 fn field_nonempty<'a>(entry: &'a BibEntry, key: &str) -> Option<&'a str> {
-    entry.fields.get(key).map(|s| s.as_str()).filter(|s| !s.is_empty())
+    entry
+        .fields
+        .get(key)
+        .map(|s| s.as_str())
+        .filter(|s| !s.is_empty())
 }
 
 fn doi_url(entry: &BibEntry) -> Option<String> {
@@ -170,49 +184,89 @@ fn format_apa7(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
 
     let author_str = format_authors_apa(&authors);
-    let year  = entry.year();
+    let year = entry.year();
     let title = entry.title();
-    let doi   = doi_url(entry);
+    let doi = doi_url(entry);
 
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
 
             let mut vol_part = String::new();
             if !vol.is_empty() {
                 vol_part = format!("*{}*", vol);
-                if !num.is_empty() { vol_part.push_str(&format!("({})", num)); }
+                if !num.is_empty() {
+                    vol_part.push_str(&format!("({})", num));
+                }
             }
-            let vol_sep   = if vol_part.is_empty() { "" } else { ", " };
-            let pages_str = if !pages.is_empty() { format!(", {}", pages_range(pages)) } else { String::new() };
-            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
+            let vol_sep = if vol_part.is_empty() { "" } else { ", " };
+            let pages_str = if !pages.is_empty() {
+                format!(", {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            let url_str = doi
+                .as_deref()
+                .map(|u| format!(" {}", u))
+                .unwrap_or_default();
 
-            format!("{} ({}). {}. *{}*{}{}{}.{}",
-                author_str, year, title, journal, vol_sep, vol_part, pages_str, url_str)
+            format!(
+                "{} ({}). {}. *{}*{}{}{}.{}",
+                author_str, year, title, journal, vol_sep, vol_part, pages_str, url_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({}). *{}*. {}.{}", author_str, year, title, publisher, url_str)
+            let url_str = doi
+                .as_deref()
+                .map(|u| format!(" {}", u))
+                .unwrap_or_default();
+            format!(
+                "{} ({}). *{}*. {}.{}",
+                author_str, year, title, publisher, url_str
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pages_str = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            let url_str   = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({}). {}. En *{}*{}.{}", author_str, year, title, booktitle, pages_str, url_str)
+            let pages = field(entry, "pages");
+            let pages_str = if !pages.is_empty() {
+                format!(", pp. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            let url_str = doi
+                .as_deref()
+                .map(|u| format!(" {}", u))
+                .unwrap_or_default();
+            format!(
+                "{} ({}). {}. En *{}*{}.{}",
+                author_str, year, title, booktitle, pages_str, url_str
+            )
         }
         "phdthesis" | "mastersthesis" => {
-            let kind   = if entry.entry_type == "phdthesis" { "Tesis doctoral" } else { "Tesis de maestría" };
+            let kind = if entry.entry_type == "phdthesis" {
+                "Tesis doctoral"
+            } else {
+                "Tesis de maestría"
+            };
             let school = field(entry, "school");
-            let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
-            format!("{} ({}). *{}* [{}]. {}.{}", author_str, year, title, kind, school, url_str)
+            let url_str = doi
+                .as_deref()
+                .map(|u| format!(" {}", u))
+                .unwrap_or_default();
+            format!(
+                "{} ({}). *{}* [{}]. {}.{}",
+                author_str, year, title, kind, school, url_str
+            )
         }
         _ => {
-            let url_str = doi.as_deref().map(|u| format!(" {}", u)).unwrap_or_default();
+            let url_str = doi
+                .as_deref()
+                .map(|u| format!(" {}", u))
+                .unwrap_or_default();
             format!("{} ({}). *{}*.{}", author_str, year, title, url_str)
         }
     }
@@ -240,9 +294,9 @@ fn format_authors_apa(authors: &[Author]) -> String {
 // [1] I. A. Smith, "Título," *Journal*, vol. X, no. Y, pp. Z–Z, Año, doi: 10.xxx/xxx.
 
 fn format_ieee(entry: &BibEntry) -> String {
-    let authors  = parse_authors(entry.author());
-    let title    = entry.title();
-    let year     = entry.year();
+    let authors = parse_authors(entry.author());
+    let title = entry.title();
+    let year = entry.year();
     let doi_part = doi_url(entry)
         .map(|u| {
             let doi = u.trim_start_matches("https://doi.org/");
@@ -255,36 +309,63 @@ fn format_ieee(entry: &BibEntry) -> String {
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
-            let vol_str = if !vol.is_empty() { format!(", vol. {}", vol) } else { String::new() };
-            let num_str = if !num.is_empty() { format!(", no. {}", num) } else { String::new() };
-            let pp_str  = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            format!("[1] {}, \"{}\", *{}*{}{}{}, {}{}.",
-                author_str, title, journal, vol_str, num_str, pp_str, year, doi_part)
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
+            let vol_str = if !vol.is_empty() {
+                format!(", vol. {}", vol)
+            } else {
+                String::new()
+            };
+            let num_str = if !num.is_empty() {
+                format!(", no. {}", num)
+            } else {
+                String::new()
+            };
+            let pp_str = if !pages.is_empty() {
+                format!(", pp. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "[1] {}, \"{}\", *{}*{}{}{}, {}{}.",
+                author_str, title, journal, vol_str, num_str, pp_str, year, doi_part
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pp_str    = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            format!("[1] {}, \"{},\" in *Proc. {}*{}, {}{}.",
-                author_str, title, booktitle, pp_str, year, doi_part)
+            let pages = field(entry, "pages");
+            let pp_str = if !pages.is_empty() {
+                format!(", pp. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "[1] {}, \"{},\" in *Proc. {}*{}, {}{}.",
+                author_str, title, booktitle, pp_str, year, doi_part
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("[1] {}, *{}*. {}, {}{}.",
-                author_str, title, publisher, year, doi_part)
+            format!(
+                "[1] {}, *{}*. {}, {}{}.",
+                author_str, title, publisher, year, doi_part
+            )
         }
         "phdthesis" | "mastersthesis" => {
             let school = field(entry, "school");
-            let kind   = if entry.entry_type == "phdthesis" { "Ph.D. dissertation" } else { "M.S. thesis" };
-            format!("[1] {}, \"{},\" {}, {}, {}{}.",
-                author_str, title, kind, school, year, doi_part)
+            let kind = if entry.entry_type == "phdthesis" {
+                "Ph.D. dissertation"
+            } else {
+                "M.S. thesis"
+            };
+            format!(
+                "[1] {}, \"{},\" {}, {}, {}{}.",
+                author_str, title, kind, school, year, doi_part
+            )
         }
         _ => {
-            format!("[1] {}, \"{}\", {}{}.",
-                author_str, title, year, doi_part)
+            format!("[1] {}, \"{}\", {}{}.", author_str, title, year, doi_part)
         }
     }
 }
@@ -294,7 +375,12 @@ fn format_authors_ieee(authors: &[Author]) -> String {
         0 => String::new(),
         1 => authors[0].ieee_form(),
         2 => format!("{} and {}", authors[0].ieee_form(), authors[1].ieee_form()),
-        3 => format!("{}, {}, and {}", authors[0].ieee_form(), authors[1].ieee_form(), authors[2].ieee_form()),
+        3 => format!(
+            "{}, {}, and {}",
+            authors[0].ieee_form(),
+            authors[1].ieee_form(),
+            authors[2].ieee_form()
+        ),
         _ => format!("{} et al.", authors[0].ieee_form()),
     }
 }
@@ -303,9 +389,9 @@ fn format_authors_ieee(authors: &[Author]) -> String {
 // 1. Smith JA, Jones MB. Título. *J Abrev*. Año;vol(n):pp–pp. doi:10.xxx/xxx
 
 fn format_vancouver(entry: &BibEntry) -> String {
-    let authors  = parse_authors(entry.author());
-    let title    = entry.title();
-    let year     = entry.year();
+    let authors = parse_authors(entry.author());
+    let title = entry.title();
+    let year = entry.year();
     let doi_part = doi_url(entry)
         .map(|u| {
             let d = u.trim_start_matches("https://doi.org/");
@@ -318,30 +404,59 @@ fn format_vancouver(entry: &BibEntry) -> String {
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
             let vol_num = match (vol.is_empty(), num.is_empty()) {
                 (false, false) => format!(";{}({})", vol, num),
-                (false, true)  => format!(";{}", vol),
-                _              => String::new(),
+                (false, true) => format!(";{}", vol),
+                _ => String::new(),
             };
-            let pp_str = if !pages.is_empty() { format!(":{}", pages_range(pages)) } else { String::new() };
-            format!("1. {}{}. *{}*. {}{}{}.{}",
-                author_str, if !title.is_empty() { format!(" {}", title) } else { String::new() },
-                journal, year, vol_num, pp_str, doi_part)
+            let pp_str = if !pages.is_empty() {
+                format!(":{}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "1. {}{}. *{}*. {}{}{}.{}",
+                author_str,
+                if !title.is_empty() {
+                    format!(" {}", title)
+                } else {
+                    String::new()
+                },
+                journal,
+                year,
+                vol_num,
+                pp_str,
+                doi_part
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            let edition   = field(entry, "edition");
-            let ed_str    = if !edition.is_empty() { format!(" {}a ed.", edition) } else { String::new() };
-            format!("1. {}*{}*.{} {}.{}", author_str, title, ed_str, publisher, doi_part)
+            let edition = field(entry, "edition");
+            let ed_str = if !edition.is_empty() {
+                format!(" {}a ed.", edition)
+            } else {
+                String::new()
+            };
+            format!(
+                "1. {}*{}*.{} {}.{}",
+                author_str, title, ed_str, publisher, doi_part
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pp_str    = if !pages.is_empty() { format!("; p. {}", pages_range(pages)) } else { String::new() };
-            format!("1. {}{}. En: *{}*. {}{}.{}", author_str, title, booktitle, year, pp_str, doi_part)
+            let pages = field(entry, "pages");
+            let pp_str = if !pages.is_empty() {
+                format!("; p. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "1. {}{}. En: *{}*. {}{}.{}",
+                author_str, title, booktitle, year, pp_str, doi_part
+            )
         }
         _ => {
             format!("1. {}{}. {}.{}", author_str, title, year, doi_part)
@@ -351,8 +466,12 @@ fn format_vancouver(entry: &BibEntry) -> String {
 
 fn format_authors_vancouver(authors: &[Author]) -> String {
     let fmt = |a: &Author| -> String {
-        if a.first.is_empty() { return a.last.clone(); }
-        let inits: String = a.first.split_whitespace()
+        if a.first.is_empty() {
+            return a.last.clone();
+        }
+        let inits: String = a
+            .first
+            .split_whitespace()
             .filter_map(|w| w.chars().next())
             .map(|c| c.to_uppercase().to_string())
             .collect::<Vec<_>>()
@@ -364,8 +483,11 @@ fn format_authors_vancouver(authors: &[Author]) -> String {
         n if n <= 6 => {
             let mut parts: Vec<String> = authors.iter().map(fmt).collect();
             let last = parts.pop().unwrap();
-            if parts.is_empty() { format!("{}. ", last) }
-            else { format!("{}, {}. ", parts.join(", "), last) }
+            if parts.is_empty() {
+                format!("{}. ", last)
+            } else {
+                format!("{}, {}. ", parts.join(", "), last)
+            }
         }
         _ => {
             let six: Vec<String> = authors[..6].iter().map(fmt).collect();
@@ -379,42 +501,76 @@ fn format_authors_vancouver(authors: &[Author]) -> String {
 
 fn format_chicago_notes(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
-    let doi_str = doi_url(entry).map(|u| format!(" {}", u)).unwrap_or_default();
+    let title = entry.title();
+    let year = entry.year();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" {}", u))
+        .unwrap_or_default();
 
     let author_str = format_authors_chicago(&authors, true);
 
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
-            let vol_str = if !vol.is_empty() { vol.to_string() } else { String::new() };
-            let num_str = if !num.is_empty() { format!(", no. {}", num) } else { String::new() };
-            let pp_str  = if !pages.is_empty() { format!(": {}", pages_range(pages)) } else { String::new() };
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
+            let vol_str = if !vol.is_empty() {
+                vol.to_string()
+            } else {
+                String::new()
+            };
+            let num_str = if !num.is_empty() {
+                format!(", no. {}", num)
+            } else {
+                String::new()
+            };
+            let pp_str = if !pages.is_empty() {
+                format!(": {}", pages_range(pages))
+            } else {
+                String::new()
+            };
             let year_pp = if !vol_str.is_empty() {
                 format!(" {} ({}){}.", vol_str, year, pp_str)
             } else {
                 format!(" ({}){}.", year, pp_str)
             };
-            format!("{}, \"{},\" *{}*{}{}{}", author_str, title, journal, num_str, year_pp, doi_str)
+            format!(
+                "{}, \"{},\" *{}*{}{}{}",
+                author_str, title, journal, num_str, year_pp, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("{}, *{}* ({}, {}).{}", author_str, title, publisher, year, doi_str)
+            format!(
+                "{}, *{}* ({}, {}).{}",
+                author_str, title, publisher, year, doi_str
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pp_str    = if !pages.is_empty() { format!(", {}", pages_range(pages)) } else { String::new() };
-            format!("{}, \"{},\" in *{}* ({}{}).{}", author_str, title, booktitle, year, pp_str, doi_str)
+            let pages = field(entry, "pages");
+            let pp_str = if !pages.is_empty() {
+                format!(", {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{}, \"{},\" in *{}* ({}{}).{}",
+                author_str, title, booktitle, year, pp_str, doi_str
+            )
         }
         "phdthesis" | "mastersthesis" => {
             let school = field(entry, "school");
-            let kind   = if entry.entry_type == "phdthesis" { "PhD diss." } else { "master's thesis" };
-            format!("{}, \"{},\" {} {}, {}.{}", author_str, title, kind, school, year, doi_str)
+            let kind = if entry.entry_type == "phdthesis" {
+                "PhD diss."
+            } else {
+                "master's thesis"
+            };
+            format!(
+                "{}, \"{},\" {} {}, {}.{}",
+                author_str, title, kind, school, year, doi_str
+            )
         }
         _ => {
             format!("{}, *{}*, {}.{}", author_str, title, year, doi_str)
@@ -427,12 +583,26 @@ fn format_authors_chicago(authors: &[Author], notes_style: bool) -> String {
     // notes_style=false → "Last, Firstname, and Firstname Last" (para Chicago Author-Date)
     match authors.len() {
         0 => String::new(),
-        1 => if notes_style { authors[0].first_last() } else { authors[0].last_first() },
+        1 => {
+            if notes_style {
+                authors[0].first_last()
+            } else {
+                authors[0].last_first()
+            }
+        }
         2 => {
             if notes_style {
-                format!("{} and {}", authors[0].first_last(), authors[1].first_last())
+                format!(
+                    "{} and {}",
+                    authors[0].first_last(),
+                    authors[1].first_last()
+                )
             } else {
-                format!("{} and {}", authors[0].last_first(), authors[1].first_last())
+                format!(
+                    "{} and {}",
+                    authors[0].last_first(),
+                    authors[1].first_last()
+                )
             }
         }
         _ => {
@@ -452,40 +622,66 @@ fn format_authors_chicago(authors: &[Author], notes_style: bool) -> String {
 
 fn format_chicago_authordate(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
-    let doi_str = doi_url(entry).map(|u| format!(" {}", u)).unwrap_or_default();
+    let title = entry.title();
+    let year = entry.year();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" {}", u))
+        .unwrap_or_default();
 
     let author_str = format_authors_chicago(&authors, false);
 
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
             let vol_num = match (vol.is_empty(), num.is_empty()) {
                 (false, false) => format!(" {} ({})", vol, num),
-                (false, true)  => format!(" {}", vol),
-                _              => String::new(),
+                (false, true) => format!(" {}", vol),
+                _ => String::new(),
             };
-            let pp_str = if !pages.is_empty() { format!(": {}", pages_range(pages)) } else { String::new() };
-            format!("{}. {}. \"{}\" *{}*{}{}.{}", author_str, year, title, journal, vol_num, pp_str, doi_str)
+            let pp_str = if !pages.is_empty() {
+                format!(": {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{}. {}. \"{}\" *{}*{}{}.{}",
+                author_str, year, title, journal, vol_num, pp_str, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("{}. {}. *{}*. {}.{}", author_str, year, title, publisher, doi_str)
+            format!(
+                "{}. {}. *{}*. {}.{}",
+                author_str, year, title, publisher, doi_str
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pp_str    = if !pages.is_empty() { format!(", {}", pages_range(pages)) } else { String::new() };
-            format!("{}. {}. \"{}\" In *{}*{}.{}", author_str, year, title, booktitle, pp_str, doi_str)
+            let pages = field(entry, "pages");
+            let pp_str = if !pages.is_empty() {
+                format!(", {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{}. {}. \"{}\" In *{}*{}.{}",
+                author_str, year, title, booktitle, pp_str, doi_str
+            )
         }
         "phdthesis" | "mastersthesis" => {
             let school = field(entry, "school");
-            let kind   = if entry.entry_type == "phdthesis" { "PhD diss." } else { "Master's thesis" };
-            format!("{}. {}. \"{}\" {}, {}.{}", author_str, year, title, kind, school, doi_str)
+            let kind = if entry.entry_type == "phdthesis" {
+                "PhD diss."
+            } else {
+                "Master's thesis"
+            };
+            format!(
+                "{}. {}. \"{}\" {}, {}.{}",
+                author_str, year, title, kind, school, doi_str
+            )
         }
         _ => {
             format!("{}. {}. *{}*.{}", author_str, year, title, doi_str)
@@ -498,13 +694,17 @@ fn format_chicago_authordate(entry: &BibEntry) -> String {
 
 fn format_mla9(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
+    let title = entry.title();
+    let year = entry.year();
 
     let author_str = match authors.len() {
         0 => String::new(),
         1 => format!("{}.", authors[0].last_first()),
-        2 => format!("{} and {}.", authors[0].last_first(), authors[1].first_last()),
+        2 => format!(
+            "{} and {}.",
+            authors[0].last_first(),
+            authors[1].first_last()
+        ),
         _ => format!("{} et al.", authors[0].last_first()),
     };
 
@@ -515,28 +715,60 @@ fn format_mla9(entry: &BibEntry) -> String {
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
-            let vol_str = if !vol.is_empty() { format!(", vol. {}", vol) } else { String::new() };
-            let num_str = if !num.is_empty() { format!(", no. {}", num) } else { String::new() };
-            let pp_str  = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            format!("{} \"{}.\" *{}*{}{}, {}{}.{}", author_str, title, journal, vol_str, num_str, year, pp_str, doi_str)
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
+            let vol_str = if !vol.is_empty() {
+                format!(", vol. {}", vol)
+            } else {
+                String::new()
+            };
+            let num_str = if !num.is_empty() {
+                format!(", no. {}", num)
+            } else {
+                String::new()
+            };
+            let pp_str = if !pages.is_empty() {
+                format!(", pp. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{} \"{}.\" *{}*{}{}, {}{}.{}",
+                author_str, title, journal, vol_str, num_str, year, pp_str, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("{} *{}*. {}, {}.{}", author_str, title, publisher, year, doi_str)
+            format!(
+                "{} *{}*. {}, {}.{}",
+                author_str, title, publisher, year, doi_str
+            )
         }
         "inproceedings" | "conference" => {
             let booktitle = field(entry, "booktitle");
-            let pages     = field(entry, "pages");
-            let pp_str    = if !pages.is_empty() { format!(", pp. {}", pages_range(pages)) } else { String::new() };
-            format!("{} \"{}.\" *{}*, {}{}.{}", author_str, title, booktitle, year, pp_str, doi_str)
+            let pages = field(entry, "pages");
+            let pp_str = if !pages.is_empty() {
+                format!(", pp. {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{} \"{}.\" *{}*, {}{}.{}",
+                author_str, title, booktitle, year, pp_str, doi_str
+            )
         }
         "phdthesis" | "mastersthesis" => {
             let school = field(entry, "school");
-            let kind   = if entry.entry_type == "phdthesis" { "PhD Dissertation" } else { "Master's Thesis" };
-            format!("{} *{}*. {}, {}, {}.{}", author_str, title, kind, school, year, doi_str)
+            let kind = if entry.entry_type == "phdthesis" {
+                "PhD Dissertation"
+            } else {
+                "Master's Thesis"
+            };
+            format!(
+                "{} *{}*. {}, {}, {}.{}",
+                author_str, title, kind, school, year, doi_str
+            )
         }
         _ => {
             format!("{} *{}*. {}.{}", author_str, title, year, doi_str)
@@ -549,9 +781,11 @@ fn format_mla9(entry: &BibEntry) -> String {
 
 fn format_abnt(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
-    let doi_str = doi_url(entry).map(|u| format!(" Disponible en: {}.", u)).unwrap_or_default();
+    let title = entry.title();
+    let year = entry.year();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" Disponible en: {}.", u))
+        .unwrap_or_default();
 
     let author_str = match authors.len() {
         0 => String::new(),
@@ -564,19 +798,41 @@ fn format_abnt(entry: &BibEntry) -> String {
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
-            let vol_str = if !vol.is_empty() { format!(", v. {}", vol) } else { String::new() };
-            let num_str = if !num.is_empty() { format!(", n. {}", num) } else { String::new() };
-            let pp_str  = if !pages.is_empty() { format!(", p. {}", pages.replace("--", "-")) } else { String::new() };
-            format!("{}{}. **{}**{}{}{}, {}.{}", author_str, title, journal, vol_str, num_str, pp_str, year, doi_str)
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
+            let vol_str = if !vol.is_empty() {
+                format!(", v. {}", vol)
+            } else {
+                String::new()
+            };
+            let num_str = if !num.is_empty() {
+                format!(", n. {}", num)
+            } else {
+                String::new()
+            };
+            let pp_str = if !pages.is_empty() {
+                format!(", p. {}", pages.replace("--", "-"))
+            } else {
+                String::new()
+            };
+            format!(
+                "{}{}. **{}**{}{}{}, {}.{}",
+                author_str, title, journal, vol_str, num_str, pp_str, year, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            let edition   = field(entry, "edition");
-            let ed_str    = if !edition.is_empty() { format!("{}. ed. ", edition) } else { String::new() };
-            format!("{}{}{} {}. {}.{}", author_str, title, ". ", ed_str, publisher, doi_str)
+            let edition = field(entry, "edition");
+            let ed_str = if !edition.is_empty() {
+                format!("{}. ed. ", edition)
+            } else {
+                String::new()
+            };
+            format!(
+                "{}{}{} {}. {}.{}",
+                author_str, title, ". ", ed_str, publisher, doi_str
+            )
         }
         _ => {
             format!("{}{}. {}.{}", author_str, title, year, doi_str)
@@ -589,9 +845,11 @@ fn format_abnt(entry: &BibEntry) -> String {
 
 fn format_gb7714(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
-    let doi_str = doi_url(entry).map(|u| format!(" DOI: {}", u.trim_start_matches("https://doi.org/"))).unwrap_or_default();
+    let title = entry.title();
+    let year = entry.year();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" DOI: {}", u.trim_start_matches("https://doi.org/")))
+        .unwrap_or_default();
 
     let author_str = if authors.is_empty() {
         String::new()
@@ -605,32 +863,46 @@ fn format_gb7714(entry: &BibEntry) -> String {
     };
 
     let type_tag = match entry.entry_type.as_str() {
-        "article"                    => "[J]",
-        "book"                       => "[M]",
+        "article" => "[J]",
+        "book" => "[M]",
         "inproceedings" | "conference" => "[C]",
-        "phdthesis"                  => "[D]",
-        "techreport"                 => "[R]",
-        _                            => "[G]",
+        "phdthesis" => "[D]",
+        "techreport" => "[R]",
+        _ => "[G]",
     };
 
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let num     = field(entry, "number");
-            let pages   = field(entry, "pages");
+            let vol = field(entry, "volume");
+            let num = field(entry, "number");
+            let pages = field(entry, "pages");
             let vol_num = match (vol.is_empty(), num.is_empty()) {
                 (false, false) => format!("{vol}({num})"),
-                (false, true)  => vol.to_string(),
-                _              => String::new(),
+                (false, true) => vol.to_string(),
+                _ => String::new(),
             };
-            let pp_str = if !pages.is_empty() { format!(": {}", pages_range(pages)) } else { String::new() };
-            let vol_sep = if !vol_num.is_empty() { format!(", {}", vol_num) } else { String::new() };
-            format!("{}. {}{}. {}, {}{}{}.{}", author_str, title, type_tag, journal, year, vol_sep, pp_str, doi_str)
+            let pp_str = if !pages.is_empty() {
+                format!(": {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            let vol_sep = if !vol_num.is_empty() {
+                format!(", {}", vol_num)
+            } else {
+                String::new()
+            };
+            format!(
+                "{}. {}{}. {}, {}{}{}.{}",
+                author_str, title, type_tag, journal, year, vol_sep, pp_str, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("{}. {}{}. {}, {}.{}", author_str, title, type_tag, publisher, year, doi_str)
+            format!(
+                "{}. {}{}. {}, {}.{}",
+                author_str, title, type_tag, publisher, year, doi_str
+            )
         }
         _ => {
             format!("{}. {}{}.{}", author_str, title, type_tag, doi_str)
@@ -643,29 +915,49 @@ fn format_gb7714(entry: &BibEntry) -> String {
 
 fn format_mhra(entry: &BibEntry) -> String {
     let authors = parse_authors(entry.author());
-    let title   = entry.title();
-    let year    = entry.year();
-    let doi_str = doi_url(entry).map(|u| format!(" <{}>", u)).unwrap_or_default();
+    let title = entry.title();
+    let year = entry.year();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" <{}>", u))
+        .unwrap_or_default();
 
     let author_str = match authors.len() {
         0 => String::new(),
         1 => authors[0].first_last(),
-        2 => format!("{} and {}", authors[0].first_last(), authors[1].first_last()),
+        2 => format!(
+            "{} and {}",
+            authors[0].first_last(),
+            authors[1].first_last()
+        ),
         _ => format!("{} and others", authors[0].first_last()),
     };
 
     match entry.entry_type.as_str() {
         "article" => {
             let journal = field(entry, "journal");
-            let vol     = field(entry, "volume");
-            let pages   = field(entry, "pages");
-            let vol_str = if !vol.is_empty() { format!(", {} ({})", vol, year) } else { format!(" ({})", year) };
-            let pp_str  = if !pages.is_empty() { format!(", {}", pages_range(pages)) } else { String::new() };
-            format!("{}, '{}', *{}*{}{}{}", author_str, title, journal, vol_str, pp_str, doi_str)
+            let vol = field(entry, "volume");
+            let pages = field(entry, "pages");
+            let vol_str = if !vol.is_empty() {
+                format!(", {} ({})", vol, year)
+            } else {
+                format!(" ({})", year)
+            };
+            let pp_str = if !pages.is_empty() {
+                format!(", {}", pages_range(pages))
+            } else {
+                String::new()
+            };
+            format!(
+                "{}, '{}', *{}*{}{}{}",
+                author_str, title, journal, vol_str, pp_str, doi_str
+            )
         }
         "book" => {
             let publisher = field(entry, "publisher");
-            format!("{}, *{}* ({}: {}).{}", author_str, title, publisher, year, doi_str)
+            format!(
+                "{}, *{}* ({}: {}).{}",
+                author_str, title, publisher, year, doi_str
+            )
         }
         _ => {
             format!("{}, *{}*, {}.{}", author_str, title, year, doi_str)
@@ -677,9 +969,11 @@ fn format_mhra(entry: &BibEntry) -> String {
 
 fn format_generic(entry: &BibEntry) -> String {
     let author = entry.author();
-    let year   = entry.year();
-    let title  = entry.title();
-    let doi_str = doi_url(entry).map(|u| format!(" {}", u)).unwrap_or_default();
+    let year = entry.year();
+    let title = entry.title();
+    let doi_str = doi_url(entry)
+        .map(|u| format!(" {}", u))
+        .unwrap_or_default();
     if author.is_empty() {
         format!("*{}* ({}).{}", title, year, doi_str)
     } else {
@@ -696,24 +990,44 @@ mod tests {
 
     fn sample_article() -> BibEntry {
         let mut fields = HashMap::new();
-        fields.insert("author".to_string(),  "Smith, John A. and Jones, Mary B.".to_string());
-        fields.insert("title".to_string(),   "Machine Learning in Academic Writing".to_string());
-        fields.insert("journal".to_string(), "Journal of Educational Technology".to_string());
-        fields.insert("year".to_string(),    "2024".to_string());
-        fields.insert("volume".to_string(),  "15".to_string());
-        fields.insert("number".to_string(),  "3".to_string());
-        fields.insert("pages".to_string(),   "234--256".to_string());
-        fields.insert("doi".to_string(),     "10.1000/xyz123".to_string());
-        BibEntry { key: "smith2024".to_string(), entry_type: "article".to_string(), fields }
+        fields.insert(
+            "author".to_string(),
+            "Smith, John A. and Jones, Mary B.".to_string(),
+        );
+        fields.insert(
+            "title".to_string(),
+            "Machine Learning in Academic Writing".to_string(),
+        );
+        fields.insert(
+            "journal".to_string(),
+            "Journal of Educational Technology".to_string(),
+        );
+        fields.insert("year".to_string(), "2024".to_string());
+        fields.insert("volume".to_string(), "15".to_string());
+        fields.insert("number".to_string(), "3".to_string());
+        fields.insert("pages".to_string(), "234--256".to_string());
+        fields.insert("doi".to_string(), "10.1000/xyz123".to_string());
+        BibEntry {
+            key: "smith2024".to_string(),
+            entry_type: "article".to_string(),
+            fields,
+        }
     }
 
     fn sample_book() -> BibEntry {
         let mut fields = HashMap::new();
-        fields.insert("author".to_string(),    "García, Ana M.".to_string());
-        fields.insert("title".to_string(),     "Metodología de la Investigación".to_string());
+        fields.insert("author".to_string(), "García, Ana M.".to_string());
+        fields.insert(
+            "title".to_string(),
+            "Metodología de la Investigación".to_string(),
+        );
         fields.insert("publisher".to_string(), "Editorial Académica".to_string());
-        fields.insert("year".to_string(),      "2021".to_string());
-        BibEntry { key: "garcia2021".to_string(), entry_type: "book".to_string(), fields }
+        fields.insert("year".to_string(), "2021".to_string());
+        BibEntry {
+            key: "garcia2021".to_string(),
+            entry_type: "book".to_string(),
+            fields,
+        }
     }
 
     #[test]
@@ -728,7 +1042,10 @@ mod tests {
     #[test]
     fn ieee_article_has_bracket_number() {
         let result = format_entry(&sample_article(), "ieee");
-        assert!(result.starts_with("[1]"), "IEEE empieza con número entre corchetes");
+        assert!(
+            result.starts_with("[1]"),
+            "IEEE empieza con número entre corchetes"
+        );
         assert!(result.contains("vol."), "debe contener vol.");
     }
 
@@ -741,7 +1058,10 @@ mod tests {
     #[test]
     fn chicago_notes_has_quoted_title() {
         let result = format_entry(&sample_article(), "verbose-note");
-        assert!(result.contains('"'), "Chicago Notes usa comillas para título de artículo");
+        assert!(
+            result.contains('"'),
+            "Chicago Notes usa comillas para título de artículo"
+        );
     }
 
     #[test]
@@ -772,7 +1092,10 @@ mod tests {
     #[test]
     fn apa7_book() {
         let result = format_entry(&sample_book(), "apa");
-        assert!(result.contains("García"), "debe contener apellido con tilde");
+        assert!(
+            result.contains("García"),
+            "debe contener apellido con tilde"
+        );
         assert!(result.contains("2021"), "debe contener año");
     }
 

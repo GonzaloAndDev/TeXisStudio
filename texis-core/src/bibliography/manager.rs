@@ -4,7 +4,10 @@
 // Será eliminado en la próxima limpieza de API.
 
 #[allow(deprecated)]
-#[deprecated(since = "1.1.0", note = "Usa BibliographyRegistry en lugar de BibManager")]
+#[deprecated(
+    since = "1.1.0",
+    note = "Usa BibliographyRegistry en lugar de BibManager"
+)]
 pub use legacy::BibManager;
 
 #[allow(deprecated)]
@@ -20,7 +23,11 @@ mod legacy {
 
     #[allow(deprecated)]
     impl BibManager {
-        pub fn new() -> Self { Self { entries: Vec::new() } }
+        pub fn new() -> Self {
+            Self {
+                entries: Vec::new(),
+            }
+        }
 
         pub fn load_from_file(&mut self, path: &Path) -> CoreResult<()> {
             let new_entries = BibParser.parse_file(path)?;
@@ -28,7 +35,9 @@ mod legacy {
             Ok(())
         }
 
-        pub fn entries(&self) -> &[BibEntry] { &self.entries }
+        pub fn entries(&self) -> &[BibEntry] {
+            &self.entries
+        }
 
         pub fn find_by_key(&self, key: &str) -> Option<&BibEntry> {
             self.entries.iter().find(|e| e.key == key)
@@ -37,6 +46,8 @@ mod legacy {
 
     #[allow(deprecated)]
     impl Default for BibManager {
-        fn default() -> Self { Self::new() }
+        fn default() -> Self {
+            Self::new()
+        }
     }
 }

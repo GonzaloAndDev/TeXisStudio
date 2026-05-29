@@ -3,13 +3,13 @@
 //   DOI/ISBN/título → proveedores → merger → registry → .bib
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use texis_core::bibliography::{
     exporters::{BibLaTeXExporter, CslJsonExporter, RisExporter},
     merger::RecordMerger,
-    model::{BibliographicRecord, provider},
+    model::{provider, BibliographicRecord},
     normalization::normalize_doi,
 };
-use std::collections::HashSet;
 
 // ── Tipos de respuesta ────────────────────────────────────────────────────────
 
@@ -42,16 +42,14 @@ pub struct ImportDoiRequest {
 /// Importa una referencia por DOI usando todos los proveedores disponibles,
 /// fusiona los resultados y retorna el BibliographicRecord completo + BibTeX.
 #[tauri::command]
-pub async fn import_doi_unified(
-    request: ImportDoiRequest,
-) -> Result<RecordImportResult, String> {
+pub async fn import_doi_unified(request: ImportDoiRequest) -> Result<RecordImportResult, String> {
     let doi_raw = request.doi.trim();
     if doi_raw.is_empty() {
         return Err("El DOI no puede estar vacío.".to_string());
     }
 
-    let doi_normalized = normalize_doi(doi_raw)
-        .ok_or_else(|| format!("DOI inválido: '{}'", doi_raw))?;
+    let doi_normalized =
+        normalize_doi(doi_raw).ok_or_else(|| format!("DOI inválido: '{}'", doi_raw))?;
 
     let mut provider_records: Vec<(String, BibliographicRecord)> = Vec::new();
     let mut providers_queried = Vec::new();
@@ -84,11 +82,8 @@ pub async fn import_doi_unified(
 
     // 3. Semantic Scholar (opcional)
     if request.enrich_with_semanticscholar.unwrap_or(false) {
-        if let Ok(s2_record) = crate::commands::semantic_scholar::fetch_by_doi(
-            &doi_normalized,
-            None,
-        )
-        .await
+        if let Ok(s2_record) =
+            crate::commands::semantic_scholar::fetch_by_doi(&doi_normalized, None).await
         {
             providers_queried.push(provider::SEMANTIC_SCHOLAR.to_string());
             provider_records.push((provider::SEMANTIC_SCHOLAR.to_string(), s2_record));
@@ -103,8 +98,8 @@ pub async fn import_doi_unified(
 
     // 5. Exportar
     let bibtex = BibLaTeXExporter.export(&merged);
-    let record_value = serde_json::to_value(&merged)
-        .map_err(|e| format!("Error al serializar: {e}"))?;
+    let record_value =
+        serde_json::to_value(&merged).map_err(|e| format!("Error al serializar: {e}"))?;
 
     Ok(RecordImportResult {
         record: record_value,
@@ -122,8 +117,8 @@ pub async fn import_dois_unified(
     dois: Vec<String>,
 ) -> Result<Vec<Result<RecordImportResult, String>>, String> {
     use std::collections::HashSet;
-    use tokio::sync::Semaphore;
     use std::sync::Arc;
+    use tokio::sync::Semaphore;
 
     let semaphore = Arc::new(Semaphore::new(6));
     let unique_dois: Vec<String> = {
@@ -131,7 +126,11 @@ pub async fn import_dois_unified(
         dois.into_iter()
             .filter_map(|d| {
                 let n = normalize_doi(d.trim())?;
-                if seen.insert(n.clone()) { Some(n) } else { None }
+                if seen.insert(n.clone()) {
+                    Some(n)
+                } else {
+                    None
+                }
             })
             .collect()
     };
@@ -164,10 +163,7 @@ pub async fn import_dois_unified(
 
 /// Busca referencias por título en Crossref y OpenAlex y fusiona los resultados.
 #[tauri::command]
-pub async fn search_bibliography(
-    query: String,
-    limit: Option<u8>,
-) -> Result<SearchResult, String> {
+pub async fn search_bibliography(query: String, limit: Option<u8>) -> Result<SearchResult, String> {
     if query.trim().is_empty() {
         return Err("La consulta no puede estar vacía.".to_string());
     }
@@ -216,23 +212,25 @@ pub async fn search_bibliography(
 /// Exporta un BibliographicRecord (JSON) a BibLaTeX string.
 #[tauri::command]
 pub fn export_record_to_bibtex(record_json: serde_json::Value) -> Result<String, String> {
-    let record: BibliographicRecord = serde_json::from_value(record_json)
-        .map_err(|e| format!("Registro inválido: {e}"))?;
+    let record: BibliographicRecord =
+        serde_json::from_value(record_json).map_err(|e| format!("Registro inválido: {e}"))?;
     Ok(BibLaTeXExporter.export(&record))
 }
 
 /// Exporta un BibliographicRecord a CSL-JSON.
 #[tauri::command]
-pub fn export_record_to_csl_json(record_json: serde_json::Value) -> Result<serde_json::Value, String> {
-    let record: BibliographicRecord = serde_json::from_value(record_json)
-        .map_err(|e| format!("Registro inválido: {e}"))?;
+pub fn export_record_to_csl_json(
+    record_json: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let record: BibliographicRecord =
+        serde_json::from_value(record_json).map_err(|e| format!("Registro inválido: {e}"))?;
     Ok(CslJsonExporter.export(&record))
 }
 
 /// Exporta un BibliographicRecord a RIS.
 #[tauri::command]
 pub fn export_record_to_ris(record_json: serde_json::Value) -> Result<String, String> {
-    let record: BibliographicRecord = serde_json::from_value(record_json)
-        .map_err(|e| format!("Registro inválido: {e}"))?;
+    let record: BibliographicRecord =
+        serde_json::from_value(record_json).map_err(|e| format!("Registro inválido: {e}"))?;
     Ok(RisExporter.export(&record))
 }

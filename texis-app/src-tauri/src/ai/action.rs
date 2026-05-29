@@ -25,9 +25,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AiActionMode {
-
     // ── Chat / consulta (Low) ─────────────────────────────────────────────────
-
     /// Pregunta libre sobre cualquier tema. Sin modificación de documento.
     Ask,
     /// Explicar un error de LaTeX/Biber/makeglossaries de forma comprensible.
@@ -54,7 +52,6 @@ pub enum AiActionMode {
     // ── Edición automática con notificación (AutoWithNotification) ────────────
     // Aplica directamente. La app muestra qué cambió y ofrece deshacer.
     // Solo para texto que el autor ya redactó — nunca para contenido nuevo estructurado.
-
     /// Mejorar la redacción del texto seleccionado sin cambiar el significado.
     ImproveWriting,
     /// Acortar el texto seleccionado eliminando redundancias.
@@ -71,7 +68,6 @@ pub enum AiActionMode {
     // ── Inserciones estructuradas con confirmación previa (Medium) ────────────
     // Preview + confirmar. Para elementos que no existían y que tienen
     // consecuencias en la estructura o en registros del proyecto.
-
     /// Insertar una cita bibliográfica (\cite) en el texto.
     InsertCitation,
     /// Agregar una nueva entrada al archivo .bib del proyecto.

@@ -144,7 +144,7 @@ impl BibLaTeXExporter {
             fields.push(("abstract", abs.clone(), true));
         }
 
-        self.render(&entry_type, key, &fields)
+        self.render(entry_type, key, &fields)
     }
 
     fn render(&self, entry_type: &str, key: &str, fields: &[(&str, String, bool)]) -> String {
@@ -236,17 +236,11 @@ impl CslJsonExporter {
                 }),
             );
         } else if let Some(year) = record.year {
-            map.insert(
-                "issued".to_string(),
-                json!({ "date-parts": [[year]] }),
-            );
+            map.insert("issued".to_string(), json!({ "date-parts": [[year]] }));
         }
 
         // Container title
-        let container = record
-            .journal
-            .as_deref()
-            .or(record.booktitle.as_deref());
+        let container = record.journal.as_deref().or(record.booktitle.as_deref());
         if let Some(ct) = container {
             map.insert("container-title".to_string(), json!(ct));
         }

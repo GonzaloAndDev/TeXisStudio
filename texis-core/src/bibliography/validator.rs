@@ -65,7 +65,9 @@ pub fn validate_entries(entries: &[BibEntry]) -> BibValidationResult {
         if let Some(prev) = seen_keys.insert(entry.key.clone(), i) {
             duplicate_keys.push(format!(
                 "'{}' aparece en entradas {} y {}",
-                entry.key, prev + 1, i + 1
+                entry.key,
+                prev + 1,
+                i + 1
             ));
         }
     }
@@ -75,7 +77,9 @@ pub fn validate_entries(entries: &[BibEntry]) -> BibValidationResult {
     for entry in entries {
         let doi = entry.fields.get("doi").map(|s| s.trim().to_lowercase());
         if let Some(doi) = doi {
-            if doi.is_empty() { continue; }
+            if doi.is_empty() {
+                continue;
+            }
             if let Some(prev_key) = seen_dois.insert(doi.clone(), entry.key.clone()) {
                 if prev_key != entry.key {
                     duplicate_dois.push((entry.key.clone(), prev_key.clone()));
@@ -118,7 +122,9 @@ fn is_valid_doi(doi: &str) -> bool {
     }
     // Debe tener al menos "10.XXXX/suffix"
     let parts: Vec<&str> = normalized.splitn(2, '/').collect();
-    if parts.len() < 2 { return false; }
+    if parts.len() < 2 {
+        return false;
+    }
     // El registrant (partes[0] = "10.XXXX") debe tener al menos 4 dígitos tras "10."
     let registrant = parts[0].trim_start_matches("10.");
     if registrant.len() < 4 || !registrant.chars().all(|c| c.is_ascii_digit() || c == '.') {
@@ -135,8 +141,14 @@ mod tests {
 
     fn entry(key: &str, doi: Option<&str>) -> BibEntry {
         let mut fields = std::collections::HashMap::new();
-        if let Some(d) = doi { fields.insert("doi".to_string(), d.to_string()); }
-        BibEntry { key: key.to_string(), entry_type: "article".to_string(), fields }
+        if let Some(d) = doi {
+            fields.insert("doi".to_string(), d.to_string());
+        }
+        BibEntry {
+            key: key.to_string(),
+            entry_type: "article".to_string(),
+            fields,
+        }
     }
 
     #[test]
@@ -161,24 +173,30 @@ mod tests {
             entry("jones2021", Some("10.1145/111.222")),
         ];
         let result = validate_entries(&entries);
-        assert!(!result.duplicate_dois.is_empty(), "debe detectar DOI duplicado");
+        assert!(
+            !result.duplicate_dois.is_empty(),
+            "debe detectar DOI duplicado"
+        );
     }
 
     #[test]
     fn duplicados_key_detectados() {
-        let entries = vec![
-            entry("smith2020", None),
-            entry("smith2020", None),
-        ];
+        let entries = vec![entry("smith2020", None), entry("smith2020", None)];
         let result = validate_entries(&entries);
-        assert!(!result.duplicate_keys.is_empty(), "debe detectar key duplicada");
+        assert!(
+            !result.duplicate_keys.is_empty(),
+            "debe detectar key duplicada"
+        );
     }
 
     #[test]
     fn doi_invalido_detectado() {
         let entries = vec![entry("bad2020", Some("not-a-doi"))];
         let result = validate_entries(&entries);
-        assert!(!result.invalid_dois.is_empty(), "debe detectar DOI inválido");
+        assert!(
+            !result.invalid_dois.is_empty(),
+            "debe detectar DOI inválido"
+        );
     }
 
     #[test]

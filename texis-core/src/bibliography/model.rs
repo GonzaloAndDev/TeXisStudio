@@ -305,7 +305,10 @@ mod tests {
     #[test]
     fn record_type_csl_mapping() {
         assert_eq!(RecordType::Article.to_csl_type(), "article-journal");
-        assert_eq!(RecordType::ConferencePaper.to_csl_type(), "paper-conference");
+        assert_eq!(
+            RecordType::ConferencePaper.to_csl_type(),
+            "paper-conference"
+        );
     }
 
     #[test]

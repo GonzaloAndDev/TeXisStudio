@@ -3,7 +3,9 @@
 use std::path::PathBuf;
 use texis_core::glossary::GlossaryParser;
 
-fn err(e: impl std::fmt::Display) -> String { e.to_string() }
+fn err(e: impl std::fmt::Display) -> String {
+    e.to_string()
+}
 
 /// Analiza el glosario del proyecto: entradas definidas, acrónimos y estado de uso.
 #[tauri::command]
@@ -15,7 +17,11 @@ pub fn analyze_glossary(project_root: String) -> Result<serde_json::Value, Strin
         .iter()
         .find_map(|p| {
             let path = root.join(p);
-            if path.exists() { std::fs::read_to_string(path).ok() } else { None }
+            if path.exists() {
+                std::fs::read_to_string(path).ok()
+            } else {
+                None
+            }
         })
         .unwrap_or_default();
 
@@ -57,7 +63,9 @@ fn collect_recursive(dir: &std::path::Path, out: &mut Vec<String>) -> Result<(),
         let path = entry.path();
         if path.is_dir() {
             let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            if name.starts_with('.') || name == "build" || name == "target" { continue; }
+            if name.starts_with('.') || name == "build" || name == "target" {
+                continue;
+            }
             collect_recursive(&path, out)?;
         } else if path.extension().and_then(|e| e.to_str()) == Some("tex") {
             if let Ok(content) = std::fs::read_to_string(&path) {

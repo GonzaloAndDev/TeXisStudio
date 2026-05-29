@@ -18,13 +18,13 @@ pub struct LatexInstallation {
 impl LatexInstallation {
     pub fn detect() -> Self {
         Self {
-            has_latexmk:       cmd_available("latexmk"),
-            has_xelatex:       cmd_available("xelatex"),
-            has_biber:         cmd_available("biber"),
-            latexmk_version:   version_string("latexmk", &["--version"]),
-            texlive_year:      detect_texlive_year(),
-            has_tectonic:      cmd_available("tectonic"),
-            tectonic_version:  version_string("tectonic", &["--version"]),
+            has_latexmk: cmd_available("latexmk"),
+            has_xelatex: cmd_available("xelatex"),
+            has_biber: cmd_available("biber"),
+            latexmk_version: version_string("latexmk", &["--version"]),
+            texlive_year: detect_texlive_year(),
+            has_tectonic: cmd_available("tectonic"),
+            tectonic_version: version_string("tectonic", &["--version"]),
         }
     }
 

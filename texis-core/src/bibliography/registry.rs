@@ -197,8 +197,7 @@ impl BibliographyRegistry {
     // ── Índices internos ──────────────────────────────────────────────────────
 
     fn index_record(&mut self, record: &BibliographicRecord) {
-        self.by_cite_key
-            .insert(record.cite_key.clone(), record.id);
+        self.by_cite_key.insert(record.cite_key.clone(), record.id);
         if let Some(doi) = &record.doi {
             self.by_doi.insert(doi.clone(), record.id);
         }
@@ -230,7 +229,9 @@ fn bib_entry_to_record(entry: &BibEntry, _existing_keys: &HashSet<String>) -> Bi
 
     record.title = entry.fields.get("title").cloned();
     record.subtitle = entry.fields.get("subtitle").cloned();
-    record.journal = entry.fields.get("journaltitle")
+    record.journal = entry
+        .fields
+        .get("journaltitle")
         .or_else(|| entry.fields.get("journal"))
         .cloned();
     record.booktitle = entry.fields.get("booktitle").cloned();
@@ -240,12 +241,16 @@ fn bib_entry_to_record(entry: &BibEntry, _existing_keys: &HashSet<String>) -> Bi
     record.pages = entry.fields.get("pages").cloned();
     record.edition = entry.fields.get("edition").cloned();
     record.series = entry.fields.get("series").cloned();
-    record.institution = entry.fields.get("institution")
+    record.institution = entry
+        .fields
+        .get("institution")
         .or_else(|| entry.fields.get("school"))
         .cloned();
     record.url = entry.fields.get("url").cloned();
     record.abstract_text = entry.fields.get("abstract").cloned();
-    record.language = entry.fields.get("langid")
+    record.language = entry
+        .fields
+        .get("langid")
         .or_else(|| entry.fields.get("language"))
         .cloned();
 
@@ -345,9 +350,7 @@ mod tests {
         let mut reg = BibliographyRegistry::new();
         reg.insert(make_record("smith2024", Some("10.1145/111.222")))
             .unwrap();
-        assert!(reg
-            .find_by_doi("https://doi.org/10.1145/111.222")
-            .is_some());
+        assert!(reg.find_by_doi("https://doi.org/10.1145/111.222").is_some());
     }
 
     #[test]

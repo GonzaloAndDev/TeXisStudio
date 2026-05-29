@@ -42,7 +42,10 @@ impl BibParser {
 
             // Ignorar comentarios y preámbulos
             let lower = chunk.to_lowercase();
-            if lower.starts_with("comment") || lower.starts_with("preamble") || lower.starts_with("string") {
+            if lower.starts_with("comment")
+                || lower.starts_with("preamble")
+                || lower.starts_with("string")
+            {
                 continue;
             }
 
@@ -58,7 +61,11 @@ impl BibParser {
                     let key = inner[..comma_pos].trim().to_string();
                     let fields_str = &inner[comma_pos + 1..];
                     let fields = parse_fields(fields_str);
-                    entries.push(BibEntry { key, entry_type, fields });
+                    entries.push(BibEntry {
+                        key,
+                        entry_type,
+                        fields,
+                    });
                 }
             }
         }
@@ -97,20 +104,32 @@ fn parse_fields(fields_str: &str) -> HashMap<String, String> {
         while pos < len && (chars[pos].is_whitespace() || chars[pos] == ',') {
             pos += 1;
         }
-        if pos >= len { break; }
+        if pos >= len {
+            break;
+        }
 
         // Leer nombre del campo (hasta '=')
         let name_start = pos;
         while pos < len && chars[pos] != '=' && chars[pos] != '}' {
             pos += 1;
         }
-        if pos >= len || chars[pos] == '}' { break; }
-        let field_name = chars[name_start..pos].iter().collect::<String>().trim().to_lowercase();
+        if pos >= len || chars[pos] == '}' {
+            break;
+        }
+        let field_name = chars[name_start..pos]
+            .iter()
+            .collect::<String>()
+            .trim()
+            .to_lowercase();
         pos += 1; // saltar '='
 
         // Saltar espacios
-        while pos < len && chars[pos].is_whitespace() { pos += 1; }
-        if pos >= len { break; }
+        while pos < len && chars[pos].is_whitespace() {
+            pos += 1;
+        }
+        if pos >= len {
+            break;
+        }
 
         // Leer valor: {…} o "…" o número
         let value = if chars[pos] == '{' {
@@ -122,7 +141,8 @@ fn parse_fields(fields_str: &str) -> HashMap<String, String> {
         } else {
             // número u otro literal hasta coma o llave
             let start = pos;
-            while pos < len && chars[pos] != ',' && chars[pos] != '}' && !chars[pos].is_whitespace() {
+            while pos < len && chars[pos] != ',' && chars[pos] != '}' && !chars[pos].is_whitespace()
+            {
                 pos += 1;
             }
             chars[start..pos].iter().collect::<String>()
@@ -142,10 +162,16 @@ fn extract_braced(chars: &[char], pos: &mut usize) -> String {
     let mut depth: i32 = 1;
     while *pos < chars.len() {
         match chars[*pos] {
-            '{' => { depth += 1; result.push('{'); }
+            '{' => {
+                depth += 1;
+                result.push('{');
+            }
             '}' => {
                 depth -= 1;
-                if depth == 0 { *pos += 1; return result; }
+                if depth == 0 {
+                    *pos += 1;
+                    return result;
+                }
                 result.push('}');
             }
             c => result.push(c),
@@ -162,6 +188,8 @@ fn extract_quoted(chars: &[char], pos: &mut usize) -> String {
         result.push(chars[*pos]);
         *pos += 1;
     }
-    if *pos < chars.len() { *pos += 1; } // saltar '"' de cierre
+    if *pos < chars.len() {
+        *pos += 1;
+    } // saltar '"' de cierre
     result
 }

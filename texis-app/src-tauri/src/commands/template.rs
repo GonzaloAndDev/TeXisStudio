@@ -44,7 +44,12 @@ pub fn create_project_from_template(
         .ok_or_else(|| format!("Plantilla '{}' no encontrada.", request.template_id))?;
 
     let destination = PathBuf::from(&request.destination);
-    if destination.exists() && destination.read_dir().map(|mut d| d.next().is_some()).unwrap_or(false) {
+    if destination.exists()
+        && destination
+            .read_dir()
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false)
+    {
         return Err(format!(
             "El directorio '{}' ya existe y no está vacío.",
             request.destination

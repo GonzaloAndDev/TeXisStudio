@@ -77,7 +77,9 @@ pub struct GeminiProvider {
 
 impl GeminiProvider {
     pub fn new(api_key: impl Into<String>) -> Self {
-        Self { api_key: api_key.into() }
+        Self {
+            api_key: api_key.into(),
+        }
     }
 
     pub async fn send(&self, request: &AiRequest) -> Result<AiResponse, AiProviderError> {
@@ -104,7 +106,9 @@ impl GeminiProvider {
                     AiRole::Assistant => "model".to_string(),
                     AiRole::System => "user".to_string(),
                 },
-                parts: vec![GeminiPart { text: m.content.clone() }],
+                parts: vec![GeminiPart {
+                    text: m.content.clone(),
+                }],
             })
             .collect();
 
@@ -117,7 +121,9 @@ impl GeminiProvider {
         let body = GeminiRequest {
             contents,
             system_instruction: Some(GeminiSystemInstruction {
-                parts: vec![GeminiPart { text: system_prompt }],
+                parts: vec![GeminiPart {
+                    text: system_prompt,
+                }],
             }),
             generation_config: Some(GeminiGenerationConfig {
                 max_output_tokens: 2048,
@@ -147,7 +153,10 @@ impl GeminiProvider {
         }
         if !status.is_success() {
             let err_text = resp.text().await.unwrap_or_default();
-            return Err(AiProviderError::ProviderError(format!("HTTP {}: {}", status, err_text)));
+            return Err(AiProviderError::ProviderError(format!(
+                "HTTP {}: {}",
+                status, err_text
+            )));
         }
 
         let gemini_resp: GeminiResponse = resp
@@ -168,8 +177,7 @@ impl GeminiProvider {
             })
             .unwrap_or_default();
 
-        AiSafetyPolicy::validate_response_text(&text)
-            .map_err(|e| AiProviderError::SafetyRejection(e))?;
+        AiSafetyPolicy::validate_response_text(&text).map_err(AiProviderError::SafetyRejection)?;
 
         let usage = gemini_resp.usage_metadata.map(|u| AiUsage {
             prompt_tokens: u.prompt_token_count.unwrap_or(0),

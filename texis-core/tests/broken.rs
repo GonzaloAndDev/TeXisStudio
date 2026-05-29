@@ -13,11 +13,16 @@ fn broken_missing_image_produce_error_claro() {
 
     let err = report.errors().next().unwrap();
     assert!(
-        err.message.contains("imagen") || err.message.contains("archivo") || err.message.contains("Imagen"),
+        err.message.contains("imagen")
+            || err.message.contains("archivo")
+            || err.message.contains("Imagen"),
         "el mensaje debe mencionar imagen o archivo: '{}'",
         err.message
     );
-    assert!(err.suggestion.is_some(), "debe tener sugerencia de corrección");
+    assert!(
+        err.suggestion.is_some(),
+        "debe tener sugerencia de corrección"
+    );
 }
 
 #[test]
@@ -28,7 +33,11 @@ fn broken_missing_bib_produce_warning() {
     let has_bib_issue = report.issues.iter().any(|i| i.code.contains("BIB"));
     assert!(has_bib_issue, "debe haber warning de bibliografía faltante");
 
-    let issue = report.issues.iter().find(|i| i.code.contains("BIB")).unwrap();
+    let issue = report
+        .issues
+        .iter()
+        .find(|i| i.code.contains("BIB"))
+        .unwrap();
     assert!(issue.suggestion.is_some());
 }
 
@@ -40,7 +49,10 @@ fn broken_duplicate_label_produce_error() {
     let has_dup = report.errors().any(|e| e.code.contains("DUPLICATE_LABEL"));
     assert!(has_dup, "debe detectar label duplicado");
 
-    let err = report.errors().find(|e| e.code.contains("DUPLICATE_LABEL")).unwrap();
+    let err = report
+        .errors()
+        .find(|e| e.code.contains("DUPLICATE_LABEL"))
+        .unwrap();
     assert!(err.suggestion.is_some());
 }
 
@@ -53,13 +65,20 @@ fn proyecto_valido_sin_errores() {
     std::fs::create_dir_all(dir.path().join("content").join("figures")).unwrap();
     std::fs::create_dir_all(dir.path().join("content").join("bibliography")).unwrap();
     std::fs::write(
-        dir.path().join("content").join("bibliography").join("references.bib"),
+        dir.path()
+            .join("content")
+            .join("bibliography")
+            .join("references.bib"),
         "@article{test, author={Test}, title={Test}, journal={Journal of Testing}, year={2026}}",
-    ).unwrap();
+    )
+    .unwrap();
 
     let model = fixtures::generic_thesis_model();
     let report = Validator::new().validate(&model, dir.path()).unwrap();
 
-    assert!(!report.has_errors(), "proyecto válido no debe tener errores: {:?}",
-        report.errors().collect::<Vec<_>>());
+    assert!(
+        !report.has_errors(),
+        "proyecto válido no debe tener errores: {:?}",
+        report.errors().collect::<Vec<_>>()
+    );
 }

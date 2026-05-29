@@ -78,67 +78,154 @@ pub struct DocumentProfileRef {
 #[derive(Debug, Clone)]
 pub enum ProjectEvent {
     // Ciclo de vida del proyecto
-    ProjectOpened { id: ProjectId, root_path: PathBuf },
-    ProjectClosed { id: ProjectId },
-    ProjectModified { id: ProjectId, what: ProjectModificationKind },
+    ProjectOpened {
+        id: ProjectId,
+        root_path: PathBuf,
+    },
+    ProjectClosed {
+        id: ProjectId,
+    },
+    ProjectModified {
+        id: ProjectId,
+        what: ProjectModificationKind,
+    },
 
     // Archivos .tex
-    TexFileSaved { path: PathBuf },
-    TexFileCreated { path: PathBuf },
-    TexFileDeleted { path: PathBuf },
-    TexFileRenamed { old_path: PathBuf, new_path: PathBuf },
+    TexFileSaved {
+        path: PathBuf,
+    },
+    TexFileCreated {
+        path: PathBuf,
+    },
+    TexFileDeleted {
+        path: PathBuf,
+    },
+    TexFileRenamed {
+        old_path: PathBuf,
+        new_path: PathBuf,
+    },
 
     // Assets
-    AssetImported { id: AssetId, path: PathBuf },
-    AssetMissing { id: AssetId, last_known_path: PathBuf },
-    AssetMoved { id: AssetId, old_path: PathBuf, new_path: PathBuf },
-    AssetModified { id: AssetId },
+    AssetImported {
+        id: AssetId,
+        path: PathBuf,
+    },
+    AssetMissing {
+        id: AssetId,
+        last_known_path: PathBuf,
+    },
+    AssetMoved {
+        id: AssetId,
+        old_path: PathBuf,
+        new_path: PathBuf,
+    },
+    AssetModified {
+        id: AssetId,
+    },
 
     // Labels / referencias cruzadas
-    LabelCreated { key: String, kind: LabelKind, file: PathBuf },
-    LabelRenamed { old_key: String, new_key: String },
-    LabelDeleted { key: String },
-    BrokenReferenceDetected { ref_key: String, file: PathBuf, line: u32 },
+    LabelCreated {
+        key: String,
+        kind: LabelKind,
+        file: PathBuf,
+    },
+    LabelRenamed {
+        old_key: String,
+        new_key: String,
+    },
+    LabelDeleted {
+        key: String,
+    },
+    BrokenReferenceDetected {
+        ref_key: String,
+        file: PathBuf,
+        line: u32,
+    },
 
     // Bibliografía
-    BibliographyRecordAdded { id: BibliographicRecordId, cite_key: String },
-    BibliographyRecordUpdated { id: BibliographicRecordId },
-    BibliographyRecordRemoved { cite_key: String },
-    BibFileChangedExternally { path: PathBuf },
+    BibliographyRecordAdded {
+        id: BibliographicRecordId,
+        cite_key: String,
+    },
+    BibliographyRecordUpdated {
+        id: BibliographicRecordId,
+    },
+    BibliographyRecordRemoved {
+        cite_key: String,
+    },
+    BibFileChangedExternally {
+        path: PathBuf,
+    },
 
     // Diccionarios
-    DictionaryChanged { lang: String },
-    CustomWordAdded { word: String },
+    DictionaryChanged {
+        lang: String,
+    },
+    CustomWordAdded {
+        word: String,
+    },
 
     // Compilación
-    BuildStarted { build_id: BuildId, mode: BuildMode },
-    BuildStepStarted { build_id: BuildId, step: String },
-    BuildStepFinished { build_id: BuildId, step: String, success: bool },
-    BuildFinished { build_id: BuildId, result: BuildResultSummary },
-    BuildFailed { build_id: BuildId, reason: String },
+    BuildStarted {
+        build_id: BuildId,
+        mode: BuildMode,
+    },
+    BuildStepStarted {
+        build_id: BuildId,
+        step: String,
+    },
+    BuildStepFinished {
+        build_id: BuildId,
+        step: String,
+        success: bool,
+    },
+    BuildFinished {
+        build_id: BuildId,
+        result: BuildResultSummary,
+    },
+    BuildFailed {
+        build_id: BuildId,
+        reason: String,
+    },
 
     // Diagnósticos
-    DiagnosticsUpdated { source: String, count: usize },
+    DiagnosticsUpdated {
+        source: String,
+        count: usize,
+    },
 
     // Perfil
-    ProfileChanged { old: DocumentProfileRef, new: DocumentProfileRef },
+    ProfileChanged {
+        old: DocumentProfileRef,
+        new: DocumentProfileRef,
+    },
 
     // Paquetes LaTeX
-    PackageAdded { name: String, reason: String },
-    PackageConflictDetected { package_a: String, package_b: String },
+    PackageAdded {
+        name: String,
+        reason: String,
+    },
+    PackageConflictDetected {
+        package_a: String,
+        package_b: String,
+    },
 }
 
 // ── EventBus ──────────────────────────────────────────────────────────────────
 
+type EventHandler = Box<dyn Fn(&ProjectEvent) + Send + Sync>;
+
 /// Bus de eventos en memoria. Los handlers se registran por tipo de evento.
 /// Todos los handlers se ejecutan en el hilo que llama a `emit`.
 pub struct EventBus {
-    handlers: Vec<Box<dyn Fn(&ProjectEvent) + Send + Sync>>,
+    handlers: Vec<EventHandler>,
 }
 
 impl EventBus {
     pub fn new() -> Self {
-        Self { handlers: Vec::new() }
+        Self {
+            handlers: Vec::new(),
+        }
     }
 
     /// Registra un handler que recibe todos los eventos.
@@ -223,9 +310,7 @@ mod tests {
             });
         }
 
-        bus.emit(&ProjectEvent::ProjectClosed {
-            id: Uuid::new_v4(),
-        });
+        bus.emit(&ProjectEvent::ProjectClosed { id: Uuid::new_v4() });
 
         assert_eq!(*count.lock().unwrap(), 3);
     }

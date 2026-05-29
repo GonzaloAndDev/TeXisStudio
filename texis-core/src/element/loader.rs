@@ -14,11 +14,9 @@ impl ElementLoader {
     }
 
     pub fn load_from_str(&self, content: &str, source: &str) -> CoreResult<Element> {
-        let element: Element = serde_yaml::from_str(content).map_err(|e| {
-            CoreError::YamlParse {
-                path: source.to_string(),
-                message: e.to_string(),
-            }
+        let element: Element = serde_yaml::from_str(content).map_err(|e| CoreError::YamlParse {
+            path: source.to_string(),
+            message: e.to_string(),
         })?;
 
         if !versions::is_supported(&element.schema_version) {

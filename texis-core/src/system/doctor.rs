@@ -81,26 +81,28 @@ pub fn run_doctor(
         "Motor de compilación principal (orquesta xelatex/biber/etc.)",
         true,
         Some(InstallHint {
-            macos:   Some("tlmgr install latexmk".into()),
-            linux:   Some("tlmgr install latexmk  # o apt install latexmk".into()),
+            macos: Some("tlmgr install latexmk".into()),
+            linux: Some("tlmgr install latexmk  # o apt install latexmk".into()),
             windows: Some("tlmgr install latexmk  (desde MiKTeX Console o TeX Live)".into()),
         }),
     ));
 
     // Motor declarado por el perfil (siempre crítico)
     let engine_name = profile_engine;
-    let engine_desc = format!(
-        "Motor LaTeX declarado por el perfil activo ({engine_name})"
-    );
+    let engine_desc = format!("Motor LaTeX declarado por el perfil activo ({engine_name})");
     checks.push(check_cmd(
         engine_name,
         &["--version"],
         &engine_desc,
         true,
         Some(InstallHint {
-            macos:   Some(format!("tlmgr install {engine_name}")),
-            linux:   Some(format!("tlmgr install {engine_name}  # o apt install texlive-xetex")),
-            windows: Some(format!("tlmgr install {engine_name}  (desde MiKTeX Console)")),
+            macos: Some(format!("tlmgr install {engine_name}")),
+            linux: Some(format!(
+                "tlmgr install {engine_name}  # o apt install texlive-xetex"
+            )),
+            windows: Some(format!(
+                "tlmgr install {engine_name}  (desde MiKTeX Console)"
+            )),
         }),
     ));
 
@@ -112,8 +114,8 @@ pub fn run_doctor(
             "Motor recomendado para perfiles con fuentes especiales (Unicode/OpenType)",
             false,
             Some(InstallHint {
-                macos:   Some("tlmgr install xetex".into()),
-                linux:   Some("tlmgr install xetex  # o apt install texlive-xetex".into()),
+                macos: Some("tlmgr install xetex".into()),
+                linux: Some("tlmgr install xetex  # o apt install texlive-xetex".into()),
                 windows: Some("tlmgr install xetex  (desde MiKTeX Console)".into()),
             }),
         ));
@@ -126,8 +128,8 @@ pub fn run_doctor(
             "Motor básico de fallback",
             false,
             Some(InstallHint {
-                macos:   Some("tlmgr install pdftex".into()),
-                linux:   Some("tlmgr install pdftex  # o apt install texlive".into()),
+                macos: Some("tlmgr install pdftex".into()),
+                linux: Some("tlmgr install pdftex  # o apt install texlive".into()),
                 windows: Some("tlmgr install pdftex  (desde MiKTeX Console)".into()),
             }),
         ));
@@ -141,8 +143,8 @@ pub fn run_doctor(
         "Backend bibliográfico para biblatex",
         biber_critical,
         Some(InstallHint {
-            macos:   Some("tlmgr install biber".into()),
-            linux:   Some("tlmgr install biber  # o apt install biber".into()),
+            macos: Some("tlmgr install biber".into()),
+            linux: Some("tlmgr install biber  # o apt install biber".into()),
             windows: Some("tlmgr install biber  (desde MiKTeX Console)".into()),
         }),
     ));
@@ -154,9 +156,11 @@ pub fn run_doctor(
         "Herramienta Poppler para postflight (metadatos del PDF)",
         false,
         Some(InstallHint {
-            macos:   Some("brew install poppler".into()),
-            linux:   Some("apt install poppler-utils".into()),
-            windows: Some("Instalar Poppler for Windows (github.com/oschwartz10612/poppler-windows)".into()),
+            macos: Some("brew install poppler".into()),
+            linux: Some("apt install poppler-utils".into()),
+            windows: Some(
+                "Instalar Poppler for Windows (github.com/oschwartz10612/poppler-windows)".into(),
+            ),
         }),
     ));
 
@@ -166,8 +170,8 @@ pub fn run_doctor(
         "Herramienta Poppler para verificar fuentes embebidas en el PDF",
         false,
         Some(InstallHint {
-            macos:   Some("brew install poppler".into()),
-            linux:   Some("apt install poppler-utils".into()),
+            macos: Some("brew install poppler".into()),
+            linux: Some("apt install poppler-utils".into()),
             windows: Some("Instalar Poppler for Windows".into()),
         }),
     ));
@@ -179,8 +183,8 @@ pub fn run_doctor(
         "Validador PDF/A (pdf_requirements.pdfa.required)",
         requires_pdfa,
         Some(InstallHint {
-            macos:   Some("brew install verapdf  # o descargar desde verapdf.org".into()),
-            linux:   Some("Descargar instalador desde verapdf.org".into()),
+            macos: Some("brew install verapdf  # o descargar desde verapdf.org".into()),
+            linux: Some("Descargar instalador desde verapdf.org".into()),
             windows: Some("Descargar instalador desde verapdf.org".into()),
         }),
     ));
@@ -191,16 +195,24 @@ pub fn run_doctor(
         let bbx_available = kpsewhich_available(bbx_pkg);
         checks.push(DoctorCheck {
             name: bbx_pkg.to_string(),
-            status: if bbx_available { ToolStatus::Available } else { ToolStatus::Missing },
+            status: if bbx_available {
+                ToolStatus::Available
+            } else {
+                ToolStatus::Missing
+            },
             version: None,
             description: format!(
                 "Paquete biblatex requerido por el estilo bibliográfico '{bibliography_style}'"
             ),
             critical: true,
-            install_hint: if bbx_available { None } else {
+            install_hint: if bbx_available {
+                None
+            } else {
                 Some(InstallHint {
-                    macos:   Some(format!("tlmgr install {bbx_pkg}")),
-                    linux:   Some(format!("tlmgr install {bbx_pkg}  # o apt install texlive-bibtex-extra")),
+                    macos: Some(format!("tlmgr install {bbx_pkg}")),
+                    linux: Some(format!(
+                        "tlmgr install {bbx_pkg}  # o apt install texlive-bibtex-extra"
+                    )),
                     windows: Some(format!("tlmgr install {bbx_pkg}  (desde MiKTeX Console)")),
                 })
             },
@@ -276,13 +288,13 @@ fn kpsewhich_available(pkg: &str) -> bool {
 /// Devuelve el paquete .bbx requerido por un estilo bibliográfico conocido.
 fn bbx_package_for_style(style: &str) -> Option<&'static str> {
     match style {
-        "apa" | "apa7"                              => Some("biblatex-apa"),
-        "chicago" | "chicago-notes" | "chicago17"   => Some("biblatex-chicago"),
-        "ieee"                                       => Some("biblatex-ieee"),
-        "abnt"                                       => Some("biblatex-abnt"),
-        "mhra"                                       => Some("biblatex-mhra"),
-        "vancouver"                                  => Some("biblatex-vancouver"),
-        _                                            => None,
+        "apa" | "apa7" => Some("biblatex-apa"),
+        "chicago" | "chicago-notes" | "chicago17" => Some("biblatex-chicago"),
+        "ieee" => Some("biblatex-ieee"),
+        "abnt" => Some("biblatex-abnt"),
+        "mhra" => Some("biblatex-mhra"),
+        "vancouver" => Some("biblatex-vancouver"),
+        _ => None,
     }
 }
 

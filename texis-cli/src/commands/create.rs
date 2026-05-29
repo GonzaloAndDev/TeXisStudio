@@ -27,14 +27,17 @@ pub fn run(profile_id: &str, name: &str, output: &Path) -> Result<()> {
 
     // Serializar a YAML vía ProjectSaver (serde_yaml solo en loaders/savers del core)
     let saver = ProjectSaver;
-    saver.save_to_file(&model, &project_dir.join("tesis.project.yaml"))
+    saver
+        .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
         .context("escribir tesis.project.yaml")?;
 
     // Generar build/ con .gitignore y README
     let build_dir = project_dir.join("build");
     // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
     let latex_gen = LaTeXGenerator::new().context("crear generador")?;
-    latex_gen.generate(&model, &build_dir).context("generar estructura build/")?;
+    latex_gen
+        .generate(&model, &build_dir)
+        .context("generar estructura build/")?;
 
     println!("✓ Proyecto creado en: {}", project_dir.display());
     println!("✓ .gitignore generado");
@@ -85,7 +88,11 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
         latex_config: LatexConfig {
             document_class: DocumentClassConfig {
                 name: "book".to_string(),
-                options: vec!["12pt".to_string(), "letterpaper".to_string(), "oneside".to_string()],
+                options: vec![
+                    "12pt".to_string(),
+                    "letterpaper".to_string(),
+                    "oneside".to_string(),
+                ],
             },
             engine: LatexEngine::Xelatex,
             compiler: CompilerKind::Latexmk,

@@ -67,7 +67,9 @@ pub struct ClaudeProvider {
 
 impl ClaudeProvider {
     pub fn new(api_key: impl Into<String>) -> Self {
-        Self { api_key: api_key.into() }
+        Self {
+            api_key: api_key.into(),
+        }
     }
 
     pub async fn send(&self, request: &AiRequest) -> Result<AiResponse, AiProviderError> {
@@ -136,7 +138,10 @@ impl ClaudeProvider {
             if let Ok(ce) = serde_json::from_str::<ClaudeError>(&err_text) {
                 return Err(AiProviderError::ProviderError(ce.error.message));
             }
-            return Err(AiProviderError::ProviderError(format!("HTTP {}: {}", status, err_text)));
+            return Err(AiProviderError::ProviderError(format!(
+                "HTTP {}: {}",
+                status, err_text
+            )));
         }
 
         let claude_resp: ClaudeResponse = resp
@@ -152,8 +157,7 @@ impl ClaudeProvider {
             .collect::<Vec<_>>()
             .join("");
 
-        AiSafetyPolicy::validate_response_text(&text)
-            .map_err(|e| AiProviderError::SafetyRejection(e))?;
+        AiSafetyPolicy::validate_response_text(&text).map_err(AiProviderError::SafetyRejection)?;
 
         let usage = claude_resp.usage.map(|u| AiUsage {
             prompt_tokens: u.input_tokens,

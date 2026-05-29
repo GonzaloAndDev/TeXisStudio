@@ -78,18 +78,26 @@ impl ValidationReport {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.issues.iter().any(|i| i.severity == IssueSeverity::Error)
+        self.issues
+            .iter()
+            .any(|i| i.severity == IssueSeverity::Error)
     }
 
     pub fn errors(&self) -> impl Iterator<Item = &ValidationIssue> {
-        self.issues.iter().filter(|i| i.severity == IssueSeverity::Error)
+        self.issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Error)
     }
 
     pub fn warnings(&self) -> impl Iterator<Item = &ValidationIssue> {
-        self.issues.iter().filter(|i| i.severity == IssueSeverity::Warning)
+        self.issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Warning)
     }
 
     pub fn suggestions(&self) -> impl Iterator<Item = &ValidationIssue> {
-        self.issues.iter().filter(|i| i.severity == IssueSeverity::Suggestion)
+        self.issues
+            .iter()
+            .filter(|i| i.severity == IssueSeverity::Suggestion)
     }
 }

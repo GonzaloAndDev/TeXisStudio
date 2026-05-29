@@ -31,7 +31,11 @@ impl CompilationBackend for LatexmkBackend {
         Command::new("latexmk").arg("--version").output().is_ok()
     }
 
-    fn compile(&self, build_dir: &Path, options: &CompilationOptions) -> CoreResult<CompilationResult> {
+    fn compile(
+        &self,
+        build_dir: &Path,
+        options: &CompilationOptions,
+    ) -> CoreResult<CompilationResult> {
         if !self.is_available() {
             return Err(CoreError::BackendUnavailable {
                 backend: "latexmk".to_string(),
@@ -47,11 +51,13 @@ impl CompilationBackend for LatexmkBackend {
         // Write .latexmkrc to ensure biber runs correctly with biblatex.
         // latexmk needs explicit biber configuration to process biblatex .bcf files.
         let latexmkrc = build_dir.join(".latexmkrc");
-        std::fs::write(&latexmkrc,
+        std::fs::write(
+            &latexmkrc,
             "$biber = 'biber %O %S';\n\
              $bibtex_use = 2;\n\
-             $clean_ext = 'bbl run.xml bcf fls fdb_latexmk synctex.gz';\n"
-        ).map_err(CoreError::Io)?;
+             $clean_ext = 'bbl run.xml bcf fls fdb_latexmk synctex.gz';\n",
+        )
+        .map_err(CoreError::Io)?;
 
         let first_pass = run_latexmk(build_dir, options, engine_flag)?;
 
@@ -59,22 +65,31 @@ impl CompilationBackend for LatexmkBackend {
         // Si el primer pase indica bibliografía pendiente, forzamos biber + segundo pase.
         // La decisión de éxito se basa SOLO en el último pase para evitar falsos positivos
         // del "Please (re)run Biber" que siempre aparece en el primer pase intermedio.
-        let (final_log, last_pass_log, command_succeeded) = if needs_manual_biber(&first_pass.log, build_dir) {
-            let biber = run_biber(build_dir)?;
-            let second_pass = run_latexmk(build_dir, options, engine_flag)?;
-            let final_log = format!(
-                "{}\n[biber]\n{}\n[latexmk-pass2]\n{}",
-                first_pass.log, biber.log, second_pass.log
-            );
-            let last_pass_log = final_log
-                .rfind("[latexmk-pass2]")
-                .map(|pos| &final_log[pos..])
-                .unwrap_or(&final_log)
-                .to_string();
-            (final_log, last_pass_log, biber.success && second_pass.success)
-        } else {
-            (first_pass.log.clone(), first_pass.log.clone(), first_pass.success)
-        };
+        let (final_log, last_pass_log, command_succeeded) =
+            if needs_manual_biber(&first_pass.log, build_dir) {
+                let biber = run_biber(build_dir)?;
+                let second_pass = run_latexmk(build_dir, options, engine_flag)?;
+                let final_log = format!(
+                    "{}\n[biber]\n{}\n[latexmk-pass2]\n{}",
+                    first_pass.log, biber.log, second_pass.log
+                );
+                let last_pass_log = final_log
+                    .rfind("[latexmk-pass2]")
+                    .map(|pos| &final_log[pos..])
+                    .unwrap_or(&final_log)
+                    .to_string();
+                (
+                    final_log,
+                    last_pass_log,
+                    biber.success && second_pass.success,
+                )
+            } else {
+                (
+                    first_pass.log.clone(),
+                    first_pass.log.clone(),
+                    first_pass.success,
+                )
+            };
 
         let user_errors = super::error_translator::translate_log(&last_pass_log);
         let log = final_log;
@@ -92,7 +107,9 @@ impl CompilationBackend for LatexmkBackend {
         // output principal). Si el PDF existe, biber resolvió y no hay errores
         // de usuario, consideramos el pase exitoso.
         let bbl = build_dir.join("main.bbl");
-        let bbl_resolved = std::fs::metadata(&bbl).map(|m| m.len() > 0).unwrap_or(false);
+        let bbl_resolved = std::fs::metadata(&bbl)
+            .map(|m| m.len() > 0)
+            .unwrap_or(false);
         let pdf_generated = std::fs::metadata(build_dir.join("main.pdf"))
             .map(|m| m.len() > 0)
             .unwrap_or(false);
@@ -103,7 +120,11 @@ impl CompilationBackend for LatexmkBackend {
 
         let pdf_path = if success {
             let pdf = build_dir.join("main.pdf");
-            if pdf.exists() { Some(pdf) } else { None }
+            if pdf.exists() {
+                Some(pdf)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -118,7 +139,19 @@ impl CompilationBackend for LatexmkBackend {
     }
 
     fn clean(&self, build_dir: &Path) -> CoreResult<()> {
-        let extensions = ["aux", "log", "toc", "out", "bbl", "bcf", "blg", "run.xml", "fls", "fdb_latexmk", "synctex.gz"];
+        let extensions = [
+            "aux",
+            "log",
+            "toc",
+            "out",
+            "bbl",
+            "bcf",
+            "blg",
+            "run.xml",
+            "fls",
+            "fdb_latexmk",
+            "synctex.gz",
+        ];
         for entry in std::fs::read_dir(build_dir).map_err(CoreError::Io)? {
             let entry = entry.map_err(CoreError::Io)?;
             let path = entry.path();
@@ -132,7 +165,11 @@ impl CompilationBackend for LatexmkBackend {
     }
 }
 
-fn run_latexmk(build_dir: &Path, options: &CompilationOptions, engine_flag: &str) -> CoreResult<CommandCapture> {
+fn run_latexmk(
+    build_dir: &Path,
+    options: &CompilationOptions,
+    engine_flag: &str,
+) -> CoreResult<CommandCapture> {
     let mut cmd = Command::new("latexmk");
     cmd.current_dir(build_dir)
         .arg(engine_flag)
@@ -171,7 +208,9 @@ fn run_and_capture(cmd: &mut Command) -> CoreResult<CommandCapture> {
 fn needs_manual_biber(log: &str, build_dir: &Path) -> bool {
     let bcf_exists = build_dir.join("main.bcf").exists();
     let bbl = build_dir.join("main.bbl");
-    let bbl_missing_or_empty = std::fs::metadata(&bbl).map(|m| m.len() == 0).unwrap_or(true);
+    let bbl_missing_or_empty = std::fs::metadata(&bbl)
+        .map(|m| m.len() == 0)
+        .unwrap_or(true);
 
     bcf_exists && bbl_missing_or_empty && bibliography_pending_in_log(log)
 }
@@ -189,8 +228,7 @@ fn has_blocking_compile_issue(
 ) -> bool {
     // Si biber ya resolvió la bibliografía (bbl no-vacío), los warnings de
     // "Please (re)run Biber" son mensajes intermedios del log y no son bloqueantes.
-    (!bbl_resolved && bibliography_pending_in_log(log))
-        || !user_errors.is_empty()
+    (!bbl_resolved && bibliography_pending_in_log(log)) || !user_errors.is_empty()
 }
 
 #[cfg(test)]
@@ -200,8 +238,12 @@ mod tests {
 
     #[test]
     fn detecta_bibliografia_pendiente() {
-        assert!(bibliography_pending_in_log("LaTeX Warning: Empty bibliography"));
-        assert!(bibliography_pending_in_log("Package biblatex Warning: Please (re)run Biber on the file: main"));
+        assert!(bibliography_pending_in_log(
+            "LaTeX Warning: Empty bibliography"
+        ));
+        assert!(bibliography_pending_in_log(
+            "Package biblatex Warning: Please (re)run Biber on the file: main"
+        ));
         assert!(bibliography_pending_in_log("No file main.bbl."));
     }
 
@@ -261,8 +303,10 @@ mod tests {
             "Latexmk: All targets (main.pdf) are up-to-date\n",
         );
         // bbl_resolved=true porque latexmk corrió biber y main.bbl no está vacío
-        assert!(pass_succeeded(true, full_latexmk_log, &[], true),
-            "Falso positivo: latexmk manejó biber correctamente pero pass_succeeded falló");
+        assert!(
+            pass_succeeded(true, full_latexmk_log, &[], true),
+            "Falso positivo: latexmk manejó biber correctamente pero pass_succeeded falló"
+        );
     }
 
     #[test]

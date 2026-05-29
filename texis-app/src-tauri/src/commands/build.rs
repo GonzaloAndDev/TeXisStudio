@@ -2,10 +2,7 @@
 
 use serde::Serialize;
 use std::path::PathBuf;
-use texis_core::build_engine::{
-    engine::BuildEngine,
-    toolchain::detect_toolchain,
-};
+use texis_core::build_engine::{engine::BuildEngine, toolchain::detect_toolchain};
 use texis_core::texis_project::model::{BuildConfig, LatexEngine, TexisProject};
 
 #[derive(Serialize)]
@@ -81,9 +78,11 @@ pub async fn build_project_full(
         _ => LatexEngine::XeLatex,
     };
 
-    let mut config = BuildConfig::default();
-    config.engine = latex_engine;
-    config.shell_escape = se;
+    let config = BuildConfig {
+        engine: latex_engine,
+        shell_escape: se,
+        ..BuildConfig::default()
+    };
 
     let mut project = TexisProject::new(root, PathBuf::from(&root_file));
     project.build_config = config;
@@ -125,8 +124,10 @@ pub async fn build_project_quick(
         _ => LatexEngine::XeLatex,
     };
 
-    let mut config = BuildConfig::default();
-    config.engine = latex_engine;
+    let config = BuildConfig {
+        engine: latex_engine,
+        ..BuildConfig::default()
+    };
 
     let mut project = TexisProject::new(root, PathBuf::from(&root_file));
     project.build_config = config;

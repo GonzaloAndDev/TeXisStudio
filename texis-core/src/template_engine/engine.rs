@@ -51,19 +51,17 @@ impl TemplateEngine {
 
         // 4. Construir TexisProject
         let build_config = build_config_from_template(template);
-        let mut project = TexisProject::new(
-            destination.to_path_buf(),
-            PathBuf::from("main.tex"),
-        );
+        let mut project = TexisProject::new(destination.to_path_buf(), PathBuf::from("main.tex"));
         project.metadata = metadata.clone();
         project.build_config = build_config;
-        project.profile = template
-            .compatible_profiles
-            .first()
-            .map(|id| crate::events::DocumentProfileRef {
-                id: id.clone(),
-                version: None,
-            });
+        project.profile =
+            template
+                .compatible_profiles
+                .first()
+                .map(|id| crate::events::DocumentProfileRef {
+                    id: id.clone(),
+                    version: None,
+                });
 
         // 5. Persistir configuración inicial
         let config = crate::texis_project::model::ProjectConfig::from_project(&project);
@@ -127,17 +125,20 @@ fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) ->
         })
         .collect();
 
-    let has_front = template.required_files.iter().any(|f| {
-        f.relative_path.to_string_lossy().starts_with("front/")
-    });
+    let has_front = template
+        .required_files
+        .iter()
+        .any(|f| f.relative_path.to_string_lossy().starts_with("front/"));
 
-    let has_bib = template.required_files.iter().any(|f| {
-        f.relative_path.to_string_lossy().contains("references.bib")
-    });
+    let has_bib = template
+        .required_files
+        .iter()
+        .any(|f| f.relative_path.to_string_lossy().contains("references.bib"));
 
-    let has_glossary = template.required_files.iter().any(|f| {
-        f.relative_path.to_string_lossy().contains("glossary")
-    });
+    let has_glossary = template
+        .required_files
+        .iter()
+        .any(|f| f.relative_path.to_string_lossy().contains("glossary"));
 
     let has_appendix = template.required_files.iter().any(|f| {
         let p = f.relative_path.to_string_lossy();
@@ -155,12 +156,17 @@ fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) ->
         doc_class
     );
 
-    if matches!(template.document_type, DocumentTypeHint::Thesis | DocumentTypeHint::Book) {
+    if matches!(
+        template.document_type,
+        DocumentTypeHint::Thesis | DocumentTypeHint::Book
+    ) {
         out.push_str("\n%% Front matter\n\\frontmatter\n");
         if has_front {
-            for f in template.required_files.iter().filter(|f| {
-                f.relative_path.to_string_lossy().starts_with("front/")
-            }) {
+            for f in template
+                .required_files
+                .iter()
+                .filter(|f| f.relative_path.to_string_lossy().starts_with("front/"))
+            {
                 out.push_str(&format!(
                     "\\input{{{}}}\n",
                     f.relative_path.with_extension("").display()
@@ -177,7 +183,10 @@ fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) ->
 
     if has_appendix || has_glossary || has_bib {
         out.push_str("\n%% Back matter\n");
-        if matches!(template.document_type, DocumentTypeHint::Thesis | DocumentTypeHint::Book) {
+        if matches!(
+            template.document_type,
+            DocumentTypeHint::Thesis | DocumentTypeHint::Book
+        ) {
             out.push_str("\\backmatter\n");
         }
     }
@@ -220,7 +229,11 @@ fn generate_preamble_tex(template: &ProjectTemplate, metadata: &ProjectMetadata)
                  \\addbibresource{bibliography/references.bib}\n",
             );
         } else if pkg == "polyglossia" {
-            let lang = if metadata.language == "es" { "spanish" } else { &metadata.language };
+            let lang = if metadata.language == "es" {
+                "spanish"
+            } else {
+                &metadata.language
+            };
             out.push_str(&format!(
                 "\\usepackage{{polyglossia}}\n\\setmainlanguage{{{}}}\n",
                 lang
@@ -259,7 +272,11 @@ fn generate_metadata_tex(metadata: &ProjectMetadata) -> String {
          \\author{{{}}}\n\
          \\date{{\\today}}\n",
         metadata.title.replace('{', "\\{").replace('}', "\\}"),
-        if authors.is_empty() { "Autor".to_string() } else { authors }
+        if authors.is_empty() {
+            "Autor".to_string()
+        } else {
+            authors
+        }
     )
 }
 
@@ -357,10 +374,7 @@ mod tests {
         let metadata = test_metadata();
         TemplateEngine::instantiate(&template, dir.path(), &metadata).unwrap();
 
-        let resumen = std::fs::read_to_string(
-            dir.path().join("front/resumen.tex"),
-        )
-        .unwrap();
+        let resumen = std::fs::read_to_string(dir.path().join("front/resumen.tex")).unwrap();
         assert!(resumen.starts_with('%'));
     }
 
@@ -374,7 +388,10 @@ mod tests {
     #[test]
     fn all_builtin_templates_have_main_tex() {
         for t in super::super::builtin::builtin_templates() {
-            let has_main = t.required_files.iter().any(|f| f.relative_path == PathBuf::from("main.tex"));
+            let has_main = t
+                .required_files
+                .iter()
+                .any(|f| f.relative_path == PathBuf::from("main.tex"));
             assert!(has_main, "Plantilla '{}' no tiene main.tex", t.id);
         }
     }
@@ -382,6 +399,9 @@ mod tests {
     #[test]
     fn available_templates_returns_seven() {
         let templates = TemplateEngine::available_templates();
-        assert!(templates.len() >= 5, "Debe haber al menos 5 plantillas builtin");
+        assert!(
+            templates.len() >= 5,
+            "Debe haber al menos 5 plantillas builtin"
+        );
     }
 }

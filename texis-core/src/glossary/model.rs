@@ -39,28 +39,42 @@ pub struct GlossaryRegistry {
 }
 
 impl GlossaryRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty() && self.acronyms.is_empty()
     }
 
     pub fn has_issues(&self) -> bool {
-        self.entries.iter().any(|e| e.status != GlossaryEntryStatus::Active)
-            || self.acronyms.iter().any(|a| a.status != GlossaryEntryStatus::Active)
+        self.entries
+            .iter()
+            .any(|e| e.status != GlossaryEntryStatus::Active)
+            || self
+                .acronyms
+                .iter()
+                .any(|a| a.status != GlossaryEntryStatus::Active)
     }
 
     pub fn unused_entries(&self) -> Vec<&GlossaryEntry> {
-        self.entries.iter().filter(|e| e.status == GlossaryEntryStatus::DefinedUnused).collect()
+        self.entries
+            .iter()
+            .filter(|e| e.status == GlossaryEntryStatus::DefinedUnused)
+            .collect()
     }
 
     pub fn undefined_references(&self) -> Vec<String> {
         let mut keys = Vec::new();
         for e in &self.entries {
-            if e.status == GlossaryEntryStatus::UsedUndefined { keys.push(e.key.clone()); }
+            if e.status == GlossaryEntryStatus::UsedUndefined {
+                keys.push(e.key.clone());
+            }
         }
         for a in &self.acronyms {
-            if a.status == GlossaryEntryStatus::UsedUndefined { keys.push(a.key.clone()); }
+            if a.status == GlossaryEntryStatus::UsedUndefined {
+                keys.push(a.key.clone());
+            }
         }
         keys
     }

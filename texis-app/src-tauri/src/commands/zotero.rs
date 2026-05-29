@@ -87,7 +87,11 @@ pub async fn check_zotero_status() -> Result<ZoteroStatus, String> {
             } else {
                 None
             };
-            Ok(ZoteroStatus { available, version, message: None })
+            Ok(ZoteroStatus {
+                available,
+                version,
+                message: None,
+            })
         }
         Ok(resp) => Ok(ZoteroStatus {
             available: false,
@@ -160,7 +164,14 @@ pub async fn search_zotero(query: String) -> Result<Vec<ZoteroItem>, String> {
         let author = extract_first_author(item);
         let cite_key = item["citekey"].as_str().map(|s| s.to_string());
 
-        result.push(ZoteroItem { key, title, author, year, item_type, cite_key });
+        result.push(ZoteroItem {
+            key,
+            title,
+            author,
+            year,
+            item_type,
+            cite_key,
+        });
     }
 
     Ok(result)
@@ -293,7 +304,11 @@ fn extract_cite_key(entry: &str) -> Option<String> {
     // @type{CITEKEY, ...}
     let after_at = entry.find('{')? + 1;
     let after_brace = &entry[after_at..];
-    let end = after_brace.find(|c: char| c == ',' || c == '\n')?;
+    let end = after_brace.find([',', '\n'])?;
     let key = after_brace[..end].trim().to_string();
-    if key.is_empty() { None } else { Some(key) }
+    if key.is_empty() {
+        None
+    } else {
+        Some(key)
+    }
 }

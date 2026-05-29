@@ -16,7 +16,7 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
     let engine_str = match model.latex_config.engine {
         LatexEngine::Pdflatex => "pdflatex",
         LatexEngine::Lualatex => "lualatex",
-        LatexEngine::Xelatex  => "xelatex",
+        LatexEngine::Xelatex => "xelatex",
     };
 
     // Generar archivos LaTeX

@@ -3,13 +3,13 @@
 
 pub mod ai;
 pub mod bibliography_unified;
-pub mod glossary;
-pub mod package;
 pub mod build;
 pub mod compiler;
 pub mod datacite;
 pub mod doi;
+pub mod glossary;
 pub mod openalex;
+pub mod package;
 pub mod project;
 pub mod remote;
 pub mod semantic_scholar;

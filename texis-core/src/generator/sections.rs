@@ -77,9 +77,9 @@ fn render_section(section: &ProjectSection, _engine: &TemplateEngine) -> CoreRes
 
 fn chapter_command(section: &ProjectSection) -> &'static str {
     match section.placement {
-        SectionPlacement::Body     => "chapter",
+        SectionPlacement::Body => "chapter",
         SectionPlacement::Appendix => "chapter",
-        _                          => "chapter*",
+        _ => "chapter*",
     }
 }
 
@@ -148,8 +148,8 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Heading(h) => {
             let cmd = match h.level {
-                HeadingLevel::Section       => "section",
-                HeadingLevel::Subsection    => "subsection",
+                HeadingLevel::Section => "section",
+                HeadingLevel::Subsection => "subsection",
                 HeadingLevel::Subsubsection => "subsubsection",
             };
             format!("\\{}{{{}}}\n\n", cmd, latex_escape(&h.content))
@@ -159,7 +159,10 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             if eq.numbered {
                 let label = eq.label.as_deref().unwrap_or("");
                 if label.is_empty() {
-                    format!("\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n", eq.latex_content)
+                    format!(
+                        "\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n",
+                        eq.latex_content
+                    )
                 } else {
                     format!(
                         "\\begin{{equation}}\n    {}\n    \\label{{{}}}\n\\end{{equation}}\n\n",
@@ -176,8 +179,8 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::List(l) => {
             let env = match l.list_type {
-                ListType::Itemize    => "itemize",
-                ListType::Enumerate  => "enumerate",
+                ListType::Itemize => "itemize",
+                ListType::Enumerate => "enumerate",
                 ListType::Description => "description",
             };
             let items: String = l
@@ -191,9 +194,9 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
         ContentBlock::Citation(c) => {
             let cmd = match c.citation_type {
                 CitationType::Parenthetical => "parencite",
-                CitationType::Narrative     => "textcite",
-                CitationType::Multiple      => "parencite",
-                CitationType::Footnote      => "footcite",
+                CitationType::Narrative => "textcite",
+                CitationType::Multiple => "parencite",
+                CitationType::Footnote => "footcite",
             };
             let prefix = c
                 .prefix
@@ -226,9 +229,9 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Figure(f) => {
             let width = match f.width {
-                FigureWidth::Half          => "0.5\\linewidth",
+                FigureWidth::Half => "0.5\\linewidth",
                 FigureWidth::ThreeQuarters => "0.75\\linewidth",
-                FigureWidth::Full          => "\\linewidth",
+                FigureWidth::Full => "\\linewidth",
             };
             format!(
                 "\\begin{{figure}}[htbp]\n    \\centering\n    \\includegraphics[width={}]{{../content/figures/{}}}\n    \\caption{{{}}}\n    \\label{{{}}}\n\\end{{figure}}\n\n",
@@ -240,7 +243,10 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
         }
 
         ContentBlock::Table(t) => {
-            let col_spec = (0..t.headers.len()).map(|_| "l").collect::<Vec<_>>().join(" ");
+            let col_spec = (0..t.headers.len())
+                .map(|_| "l")
+                .collect::<Vec<_>>()
+                .join(" ");
             let headers = t
                 .headers
                 .iter()
@@ -271,7 +277,8 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::RawLatex(r) => {
             if !r.user_confirmed {
-                "% [TeXisStudio] Bloque LaTeX directo pendiente de confirmación — no incluido.\n\n".to_string()
+                "% [TeXisStudio] Bloque LaTeX directo pendiente de confirmación — no incluido.\n\n"
+                    .to_string()
             } else {
                 format!("{}\n\n", r.content)
             }
@@ -328,8 +335,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             // El contenido de lstlisting es verbatim — NO pasar por latex_escape.
             format!(
                 "\\begin{{lstlisting}}{}\n{}\n\\end{{lstlisting}}\n\n",
-                opts_str,
-                c.content
+                opts_str, c.content
             )
         }
 
@@ -368,16 +374,17 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Theorem(t) => {
             let base_env = match t.kind {
-                TheoremKind::Theorem    => "theorem",
-                TheoremKind::Lemma      => "lemma",
-                TheoremKind::Corollary  => "corollary",
+                TheoremKind::Theorem => "theorem",
+                TheoremKind::Lemma => "lemma",
+                TheoremKind::Corollary => "corollary",
                 TheoremKind::Definition => "definition",
                 TheoremKind::Proposition => "proposition",
-                TheoremKind::Proof      => "proof",
-                TheoremKind::Remark     => "remark",
+                TheoremKind::Proof => "proof",
+                TheoremKind::Remark => "remark",
             };
             // proof y remark son siempre no numerados en amsthm; el resto respeta la opción.
-            let env = if !t.numbered && !matches!(t.kind, TheoremKind::Proof | TheoremKind::Remark) {
+            let env = if !t.numbered && !matches!(t.kind, TheoremKind::Proof | TheoremKind::Remark)
+            {
                 format!("{}*", base_env)
             } else {
                 base_env.to_string()
@@ -410,7 +417,10 @@ mod tests {
             user_confirmed: true,
         });
         let out = render_block(&block);
-        assert!(out.contains("\\textbf{hola}"), "debe incluir el contenido LaTeX");
+        assert!(
+            out.contains("\\textbf{hola}"),
+            "debe incluir el contenido LaTeX"
+        );
         assert!(!out.contains("pendiente"), "no debe tener advertencia");
     }
 
@@ -422,7 +432,10 @@ mod tests {
             user_confirmed: false,
         });
         let out = render_block(&block);
-        assert!(!out.contains("\\textbf{secreto}"), "NO debe incluir el contenido");
+        assert!(
+            !out.contains("\\textbf{secreto}"),
+            "NO debe incluir el contenido"
+        );
         assert!(out.starts_with('%'), "debe comenzar con comentario LaTeX");
     }
 
@@ -442,7 +455,11 @@ mod tests {
             }),
         ];
         let out = render_blocks(&blocks);
-        assert_eq!(out.matches("\\begin{description}").count(), 1, "debe haber un solo description");
+        assert_eq!(
+            out.matches("\\begin{description}").count(),
+            1,
+            "debe haber un solo description"
+        );
         assert!(out.contains("Ontología"));
         assert!(out.contains("Epistemología"));
     }
@@ -505,6 +522,9 @@ mod tests {
             suffix: Some("sec. 2".to_string()),
         });
         let out = render_block(&block);
-        assert_eq!(out, "\\parencite[see][558--565, sec. 2]{lamport1978time}\n\n");
+        assert_eq!(
+            out,
+            "\\parencite[see][558--565, sec. 2]{lamport1978time}\n\n"
+        );
     }
 }
