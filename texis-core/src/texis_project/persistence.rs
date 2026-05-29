@@ -1,6 +1,4 @@
-use super::model::{
-    BuildSummary, ProjectConfig, SchemaVersion, TexisProject, WorkspaceState,
-};
+use super::model::{ProjectConfig, SchemaVersion, WorkspaceState};
 use serde::{Deserialize, Serialize};
 use crate::bibliography::registry::BibliographyRegistry;
 use crate::asset::registry::AssetRegistry;

@@ -1,5 +1,5 @@
 use super::model::{BibliographicRecord, BibliographicRecordId, RecordType};
-use super::normalization::{generate_cite_key, normalize_doi, normalize_isbn, parse_authors_bibtex};
+use super::normalization::{normalize_doi, normalize_isbn, parse_authors_bibtex};
 use super::parser::{BibEntry, BibParser};
 use crate::error::{CoreError, CoreResult};
 use chrono::Utc;
@@ -221,7 +221,7 @@ impl BibliographyRegistry {
 }
 
 /// Convierte una BibEntry (del parser .bib) a un BibliographicRecord.
-fn bib_entry_to_record(entry: &BibEntry, existing_keys: &HashSet<String>) -> BibliographicRecord {
+fn bib_entry_to_record(entry: &BibEntry, _existing_keys: &HashSet<String>) -> BibliographicRecord {
     use super::model::provider;
     use super::normalization::{normalize_doi, normalize_isbn, parse_date_str};
 

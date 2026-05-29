@@ -1,4 +1,4 @@
-use crate::texis_project::model::{BibliographyTool, BuildConfig, GlossaryTool, IndexTool, LatexEngine};
+use crate::texis_project::model::{BibliographyTool, BuildConfig, GlossaryTool, IndexTool};
 use std::collections::HashMap;
 use std::path::PathBuf;
 

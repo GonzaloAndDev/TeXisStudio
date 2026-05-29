@@ -1,7 +1,6 @@
-use crate::texis_project::model::{BuildConfig, DocumentTypeHint, ProjectMetadata};
+use crate::texis_project::model::DocumentTypeHint;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use uuid::Uuid;
 
 pub type TemplateId = String;
 

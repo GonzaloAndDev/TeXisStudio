@@ -1,6 +1,6 @@
 use crate::asset::registry::AssetRegistry;
 use crate::bibliography::registry::BibliographyRegistry;
-use crate::events::{BuildMode, DocumentProfileRef, LabelKind};
+use crate::events::DocumentProfileRef;
 use crate::reference::registry::LabelRegistry;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

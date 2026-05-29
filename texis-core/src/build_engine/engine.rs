@@ -1,8 +1,8 @@
-use super::plan::{BuildId, BuildMode, BuildPlan, BuildPlanBuilder, BuildStep, BuildStepKind};
+use super::plan::{BuildMode, BuildPlan, BuildPlanBuilder, BuildStep, BuildStepKind};
 use super::result::{BuildFailureKind, BuildResult, BuildStepResult};
 use super::toolchain::{detect_toolchain, Toolchain};
 use crate::diagnostics::engine::DiagnosticsEngine;
-use crate::texis_project::model::{BuildConfig, TexisProject};
+use crate::texis_project::model::TexisProject;
 use std::path::PathBuf;
 use std::time::Instant;
 use uuid::Uuid;

@@ -1,4 +1,4 @@
-use super::model::{BibliographicRecord, BibliographicRecordId, PersonName, RecordProvenance, RecordType};
+use super::model::{BibliographicRecord, RecordType};
 use chrono::Utc;
 use std::collections::HashMap;
 
@@ -60,6 +60,7 @@ impl FieldPriorityRules {
 
 /// Combina registros de múltiples proveedores en uno solo con trazabilidad.
 pub struct RecordMerger {
+    #[allow(dead_code)]
     field_priority: FieldPriorityRules,
 }
 
@@ -96,37 +97,6 @@ impl RecordMerger {
 
         // Guardar raw_payloads del primario (si los tiene)
         // Los demás proveedores enriquecen campo a campo
-
-        let provider_names: Vec<&str> = records.iter().map(|(p, _)| p.as_str()).collect();
-
-        // Para cada campo, buscar el mejor proveedor y tomar su valor
-        macro_rules! merge_field {
-            ($field:ident, $field_name:expr) => {
-                let preferred = self.field_priority.preferred_provider($field_name, &provider_names);
-                if let Some(prov_name) = preferred {
-                    if let Some((_, src_record)) = records.iter().find(|(p, _)| p == prov_name) {
-                        if src_record.$field.is_some() && (base.$field.is_none() || prov_name == primary_provider) {
-                            base.$field = src_record.$field.clone();
-                            base.provenance.set_field_source($field_name, prov_name, Utc::now());
-                        }
-                    }
-                }
-            };
-        }
-
-        macro_rules! merge_vec_field {
-            ($field:ident, $field_name:expr) => {
-                let preferred = self.field_priority.preferred_provider($field_name, &provider_names);
-                if let Some(prov_name) = preferred {
-                    if let Some((_, src_record)) = records.iter().find(|(p, _)| p == prov_name) {
-                        if !src_record.$field.is_empty() && (base.$field.is_empty() || prov_name == primary_provider) {
-                            base.$field = src_record.$field.clone();
-                            base.provenance.set_field_source($field_name, prov_name, Utc::now());
-                        }
-                    }
-                }
-            };
-        }
 
         // Enriquecer campos con fuentes secundarias
         for (provider, record) in &records[1..] {

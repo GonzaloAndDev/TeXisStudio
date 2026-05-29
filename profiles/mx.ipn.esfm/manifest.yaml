@@ -1,0 +1,18 @@
+schema_version: "0.1.0"
+id: "mx.ipn.esfm"
+name: "IPN ESFM — Física y Matemáticas"
+version: "1.0.0"
+description: "Tesis de licenciatura y posgrado de la Escuela Superior de Física y Matemáticas del IPN. Optimizado para trabajos con alta densidad matemática: teoremas, demostraciones, ecuaciones. Estilo APA o numérico según el área."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - ipn
+  - esfm
+  - fisica
+  - matematicas
+  - posgrado
+  - licenciatura
+  - mexico
+  - apa
+  - xelatex
+  - teoremas

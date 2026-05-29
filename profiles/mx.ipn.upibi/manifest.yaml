@@ -1,0 +1,20 @@
+schema_version: "0.1.0"
+id: "mx.ipn.upibi"
+name: "IPN UPIBI — Biotecnología"
+version: "1.0.0"
+description: "Tesis de la Unidad Profesional Interdisciplinaria de Biotecnología del IPN. Orientado a bioquímica, microbiología, ingeniería de bioprocesos, bioinformática y biotecnología ambiental. Bibliografía APA o Vancouver según el área."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - ipn
+  - upibi
+  - biotecnologia
+  - bioquimica
+  - microbiologia
+  - bioprocesos
+  - bioinformatica
+  - posgrado
+  - licenciatura
+  - mexico
+  - apa
+  - xelatex

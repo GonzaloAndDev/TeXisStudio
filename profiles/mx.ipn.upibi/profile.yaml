@@ -1,0 +1,208 @@
+schema_version: "1.0.0"
+id: "mx.ipn.upibi"
+name: "IPN UPIBI — Biotecnología"
+description: "Tesis de la Unidad Profesional Interdisciplinaria de Biotecnología del IPN. Abarca bioquímica, microbiología, ingeniería de bioprocesos, bioinformática, biotecnología ambiental y farmacéutica. Carácter experimental y cuantitativo con alto rigor en presentación de datos. Bibliografía APA 7 para la mayoría de áreas; Vancouver aceptado en áreas más cercanas a ciencias de la salud."
+author: "Gonzalo Andrade Estrella"
+version: "1.0.0"
+license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-29"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://www.upibi.ipn.mx"
+    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
+  review_interval_days: 365
+tags:
+  - ipn
+  - upibi
+  - biotecnologia
+  - bioquimica
+  - microbiologia
+  - bioprocesos
+  - bioinformatica
+  - biotecnologia-ambiental
+  - farmaceutica
+  - posgrado
+  - licenciatura
+  - mexico
+  - apa
+  - xelatex
+
+document_class:
+  name: "book"
+  options:
+    - "12pt"
+    - "letterpaper"
+    - "oneside"
+
+latex_engine: "xelatex"
+compiler: "latexmk"
+bibliography_backend: "biber"
+bibliography_style: "apa"
+
+page_layout:
+  top_margin_cm: 2.5
+  bottom_margin_cm: 2.5
+  left_margin_cm: 3.0
+  right_margin_cm: 2.5
+  line_spacing: 1.5
+
+packages:
+  - "fontspec"
+  - "geometry"
+  - "graphicx"
+  - "subcaption"
+  - "amsmath"
+  - "booktabs"
+  - "longtable"
+  - "float"
+  - "caption"
+  - "siunitx"
+  - "csquotes"
+  - "setspace"
+  - "hyperref"
+  - "cleveref"
+
+sections:
+  - id: "portada"
+    element_id: "title_page"
+    placement: "front_matter"
+    required: true
+    title: null
+    guidance: |
+      La portada UPIBI incluye: escudo del IPN, "Unidad Profesional Interdisciplinaria de Biotecnología", carrera o programa, título del trabajo, tipo de tesis, nombre del alumno, director(es), lugar y año.
+
+  - id: "resumen"
+    element_id: "abstract_es"
+    placement: "front_matter"
+    required: true
+    title: "Resumen"
+    guidance: |
+      Resumen científico de 200–300 palabras en español. En biotecnología el resumen debe incluir:
+      • Objetivo del estudio.
+      • Materiales/organismos/cepas/muestras principales utilizados.
+      • Metodología central (tipo de experimento, técnica analítica clave).
+      • Resultado más importante (con datos cuantitativos si es posible).
+      • Conclusión o aplicación.
+      Al final: 5–8 palabras clave en español.
+
+  - id: "abstract"
+    element_id: "abstract_en"
+    placement: "front_matter"
+    required: true
+    title: "Abstract"
+    guidance: |
+      Traducción al inglés del resumen. La UPIBI lo exige para todos los trabajos de titulación y posgrado.
+      Keywords en inglés: mismas que en español.
+
+  - id: "tabla_contenidos"
+    element_id: "table_of_contents"
+    placement: "front_matter"
+    required: true
+    title: null
+    guidance: |
+      Índice generado automáticamente. En trabajos con muchas figuras (geles, cromatogramas, curvas de crecimiento), incluye lista de figuras y lista de tablas.
+
+  - id: "introduccion"
+    element_id: "introduction"
+    placement: "body"
+    required: true
+    title: "Introducción"
+    label: "chap:introduccion"
+    guidance: |
+      La introducción en biotecnología contextualiza el problema desde la biología y la ingeniería:
+      • Importancia del microorganismo, proceso, compuesto o problema estudiado.
+      • Estado del arte: trabajos previos relevantes (usa APA: Autor, año).
+      • Justificación: ¿por qué es relevante este estudio?
+      • Hipótesis de trabajo (si el diseño es experimental).
+      • Objetivo general y objetivos específicos.
+      Sé específico en taxas, cepas, condiciones y compuestos desde el inicio.
+
+  - id: "marco_teorico"
+    element_id: "theoretical_framework"
+    placement: "body"
+    required: false
+    title: "Marco Teórico"
+    label: "chap:marco"
+    guidance: |
+      Fundamenta el trabajo en la literatura científica:
+      • Biología/bioquímica del sistema estudiado (microorganismo, enzima, vía metabólica, etc.).
+      • Principios del proceso o técnica principal (fermentación, HPLC, PCR, etc.).
+      • Modelos cinéticos o matemáticos si aplica (Michaelis-Menten, Monod, etc.).
+      • Normatividad o regulación si es relevante (NOM, FDA, OMS).
+
+  - id: "materiales_metodos"
+    element_id: "methodology"
+    placement: "body"
+    required: true
+    title: "Materiales y Métodos"
+    label: "chap:materiales"
+    guidance: |
+      En biotecnología la sección de materiales y métodos es crítica para la reproducibilidad. Incluye:
+      • Materiales biológicos: organismos, cepas (con número de catálogo o número de acceso), líneas celulares, muestras (con procedencia y condiciones de conservación).
+      • Reactivos: nombre, grado, proveedor.
+      • Equipos: modelo, marca, condiciones de operación.
+      • Métodos analíticos: condiciones exactas (temperatura, pH, tiempo, concentraciones).
+      • Diseño experimental: variables independientes, dependientes y de control; réplicas.
+      • Análisis estadístico: software, pruebas y nivel de significancia (α = 0.05).
+      El nivel de detalle debe permitir a otro laboratorio repetir exactamente el experimento.
+
+  - id: "resultados"
+    element_id: "results"
+    placement: "body"
+    required: true
+    title: "Resultados"
+    label: "chap:resultados"
+    guidance: |
+      Presenta los datos de forma objetiva, sin interpretación:
+      • Figuras: cromatogramas, curvas de crecimiento, geles, microscopías — cada una con número, título descriptivo (abajo) y unidades completas en los ejes.
+      • Tablas: datos tabulados con media ± desviación estándar, unidades en el encabezado.
+      • Estadística: indica si las diferencias son significativas (p < 0.05, ANOVA, Tukey, etc.).
+      • Letras estadísticas en tablas y figuras si aplica (a, b, ab para grupos homogéneos).
+      Refiere cada figura o tabla explícitamente en el texto antes de que aparezca.
+
+  - id: "discusion"
+    element_id: "discussion"
+    placement: "body"
+    required: true
+    title: "Discusión"
+    label: "chap:discusion"
+    guidance: |
+      Interpreta los resultados en el contexto de la literatura:
+      • ¿Los resultados confirman o refutan la hipótesis?
+      • Compara con estudios previos: ¿coinciden? ¿difieren? ¿por qué podrían diferir (cepa, condiciones, método)?
+      • Explica mecanismos biológicos o bioquímicos que justifiquen los resultados.
+      • Discute las limitaciones metodológicas y su impacto en los resultados.
+      • Implicaciones: ¿qué significa para la industria, la medicina o el medio ambiente?
+
+  - id: "conclusiones"
+    element_id: "conclusions"
+    placement: "body"
+    required: true
+    title: "Conclusiones"
+    label: "chap:conclusiones"
+    guidance: |
+      Resume lo más importante en términos directos y medibles:
+      • Cada conclusión corresponde a un objetivo específico.
+      • Evita repetir el resumen de resultados — concluye, no reporta.
+      • Señala la contribución al conocimiento o a la industria.
+      • Recomendaciones para investigación futura.
+
+  - id: "referencias"
+    element_id: "references"
+    placement: "back_matter"
+    required: true
+    title: "Referencias"
+    guidance: |
+      Lista de referencias en APA 7 (generada automáticamente).
+      Para artículos científicos: usa el importador DOI — PubMed, ScienceDirect y Web of Science tienen DOI para la mayoría de artículos de biotecnología.
+      Para artículos sin DOI: incluye la URL de la revista o base de datos.
+
+  - id: "anexos"
+    element_id: "appendices"
+    placement: "appendix"
+    required: false
+    title: "Anexos"
+    guidance: |
+      Datos crudos de experimentos, geles completos (sin recortar), secuencias de nucleótidos o aminoácidos, números de acceso de GenBank, certificados de análisis de reactivos, protocolos completos no incluidos en M&M.

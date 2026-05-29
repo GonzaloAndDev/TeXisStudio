@@ -4111,12 +4111,16 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
  "tempfile",
  "texis-core",
+ "thiserror 1.0.69",
  "tokio",
+ "urlencoding",
+ "uuid",
  "walkdir",
  "zip",
 ]
@@ -4138,16 +4142,20 @@ dependencies = [
  "chrono",
  "insta",
  "jsonschema",
+ "lazy_static",
  "minijinja",
  "regex",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "serde_yaml",
  "sha2",
- "schemars",
  "tempfile",
  "thiserror 1.0.69",
+ "url",
+ "uuid",
  "walkdir",
+ "zip",
 ]
 
 [[package]]
@@ -4257,7 +4265,19 @@ dependencies = [
  "mio",
  "pin-project-lite",
  "socket2",
+ "tokio-macros",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "385a6cb71ab9ab790c5fe8d67f1645e6c450a7ce006a33de03daa956cf70a496"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -4590,6 +4610,12 @@ dependencies = [
  "serde",
  "serde_derive",
 ]
+
+[[package]]
+name = "urlencoding"
+version = "2.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "urlpattern"

@@ -1,6 +1,4 @@
-use super::model::{
-    Diagnostic, DiagnosticSeverity, DiagnosticSource, FileLocation, FixAction, FixSuggestion,
-};
+use super::model::{Diagnostic, DiagnosticSource, FixAction};
 use regex::Regex;
 use std::path::{Path, PathBuf};
 
@@ -15,7 +13,7 @@ impl DiagnosticsEngine {
 
         for pattern in LATEX_PATTERNS.iter() {
             for m in pattern.regex.captures_iter(log) {
-                let mut diag = (pattern.builder)(&m, project_root);
+                let diag = (pattern.builder)(&m, project_root);
                 diagnostics.push(diag);
             }
         }
@@ -78,7 +76,7 @@ lazy_static::lazy_static! {
         // ! LaTeX Error: File 'image.png' not found.
         latex_pattern!(
             r"! LaTeX Error: File `([^']+)' not found\.",
-            |m, root| {
+            |m, _root| {
                 let file_name = &m[1];
                 Diagnostic::error(
                     DiagnosticSource::LatexLog,

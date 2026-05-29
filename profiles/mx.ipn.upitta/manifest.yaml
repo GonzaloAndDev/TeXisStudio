@@ -1,0 +1,18 @@
+schema_version: "0.1.0"
+id: "mx.ipn.upitta"
+name: "IPN UPITTA — Tecnologías Avanzadas"
+version: "1.0.0"
+description: "Tesis de la Unidad Profesional Interdisciplinaria de Tecnologías Avanzadas del IPN. Orientado a mecatrónica, sistemas inteligentes, automatización y tecnologías emergentes. Bibliografía IEEE."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - ipn
+  - upitta
+  - mecatronica
+  - automatizacion
+  - sistemas-inteligentes
+  - posgrado
+  - licenciatura
+  - mexico
+  - ieee
+  - xelatex
