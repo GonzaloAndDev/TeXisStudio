@@ -20,6 +20,8 @@ pub enum RequirementReason {
     Code,
     /// Detectado por \begin{algorithm}.
     Algorithm,
+    /// Detectado por notación disciplinar: \ce{}, \SI{}, \begin{circuitikz}, etc.
+    Discipline,
     /// Declarado explícitamente por el usuario en el preámbulo.
     UserExplicit,
 }

@@ -153,6 +153,258 @@ const DETECTION_RULES: &[DetectionRule] = &[
         reason: RequirementReason::Algorithm,
         priority: PackagePriority::Required,
     },
+    // ── Notación disciplinar — Física y Matemáticas ───────────────────────────
+    // siunitx: unidades físicas \SI{}, \si{}, \num{}
+    DetectionRule {
+        pattern: r"\SI{",
+        package: "siunitx",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\si{",
+        package: "siunitx",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\num{",
+        package: "siunitx",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // physics: operadores como \abs{}, \norm{}, \dv{}, \pdv{}
+    DetectionRule {
+        pattern: r"\dv{",
+        package: "physics",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\pdv{",
+        package: "physics",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\abs{",
+        package: "physics",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\norm{",
+        package: "physics",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // mathtools: extensiones de amsmath (\coloneqq, \prescript, etc.)
+    DetectionRule {
+        pattern: r"\coloneqq",
+        package: "mathtools",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\prescript",
+        package: "mathtools",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // cancel: flechas de cancelación \cancel{}, \bcancel{}
+    DetectionRule {
+        pattern: r"\cancel{",
+        package: "cancel",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // bm: negritas en modo math \bm{}
+    DetectionRule {
+        pattern: r"\bm{",
+        package: "bm",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // xfrac: fracciones con estilo \sfrac{}{}
+    DetectionRule {
+        pattern: r"\sfrac{",
+        package: "xfrac",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Química ────────────────────────────────────────
+    // mhchem: reacciones químicas \ce{}
+    DetectionRule {
+        pattern: r"\ce{",
+        package: "mhchem",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // chemfig: estructuras moleculares \chemfig{}
+    DetectionRule {
+        pattern: r"\chemfig{",
+        package: "chemfig",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{reaction}",
+        package: "chemmacros",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Ingeniería eléctrica / electrónica ─────────────
+    // circuitikz: diagramas de circuitos
+    DetectionRule {
+        pattern: r"\begin{circuitikz}",
+        package: "circuitikz",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{tikzpicture}",
+        package: "tikz",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // pgfplots: gráficos de funciones y datos
+    DetectionRule {
+        pattern: r"\begin{axis}",
+        package: "pgfplots",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{tikzcd}",
+        package: "tikz-cd",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Física cuántica / partículas ───────────────────
+    // feynmf/feynmp: diagramas de Feynman
+    DetectionRule {
+        pattern: r"\begin{fmfgraph}",
+        package: "feynmf",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{feynman}",
+        package: "tikz-feynman",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Lógica / Matemáticas discretas ─────────────────
+    // proof trees
+    DetectionRule {
+        pattern: r"\begin{prooftree}",
+        package: "bussproofs",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{nd}",
+        package: "logicproof",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Lingüística ────────────────────────────────────
+    // gb4e / expex: ejemplos numerados
+    DetectionRule {
+        pattern: r"\begin{exe}",
+        package: "gb4e",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\ex ",
+        package: "expex",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Optional,
+    },
+    // IPA: phonetic transcription
+    DetectionRule {
+        pattern: r"\textipa{",
+        package: "tipa",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // Trees / syntax trees
+    DetectionRule {
+        pattern: r"\begin{forest}",
+        package: "forest",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\Tree[",
+        package: "qtree",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // ── Notación disciplinar — Economía / estadística ─────────────────────────
+    // econometric notation
+    DetectionRule {
+        pattern: r"\begin{equation*}",
+        package: "amsmath",
+        reason: RequirementReason::Discipline,
+        priority: PackagePriority::Required,
+    },
+    // dataplot
+    DetectionRule {
+        pattern: r"\begin{tabular}{",
+        package: "array",
+        reason: RequirementReason::Table,
+        priority: PackagePriority::Recommended,
+    },
+    // ── Assets especializados — integración externa ────────────────────────────
+    // PDF pages: incluir páginas de PDF como figuras
+    DetectionRule {
+        pattern: r"\includepdf",
+        package: "pdfpages",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    // SVG
+    DetectionRule {
+        pattern: r"\includesvg",
+        package: "svg",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    // Rotación de páginas/figuras
+    DetectionRule {
+        pattern: r"\begin{landscape}",
+        package: "pdflscape",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{sideways}",
+        package: "rotating",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    // Multicolumna
+    DetectionRule {
+        pattern: r"\begin{multicols}",
+        package: "multicol",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    // Cajas de color / advertencias
+    DetectionRule {
+        pattern: r"\begin{tcolorbox}",
+        package: "tcolorbox",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
+    DetectionRule {
+        pattern: r"\begin{mdframed}",
+        package: "mdframed",
+        reason: RequirementReason::Asset,
+        priority: PackagePriority::Required,
+    },
 ];
 
 // ── Conflictos conocidos ──────────────────────────────────────────────────────

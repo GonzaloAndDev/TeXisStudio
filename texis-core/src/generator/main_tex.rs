@@ -276,6 +276,8 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\usepackage{amsmath}\n");
     out.push_str("\\usepackage{amssymb}\n");
     out.push_str("\\usepackage{amsthm}\n");
+    out.push_str("\\usepackage{mathtools}\n"); // amplía amsmath: \coloneqq, \prescript, etc.
+    out.push_str("\\usepackage{bm}\n"); // negritas en modo math: \bm{}
 
     // Paquetes adicionales del modelo
     for pkg in &model.latex_config.packages_required {
