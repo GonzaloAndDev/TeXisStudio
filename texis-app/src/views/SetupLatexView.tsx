@@ -44,7 +44,7 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "MacTeX",
       tagline: "Recomendado — distribución oficial para Mac",
       description:
-        "MacTeX es la distribución TeX Live adaptada para macOS. Incluye todo: latexmk, xelatex, biber y miles de paquetes. Es la opción más compatible con perfiles institucionales exigentes.",
+        "MacTeX es la distribución TeX Live adaptada para macOS. Incluye todo: latexmk, xelatex, biber y miles de paquetes. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete específico. Puede coexistir con Tectonic sin conflicto.",
       pros: [
         "Incluye todos los paquetes LaTeX sin descargas adicionales",
         "Instalación con Homebrew en un comando",
@@ -90,16 +90,16 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "Tectonic",
       tagline: "Ligero — descarga solo lo que necesita",
       description:
-        "Motor LaTeX moderno y autónomo. Descarga los paquetes necesarios la primera vez que compila. Ideal para empezar rápido sin ocupar gigabytes de espacio.",
+        "Motor LaTeX moderno y autónomo. Cubre el 80% de las tesis sin necesidad de instalar gigabytes. Si durante la escritura algún paquete muy específico falla, puedes instalar MacTeX junto a Tectonic — conviven sin conflicto y la app te deja elegir cuál usar.",
       pros: [
         "Instalación en menos de 1 minuto",
         "Descarga solo los paquetes que usa tu tesis",
-        "No requiere TeX Live completo",
+        "Convive con MacTeX si necesitas ambos",
         "Actualizable con brew upgrade",
       ],
       cons: [
         "Primera compilación requiere conexión a internet",
-        "Algunos paquetes institucionales muy específicos pueden fallar",
+        "Paquetes muy especializados (física avanzada, etc.) pueden requerir MacTeX",
       ],
       steps: [
         {
@@ -134,7 +134,7 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "TeX Live",
       tagline: "Recomendado — distribución completa vía gestor de paquetes",
       description:
-        "TeX Live es la distribución LaTeX estándar en Linux. Se instala directamente desde el gestor de paquetes de tu distribución: apt, dnf, pacman, zypper, etc.",
+        "TeX Live es la distribución LaTeX estándar en Linux. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
       pros: [
         "Instalación con un solo comando",
         "Mantenida por la distribución — actualizaciones automáticas",
@@ -185,15 +185,15 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "Tectonic",
       tagline: "Ligero — sin gestor de paquetes de sistema",
       description:
-        "Motor LaTeX moderno que descarga solo los paquetes que necesita. Buena opción si no tienes acceso sudo o prefieres no instalar TeX Live completo.",
+        "Motor LaTeX moderno que cubre el 80% de las tesis sin necesitar gigabytes de espacio. Si algún paquete muy específico falla, puedes instalar TeX Live junto a Tectonic — conviven sin conflicto y la app te deja elegir cuál usar.",
       pros: [
         "No requiere sudo para instalar",
         "Descarga solo lo que necesita tu tesis",
-        "Un solo binario, sin dependencias de sistema",
+        "Convive con TeX Live si necesitas ambos",
       ],
       cons: [
         "Primera compilación requiere internet",
-        "Puede fallar con algunos paquetes muy específicos",
+        "Paquetes muy especializados (física avanzada, etc.) pueden requerir TeX Live",
       ],
       steps: [
         {
@@ -228,7 +228,7 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "MiKTeX",
       tagline: "Recomendado en Windows — instalador gráfico, sin Perl",
       description:
-        "Distribución LaTeX nativa en Windows con instalador gráfico. Descarga los paquetes bajo demanda. Es la opción más cómoda para Windows sin pasos adicionales complicados.",
+        "Distribución LaTeX nativa en Windows con instalador gráfico. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
       pros: [
         "Instalador gráfico .exe fácil de usar",
         "Descarga paquetes bajo demanda automáticamente",
@@ -269,16 +269,16 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "Tectonic",
       tagline: "Ligero — un comando, sin Perl",
       description:
-        "Motor LaTeX autónomo. Descarga solo los paquetes que necesita tu tesis la primera vez. No requiere TeX Live ni Strawberry Perl. Ideal si quieres empezar rápido.",
+        "Motor LaTeX autónomo que cubre el 80% de las tesis. No requiere TeX Live ni Strawberry Perl. Si algún paquete muy específico falla, puedes instalar MiKTeX junto a Tectonic — conviven sin conflicto y la app te deja elegir cuál usar.",
       pros: [
         "Instalación en 1 minuto con winget",
         "No necesita Strawberry Perl",
-        "Descarga paquetes bajo demanda (~50 MB primera compilación)",
+        "Convive con MiKTeX si necesitas ambos",
         "Actualizable con winget upgrade",
       ],
       cons: [
         "Primera compilación requiere internet",
-        "Algunos paquetes institucionales muy específicos pueden fallar",
+        "Paquetes muy especializados (física avanzada, etc.) pueden requerir MiKTeX",
       ],
       steps: [
         {
@@ -305,7 +305,7 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       name: "TeX Live",
       tagline: "Completo — todas las herramientas, sin sorpresas",
       description:
-        "Distribución LaTeX completa. Incluye absolutamente todo: latexmk, biber, xelatex y miles de paquetes. La opción más robusta si vas a hacer una tesis muy exigente.",
+        "Distribución LaTeX completa para tesis muy exigentes: matemáticas avanzadas, física teórica, o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
       pros: [
         "Todos los paquetes LaTeX incluidos",
         "Sin descargas adicionales después de instalar",

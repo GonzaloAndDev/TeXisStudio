@@ -712,12 +712,14 @@ export default function CompileView() {
           </>
         }
         center={
-          userMode === "advanced" ? (
+          (userMode === "advanced" || (tectonicOk && latexmkOk)) ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Motor:</span>
+              <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>
+                {tectonicOk && latexmkOk ? "Motor:" : "Motor:"}
+              </span>
               <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
-              <BackendChip id="latexmk"  label="latexmk"  available={latexmkOk}  version={latexInfo?.latexmk_version}  selected={backend === "latexmk"}  onClick={() => setBackend("latexmk")} />
               <BackendChip id="tectonic" label="Tectonic" available={tectonicOk} version={latexInfo?.tectonic_version} selected={backend === "tectonic"} onClick={() => setBackend("tectonic")} />
+              <BackendChip id="latexmk"  label="TeX Live" available={latexmkOk}  version={latexInfo?.latexmk_version}  selected={backend === "latexmk"}  onClick={() => setBackend("latexmk")} />
             </div>
           ) : (
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
