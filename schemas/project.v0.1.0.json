@@ -20,7 +20,7 @@
         "document_kind": { "type": "string", "enum": ["tesis", "tesina"] },
         "academic_level": {
           "type": "string",
-          "enum": ["bachillerato", "tecnico", "licenciatura", "maestria", "doctorado"]
+          "enum": ["bachillerato", "tecnico", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"]
         },
         "language": { "type": "string" },
         "city": { "type": "string" },

@@ -59,8 +59,10 @@
     "latex_guide": "ガイドを見る →",
     "latex_not_detected": "LaTeX が見つかりません",
     "level_licenciatura": "学士",
+    "level_especialidad": "専門課程",
     "level_maestria": "修士",
     "level_doctorado": "博士",
+    "level_posdoctorado": "博士研究員",
     "level_bachillerato": "高校",
     "level_tecnico": "専門学校"
   },

@@ -59,8 +59,10 @@
     "latex_guide": "Anleitung ansehen →",
     "latex_not_detected": "LaTeX nicht gefunden",
     "level_licenciatura": "Bachelor",
+    "level_especialidad": "Spezialisierung",
     "level_maestria": "Master",
     "level_doctorado": "Promotion",
+    "level_posdoctorado": "Postdoktorat",
     "level_bachillerato": "Gymnasium",
     "level_tecnico": "Fachschule"
   },

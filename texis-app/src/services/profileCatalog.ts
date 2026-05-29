@@ -12,6 +12,8 @@
  * (Propuesta D, Auditoría TeXisStudio v2.2).
  */
 
+import type { AcademicLevel, ProfileStatus } from "../types";
+
 export const PROFILE_CATALOG_URL =
   "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download/catalog.json";
 
@@ -21,6 +23,19 @@ const ALLOWED_CATALOG_HOSTS = new Set([
   "raw.githubusercontent.com",
   "objects.githubusercontent.com",
   "releases.githubusercontent.com",
+]);
+
+const ALLOWED_PROFILE_STATUS = new Set([
+  "experimental", "draft", "reviewed", "verified", "stale", "deprecated",
+]);
+
+const ALLOWED_PROFILE_SCOPE = new Set([
+  "institutional", "degree_specific", "program_specific", "discipline_specific",
+]);
+
+const ALLOWED_ACADEMIC_LEVELS = new Set([
+  "bachillerato", "tecnico", "licenciatura",
+  "especialidad", "maestria", "doctorado", "posdoctorado",
 ]);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -35,8 +50,21 @@ export interface CatalogProfile {
   continent: string;
   country: string;
   institution?: string;
+  institution_id?: string;
   city?: string;
+  status?: ProfileStatus;
+  style_id?: string;
   bibliography_style?: string;
+  reviewed_at?: string | null;
+  verified_at?: string | null;
+  ci_evidence?: string;
+  profile_scope?: "institutional" | "degree_specific" | "program_specific" | "discipline_specific";
+  academic_level?: AcademicLevel;
+  target_levels?: AcademicLevel[];
+  discipline?: string;
+  program_name?: string;
+  faculty?: string;
+  department?: string;
   download_url: string;
   sha256?: string | null;
 }
@@ -112,6 +140,22 @@ function validateEntry(raw: unknown, warnings: string[]): CatalogProfile | null 
   const tags = Array.isArray(e.tags)
     ? (e.tags as unknown[]).filter((t) => typeof t === "string") as string[]
     : [];
+  const verification = e.verification && typeof e.verification === "object"
+    ? e.verification as Record<string, unknown>
+    : {};
+  const status = typeof e.status === "string" && ALLOWED_PROFILE_STATUS.has(e.status)
+    ? e.status as ProfileStatus
+    : undefined;
+  const profileScope = typeof e.profile_scope === "string" && ALLOWED_PROFILE_SCOPE.has(e.profile_scope)
+    ? e.profile_scope as CatalogProfile["profile_scope"]
+    : undefined;
+  const academicLevel = typeof e.academic_level === "string" && ALLOWED_ACADEMIC_LEVELS.has(e.academic_level)
+    ? e.academic_level as AcademicLevel
+    : undefined;
+  const targetLevels = Array.isArray(e.target_levels)
+    ? (e.target_levels as unknown[])
+        .filter((level): level is AcademicLevel => typeof level === "string" && ALLOWED_ACADEMIC_LEVELS.has(level))
+    : [];
 
   return {
     id: e.id as string,
@@ -123,8 +167,27 @@ function validateEntry(raw: unknown, warnings: string[]): CatalogProfile | null 
     continent: e.continent as string,
     country: e.country as string,
     institution: typeof e.institution === "string" ? e.institution : undefined,
+    institution_id: typeof e.institution_id === "string" ? e.institution_id : undefined,
     city: typeof e.city === "string" ? e.city : undefined,
+    status,
+    style_id: typeof e.style_id === "string" ? e.style_id : undefined,
     bibliography_style: typeof e.bibliography_style === "string" ? e.bibliography_style : undefined,
+    reviewed_at: typeof e.reviewed_at === "string"
+      ? e.reviewed_at
+      : (typeof verification.reviewed_at === "string" ? verification.reviewed_at : null),
+    verified_at: typeof e.verified_at === "string"
+      ? e.verified_at
+      : (typeof verification.verified_at === "string" ? verification.verified_at : null),
+    ci_evidence: typeof e.ci_evidence === "string"
+      ? e.ci_evidence
+      : (typeof verification.ci_evidence === "string" ? verification.ci_evidence : undefined),
+    profile_scope: profileScope,
+    academic_level: academicLevel,
+    target_levels: targetLevels.length ? targetLevels : undefined,
+    discipline: typeof e.discipline === "string" ? e.discipline : undefined,
+    program_name: typeof e.program_name === "string" ? e.program_name : undefined,
+    faculty: typeof e.faculty === "string" ? e.faculty : undefined,
+    department: typeof e.department === "string" ? e.department : undefined,
     download_url: e.download_url as string,
     sha256: typeof e.sha256 === "string" ? e.sha256 : null,
   };

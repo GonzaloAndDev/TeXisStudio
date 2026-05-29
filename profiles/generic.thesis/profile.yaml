@@ -1,7 +1,7 @@
 schema_version: "1.0.0"
 id: "generic.thesis"
 name: "Tesis genérica"
-description: "Perfil base para tesis de licenciatura, maestría y doctorado. Clase book, XeLaTeX, biber, APA 7."
+description: "Perfil base para tesis y trabajos académicos formales de licenciatura, especialidad, maestría, doctorado y posdoctorado. Clase book, XeLaTeX, biber, APA 7."
 author: "Gonzalo Andrade Estrella"
 version: "1.0.0"
 license: "AGPL-3.0"
@@ -16,8 +16,10 @@ verification:
 tags:
   - tesis
   - licenciatura
+  - especialidad
   - maestria
   - doctorado
+  - posdoctorado
   - apa
   - xelatex
 

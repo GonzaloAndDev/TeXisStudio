@@ -59,8 +59,10 @@
     "latex_guide": "Voir le guide →",
     "latex_not_detected": "LaTeX non détecté",
     "level_licenciatura": "Licence",
+    "level_especialidad": "Spécialité",
     "level_maestria": "Master",
     "level_doctorado": "Doctorat",
+    "level_posdoctorado": "Postdoctorat",
     "level_bachillerato": "Lycée",
     "level_tecnico": "Technique"
   },

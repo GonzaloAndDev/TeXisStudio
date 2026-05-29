@@ -59,8 +59,10 @@
     "latex_guide": "查看指南 →",
     "latex_not_detected": "未检测到 LaTeX",
     "level_licenciatura": "本科",
+    "level_especialidad": "专科专项",
     "level_maestria": "硕士",
     "level_doctorado": "博士",
+    "level_posdoctorado": "博士后",
     "level_bachillerato": "高中",
     "level_tecnico": "专科"
   },

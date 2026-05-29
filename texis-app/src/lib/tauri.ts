@@ -62,9 +62,9 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     {
       id: "generic.thesis",
       name: "Tesis genérica",
-      description: "Estructura clásica con marco teórico, metodología, resultados y conclusiones.",
+      description: "Estructura clásica para licenciatura, especialidad, maestría, doctorado o posdoctorado.",
       meta: "XeLaTeX · biber · APA 7",
-      tags: ["tesis", "licenciatura", "maestria", "doctorado"],
+      tags: ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
       sections_count: 13,
       sections: [],
       author: "Gonzalo Andrade Estrella",
