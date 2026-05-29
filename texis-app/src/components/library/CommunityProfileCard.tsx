@@ -13,6 +13,9 @@ function audienceLabel(cp: CatalogProfile, disciplineLabel: (value: string) => s
 }
 
 function confidenceSummary(cp: CatalogProfile) {
+  if (cp.ci_evidence) {
+    return "Verificado en CI automatizado — tiene evidencia real de compilación exitosa.";
+  }
   if (cp.delivery_verified) {
     return "Tiene evidencia fuerte de compilación y entrega final.";
   }
