@@ -291,7 +291,7 @@ export default function SettingsView() {
                       <span style={{ fontSize: 18 }}>{p.entry.flag}</span>
                       <span>{p.entry.native_name}</span>
                       {lang === p.id && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-                      <span style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>↓</span>
+                      <span style={{ fontSize: 9, color: "var(--fg-faint)", background: "var(--border-subtle)", padding: "1px 4px", borderRadius: 3 }}>instalado</span>
                     </button>
                   ))}
                 </div>
@@ -333,13 +333,16 @@ export default function SettingsView() {
                         <span style={{ fontSize: 18 }}>{l.flag}</span>
                         <span style={{ fontSize: "var(--fs-sm)" }}>{l.label}</span>
                         {spellLang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-                        {!hasSpell && <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>×</span>}
+                        {!hasSpell && <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>sin diccionario</span>}
                       </button>
                     );
                   })}
                 </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 10 }}>
-                  × = {t("settings.spell_not_supported")}
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 10, lineHeight: 1.6 }}>
+                  Español e Inglés incluyen diccionario Hunspell integrado. Para otros idiomas,
+                  instala un paquete de idioma desde la sección{" "}
+                  <span style={{ color: "var(--accent-deep)", cursor: "pointer" }} onClick={() => setActiveSection("community")}>Comunidad</span>{" "}
+                  que incluya corrección ortográfica.
                 </div>
               </Card>
             </div>
