@@ -1,4 +1,5 @@
 pub mod asset;
+pub mod glossary;
 pub mod package;
 pub mod bibliography;
 pub mod build_engine;
