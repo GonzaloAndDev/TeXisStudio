@@ -747,6 +747,7 @@ export default function EditorView() {
                         onDelete={() => deleteBlock(block.id)}
                         dragging={dragId === block.id}
                         dragOver={dropId === block.id}
+                        availableCiteKeys={bibRefs.map((r) => r.key)}
                         onDragStart={() => { setDragId(block.id); setEditingId(null); }}
                         onDragEnd={() => { setDragId(null); setDropId(null); }}
                         onDragOver={() => { if (dragId && dragId !== block.id) setDropId(block.id); }}

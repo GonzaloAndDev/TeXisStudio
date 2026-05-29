@@ -12,7 +12,7 @@ import {
 
 export function BlockItem({
   block, isEditing, onStartEdit, onUpdate, onDelete,
-  dragging, dragOver,
+  dragging, dragOver, availableCiteKeys,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
 }: {
   block: ContentBlock;
@@ -22,6 +22,7 @@ export function BlockItem({
   onDelete: () => void;
   dragging?: boolean;
   dragOver?: boolean;
+  availableCiteKeys?: string[];
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -96,6 +97,7 @@ export function BlockItem({
             citation_key={block.citation_key}
             citation_type={block.citation_type}
             page={block.page}
+            availableCiteKeys={availableCiteKeys}
             onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
           />
         );

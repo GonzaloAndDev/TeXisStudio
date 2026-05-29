@@ -488,14 +488,21 @@ export function TableEditor({
 // ── CitationEditor ────────────────────────────────────────────────
 
 export function CitationEditor({
-  citation_key, citation_type, page,
+  citation_key, citation_type, page, availableCiteKeys,
   onChange,
 }: {
   citation_key: string; citation_type: string; page?: string;
+  availableCiteKeys?: string[];
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const listId = "cite-keys-datalist";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {availableCiteKeys && availableCiteKeys.length > 0 && (
+        <datalist id={listId}>
+          {availableCiteKeys.map((k) => <option key={k} value={k} />)}
+        </datalist>
+      )}
       <div style={{ display: "flex", gap: 6 }}>
         {([
           ["parenthetical", "\\parencite"],
@@ -511,9 +518,12 @@ export function CitationEditor({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Clave bibliográfica</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+            Clave bibliográfica{availableCiteKeys && availableCiteKeys.length > 0 ? ` (${availableCiteKeys.length} disponibles)` : ""}
+          </label>
           <input
             autoFocus
+            list={availableCiteKeys && availableCiteKeys.length > 0 ? listId : undefined}
             value={citation_key}
             onChange={(e) => onChange({ citation_key: e.target.value })}
             placeholder="apellido2024"
