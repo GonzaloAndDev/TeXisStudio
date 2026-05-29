@@ -147,12 +147,13 @@ impl OpenAiProvider {
             total_tokens: u.total_tokens,
         });
 
-        // Construir acción propuesta según modo
-        let (response_text, action) = extract_action_from_response(&text, request);
+        // Delegar al engine la extracción de acción (lógica centralizada)
+        let (response_text, action) =
+            crate::ai::engine::extract_action(&text, &request.action_mode, &request.context);
 
         let mut ai_response = match action {
             Some(act) => {
-                let safety = AiSafetyPolicy::classify_action(&act);
+                let safety = AiSafetyPolicy::classify_action(&act, &request.action_mode);
                 AiResponse::with_action(response_text, act, safety)
             }
             None => AiResponse::chat_only(response_text),
@@ -162,49 +163,7 @@ impl OpenAiProvider {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 fn build_system_prompt(request: &AiRequest) -> String {
     let context_block = request.context.to_prompt_block();
     format!("{}{}", request.system_prompt, context_block)
-}
-
-/// Extrae la acción propuesta del texto de la IA según el modo.
-/// En v1 la IA devuelve texto plano; la app interpreta según el modo.
-fn extract_action_from_response(
-    text: &str,
-    request: &AiRequest,
-) -> (String, Option<AiProposedAction>) {
-    use crate::ai::action::AiActionMode;
-
-    match &request.action_mode {
-        AiActionMode::ImproveWriting
-        | AiActionMode::ShortenText
-        | AiActionMode::ExpandText
-        | AiActionMode::ConvertToLatex => {
-            // La respuesta ES el reemplazo propuesto
-            let original = request
-                .context
-                .selection
-                .clone()
-                .unwrap_or_default();
-            if !original.is_empty() {
-                let action = AiProposedAction::ReplaceSelection {
-                    original,
-                    replacement: text.to_string(),
-                };
-                return (text.to_string(), Some(action));
-            }
-            (text.to_string(), None)
-        }
-        AiActionMode::GenerateTableSnippet
-        | AiActionMode::GenerateCaption
-        | AiActionMode::GenerateAbstract => {
-            let action = AiProposedAction::InsertAtCursor {
-                content: text.to_string(),
-            };
-            (text.to_string(), Some(action))
-        }
-        _ => (text.to_string(), None),
-    }
 }

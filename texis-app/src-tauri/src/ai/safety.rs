@@ -1,21 +1,33 @@
-use super::action::{AiActionMode, AiProposedAction, ProtectedProjectElement};
+use super::action::{AiActionMode, AiProposedAction};
 use serde::{Deserialize, Serialize};
 
-/// Nivel de riesgo de una acción de IA.
+// ── Niveles de riesgo ─────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum AiRiskLevel {
-    /// Solo muestra respuesta en el chat. Nunca modifica el documento.
+    /// Solo respuesta en el chat. El documento nunca se toca.
     Low,
-    /// Requiere preview y confirmación del usuario antes de aplicar.
+
+    /// Se aplica automáticamente. La app notifica qué cambió y ofrece deshacer.
+    /// Criterio: texto que el autor ya escribió y la IA solo edita.
+    /// El error es trivialmente reversible con Ctrl+Z.
+    AutoWithNotification,
+
+    /// Preview explícito + confirmación del usuario antes de aplicar.
+    /// Criterio: insertar algo que no existía (cita, tabla, figura, entrada de .bib).
+    /// El autor debe verificar el contenido antes de que entre al documento.
     Medium,
-    /// Solo se muestra como recomendación. Nunca se aplica automáticamente.
+
+    /// Solo se muestra como recomendación. Nunca se aplica.
     High,
-    /// Rechazada. No se ejecuta bajo ninguna circunstancia.
+
+    /// El sistema rechaza. No se ejecuta bajo ninguna circunstancia.
     Forbidden,
 }
 
-/// Decisión de seguridad para una acción propuesta por la IA.
+// ── Decisión de seguridad ─────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiSafetyDecision {
     pub risk_level: AiRiskLevel,
@@ -23,6 +35,7 @@ pub struct AiSafetyDecision {
     pub requires_preview: bool,
     pub requires_user_confirmation: bool,
     pub can_apply_automatically: bool,
+    /// Descripción visible en la UI del motivo de la clasificación.
     pub reason: String,
 }
 
@@ -34,6 +47,17 @@ impl AiSafetyDecision {
             requires_preview: false,
             requires_user_confirmation: false,
             can_apply_automatically: false,
+            reason: reason.into(),
+        }
+    }
+
+    pub fn auto_notify(reason: impl Into<String>) -> Self {
+        Self {
+            risk_level: AiRiskLevel::AutoWithNotification,
+            can_show_as_answer: true,
+            requires_preview: false,
+            requires_user_confirmation: false,
+            can_apply_automatically: true,
             reason: reason.into(),
         }
     }
@@ -72,52 +96,90 @@ impl AiSafetyDecision {
     }
 }
 
-/// Política de seguridad central del AIEngine.
-/// Toda clasificación pasa por aquí — no hay lógica dispersa.
+// ── Política central ──────────────────────────────────────────────────────────
+//
+// Toda clasificación pasa por AiSafetyPolicy.
+// No hay lógica de seguridad dispersa en providers ni en el engine.
+
 pub struct AiSafetyPolicy;
 
 impl AiSafetyPolicy {
-    /// Clasifica el riesgo de un modo de acción.
+    /// Clasifica el nivel de riesgo de un modo de acción.
     pub fn classify_mode(mode: &AiActionMode) -> AiSafetyDecision {
         match mode {
-            // Bajo riesgo: solo respuesta en chat
-            AiActionMode::Ask => AiSafetyDecision::low("Pregunta libre, sin modificación de documento"),
-            AiActionMode::ExplainLatexError => AiSafetyDecision::low("Explicación informativa, sin cambios"),
-            AiActionMode::SimulateExaminer => AiSafetyDecision::low("Preguntas de sinodal, sin cambios"),
-            AiActionMode::AppHelp => AiSafetyDecision::low("Ayuda de la app, sin cambios"),
 
-            // Riesgo medio: preview + confirmación requeridos
-            AiActionMode::ImproveWriting => {
-                AiSafetyDecision::medium("Modifica selección — requiere preview y confirmación")
-            }
-            AiActionMode::ShortenText => {
-                AiSafetyDecision::medium("Modifica selección — requiere preview y confirmación")
-            }
-            AiActionMode::ExpandText => {
-                AiSafetyDecision::medium("Modifica selección — requiere preview y confirmación")
-            }
-            AiActionMode::ConvertToLatex => {
-                AiSafetyDecision::medium("Modifica selección — requiere preview y confirmación")
-            }
-            AiActionMode::GenerateTableSnippet => {
-                AiSafetyDecision::medium("Inserta en cursor — requiere preview y confirmación")
-            }
-            AiActionMode::GenerateCaption => {
-                AiSafetyDecision::medium("Inserta en cursor — requiere preview y confirmación")
-            }
-            AiActionMode::GenerateAbstract => {
-                AiSafetyDecision::medium("Inserta en cursor — requiere preview y confirmación")
-            }
+            // ── Low: solo chat, cero contacto con el documento ────────────────
+            AiActionMode::Ask =>
+                AiSafetyDecision::low("Pregunta libre — sin cambios"),
+            AiActionMode::ExplainLatexError =>
+                AiSafetyDecision::low("Explicación informativa — sin cambios"),
+            AiActionMode::ReviewContent =>
+                AiSafetyDecision::low("Revisión de contenido — la IA comenta, el autor decide"),
+            AiActionMode::SuggestSources =>
+                AiSafetyDecision::low("Sugiere fuentes — no inserta nada"),
+            AiActionMode::AnalyzeArgument =>
+                AiSafetyDecision::low("Análisis de argumento — solo opinión"),
+            AiActionMode::CheckConsistency =>
+                AiSafetyDecision::low("Verificación de consistencia — solo informe"),
+            AiActionMode::SuggestStructure =>
+                AiSafetyDecision::low("Sugerencia de estructura — solo recomendación"),
+            AiActionMode::SimulateExaminer =>
+                AiSafetyDecision::low("Sinodal simulado — preguntas, sin cambios"),
+            AiActionMode::AppHelp =>
+                AiSafetyDecision::low("Ayuda de la app — sin cambios"),
+
+            // ── AutoWithNotification: aplica + notifica + undo disponible ─────
+            // Razón: el texto es del autor, la IA solo lo edita.
+            // Error trivialmente reversible.
+            AiActionMode::ImproveWriting =>
+                AiSafetyDecision::auto_notify("Edita texto existente — se notifica y se puede deshacer"),
+            AiActionMode::ShortenText =>
+                AiSafetyDecision::auto_notify("Edita texto existente — se notifica y se puede deshacer"),
+            AiActionMode::ExpandText =>
+                AiSafetyDecision::auto_notify("Edita texto existente — se notifica y se puede deshacer"),
+            AiActionMode::RewriteText =>
+                AiSafetyDecision::auto_notify("Edita texto existente — se notifica y se puede deshacer"),
+            AiActionMode::ConvertToLatex =>
+                AiSafetyDecision::auto_notify("Convierte selección a LaTeX — se notifica y se puede deshacer"),
+            AiActionMode::AddParagraph =>
+                AiSafetyDecision::auto_notify("Añade párrafo nuevo — se notifica y se puede deshacer"),
+
+            // ── Medium: preview + confirmación explícita ──────────────────────
+            // Razón: inserta contenido nuevo que no existía, o que tiene
+            // consecuencias en registros del proyecto (bibliografía, glosario).
+            // El autor debe verificar antes de que entre al documento.
+            AiActionMode::InsertCitation =>
+                AiSafetyDecision::medium("Inserta \\cite{} — requiere confirmar la cita"),
+            AiActionMode::AddBibliographyEntry =>
+                AiSafetyDecision::medium("Añade entrada al .bib — requiere confirmar la referencia"),
+            AiActionMode::InsertCrossReference =>
+                AiSafetyDecision::medium("Inserta \\cref{} — requiere confirmar el label destino"),
+            AiActionMode::InsertTable =>
+                AiSafetyDecision::medium("Inserta tabla nueva — requiere revisar estructura y datos"),
+            AiActionMode::InsertFigurePlaceholder =>
+                AiSafetyDecision::medium("Inserta figura placeholder — requiere confirmar caption y label"),
+            AiActionMode::InsertEquation =>
+                AiSafetyDecision::medium("Inserta ecuación — requiere verificar la expresión matemática"),
+            AiActionMode::AddGlossaryEntry =>
+                AiSafetyDecision::medium("Añade término al glosario — requiere confirmar definición"),
+            AiActionMode::AddAcronym =>
+                AiSafetyDecision::medium("Añade acrónimo — requiere confirmar forma corta y larga"),
+            AiActionMode::InsertCodeBlock =>
+                AiSafetyDecision::medium("Inserta bloque de código — requiere verificar el contenido"),
+            AiActionMode::GenerateAbstract =>
+                AiSafetyDecision::medium("Propone abstract — el autor debe revisar antes de insertar"),
+            AiActionMode::GenerateCaption =>
+                AiSafetyDecision::medium("Propone caption — el autor debe verificar antes de insertar"),
         }
     }
 
-    /// Clasifica el riesgo de una acción propuesta concreta.
-    pub fn classify_action(action: &AiProposedAction) -> AiSafetyDecision {
+    /// Clasifica una acción propuesta concreta.
+    pub fn classify_action(action: &AiProposedAction, mode: &AiActionMode) -> AiSafetyDecision {
         match action {
-            AiProposedAction::ShowInChat { .. } => {
-                AiSafetyDecision::low("Solo muestra en chat")
-            }
-            AiProposedAction::ReplaceSelection { original, replacement } => {
+            AiProposedAction::ShowInChat { .. } =>
+                AiSafetyDecision::low("Solo muestra en chat"),
+
+            AiProposedAction::ReplaceSelection { original, replacement, .. } => {
                 if original.is_empty() {
                     return AiSafetyDecision::forbidden(
                         "No hay selección activa — no se puede reemplazar nada",
@@ -128,46 +190,30 @@ impl AiSafetyPolicy {
                         "Reemplazo vacío equivale a borrar contenido — prohibido",
                     );
                 }
-                AiSafetyDecision::medium("Reemplaza selección — requiere confirmación")
+                // El riesgo de ReplaceSelection depende del modo que lo originó
+                Self::classify_mode(mode)
             }
-            AiProposedAction::InsertAtCursor { content } => {
+
+            AiProposedAction::InsertAtCursor { content, .. } => {
                 if content.trim().is_empty() {
-                    return AiSafetyDecision::forbidden("Inserción vacía — sin efecto, rechazada");
+                    return AiSafetyDecision::forbidden("Inserción vacía — rechazada");
                 }
-                AiSafetyDecision::medium("Inserta en cursor — requiere confirmación")
+                Self::classify_mode(mode)
             }
         }
     }
 
-    /// Verifica si una acción toca un elemento protegido.
-    /// La IA puede ANALIZAR elementos protegidos pero nunca MODIFICARLOS.
-    pub fn touches_protected_element(
-        _action: &AiProposedAction,
-        _element: &ProtectedProjectElement,
-    ) -> bool {
-        // En v1, cualquier ReplaceSelection o InsertAtCursor sobre un
-        // elemento protegido se rechaza. La UI es responsable de no
-        // enviar acciones sobre contextos protegidos.
-        // Este método se reserva para validación adicional futura.
-        false
-    }
-
-    /// Valida que la respuesta de la IA no contiene instrucciones peligrosas.
-    /// Heurística básica para v1.
+    /// Valida que el texto de respuesta de la IA no contenga instrucciones peligrosas.
     pub fn validate_response_text(text: &str) -> Result<(), String> {
-        let forbidden_patterns = [
-            "rm -rf",
-            "sudo ",
-            "shell-escape",
-            "--shell-escape",
-            "\\write18",
-            "\\immediate\\write18",
+        let forbidden = [
+            "rm -rf", "sudo ", "shell-escape", "--shell-escape",
+            "\\write18", "\\immediate\\write18",
         ];
-        for pattern in &forbidden_patterns {
-            if text.to_lowercase().contains(pattern) {
+        let lower = text.to_lowercase();
+        for pattern in &forbidden {
+            if lower.contains(pattern) {
                 return Err(format!(
-                    "Respuesta de IA contiene patrón potencialmente peligroso: '{}'",
-                    pattern
+                    "Respuesta bloqueada: contiene patrón peligroso '{}'", pattern
                 ));
             }
         }
@@ -175,80 +221,105 @@ impl AiSafetyPolicy {
     }
 }
 
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ai::action::{AiActionMode, AiProposedAction};
 
-    #[test]
-    fn improve_writing_is_medium_risk() {
-        let d = AiSafetyPolicy::classify_mode(&AiActionMode::ImproveWriting);
-        assert_eq!(d.risk_level, AiRiskLevel::Medium);
-        assert!(d.requires_user_confirmation);
-        assert!(!d.can_apply_automatically);
+    // Chat / Low
+    #[test] fn ask_is_low() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::Ask).risk_level, AiRiskLevel::Low);
+    }
+    #[test] fn explain_error_is_low() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::ExplainLatexError).risk_level, AiRiskLevel::Low);
+    }
+    #[test] fn simulate_examiner_is_low() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::SimulateExaminer).risk_level, AiRiskLevel::Low);
+    }
+    #[test] fn review_content_is_low() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::ReviewContent).risk_level, AiRiskLevel::Low);
+    }
+    #[test] fn suggest_sources_is_low() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::SuggestSources).risk_level, AiRiskLevel::Low);
     }
 
-    #[test]
-    fn explain_latex_error_is_low_risk() {
-        let d = AiSafetyPolicy::classify_mode(&AiActionMode::ExplainLatexError);
-        assert_eq!(d.risk_level, AiRiskLevel::Low);
+    // AutoWithNotification
+    #[test] fn improve_writing_is_auto_notify() {
+        let d = AiSafetyPolicy::classify_mode(&AiActionMode::ImproveWriting);
+        assert_eq!(d.risk_level, AiRiskLevel::AutoWithNotification);
+        assert!(d.can_apply_automatically);
         assert!(!d.requires_user_confirmation);
     }
+    #[test] fn shorten_is_auto_notify() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::ShortenText).risk_level, AiRiskLevel::AutoWithNotification);
+    }
+    #[test] fn expand_is_auto_notify() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::ExpandText).risk_level, AiRiskLevel::AutoWithNotification);
+    }
+    #[test] fn add_paragraph_is_auto_notify() {
+        let d = AiSafetyPolicy::classify_mode(&AiActionMode::AddParagraph);
+        assert_eq!(d.risk_level, AiRiskLevel::AutoWithNotification);
+        assert!(d.can_apply_automatically);
+    }
 
-    #[test]
-    fn replace_selection_requires_confirmation() {
-        let action = AiProposedAction::ReplaceSelection {
-            original: "texto original".to_string(),
-            replacement: "texto mejorado".to_string(),
-        };
-        let d = AiSafetyPolicy::classify_action(&action);
+    // Medium / confirmation required
+    #[test] fn insert_citation_requires_confirmation() {
+        let d = AiSafetyPolicy::classify_mode(&AiActionMode::InsertCitation);
         assert_eq!(d.risk_level, AiRiskLevel::Medium);
         assert!(d.requires_user_confirmation);
         assert!(!d.can_apply_automatically);
     }
+    #[test] fn add_bibliography_entry_requires_confirmation() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::AddBibliographyEntry).risk_level, AiRiskLevel::Medium);
+    }
+    #[test] fn insert_table_requires_confirmation() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::InsertTable).risk_level, AiRiskLevel::Medium);
+    }
+    #[test] fn insert_figure_requires_confirmation() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::InsertFigurePlaceholder).risk_level, AiRiskLevel::Medium);
+    }
+    #[test] fn generate_abstract_requires_confirmation() {
+        assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::GenerateAbstract).risk_level, AiRiskLevel::Medium);
+    }
 
-    #[test]
-    fn empty_replacement_is_forbidden() {
+    // Forbidden
+    #[test] fn empty_replacement_is_forbidden() {
         let action = AiProposedAction::ReplaceSelection {
             original: "texto".to_string(),
             replacement: "   ".to_string(),
+            block_id: None, start: None, end: None,
         };
-        let d = AiSafetyPolicy::classify_action(&action);
+        let d = AiSafetyPolicy::classify_action(&action, &AiActionMode::ImproveWriting);
         assert_eq!(d.risk_level, AiRiskLevel::Forbidden);
     }
-
-    #[test]
-    fn empty_selection_replace_is_forbidden() {
+    #[test] fn empty_selection_is_forbidden() {
         let action = AiProposedAction::ReplaceSelection {
             original: String::new(),
             replacement: "algo".to_string(),
+            block_id: None, start: None, end: None,
         };
-        let d = AiSafetyPolicy::classify_action(&action);
+        let d = AiSafetyPolicy::classify_action(&action, &AiActionMode::ImproveWriting);
+        assert_eq!(d.risk_level, AiRiskLevel::Forbidden);
+    }
+    #[test] fn empty_insert_is_forbidden() {
+        let action = AiProposedAction::InsertAtCursor {
+            content: "  ".to_string(),
+            description: "vacío".to_string(),
+        };
+        let d = AiSafetyPolicy::classify_action(&action, &AiActionMode::AddParagraph);
         assert_eq!(d.risk_level, AiRiskLevel::Forbidden);
     }
 
-    #[test]
-    fn insert_at_cursor_requires_confirmation() {
-        let action = AiProposedAction::InsertAtCursor {
-            content: "\\begin{table}...\\end{table}".to_string(),
-        };
-        let d = AiSafetyPolicy::classify_action(&action);
-        assert_eq!(d.risk_level, AiRiskLevel::Medium);
-        assert!(d.requires_user_confirmation);
-    }
-
-    #[test]
-    fn show_in_chat_is_low_risk() {
-        let action = AiProposedAction::ShowInChat {
-            response: "Aquí está la explicación.".to_string(),
-        };
-        let d = AiSafetyPolicy::classify_action(&action);
-        assert_eq!(d.risk_level, AiRiskLevel::Low);
-    }
-
-    #[test]
-    fn dangerous_patterns_rejected() {
-        assert!(AiSafetyPolicy::validate_response_text("rm -rf /").is_err());
+    // validate_response_text
+    #[test] fn blocks_shell_escape() {
         assert!(AiSafetyPolicy::validate_response_text("usa --shell-escape").is_err());
-        assert!(AiSafetyPolicy::validate_response_text("texto normal sin problemas").is_ok());
+    }
+    #[test] fn blocks_rm_rf() {
+        assert!(AiSafetyPolicy::validate_response_text("rm -rf /").is_err());
+    }
+    #[test] fn allows_normal_text() {
+        assert!(AiSafetyPolicy::validate_response_text("Mejora la redacción del párrafo.").is_ok());
     }
 }

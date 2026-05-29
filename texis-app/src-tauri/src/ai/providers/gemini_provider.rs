@@ -177,47 +177,16 @@ impl GeminiProvider {
             total_tokens: u.total_token_count.unwrap_or(0),
         });
 
-        let (response_text, action) = extract_action_from_response(&text, request);
+        let (response_text, action) =
+            crate::ai::engine::extract_action(&text, &request.action_mode, &request.context);
         let mut ai_response = match action {
             Some(act) => {
-                let safety = AiSafetyPolicy::classify_action(&act);
+                let safety = AiSafetyPolicy::classify_action(&act, &request.action_mode);
                 AiResponse::with_action(response_text, act, safety)
             }
             None => AiResponse::chat_only(response_text),
         };
         ai_response.usage = usage;
         Ok(ai_response)
-    }
-}
-
-fn extract_action_from_response(
-    text: &str,
-    request: &AiRequest,
-) -> (String, Option<AiProposedAction>) {
-    use crate::ai::action::AiActionMode;
-    match &request.action_mode {
-        AiActionMode::ImproveWriting
-        | AiActionMode::ShortenText
-        | AiActionMode::ExpandText
-        | AiActionMode::ConvertToLatex => {
-            let original = request.context.selection.clone().unwrap_or_default();
-            if !original.is_empty() {
-                return (
-                    text.to_string(),
-                    Some(AiProposedAction::ReplaceSelection {
-                        original,
-                        replacement: text.to_string(),
-                    }),
-                );
-            }
-            (text.to_string(), None)
-        }
-        AiActionMode::GenerateTableSnippet
-        | AiActionMode::GenerateCaption
-        | AiActionMode::GenerateAbstract => (
-            text.to_string(),
-            Some(AiProposedAction::InsertAtCursor { content: text.to_string() }),
-        ),
-        _ => (text.to_string(), None),
     }
 }

@@ -44,18 +44,50 @@ const PROVIDERS: { id: AiProvider; name: string; color: string }[] = [
   { id: "gemini", name: "Gemini", color: "#4f46e5" },
 ];
 
-const ACTION_MODES: { id: AiActionMode; label: string; needsSelection: boolean }[] = [
-  { id: "ask", label: "Preguntar", needsSelection: false },
-  { id: "improve_writing", label: "Mejorar redacción", needsSelection: true },
-  { id: "shorten_text", label: "Acortar", needsSelection: true },
-  { id: "expand_text", label: "Ampliar", needsSelection: true },
-  { id: "convert_to_latex", label: "→ LaTeX", needsSelection: true },
-  { id: "explain_latex_error", label: "Explicar error", needsSelection: false },
-  { id: "generate_table_snippet", label: "Generar tabla", needsSelection: false },
-  { id: "generate_caption", label: "Generar caption", needsSelection: false },
-  { id: "generate_abstract", label: "Generar abstract", needsSelection: false },
-  { id: "simulate_examiner", label: "Sinodal simulado", needsSelection: false },
-  { id: "app_help", label: "Ayuda de la app", needsSelection: false },
+type ActionGroup = { group: string; modes: { id: AiActionMode; label: string; needsSelection?: boolean }[] };
+
+const ACTION_GROUPS: ActionGroup[] = [
+  {
+    group: "Consultar",
+    modes: [
+      { id: "ask", label: "Preguntar" },
+      { id: "explain_latex_error", label: "Explicar error LaTeX" },
+      { id: "review_content", label: "Revisar contenido" },
+      { id: "suggest_sources", label: "Sugerir fuentes" },
+      { id: "analyze_argument", label: "Analizar argumento" },
+      { id: "check_consistency", label: "Verificar consistencia" },
+      { id: "suggest_structure", label: "Sugerir estructura" },
+      { id: "simulate_examiner", label: "Sinodal simulado" },
+      { id: "app_help", label: "Ayuda de la app" },
+    ],
+  },
+  {
+    group: "Editar texto",
+    modes: [
+      { id: "improve_writing", label: "Mejorar redacción", needsSelection: true },
+      { id: "shorten_text", label: "Acortar", needsSelection: true },
+      { id: "expand_text", label: "Ampliar", needsSelection: true },
+      { id: "rewrite_text", label: "Reescribir", needsSelection: true },
+      { id: "convert_to_latex", label: "→ LaTeX", needsSelection: true },
+      { id: "add_paragraph", label: "Añadir párrafo" },
+    ],
+  },
+  {
+    group: "Insertar (requiere confirmación)",
+    modes: [
+      { id: "insert_citation", label: "Cita bibliográfica" },
+      { id: "add_bibliography_entry", label: "Referencia al .bib" },
+      { id: "insert_cross_reference", label: "Referencia cruzada" },
+      { id: "insert_table", label: "Tabla" },
+      { id: "insert_figure_placeholder", label: "Figura placeholder" },
+      { id: "insert_equation", label: "Ecuación" },
+      { id: "add_glossary_entry", label: "Término de glosario" },
+      { id: "add_acronym", label: "Acrónimo" },
+      { id: "insert_code_block", label: "Bloque de código" },
+      { id: "generate_abstract", label: "Generar abstract" },
+      { id: "generate_caption", label: "Generar caption" },
+    ],
+  },
 ];
 
 const CONTEXT_SCOPES: { id: AiContextScope; label: string }[] = [
@@ -139,6 +171,7 @@ function ActionPreviewDialog({
 
 export function AiAssistantPanel({
   currentSelection,
+  aiSelection,
   currentFileName,
   currentFileContent,
   diagnosticsSummary,
@@ -147,6 +180,7 @@ export function AiAssistantPanel({
   onInsertAtCursor,
 }: {
   currentSelection?: string;
+  aiSelection?: { text: string; blockId: string; start: number; end: number } | null;
   currentFileName?: string;
   currentFileContent?: string;
   diagnosticsSummary?: string;
@@ -206,8 +240,22 @@ export function AiAssistantPanel({
       const text = result.text ?? "";
       store.addMessage(provider, { role: "assistant", content: text, timestamp: Date.now() });
 
-      // Si hay acción propuesta de riesgo medio, mostrar preview
-      if (result.proposed_action && result.safety?.requires_user_confirmation) {
+      const riskLevel = result.safety?.risk_level;
+
+      if (result.proposed_action && riskLevel === "auto_with_notification") {
+        // Aplicar inmediatamente y notificar — sin diálogo de confirmación
+        const action = result.proposed_action as any;
+        if (action.kind === "replace_selection" && onApplyReplacement && aiSelection) {
+          onApplyReplacement(action.original ?? "", action.replacement ?? "");
+          store.setChangeNotification({ description: `Texto editado: "${store.actionMode.replace(/_/g, " ")}"` });
+        } else if (action.kind === "insert_at_cursor" && onInsertAtCursor) {
+          onInsertAtCursor(action.content ?? "");
+          store.setChangeNotification({ description: action.description ?? "Contenido insertado por el asistente" });
+        }
+        // Auto-dismiss notification after 5 seconds
+        setTimeout(() => store.setChangeNotification(null), 5000);
+      } else if (result.proposed_action && result.safety?.requires_user_confirmation) {
+        // Mostrar preview y pedir confirmación
         store.setPendingAction({
           proposed: result.proposed_action as any,
           safety: result.safety as any,
@@ -380,27 +428,39 @@ export function AiAssistantPanel({
         </div>
       )}
 
-      {/* Selector de modo */}
-      <div style={{ padding: "8px 10px 4px", borderBottom: "1px solid var(--border-subtle)" }}>
-        <div style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 5 }}>MODO</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {ACTION_MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => store.setActionMode(m.id)}
-              style={{
-                fontSize: 10, padding: "3px 8px", borderRadius: 999, cursor: "pointer",
-                border: "1px solid",
-                borderColor: store.actionMode === m.id ? "var(--accent)" : "var(--border-soft)",
-                background: store.actionMode === m.id ? "var(--accent-tint)" : "transparent",
-                color: store.actionMode === m.id ? "var(--accent-deep)" : "var(--fg-muted)",
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+      {/* Selector de modo agrupado */}
+      <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--border-subtle)", maxHeight: 160, overflowY: "auto" }}>
+        {ACTION_GROUPS.map((group) => (
+          <div key={group.group} style={{ marginBottom: 6 }}>
+            <div style={{ fontSize: 9, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+              {group.group}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              {group.modes.map((m) => {
+                const disabled = m.needsSelection && !currentSelection;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => store.setActionMode(m.id)}
+                    title={disabled ? "Selecciona texto en el editor primero" : undefined}
+                    style={{
+                      fontSize: 10, padding: "2px 7px", borderRadius: 999, cursor: disabled ? "default" : "pointer",
+                      opacity: disabled ? 0.4 : 1,
+                      border: "1px solid",
+                      borderColor: store.actionMode === m.id ? "var(--accent)" : "var(--border-soft)",
+                      background: store.actionMode === m.id ? "var(--accent-tint)" : "transparent",
+                      color: store.actionMode === m.id ? "var(--accent-deep)" : "var(--fg-muted)",
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Selector de contexto */}
@@ -436,6 +496,31 @@ export function AiAssistantPanel({
           })}
         </div>
       </div>
+
+      {/* Banner de cambio automático (AutoWithNotification) */}
+      {store.changeNotification && (
+        <div style={{
+          margin: "6px 10px 0",
+          padding: "6px 10px",
+          borderRadius: "var(--r-md)",
+          background: "var(--build-ok-tint, #e6f4ea)",
+          border: "1px solid var(--build-ok, #34a853)",
+          fontSize: 11,
+          color: "var(--build-ok, #1e7e34)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}>
+          <span>✓ {store.changeNotification.description} — puedes deshacer con Ctrl+Z</span>
+          <button
+            onClick={() => store.setChangeNotification(null)}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "inherit", padding: 0 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Historial de mensajes */}
       <div

@@ -1,4 +1,4 @@
-use super::action::AiActionMode;
+use super::action::{AiActionMode, AiProposedAction};
 use super::context::AiContextPackage;
 use super::conversation::{AiConversation, AiMessage};
 use super::providers::{
@@ -8,7 +8,6 @@ use super::providers::{
 use super::request::{AiProviderId, AiRequest};
 use super::response::{AiProviderError, AiResponse};
 use super::safety::AiSafetyPolicy;
-use crate::ai::action::AiProposedAction;
 
 pub struct AiEngine;
 
@@ -66,6 +65,129 @@ impl AiEngine {
 
 // ── Construcción de prompts ───────────────────────────────────────────────────
 
+/// Extrae la acción propuesta del texto de respuesta de la IA.
+/// Centralizado aquí para que todos los providers usen la misma lógica.
+pub fn extract_action(
+    text: &str,
+    mode: &AiActionMode,
+    context: &AiContextPackage,
+) -> (String, Option<AiProposedAction>) {
+    match mode {
+        // AutoWithNotification: ReplaceSelection sobre texto existente
+        AiActionMode::ImproveWriting
+        | AiActionMode::ShortenText
+        | AiActionMode::ExpandText
+        | AiActionMode::RewriteText
+        | AiActionMode::ConvertToLatex => {
+            let original = context.selection.clone().unwrap_or_default();
+            if !original.is_empty() {
+                return (
+                    text.to_string(),
+                    Some(AiProposedAction::ReplaceSelection {
+                        original,
+                        replacement: text.to_string(),
+                        block_id: None,
+                        start: None,
+                        end: None,
+                    }),
+                );
+            }
+            (text.to_string(), None)
+        }
+
+        // AutoWithNotification: InsertAtCursor de texto nuevo
+        AiActionMode::AddParagraph => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Párrafo añadido por el asistente".to_string(),
+            }),
+        ),
+
+        // Medium: InsertAtCursor con descripción específica por tipo
+        AiActionMode::InsertTable => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Tabla generada por el asistente".to_string(),
+            }),
+        ),
+        AiActionMode::InsertFigurePlaceholder => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Figura placeholder generada por el asistente".to_string(),
+            }),
+        ),
+        AiActionMode::InsertEquation => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Ecuación generada por el asistente".to_string(),
+            }),
+        ),
+        AiActionMode::InsertCitation => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Cita sugerida por el asistente".to_string(),
+            }),
+        ),
+        AiActionMode::InsertCrossReference => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Referencia cruzada sugerida".to_string(),
+            }),
+        ),
+        AiActionMode::InsertCodeBlock => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Bloque de código generado".to_string(),
+            }),
+        ),
+        AiActionMode::AddBibliographyEntry => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Entrada bibliográfica para agregar al .bib".to_string(),
+            }),
+        ),
+        AiActionMode::AddGlossaryEntry => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Entrada de glosario generada".to_string(),
+            }),
+        ),
+        AiActionMode::AddAcronym => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Acrónimo generado".to_string(),
+            }),
+        ),
+        AiActionMode::GenerateAbstract => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Abstract generado por el asistente".to_string(),
+            }),
+        ),
+        AiActionMode::GenerateCaption => (
+            text.to_string(),
+            Some(AiProposedAction::InsertAtCursor {
+                content: text.to_string(),
+                description: "Caption generada por el asistente".to_string(),
+            }),
+        ),
+
+        // Low: solo chat
+        _ => (text.to_string(), None),
+    }
+}
+
 fn build_system_prompt(mode: &AiActionMode, provider: &AiProviderId) -> String {
     let base = base_system_prompt();
     let mode_instructions = mode_prompt(mode);
@@ -98,38 +220,89 @@ Reglas absolutas de seguridad:
 
 fn mode_prompt(mode: &AiActionMode) -> &'static str {
     match mode {
-        AiActionMode::Ask => {
-            "Responde la pregunta del usuario de forma clara y precisa. Si incluye contexto del documento, úsalo para dar una respuesta más relevante."
-        }
-        AiActionMode::ImproveWriting => {
-            "El usuario quiere mejorar el texto seleccionado. Devuelve ÚNICAMENTE el texto mejorado, sin explicaciones adicionales, sin comillas, sin marcadores de código. El texto mejorado debe mantener el mismo significado, ser más claro, más preciso y más académico."
-        }
-        AiActionMode::ShortenText => {
-            "El usuario quiere acortar el texto seleccionado. Devuelve ÚNICAMENTE el texto acortado, sin explicaciones, sin comillas. Elimina redundancias y mantén las ideas esenciales."
-        }
-        AiActionMode::ExpandText => {
-            "El usuario quiere ampliar el texto seleccionado. Devuelve ÚNICAMENTE el texto ampliado, sin explicaciones, sin comillas. Desarrolla las ideas, añade precisión académica y contexto relevante."
-        }
-        AiActionMode::ConvertToLatex => {
-            "El usuario quiere convertir el texto seleccionado a LaTeX válido. Devuelve ÚNICAMENTE el código LaTeX, sin explicaciones, sin bloques de código markdown. Usa paquetes estándar (graphicx, booktabs, amsmath, etc.)."
-        }
-        AiActionMode::ExplainLatexError => {
-            "El usuario tiene un error de LaTeX. Explica en términos simples: qué significa el error, por qué ocurre, y cómo resolverlo. Sé específico y práctico. Si hay múltiples errores, prioriza el más bloqueante."
-        }
-        AiActionMode::GenerateTableSnippet => {
-            "Genera un snippet de tabla LaTeX con booktabs. Devuelve ÚNICAMENTE el código LaTeX de la tabla, sin explicaciones, sin bloques markdown. Incluye caption y label. Usa columnas apropiadas según el contexto."
-        }
-        AiActionMode::GenerateCaption => {
-            "Genera una caption académica profesional para la figura o tabla en el contexto. Devuelve ÚNICAMENTE el texto de la caption, sin \\caption{}, sin comillas, sin explicaciones. Debe ser descriptiva, precisa y seguir convenciones académicas."
-        }
-        AiActionMode::GenerateAbstract => {
-            "Genera un abstract académico basado en el contenido del proyecto. Devuelve ÚNICAMENTE el texto del abstract, sin \\abstract{}, sin comillas, sin explicaciones. Incluye: objetivo, metodología, resultados esperados y contribución. Máximo 250 palabras."
-        }
-        AiActionMode::SimulateExaminer => {
-            "Actúa como sinodal/jurado académico riguroso. Formula preguntas críticas, desafiantes y académicamente relevantes sobre el trabajo. Las preguntas deben explorar: solidez metodológica, justificación teórica, limitaciones, implicaciones y contribución original. Sé exigente pero constructivo."
-        }
-        AiActionMode::AppHelp => {
-            "Eres el asistente de ayuda de TeXisStudio. Explica cómo usar la aplicación, qué significa un error o diagnóstico, qué panel o función usar para una tarea específica. Si el usuario tiene un error de compilación en el contexto, explícalo y sugiere cómo resolverlo dentro de la app. No ejecutes acciones — solo explica y orienta."
-        }
+
+        // ── Chat / consulta ───────────────────────────────────────────────────
+
+        AiActionMode::Ask =>
+            "Responde la pregunta del usuario con claridad y precisión. Usa el contexto del documento si está disponible.",
+
+        AiActionMode::ExplainLatexError =>
+            "Explica en términos simples: qué significa el error, por qué ocurre, cómo resolverlo. Prioriza el error más bloqueante. Sé específico, no genérico.",
+
+        AiActionMode::ReviewContent =>
+            "Actúa como revisor académico. Evalúa: claridad, coherencia argumentativa, precisión conceptual, adecuación al nivel académico. Señala fortalezas y debilidades concretas. No propongas reemplazos de texto — eso lo hace el autor.",
+
+        AiActionMode::SuggestSources =>
+            "Sugiere 3-5 fuentes bibliográficas relevantes para el tema del contexto. Para cada una: autor, año, título, por qué es relevante. No insertes nada en el documento — el autor decide cuáles buscar y agregar.",
+
+        AiActionMode::AnalyzeArgument =>
+            "Analiza la solidez del argumento central o de la sección. Evalúa: premisas, lógica interna, evidencia que lo sostiene, posibles contraargumentos. Sé directo sobre las debilidades sin ser destructivo.",
+
+        AiActionMode::CheckConsistency =>
+            "Verifica la consistencia entre las partes del trabajo: ¿la hipótesis responde al problema planteado? ¿la metodología permite alcanzar los objetivos? ¿las conclusiones se derivan de los resultados? Reporta inconsistencias concretas.",
+
+        AiActionMode::SuggestStructure =>
+            "Sugiere cómo estructurar o reorganizar la sección o capítulo basándote en el contexto. Ofrece un esquema con los puntos que debería cubrir. Solo recomendación — no modifiques nada.",
+
+        AiActionMode::SimulateExaminer =>
+            "Actúa como sinodal/jurado académico riguroso. Formula 3-5 preguntas críticas y desafiantes sobre el trabajo: solidez metodológica, justificación teórica, limitaciones, implicaciones y aportación original. Sé exigente pero constructivo. El autor debe poder preparar respuestas.",
+
+        AiActionMode::AppHelp =>
+            "Eres el asistente de ayuda de TeXisStudio. Explica cómo usar la app, qué significa un error o diagnóstico, qué panel o función usar. Si hay error de compilación en el contexto, explícalo y sugiere cómo resolverlo en la app. No ejecutes acciones — orienta.",
+
+        // ── AutoWithNotification: devuelve solo el contenido, sin envolturas ─
+
+        AiActionMode::ImproveWriting =>
+            "Mejora la redacción del texto seleccionado. Devuelve ÚNICAMENTE el texto mejorado: misma idea, mayor claridad, precisión y registro académico. Sin comillas, sin explicaciones, sin marcadores de código.",
+
+        AiActionMode::ShortenText =>
+            "Acorta el texto seleccionado. Devuelve ÚNICAMENTE la versión acortada: elimina redundancias, conserva las ideas esenciales. Sin comillas, sin explicaciones.",
+
+        AiActionMode::ExpandText =>
+            "Amplía el texto seleccionado. Devuelve ÚNICAMENTE la versión ampliada: desarrolla las ideas con mayor profundidad académica, añade contexto relevante. Sin comillas, sin explicaciones.",
+
+        AiActionMode::RewriteText =>
+            "Reescribe el texto seleccionado mejorando estructura y claridad. Devuelve ÚNICAMENTE la versión reescrita. Mantén el significado central del autor. Sin comillas, sin explicaciones.",
+
+        AiActionMode::ConvertToLatex =>
+            "Convierte el texto seleccionado a código LaTeX válido. Devuelve ÚNICAMENTE el código LaTeX. Usa paquetes estándar (graphicx, booktabs, amsmath, cleveref). Sin bloques markdown, sin explicaciones.",
+
+        AiActionMode::AddParagraph =>
+            "Escribe un párrafo nuevo que continúe naturalmente el texto del contexto. Devuelve ÚNICAMENTE el texto del párrafo, en el mismo idioma y registro académico. Sin comillas, sin explicaciones.",
+
+        // ── Medium: devuelve el contenido para mostrar en preview ─────────────
+
+        AiActionMode::InsertCitation =>
+            "Sugiere cómo citar en el texto la fuente o idea mencionada. Devuelve una cita en formato \\cite{key} con el key que usarías, y explica brevemente por qué esa fuente es relevante. El usuario confirmará antes de insertar.",
+
+        AiActionMode::AddBibliographyEntry =>
+            "Genera una entrada BibLaTeX completa para la referencia solicitada. Devuelve ÚNICAMENTE el bloque @tipo{key, ...} listo para pegar en el .bib. Sin explicaciones adicionales. El usuario verificará antes de agregar.",
+
+        AiActionMode::InsertCrossReference =>
+            "Sugiere dónde insertar una referencia cruzada y el label que usarías (\\cref{label}). Explica brevemente qué elemento referencia. El usuario confirmará el label antes de insertar.",
+
+        AiActionMode::InsertTable =>
+            "Genera una tabla LaTeX con booktabs apropiada para el contexto. Devuelve ÚNICAMENTE el entorno completo \\begin{table}...\\end{table} con caption, label y datos representativos. El usuario revisará antes de insertar.",
+
+        AiActionMode::InsertFigurePlaceholder =>
+            "Genera un entorno de figura LaTeX placeholder: \\begin{figure}[htbp]...\\end{figure} con \\includegraphics{placeholder}, caption sugerida y label. El usuario reemplazará el placeholder con la imagen real. Devuelve ÚNICAMENTE el bloque LaTeX.",
+
+        AiActionMode::InsertEquation =>
+            "Genera el entorno de ecuación LaTeX para la expresión matemática solicitada. Devuelve ÚNICAMENTE el entorno completo (\\begin{equation}...\\end{equation}) con label. El usuario verificará la expresión antes de insertar.",
+
+        AiActionMode::AddGlossaryEntry =>
+            "Genera la definición de glosario para el término solicitado. Devuelve ÚNICAMENTE el comando \\newglossaryentry{key}{name={...},description={...}} listo para usar. El usuario confirmará la definición antes de agregar.",
+
+        AiActionMode::AddAcronym =>
+            "Genera la definición de acrónimo. Devuelve ÚNICAMENTE el comando \\newacronym{key}{SIGLA}{Forma larga completa}. El usuario confirmará antes de agregar.",
+
+        AiActionMode::InsertCodeBlock =>
+            "Genera el bloque de código LaTeX con lstlisting o verbatim según el lenguaje. Devuelve ÚNICAMENTE el entorno LaTeX completo. El usuario verificará el código antes de insertar.",
+
+        AiActionMode::GenerateAbstract =>
+            "Genera un abstract académico para el trabajo basado en el contexto. Máximo 250 palabras. Incluye: objetivo, metodología, resultados esperados y contribución. Devuelve ÚNICAMENTE el texto del abstract, en el idioma del documento. El usuario lo revisará antes de insertar.",
+
+        AiActionMode::GenerateCaption =>
+            "Genera una caption académica descriptiva y precisa para la figura o tabla en el contexto. Devuelve ÚNICAMENTE el texto de la caption (sin el comando \\caption{}). El usuario la revisará antes de insertar.",
     }
 }

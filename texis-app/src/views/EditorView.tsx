@@ -3326,6 +3326,7 @@ export default function EditorView() {
       {aiPanel.isPanelOpen && (
         <AiAssistantPanel
           currentSelection={aiSelection?.text}
+          aiSelection={aiSelection}
           currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
           currentFileContent={localBlocks
             .filter((b) => b.type === "paragraph" || b.type === "heading")

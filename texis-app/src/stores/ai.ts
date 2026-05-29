@@ -10,17 +10,35 @@ import { create } from "zustand";
 export type AiProvider = "openai" | "claude" | "gemini";
 
 export type AiActionMode =
+  // Chat / consulta — solo responde, no toca el documento
   | "ask"
+  | "explain_latex_error"
+  | "review_content"
+  | "suggest_sources"
+  | "analyze_argument"
+  | "check_consistency"
+  | "suggest_structure"
+  | "simulate_examiner"
+  | "app_help"
+  // AutoWithNotification — aplica directamente, notifica, ofrece deshacer
   | "improve_writing"
   | "shorten_text"
   | "expand_text"
+  | "rewrite_text"
   | "convert_to_latex"
-  | "explain_latex_error"
-  | "generate_table_snippet"
-  | "generate_caption"
+  | "add_paragraph"
+  // Medium — preview + confirmación explícita
+  | "insert_citation"
+  | "add_bibliography_entry"
+  | "insert_cross_reference"
+  | "insert_table"
+  | "insert_figure_placeholder"
+  | "insert_equation"
+  | "add_glossary_entry"
+  | "add_acronym"
+  | "insert_code_block"
   | "generate_abstract"
-  | "simulate_examiner"
-  | "app_help";
+  | "generate_caption";
 
 export type AiContextScope =
   | "none"
@@ -29,7 +47,7 @@ export type AiContextScope =
   | "diagnostics"
   | "build_log";
 
-export type AiRiskLevel = "low" | "medium" | "high" | "forbidden";
+export type AiRiskLevel = "low" | "auto_with_notification" | "medium" | "high" | "forbidden";
 
 export interface AiMessage {
   role: "user" | "assistant";
@@ -103,6 +121,10 @@ interface AiStore {
   togglePanel: () => void;
   openPanel: () => void;
 
+  // Notificación de cambio automático (AutoWithNotification)
+  changeNotification: { description: string; timestamp: number } | null;
+  setChangeNotification: (n: { description: string } | null) => void;
+
   // Acciones de historial
   addMessage: (provider: AiProvider, message: AiMessage) => void;
   clearHistory: (provider: AiProvider) => void;
@@ -144,6 +166,10 @@ export const useAiStore = create<AiStore>((set, get) => ({
   isPanelOpen: false,
   togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),
   openPanel: () => set({ isPanelOpen: true }),
+
+  changeNotification: null,
+  setChangeNotification: (n) =>
+    set({ changeNotification: n ? { description: n.description, timestamp: Date.now() } : null }),
 
   addMessage: (provider, message) =>
     set((s) => ({
