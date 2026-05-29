@@ -331,7 +331,7 @@ export default function SettingsView() {
                         disabled={!hasSpell}
                       >
                         <span style={{ fontSize: 18 }}>{l.flag}</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>{l.code.toUpperCase()}</span>
+                        <span style={{ fontSize: "var(--fs-sm)" }}>{l.label}</span>
                         {spellLang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
                         {!hasSpell && <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>×</span>}
                       </button>
