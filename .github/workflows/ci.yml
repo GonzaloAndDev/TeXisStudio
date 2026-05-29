@@ -112,3 +112,54 @@ jobs:
       - name: Build frontend
         run: npm run build
         working-directory: texis-app
+
+  smoke-tectonic:
+    name: Smoke — Tectonic backend
+    runs-on: ubuntu-latest
+    # Solo en main/master para no consumir minutos en PRs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-tectonic-smoke-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build texis-cli (release)
+        run: cargo build --release -p texis-cli
+
+      - name: Install Tectonic
+        run: |
+          curl -L https://github.com/tectonic-typesetting/tectonic/releases/latest/download/tectonic-x86_64-unknown-linux-musl.tar.gz \
+            -o tectonic.tar.gz
+          tar xzf tectonic.tar.gz
+          chmod +x tectonic
+          sudo mv tectonic /usr/local/bin/tectonic
+          tectonic --version
+
+      - name: Checkout TeXisStudio-Profiles (sample project)
+        uses: actions/checkout@v4
+        with:
+          repository: GonzaloAndDev/TeXisStudio-Profiles
+          path: texis-profiles
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Smoke compile — Tectonic backend (us_mit_ieee)
+        run: |
+          TEXIS=./target/release/texis
+          SAMPLE=texis-profiles/profile_samples/us_mit_ieee/project.texis
+          TEXIS_PROFILES_PATH=texis-profiles $TEXIS validate "$SAMPLE" || {
+            echo "ERROR: validate failed"; exit 1; }
+          TEXIS_PROFILES_PATH=texis-profiles $TEXIS compile "$SAMPLE" --backend tectonic || {
+            echo "=== build log (last 40 lines) ==="
+            cat "$SAMPLE/build/main.log" 2>/dev/null | tail -40 || echo "(no log)"
+            exit 1; }
+          [ -f "$SAMPLE/build/main.pdf" ] && echo "OK: Tectonic PDF generado" || {
+            echo "ERROR: no PDF generado con Tectonic"; exit 1; }
