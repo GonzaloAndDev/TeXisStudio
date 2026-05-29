@@ -132,6 +132,8 @@ interface AiStore {
   isPanelOpen: boolean;
   togglePanel: () => void;
   openPanel: () => void;
+  draftInput: string;
+  setDraftInput: (value: string) => void;
 
   // Notificación de cambio automático (AutoWithNotification)
   changeNotification: { description: string; timestamp: number } | null;
@@ -181,6 +183,8 @@ export const useAiStore = create<AiStore>((set, get) => ({
   isPanelOpen: false,
   togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),
   openPanel: () => set({ isPanelOpen: true }),
+  draftInput: "",
+  setDraftInput: (draftInput) => set({ draftInput }),
 
   changeNotification: null,
   setChangeNotification: (n) =>

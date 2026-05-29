@@ -5,7 +5,7 @@
  * Ningún cambio se aplica al documento sin confirmación explícita del usuario.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
 import { sendAiMessage, buildErrorMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
@@ -204,6 +204,13 @@ export function AiAssistantPanel({
   const model = store.currentModel();
   const isConfigured = apiKey.trim().length > 0;
 
+  useEffect(() => {
+    if (store.draftInput) {
+      setInput(store.draftInput);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [store.draftInput]);
+
   async function handleSend() {
     if (!input.trim() || store.isLoading) return;
 
@@ -236,6 +243,7 @@ export function AiAssistantPanel({
     }
 
     setInput("");
+    store.setDraftInput("");
 
     // Añadir el mensaje original (sin el contexto técnico) al historial visible
     store.addMessage(provider, { role: "user", content: input.trim(), timestamp: Date.now() });

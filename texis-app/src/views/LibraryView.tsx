@@ -13,6 +13,7 @@ import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../t
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 import { fetchProfileCatalog, type CatalogProfile } from "../services/profileCatalog";
 import { CommunityProfileCard } from "../components/library/CommunityProfileCard";
+import { AiHelpButton } from "../components/AiHelpButton";
 
 // ── Catálogo de elementos ──────────────────────────────────────────────────────
 
@@ -1245,6 +1246,13 @@ function CommunityTab({ installedIds, onInstalled, userMode }: {
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("engineering")}>Ingeniería · IEEE</button>
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("health")}>Salud · Vancouver</button>
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("doctoral")}>Doctorado</button>
+          <AiHelpButton
+            panel="library_profiles"
+            mode="app_help"
+            label="Ayúdame a elegir perfil"
+            question="Estoy en la biblioteca de perfiles. ¿Cómo decido cuál me conviene si no encuentro una coincidencia exacta para mi institución o programa?"
+            variant="chip"
+          />
         </div>
 
         {/* Search bar */}

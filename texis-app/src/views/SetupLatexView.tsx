@@ -8,6 +8,7 @@ import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconCheck, IconChevronR, IconErr, IconRefresh, IconWarn,
 } from "../components/Icons";
+import { AiHelpButton } from "../components/AiHelpButton";
 import { api } from "../lib/tauri";
 import { useSettingsStore } from "../stores/settings";
 import type { LatexInfo } from "../types";
@@ -443,6 +444,15 @@ export default function SetupLatexView() {
               TeXisStudio se encarga del formato y de la compilación, pero necesita una herramienta instalada en tu equipo para convertir tu tesis en PDF.
               No necesitas aprender LaTeX: aquí solo eliges la ruta más sencilla para tu caso.
             </p>
+            <div style={{ marginTop: 10 }}>
+              <AiHelpButton
+                panel="setup_latex"
+                mode="app_help"
+                label="Ayúdame a elegir la opción más sencilla"
+                question="Estoy en la pantalla para preparar la generación de PDF. ¿Cuál opción me conviene más si solo quiero empezar a compilar mi tesis sin meterme a detalles técnicos?"
+                variant="ghost"
+              />
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, marginBottom: 24 }}>

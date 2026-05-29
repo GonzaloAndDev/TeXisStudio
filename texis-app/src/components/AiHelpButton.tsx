@@ -41,11 +41,8 @@ export function AiHelpButton({
   function handleClick() {
     store.setUiContext({ activePanel: panel });
     store.setActionMode(mode);
+    store.setDraftInput(question);
     store.openPanel();
-    // Pre-cargar la pregunta en el historial como si el usuario la hubiera enviado
-    // Para que el usuario solo tenga que ver la respuesta, no reescribir la pregunta.
-    // Nota: no se envía automáticamente — el usuario confirma con Enter o el botón.
-    // Esto respeta el principio de que el usuario siempre tiene control.
   }
 
   if (variant === "chip") {

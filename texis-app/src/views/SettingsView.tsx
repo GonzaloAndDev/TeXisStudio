@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
+import { AiHelpButton } from "../components/AiHelpButton";
 import { IconSettings, IconBook, IconFolder, IconDownload } from "../components/Icons";
 import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
 import i18n, { registerDynamicLocale } from "../i18n/index";
@@ -961,6 +962,16 @@ function VocabularyPacksPanel() {
         <button className="btn btn-ghost btn-sm" onClick={() => loadOfficialCatalog()} disabled={catalogLoading}>
           {catalogLoading ? "…" : "↻"}
         </button>
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <AiHelpButton
+          panel="settings_vocabulary"
+          mode="app_help"
+          label="¿Qué vocabularios debería activar?"
+          question="Estoy en la sección de vocabularios de dominio. ¿Cómo elijo una combinación simple y útil para mi tesis si no sé qué instalar?"
+          variant="inline"
+        />
       </div>
 
       {catalogError && (
