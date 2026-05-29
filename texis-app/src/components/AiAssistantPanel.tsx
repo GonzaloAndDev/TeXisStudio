@@ -52,13 +52,14 @@ const ACTION_GROUPS: ActionGroup[] = [
     modes: [
       { id: "ask", label: "Preguntar" },
       { id: "explain_latex_error", label: "Explicar error LaTeX" },
+      { id: "learn_latex", label: "Entender el LaTeX" },
+      { id: "app_help", label: "Ayuda de la app" },
       { id: "review_content", label: "Revisar contenido" },
       { id: "suggest_sources", label: "Sugerir fuentes" },
       { id: "analyze_argument", label: "Analizar argumento" },
       { id: "check_consistency", label: "Verificar consistencia" },
       { id: "suggest_structure", label: "Sugerir estructura" },
       { id: "simulate_examiner", label: "Sinodal simulado" },
-      { id: "app_help", label: "Ayuda de la app" },
     ],
   },
   {
@@ -218,11 +219,26 @@ export function AiAssistantPanel({
       return;
     }
 
-    const userMessage = input.trim();
+    let userMessage = input.trim();
+
+    // Para AppHelp, inyectar contexto de UI al inicio del mensaje
+    // para que la IA sepa dónde está el usuario sin que él tenga que explicarlo.
+    if (store.actionMode === "app_help" && Object.keys(store.uiContext).length > 0) {
+      const ctx = store.uiContext;
+      const ctxParts: string[] = [];
+      if (ctx.activePanel) ctxParts.push(`Panel activo: ${ctx.activePanel}`);
+      if (ctx.activeSectionType) ctxParts.push(`Sección activa: ${ctx.activeSectionType}`);
+      if (ctx.profileId) ctxParts.push(`Perfil: ${ctx.profileId}`);
+      if (ctx.hasErrors && ctx.lastErrorMessage) ctxParts.push(`Error reciente: ${ctx.lastErrorMessage}`);
+      if (ctxParts.length > 0) {
+        userMessage = `[Contexto: ${ctxParts.join(" | ")}]\n\n${userMessage}`;
+      }
+    }
+
     setInput("");
 
-    // Añadir mensaje del usuario al historial
-    store.addMessage(provider, { role: "user", content: userMessage, timestamp: Date.now() });
+    // Añadir el mensaje original (sin el contexto técnico) al historial visible
+    store.addMessage(provider, { role: "user", content: input.trim(), timestamp: Date.now() });
     store.setLoading(true);
 
     try {

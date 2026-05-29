@@ -47,6 +47,9 @@ pub enum AiActionMode {
     SimulateExaminer,
     /// Ayuda sobre cómo usar TeXisStudio.
     AppHelp,
+    /// Explica el LaTeX que la app genera: qué hace un comando, por qué se usa ese paquete.
+    /// Para usuarios que quieren entender lo que hay debajo sin tener que aprenderlo por obligación.
+    LearnLatex,
 
     // ── Edición automática con notificación (AutoWithNotification) ────────────
     // Aplica directamente. La app muestra qué cambió y ofrece deshacer.
@@ -105,7 +108,9 @@ impl AiActionMode {
             AiActionMode::CheckConsistency => "Verificar consistencia",
             AiActionMode::SuggestStructure => "Sugerir estructura",
             AiActionMode::SimulateExaminer => "Sinodal simulado",
-            AiActionMode::AppHelp => "Ayuda de la app",
+            AiActionMode::AppHelp
+                | AiActionMode::LearnLatex => "Ayuda de la app",
+            AiActionMode::LearnLatex => "Entender el LaTeX",
             // Auto
             AiActionMode::ImproveWriting => "Mejorar redacción",
             AiActionMode::ShortenText => "Acortar",

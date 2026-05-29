@@ -11,6 +11,7 @@ export type AiProvider = "openai" | "claude" | "gemini";
 
 export type AiActionMode =
   // Chat / consulta — solo responde, no toca el documento
+  | "learn_latex"
   | "ask"
   | "explain_latex_error"
   | "review_content"
@@ -116,6 +117,17 @@ interface AiStore {
   pendingAction: AiPendingAction | null;
   setPendingAction: (a: AiPendingAction | null) => void;
 
+  // Contexto de UI — qué está haciendo el usuario en este momento
+  // Se actualiza cuando el usuario cambia de panel, sección o vista
+  uiContext: {
+    activePanel?: string;        // "editor" | "compile" | "library" | ...
+    activeSectionType?: string;  // element_id de la sección activa
+    profileId?: string;
+    hasErrors?: boolean;
+    lastErrorMessage?: string;
+  };
+  setUiContext: (ctx: Partial<{ activePanel: string; activeSectionType: string; profileId: string; hasErrors: boolean; lastErrorMessage: string }>) => void;
+
   // Panel abierto/cerrado
   isPanelOpen: boolean;
   togglePanel: () => void;
@@ -162,6 +174,9 @@ export const useAiStore = create<AiStore>((set, get) => ({
 
   pendingAction: null,
   setPendingAction: (a) => set({ pendingAction: a }),
+
+  uiContext: {},
+  setUiContext: (ctx) => set((s) => ({ uiContext: { ...s.uiContext, ...ctx } })),
 
   isPanelOpen: false,
   togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),

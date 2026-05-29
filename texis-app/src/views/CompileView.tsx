@@ -13,6 +13,7 @@ import { deriveProjectReadiness } from "../lib/projectReadiness";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
+import { useAiStore } from "../stores/ai";
 import type {
   CompilationResult,
   ExportDeliveryResult,
@@ -114,6 +115,48 @@ function BackendChip({
 // ── Modal de checklist de entrega ────────────────────────────────
 
 type PendingAction = "compile" | "export";
+
+function AiErrorHelper({
+  errors,
+  log,
+}: {
+  errors: Array<{ message: string; suggestion?: string }>;
+  log: string;
+}) {
+  const aiPanel = useAiStore();
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: "12px 14px",
+        borderRadius: "var(--r-md)",
+        background: "var(--accent-tint)",
+        border: "1px solid var(--accent-soft)",
+      }}
+    >
+      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
+        ¿Quieres ayuda para entender este fallo?
+      </div>
+      <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 10 }}>
+        TeXisStudio puede abrir el asistente en el editor para explicar el error principal y sugerir qué revisar, sin tocar tu documento.
+      </div>
+      <button
+        className="btn btn-ghost btn-sm"
+        onClick={() => {
+          aiPanel.openPanel();
+          aiPanel.setActionMode("explain_latex_error");
+          aiPanel.setContextScope(log ? "build_log" : "diagnostics");
+        }}
+      >
+        Explicar este error en el editor
+      </button>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8 }}>
+        {errors[0]?.message}
+      </div>
+    </div>
+  );
+}
 
 const SEV_COLOR: Record<string, string> = {
   Error:      "var(--build-err)",
@@ -506,6 +549,12 @@ export default function CompileView() {
       const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
       setResult(res);
       setCompileState(res.success ? "success" : "error");
+      // Actualizar contexto de UI para el asistente de IA
+      useAiStore.getState().setUiContext({
+        activePanel: "compile",
+        hasErrors: !res.success,
+        lastErrorMessage: res.user_errors?.[0]?.message,
+      });
       // Abrir automáticamente el PDF si la compilación fue exitosa
       if (res.success && res.pdf_path) {
         setShowPdf(true);
@@ -961,6 +1010,16 @@ export default function CompileView() {
             {compileState === "error" && result && result.user_errors.map((e, i) => (
               <ErrorCard key={i} error={e} sev="err" />
             ))}
+
+            {/* Trigger de asistente IA tras build fallido */}
+            {compileState === "error" && result && result.user_errors.length > 0 && (
+              <div style={{ padding: "0 16px 16px" }}>
+                <AiErrorHelper
+                  errors={result.user_errors}
+                  log={result.log_preview ?? displayLog.join("\n")}
+                />
+              </div>
+            )}
           </div>
         </div>
 

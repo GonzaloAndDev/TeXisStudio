@@ -2195,6 +2195,12 @@ export default function EditorView() {
     setLocalBlocks(section?.blocks ?? []);
     setEditingId(null);
     setSaveStatus("saved");
+    // Actualizar contexto de UI para el asistente de IA
+    useAiStore.getState().setUiContext({
+      activePanel: "editor",
+      activeSectionType: section?.element_id,
+      profileId: activeProject?.profile_id,
+    });
   }, [activeSectionId, activeProject]);
 
   const doSave = useCallback(async (blocks: ContentBlock[], sectionId: string) => {

@@ -192,7 +192,7 @@ pub fn extract_action(
             }),
         ),
 
-        // Low: solo chat
+        // Low: solo chat (Ask, ExplainLatexError, ReviewContent, AppHelp, LearnLatex, etc.)
         _ => (text.to_string(), None),
     }
 }
@@ -257,7 +257,10 @@ fn mode_prompt(mode: &AiActionMode) -> &'static str {
             "Actúa como sinodal/jurado académico riguroso. Formula 3-5 preguntas críticas y desafiantes sobre el trabajo: solidez metodológica, justificación teórica, limitaciones, implicaciones y aportación original. Sé exigente pero constructivo. El autor debe poder preparar respuestas.",
 
         AiActionMode::AppHelp =>
-            "Eres el asistente de ayuda de TeXisStudio. Explica cómo usar la app, qué significa un error o diagnóstico, qué panel o función usar. Si hay error de compilación en el contexto, explícalo y sugiere cómo resolverlo en la app. No ejecutes acciones — orienta.",
+            "Eres el asistente de ayuda de TeXisStudio. Explica cómo usar la app, qué significa un error o diagnóstico, qué panel o función usar. Si hay error de compilación en el contexto, explícalo y sugiere cómo resolverlo en la app. Si el contexto incluye la sección activa o el panel actual, adapta tu respuesta a lo que el usuario está haciendo en ese momento. No ejecutes acciones — orienta.",
+
+        AiActionMode::LearnLatex =>
+            "El usuario quiere entender el código LaTeX que la app genera o que aparece en su documento. Explica en términos simples: qué hace este comando o paquete, por qué se usa aquí, qué pasaría si se quitara. Usa analogías si ayudan. No asumas que el usuario sabe LaTeX — la app lo abstrae. Si hay código en el contexto, explica ese código específico. No propongas cambios al documento.",
 
         // ── AutoWithNotification: devuelve solo el contenido, sin envolturas ─
 

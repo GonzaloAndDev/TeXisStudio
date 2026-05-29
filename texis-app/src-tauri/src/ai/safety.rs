@@ -127,6 +127,8 @@ impl AiSafetyPolicy {
                 AiSafetyDecision::low("Sinodal simulado — preguntas, sin cambios"),
             AiActionMode::AppHelp =>
                 AiSafetyDecision::low("Ayuda de la app — sin cambios"),
+            AiActionMode::LearnLatex =>
+                AiSafetyDecision::low("Explicación de LaTeX — sin cambios"),
 
             // ── AutoWithNotification: aplica + notifica + undo disponible ─────
             // Razón: el texto es del autor, la IA solo lo edita.
