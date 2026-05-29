@@ -163,9 +163,22 @@ export default function HomeView() {
     return t(key as Parameters<typeof t>[0]) ?? level;
   }
 
-  const latexStatus = latexInfo?.is_usable
-    ? { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" }
-    : { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
+  const latexStatus = (() => {
+    if (!latexInfo?.is_usable) return { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
+    const backends = latexInfo.available_backends ?? [];
+    const hasTectonic = latexInfo.has_tectonic;
+    const hasTexLive  = latexInfo.latexmk_usable;
+    if (hasTectonic && hasTexLive) {
+      return { text: `Tectonic + TeX Live ${latexInfo.texlive_year ?? ""}`.trim(), dot: "var(--build-ok)" };
+    }
+    if (hasTectonic) {
+      return { text: `Tectonic ${latexInfo.tectonic_version ?? ""}`.trim(), dot: "var(--build-ok)" };
+    }
+    if (hasTexLive) {
+      return { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" };
+    }
+    return { text: backends.join(" · ") || "LaTeX listo", dot: "var(--build-ok)" };
+  })();
 
   const latestProject = projects[0];
   const latestProjectRoute = latestProject
