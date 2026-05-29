@@ -94,7 +94,7 @@ pub async fn build_project_full(
 
     Ok(BuildResultSummary {
         success: result.success,
-        pdf_path: result.pdf_path.map(|p| p.display().to_string()),
+        pdf_path: result.pdf_path.as_ref().map(|p| p.display().to_string()),
         total_duration_ms: result.total_duration_ms,
         error_count: result.error_count(),
         warning_count: result.warning_count(),
@@ -137,7 +137,7 @@ pub async fn build_project_quick(
 
     Ok(BuildResultSummary {
         success: result.success,
-        pdf_path: result.pdf_path.map(|p| p.display().to_string()),
+        pdf_path: result.pdf_path.as_ref().map(|p| p.display().to_string()),
         total_duration_ms: result.total_duration_ms,
         error_count: result.error_count(),
         warning_count: result.warning_count(),

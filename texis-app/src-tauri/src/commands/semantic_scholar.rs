@@ -207,7 +207,8 @@ fn client(api_key: Option<&str>) -> reqwest::Client {
             let mut headers = reqwest::header::HeaderMap::new();
             headers.insert(
                 "x-api-key",
-                reqwest::header::HeaderValue::from_str(key).unwrap_or_default(),
+                reqwest::header::HeaderValue::from_str(key)
+                    .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static("")),
             );
             headers
         });

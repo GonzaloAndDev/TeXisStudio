@@ -23,7 +23,8 @@ zip          = "2"
 chrono       = { workspace = true }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tempfile     = { workspace = true }
-tokio        = { version = "1", features = ["rt", "sync", "time"] }
+tokio        = { version = "1", features = ["rt", "sync", "time", "macros"] }
+thiserror    = { workspace = true }
 sha2         = "0.10"
 urlencoding  = "2"
 uuid         = { workspace = true }

@@ -1,5 +1,6 @@
 use super::model::{BibliographicRecord, RecordType};
 use super::normalization::bcp47_to_langid;
+use chrono::Datelike;
 use serde_json::{json, Value};
 
 // ── Escape LaTeX ──────────────────────────────────────────────────────────────

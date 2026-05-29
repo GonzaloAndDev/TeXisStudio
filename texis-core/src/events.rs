@@ -1,4 +1,5 @@
 use crate::bibliography::model::BibliographicRecordId;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -37,7 +38,7 @@ pub struct BuildResultSummary {
 }
 
 /// Tipo de label en una referencia cruzada.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LabelKind {
     Chapter,
     Section,
@@ -64,7 +65,7 @@ pub enum ProjectModificationKind {
 }
 
 /// Referencia a un perfil documental.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentProfileRef {
     pub id: String,
     pub version: Option<String>,

@@ -111,10 +111,10 @@ impl LabelRegistry {
     /// - Unused: label definido pero no referenciado
     /// - BrokenReference: referencia a label que no existe
     pub fn update_statuses(&mut self) -> ValidationReport {
-        let defined_keys: std::collections::HashSet<&str> =
-            self.labels.keys().map(|k| k.as_str()).collect();
-        let referenced_keys: std::collections::HashSet<&str> =
-            self.references.iter().map(|r| r.key.as_str()).collect();
+        let defined_keys: std::collections::HashSet<String> =
+            self.labels.keys().cloned().collect();
+        let referenced_keys: std::collections::HashSet<String> =
+            self.references.iter().map(|r| r.key.clone()).collect();
 
         let mut broken_refs: Vec<CrossReference> = Vec::new();
         let mut unused_labels: Vec<String> = Vec::new();
@@ -122,7 +122,7 @@ impl LabelRegistry {
         // Labels no referenciados
         for (key, entry) in &mut self.labels {
             if matches!(entry.status, LabelStatus::Valid) {
-                if !referenced_keys.contains(key.as_str()) {
+                if !referenced_keys.contains(key) {
                     entry.status = LabelStatus::Unused;
                     unused_labels.push(key.clone());
                 }
@@ -131,7 +131,7 @@ impl LabelRegistry {
 
         // Referencias a labels que no existen
         for reference in &self.references {
-            if !defined_keys.contains(reference.key.as_str()) {
+            if !defined_keys.contains(&reference.key) {
                 broken_refs.push(reference.clone());
             }
         }
