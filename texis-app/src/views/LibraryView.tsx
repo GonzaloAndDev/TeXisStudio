@@ -12,6 +12,7 @@ import { useSettingsStore } from "../stores/settings";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 import { fetchProfileCatalog, type CatalogProfile } from "../services/profileCatalog";
+import { CommunityProfileCard } from "../components/library/CommunityProfileCard";
 
 // ── Catálogo de elementos ──────────────────────────────────────────────────────
 
@@ -1154,104 +1155,21 @@ function CommunityTab({ installedIds, onInstalled, userMode }: {
 
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-  function audienceLabel(cp: CatalogProfile) {
-    if (cp.program_name) return `Pensado para ${cp.program_name}.`;
-    if (cp.department) return `Orientado al departamento de ${cp.department}.`;
-    if (cp.faculty) return `Orientado a ${cp.faculty}.`;
-    if (cp.discipline) return `Útil sobre todo en ${DISCIPLINE_LABEL[cp.discipline] ?? cp.discipline}.`;
-    if (cp.institution) return `Base institucional para ${cp.institution}.`;
-    return "Base general para empezar tu proyecto.";
-  }
-
-  function confidenceSummary(cp: CatalogProfile) {
-    if (cp.delivery_verified) {
-      return "Tiene evidencia fuerte de compilación y entrega final.";
-    }
-    if (cp.sample_available) {
-      return "Cuenta con muestra o evidencia técnica útil para empezar con menos riesgo.";
-    }
-    if (cp.novice_safe) {
-      return "Es una opción razonablemente segura para comenzar sin ajustar demasiado.";
-    }
-    return "Conviene revisarlo con más cuidado antes de adoptarlo como base principal.";
-  }
-
-  function limitationSummary(cp: CatalogProfile) {
-    if (cp.profile_scope === "program_specific") {
-      return "Es específico para un programa; si el tuyo cambia, revisa los detalles antes de usarlo.";
-    }
-    if (cp.profile_scope === "discipline_specific") {
-      return "Está pensado para un área concreta; puede requerir ajustes si tu trabajo sigue otra línea.";
-    }
-    if (!cp.sample_available) {
-      return "Todavía no muestra evidencia técnica fuerte de extremo a extremo.";
-    }
-    return "Si tu escuela pide variantes muy particulares, revisa portada, comité y bibliografía antes de entregar.";
-  }
-
   // Profile card for community
   const renderProfileCard = (cp: CatalogProfile) => {
     const isInstalled = installedIds.has(cp.id);
     const isDownloading = downloading === cp.id;
     return (
-      <div key={cp.id} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "var(--r-md)", flexShrink: 0, background: isInstalled ? "var(--detail-tint)" : "var(--ink-100)", color: isInstalled ? "var(--detail)" : "var(--fg-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {isInstalled ? <IconCheck size={16} sw={2.5} /> : <IconBook size={16} />}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{cp.name}</span>
-            {cp.status ? <ProfileStatusBadge status={cp.status} /> : null}
-          </div>
-          {cp.institution && <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 4 }}>{cp.institution}{cp.city ? ` · ${cp.city}` : ""}</div>}
-          {cp.description && <p style={{ margin: "0 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>{cp.description}</p>}
-          <div style={{ marginBottom: 8, display: "grid", gap: 6 }}>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-              <strong style={{ color: "var(--fg-strong)" }}>Para quién sirve:</strong> {audienceLabel(cp)}
-            </div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-              <strong style={{ color: "var(--fg-strong)" }}>Confianza:</strong> {confidenceSummary(cp)}
-            </div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-              <strong style={{ color: "var(--fg-strong)" }}>Qué revisar:</strong> {limitationSummary(cp)}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-            {cp.style_id && <span className="chip" style={{ fontSize: 9 }}>{cp.style_id}</span>}
-            {!cp.style_id && cp.bibliography_style && <span className="chip" style={{ fontSize: 9 }}>{cp.bibliography_style}</span>}
-            {cp.novice_safe && <span className="chip" style={{ fontSize: 9 }}>buena base para empezar</span>}
-            {cp.sample_available && <span className="chip" style={{ fontSize: 9 }}>con muestra</span>}
-            {cp.delivery_verified && <span className="chip" style={{ fontSize: 9 }}>entrega verificada</span>}
-            {cp.recommended_for_document_kinds && cp.recommended_for_document_kinds.map((kind) => (
-              <span key={kind} className="chip" style={{ fontSize: 9 }}>para {kind}</span>
-            ))}
-            {cp.academic_level && <span className="chip" style={{ fontSize: 9 }}>{ACADEMIC_LEVEL_LABEL[cp.academic_level] ?? cp.academic_level}</span>}
-            {!cp.academic_level && cp.target_levels && cp.target_levels.length > 0 && (
-              <span className="chip" style={{ fontSize: 9 }}>
-                {cp.target_levels.map((level) => ACADEMIC_LEVEL_LABEL[level] ?? level).join(" · ")}
-              </span>
-            )}
-            {cp.discipline && <span className="chip" style={{ fontSize: 9 }}>{DISCIPLINE_LABEL[cp.discipline] ?? cp.discipline}</span>}
-            {cp.program_name && <span className="chip" style={{ fontSize: 9 }}>{cp.program_name}</span>}
-            {cp.faculty && <span className="chip" style={{ fontSize: 9 }}>{cp.faculty}</span>}
-            {cp.department && <span className="chip" style={{ fontSize: 9 }}>{cp.department}</span>}
-            {cp.profile_scope && <span className="chip" style={{ fontSize: 9 }}>{PROFILE_SCOPE_LABEL[cp.profile_scope] ?? cp.profile_scope}</span>}
-            {cp.verified_at && <span className="chip" style={{ fontSize: 9 }}>verificado {cp.verified_at}</span>}
-            {!cp.verified_at && cp.reviewed_at && <span className="chip" style={{ fontSize: 9 }}>revisado {cp.reviewed_at}</span>}
-            {cp.ci_evidence && <span className="chip" style={{ fontSize: 9 }}>CI</span>}
-            {cp.tags.slice(0, 4).map((t) => <span key={t} className="chip" style={{ fontSize: 9 }}>{t}</span>)}
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, alignSelf: "center" }}>
-          {isInstalled ? (
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--detail)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><IconCheck size={12} sw={2.5} /> Instalado</span>
-          ) : (
-            <button className="btn btn-sm btn-accent" onClick={() => handleInstall(cp)} disabled={isDownloading} style={{ minWidth: 90 }}>
-              {isDownloading ? <><IconRefresh size={12} /> …</> : <><IconDownload size={12} /> Instalar</>}
-            </button>
-          )}
-        </div>
-      </div>
+      <CommunityProfileCard
+        key={cp.id}
+        profile={cp}
+        isInstalled={isInstalled}
+        isDownloading={isDownloading}
+        onInstall={() => handleInstall(cp)}
+        academicLevelLabel={(level) => ACADEMIC_LEVEL_LABEL[level] ?? level}
+        disciplineLabel={(value) => DISCIPLINE_LABEL[value] ?? value}
+        profileScopeLabel={(value) => PROFILE_SCOPE_LABEL[value] ?? value}
+      />
     );
   };
 
