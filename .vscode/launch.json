@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TeXisStudio: Dev",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "presentation": {
+        "group": "texis",
+        "order": 1
+      }
+    },
+    {
+      "name": "TeXisStudio: Build",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "build"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "presentation": {
+        "group": "texis",
+        "order": 2
+      }
+    },
+    {
+      "name": "TeXisStudio: Frontend only",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "presentation": {
+        "group": "texis",
+        "order": 3
+      }
+    }
+  ]
+}

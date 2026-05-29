@@ -8,6 +8,8 @@
 .vscode/*
 !.vscode/tasks.json
 !.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
 *.iml
 
