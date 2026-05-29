@@ -34,6 +34,7 @@ pub fn run() {
             commands::system::export_profile,
             commands::system::update_profile,
             commands::system::delete_profile,
+            commands::system::get_platform,
             commands::system::detect_latex,
             commands::system::get_cloud_folders,
             commands::system::run_system_doctor,

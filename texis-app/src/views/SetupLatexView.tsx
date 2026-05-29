@@ -1,6 +1,6 @@
 // Asistente de instalación de LaTeX.
 // Accesible desde: CompileView (banner), HomeView (banner), menú /about.
-// Detecta el estado actual y guía al usuario por la opción más adecuada.
+// Detecta el OS y muestra solo las opciones válidas con instrucciones específicas.
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -13,140 +13,364 @@ import { api } from "../lib/tauri";
 import { useSettingsStore } from "../stores/settings";
 import type { LatexInfo } from "../types";
 
-// ── Constantes de instalación ─────────────────────────────────────
+// ── Tipos ─────────────────────────────────────────────────────────
 
-const INSTALL_OPTIONS = [
-  {
-    id: "tectonic",
-    name: "Tectonic",
-    tagline: "Recomendado — mínimo, sin Perl",
-    description:
-      "Motor LaTeX autónomo escrito en Rust. Descarga solo los paquetes que necesita la primera vez. No requiere TeX Live ni Strawberry Perl. Ideal para Windows 10/11.",
-    pros: [
-      "Instalación en 1 minuto con winget",
-      "No necesita Strawberry Perl",
-      "Descarga paquetes bajo demanda (≈ 50 MB la primera compilación)",
-      "Actualizable con winget upgrade",
-    ],
-    cons: ["Primera compilación requiere internet", "No incluye todas las herramientas de TeX Live"],
-    steps: [
-      {
-        title: "Instalar con winget (Windows 10/11)",
-        code: "winget install tectonic-typesetting.tectonic",
-        note: "Abre PowerShell como usuario normal (no se necesita administrador).",
-      },
-      {
-        title: "Alternativa — instalar con Cargo",
-        code: "cargo install tectonic",
-        note: "Requiere Rust instalado. Tarda varios minutos en compilar.",
-      },
-      {
-        title: "Verificar la instalación",
-        code: "tectonic --version",
-        note: "Deberías ver algo como: tectonic 0.14.x",
-      },
-      {
-        title: "Reiniciar TeXisStudio",
-        code: null,
-        note: "Cierra y vuelve a abrir la aplicación para que detecte tectonic.",
-      },
-    ],
-    download_url: "https://tectonic-typesetting.github.io/en-US/install.html",
-    color: "#3AA396",
-  },
-  {
-    id: "miktex",
-    name: "MiKTeX",
-    tagline: "Fácil en Windows — instalador gráfico",
-    description:
-      "Distribución LaTeX popular en Windows con instalador gráfico. Descarga paquetes bajo demanda. Incluye latexmk y biber.",
-    pros: [
-      "Instalador gráfico (.exe) fácil de usar",
-      "Descarga paquetes bajo demanda",
-      "Incluye latexmk y biber",
-      "Buena integración con Windows",
-    ],
-    cons: [
-      "Requiere Strawberry Perl para latexmk (paso adicional)",
-      "La consola de MiKTeX puede confundir a principiantes",
-    ],
-    steps: [
-      {
-        title: "Descargar el instalador de MiKTeX",
-        code: null,
-        note: "Ve a miktex.org → Download → Windows. Descarga el instalador de 64 bits.",
-      },
-      {
-        title: "Instalar MiKTeX",
-        code: null,
-        note: 'Ejecuta el instalador. Elige "Install MiKTeX only for me" (sin admin). Marca "Install missing packages on-the-fly → Yes".',
-      },
-      {
-        title: "Instalar Strawberry Perl (necesario para latexmk)",
-        code: "winget install StrawberryPerl.StrawberryPerl",
-        note: "Perl es necesario para que latexmk funcione en Windows.",
-      },
-      {
-        title: "Verificar la instalación",
-        code: "latexmk --version && xelatex --version",
-        note: "Ambos comandos deben responder con número de versión.",
-      },
-      {
-        title: "Reiniciar TeXisStudio",
-        code: null,
-        note: "Cierra y vuelve a abrir para que detecte la nueva instalación.",
-      },
-    ],
-    download_url: "https://miktex.org/download",
-    color: "#4A6FA5",
-  },
-  {
-    id: "texlive",
-    name: "TeX Live 2024",
-    tagline: "Instalación completa — todas las herramientas",
-    description:
-      "Distribución LaTeX completa mantenida por TUG. Incluye absolutamente todo. Ocupa entre 4 GB (básico) y 8 GB (completo). No requiere descargas adicionales después.",
-    pros: [
-      "Incluye todos los paquetes LaTeX (sin descargas adicionales)",
-      "Incluye latexmk, biber, xelatex y más",
-      "Actualizaciones anuales estables",
-    ],
-    cons: [
-      "Instalación lenta (30–90 minutos)",
-      "Ocupa 4–8 GB de disco",
-      "Requiere Strawberry Perl para latexmk en Windows",
-    ],
-    steps: [
-      {
-        title: "Descargar el instalador de TeX Live",
-        code: null,
-        note: "Ve a tug.org/texlive → download. Descarga install-tl-windows.exe",
-      },
-      {
-        title: "Instalar TeX Live",
-        code: null,
-        note: 'Ejecuta el instalador. Elige "Simple install (big)" para tenerlo todo. El proceso tarda 30–90 minutos.',
-      },
-      {
-        title: "Instalar Strawberry Perl",
-        code: "winget install StrawberryPerl.StrawberryPerl",
-        note: "Necesario para que latexmk funcione.",
-      },
-      {
-        title: "Verificar la instalación",
-        code: "latexmk --version && xelatex --version",
-        note: "Ambos deben responder con número de versión.",
-      },
-      {
-        title: "Reiniciar TeXisStudio",
-        code: null,
-        note: "Cierra y vuelve a abrir la aplicación.",
-      },
-    ],
-    download_url: "https://www.tug.org/texlive/acquire-netinstall.html",
-    color: "#7C6EAF",
-  },
-];
+type Platform = "macos" | "windows" | "linux" | string;
+
+interface InstallStep {
+  title: string;
+  code: string | null;
+  note: string;
+}
+
+interface InstallOption {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  pros: string[];
+  cons: string[];
+  steps: InstallStep[];
+  download_url: string;
+  color: string;
+}
+
+// ── Opciones por sistema operativo ────────────────────────────────
+
+const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
+  macos: [
+    {
+      id: "mactex",
+      name: "MacTeX",
+      tagline: "Recomendado — distribución oficial para Mac",
+      description:
+        "MacTeX es la distribución TeX Live adaptada para macOS. Incluye todo: latexmk, xelatex, biber y miles de paquetes. Es la opción más compatible con perfiles institucionales exigentes.",
+      pros: [
+        "Incluye todos los paquetes LaTeX sin descargas adicionales",
+        "Instalación con Homebrew en un comando",
+        "Actualizable con brew upgrade",
+        "Compatible con cualquier perfil institucional",
+      ],
+      cons: [
+        "Descarga grande (~5 GB)",
+        "Instalación tarda 10–20 minutos",
+      ],
+      steps: [
+        {
+          title: "Instalar Homebrew (si no lo tienes)",
+          code: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
+          note: "Homebrew es el gestor de paquetes estándar de macOS. Si ya lo tienes, salta este paso.",
+        },
+        {
+          title: "Instalar MacTeX con Homebrew",
+          code: "brew install --cask mactex",
+          note: "Descarga ~5 GB. El proceso tarda entre 10 y 20 minutos según tu conexión.",
+        },
+        {
+          title: "Actualizar las variables de entorno",
+          code: 'eval "$(/usr/libexec/path_helper)"',
+          note: "O simplemente cierra y vuelve a abrir la Terminal para que tome el nuevo PATH.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "latexmk --version && xelatex --version && biber --version",
+          note: "Los tres comandos deben responder con número de versión.",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación para que detecte la nueva instalación.",
+        },
+      ],
+      download_url: "https://www.tug.org/mactex/",
+      color: "#3AA396",
+    },
+    {
+      id: "tectonic",
+      name: "Tectonic",
+      tagline: "Ligero — descarga solo lo que necesita",
+      description:
+        "Motor LaTeX moderno y autónomo. Descarga los paquetes necesarios la primera vez que compila. Ideal para empezar rápido sin ocupar gigabytes de espacio.",
+      pros: [
+        "Instalación en menos de 1 minuto",
+        "Descarga solo los paquetes que usa tu tesis",
+        "No requiere TeX Live completo",
+        "Actualizable con brew upgrade",
+      ],
+      cons: [
+        "Primera compilación requiere conexión a internet",
+        "Algunos paquetes institucionales muy específicos pueden fallar",
+      ],
+      steps: [
+        {
+          title: "Instalar Homebrew (si no lo tienes)",
+          code: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
+          note: "Si ya tienes Homebrew, salta este paso.",
+        },
+        {
+          title: "Instalar Tectonic con Homebrew",
+          code: "brew install tectonic",
+          note: "Descarga liviana. Listo en menos de 1 minuto.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "tectonic --version",
+          note: "Deberías ver algo como: tectonic 0.15.x",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación para que detecte tectonic.",
+        },
+      ],
+      download_url: "https://tectonic-typesetting.github.io/en-US/install.html",
+      color: "#7C6EAF",
+    },
+  ],
+
+  linux: [
+    {
+      id: "texlive",
+      name: "TeX Live",
+      tagline: "Recomendado — distribución completa vía gestor de paquetes",
+      description:
+        "TeX Live es la distribución LaTeX estándar en Linux. Se instala directamente desde el gestor de paquetes de tu distribución: apt, dnf, pacman, zypper, etc.",
+      pros: [
+        "Instalación con un solo comando",
+        "Mantenida por la distribución — actualizaciones automáticas",
+        "Compatible con cualquier perfil institucional",
+        "Incluye latexmk, xelatex, biber y más",
+      ],
+      cons: [
+        "Instalación completa ocupa 3–5 GB",
+        "La versión del repositorio puede ser algo anterior a la oficial",
+      ],
+      steps: [
+        {
+          title: "Ubuntu / Debian / Linux Mint",
+          code: "sudo apt install texlive-full",
+          note: "Incluye todo. Si el espacio es limitado, usa texlive-xetex en lugar de texlive-full.",
+        },
+        {
+          title: "Fedora / RHEL / CentOS Stream",
+          code: "sudo dnf install texlive-scheme-full",
+          note: "Instala el esquema completo de TeX Live.",
+        },
+        {
+          title: "Arch / Manjaro",
+          code: "sudo pacman -S texlive-most texlive-lang biber",
+          note: "Instala los grupos principales y biber para bibliografía.",
+        },
+        {
+          title: "openSUSE",
+          code: "sudo zypper install texlive-scheme-full",
+          note: "Esquema completo vía zypper.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "latexmk --version && xelatex --version && biber --version",
+          note: "Los tres comandos deben responder con número de versión.",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación para que detecte la nueva instalación.",
+        },
+      ],
+      download_url: "https://www.tug.org/texlive/",
+      color: "#3AA396",
+    },
+    {
+      id: "tectonic",
+      name: "Tectonic",
+      tagline: "Ligero — sin gestor de paquetes de sistema",
+      description:
+        "Motor LaTeX moderno que descarga solo los paquetes que necesita. Buena opción si no tienes acceso sudo o prefieres no instalar TeX Live completo.",
+      pros: [
+        "No requiere sudo para instalar",
+        "Descarga solo lo que necesita tu tesis",
+        "Un solo binario, sin dependencias de sistema",
+      ],
+      cons: [
+        "Primera compilación requiere internet",
+        "Puede fallar con algunos paquetes muy específicos",
+      ],
+      steps: [
+        {
+          title: "Instalar con el script oficial",
+          code: "curl --proto '=https' --tlsv1.2 -fsSL https://drop.casey.li/tectonic | sh",
+          note: "Descarga e instala el binario en ~/.cargo/bin o ~/bin según tu configuración.",
+        },
+        {
+          title: "Alternativa: instalar con Cargo",
+          code: "cargo install tectonic",
+          note: "Requiere Rust instalado. Compila desde fuente, tarda varios minutos.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "tectonic --version",
+          note: "Deberías ver algo como: tectonic 0.15.x",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación.",
+        },
+      ],
+      download_url: "https://tectonic-typesetting.github.io/en-US/install.html",
+      color: "#7C6EAF",
+    },
+  ],
+
+  windows: [
+    {
+      id: "miktex",
+      name: "MiKTeX",
+      tagline: "Recomendado en Windows — instalador gráfico, sin Perl",
+      description:
+        "Distribución LaTeX nativa en Windows con instalador gráfico. Descarga los paquetes bajo demanda. Es la opción más cómoda para Windows sin pasos adicionales complicados.",
+      pros: [
+        "Instalador gráfico .exe fácil de usar",
+        "Descarga paquetes bajo demanda automáticamente",
+        "Incluye latexmk y biber",
+        "No necesita Strawberry Perl para compilar",
+      ],
+      cons: [
+        "La consola de MiKTeX puede confundir al principio",
+        "Requiere aceptar la instalación de paquetes durante la primera compilación",
+      ],
+      steps: [
+        {
+          title: "Instalar MiKTeX con winget",
+          code: "winget install MiKTeX.MiKTeX",
+          note: "Abre PowerShell como usuario normal (no se necesita administrador). winget está incluido en Windows 10/11.",
+        },
+        {
+          title: "Alternativa: instalador gráfico",
+          code: null,
+          note: "Ve a miktex.org → Download → Windows. Descarga el instalador de 64 bits y ejecútalo. Elige Install MiKTeX only for me.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "latexmk --version",
+          note: "Debe responder con número de versión.",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación para que detecte MiKTeX.",
+        },
+      ],
+      download_url: "https://miktex.org/download",
+      color: "#3AA396",
+    },
+    {
+      id: "tectonic",
+      name: "Tectonic",
+      tagline: "Ligero — un comando, sin Perl",
+      description:
+        "Motor LaTeX autónomo. Descarga solo los paquetes que necesita tu tesis la primera vez. No requiere TeX Live ni Strawberry Perl. Ideal si quieres empezar rápido.",
+      pros: [
+        "Instalación en 1 minuto con winget",
+        "No necesita Strawberry Perl",
+        "Descarga paquetes bajo demanda (~50 MB primera compilación)",
+        "Actualizable con winget upgrade",
+      ],
+      cons: [
+        "Primera compilación requiere internet",
+        "Algunos paquetes institucionales muy específicos pueden fallar",
+      ],
+      steps: [
+        {
+          title: "Instalar con winget",
+          code: "winget install tectonic-typesetting.tectonic",
+          note: "Abre PowerShell como usuario normal. No necesitas administrador.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "tectonic --version",
+          note: "Deberías ver algo como: tectonic 0.15.x",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación para que detecte tectonic.",
+        },
+      ],
+      download_url: "https://tectonic-typesetting.github.io/en-US/install.html",
+      color: "#7C6EAF",
+    },
+    {
+      id: "texlive",
+      name: "TeX Live",
+      tagline: "Completo — todas las herramientas, sin sorpresas",
+      description:
+        "Distribución LaTeX completa. Incluye absolutamente todo: latexmk, biber, xelatex y miles de paquetes. La opción más robusta si vas a hacer una tesis muy exigente.",
+      pros: [
+        "Todos los paquetes LaTeX incluidos",
+        "Sin descargas adicionales después de instalar",
+        "Compatible con cualquier perfil institucional",
+      ],
+      cons: [
+        "Instalación lenta (30–90 minutos)",
+        "Ocupa 4–8 GB de disco",
+        "Requiere Strawberry Perl para latexmk",
+      ],
+      steps: [
+        {
+          title: "Descargar el instalador de TeX Live",
+          code: null,
+          note: "Ve a tug.org/texlive → download → install-tl-windows.exe. Descarga el instalador.",
+        },
+        {
+          title: "Ejecutar el instalador",
+          code: null,
+          note: "Elige Simple install (big) para instalar todo. El proceso tarda 30–90 minutos.",
+        },
+        {
+          title: "Instalar Strawberry Perl (necesario para latexmk)",
+          code: "winget install StrawberryPerl.StrawberryPerl",
+          note: "Perl es necesario para que latexmk funcione en Windows.",
+        },
+        {
+          title: "Verificar la instalación",
+          code: "latexmk --version && xelatex --version && biber --version",
+          note: "Los tres comandos deben responder con número de versión.",
+        },
+        {
+          title: "Reiniciar TeXisStudio",
+          code: null,
+          note: "Cierra y vuelve a abrir la aplicación.",
+        },
+      ],
+      download_url: "https://www.tug.org/texlive/acquire-netinstall.html",
+      color: "#4A6FA5",
+    },
+  ],
+};
+
+function getOptionsForPlatform(platform: Platform): InstallOption[] {
+  return OPTIONS_BY_OS[platform] ?? OPTIONS_BY_OS["linux"];
+}
+
+function getDefaultOptionId(platform: Platform, info: LatexInfo | null): string {
+  const opts = getOptionsForPlatform(platform);
+  if (!info) return opts[0].id;
+  if (info.has_tectonic) return "tectonic";
+  if (info.latexmk_usable) {
+    if (platform === "macos") return "mactex";
+    if (platform === "windows") return "miktex";
+    return "texlive";
+  }
+  return opts[0].id;
+}
+
+function getPlatformLabel(platform: Platform): string {
+  if (platform === "macos") return "macOS";
+  if (platform === "windows") return "Windows";
+  if (platform === "linux") return "Linux";
+  return platform;
+}
 
 // ── Componente de estado de detección ────────────────────────────
 
@@ -193,14 +417,15 @@ function DetectionStatus({ info }: { info: LatexInfo | null }) {
   );
 }
 
-// ── Tarjeta de opción de instalación ────────────────────────────
+// ── Tarjeta de opción ─────────────────────────────────────────────
 
 function OptionCard({
-  option, selected, installed, onClick,
+  option, selected, installed, recommended, onClick,
 }: {
-  option: typeof INSTALL_OPTIONS[0];
+  option: InstallOption;
   selected: boolean;
   installed: boolean;
+  recommended: boolean;
   onClick: () => void;
 }) {
   return (
@@ -230,14 +455,12 @@ function OptionCard({
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {recommended && !installed && (
+            <span className="chip chip-accent" style={{ fontSize: 10 }}>recomendado</span>
+          )}
           {installed && (
             <span className="chip chip-ok" style={{ fontSize: 10 }}>
               <IconCheck size={8} sw={2.5} /> instalado
-            </span>
-          )}
-          {selected && !installed && (
-            <span className="chip chip-accent" style={{ fontSize: 10 }}>
-              <IconCheck size={8} sw={2.5} /> seleccionado
             </span>
           )}
         </div>
@@ -258,21 +481,17 @@ function OptionCard({
 
 // ── Panel de instrucciones ────────────────────────────────────────
 
-function InstructionsPanel({ option }: { option: typeof INSTALL_OPTIONS[0] }) {
+function InstructionsPanel({ option }: { option: InstallOption }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {option.steps.map((step, i) => (
-        <div key={i} style={{
-          display: "flex", gap: 16, paddingBottom: 20,
-        }}>
-          {/* Timeline dot */}
+        <div key={i} style={{ display: "flex", gap: 16, paddingBottom: 20 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
             <div style={{
               width: 26, height: 26, borderRadius: "50%",
               background: "var(--accent)", color: "white",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
-              flexShrink: 0,
+              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, flexShrink: 0,
             }}>
               {i + 1}
             </div>
@@ -280,8 +499,6 @@ function InstructionsPanel({ option }: { option: typeof INSTALL_OPTIONS[0] }) {
               <div style={{ width: 1, flex: 1, background: "var(--border-soft)", marginTop: 4, minHeight: 16 }} />
             )}
           </div>
-
-          {/* Contenido */}
           <div style={{ flex: 1, paddingTop: 2 }}>
             <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 6 }}>
               {step.title}
@@ -302,7 +519,6 @@ function InstructionsPanel({ option }: { option: typeof INSTALL_OPTIONS[0] }) {
           </div>
         </div>
       ))}
-
       <a
         href={option.download_url}
         target="_blank"
@@ -315,63 +531,29 @@ function InstructionsPanel({ option }: { option: typeof INSTALL_OPTIONS[0] }) {
           textDecoration: "none", alignSelf: "flex-start", marginTop: 4,
         }}
       >
-        Ir al sitio oficial de {option.name} <IconChevronR size={12} />
+        Sitio oficial de {option.name} <IconChevronR size={12} />
       </a>
     </div>
   );
 }
 
-function GuidedSummaryCard({
-  title,
-  body,
-  tone = "info",
+function SummaryCard({
+  title, body, tone = "info",
 }: {
-  title: string;
-  body: string;
-  tone?: "info" | "ok" | "warn";
+  title: string; body: string; tone?: "info" | "ok" | "warn";
 }) {
   const palette = {
-    info: {
-      background: "var(--accent-tint)",
-      border: "1px solid var(--accent-soft)",
-      color: "var(--accent-deep)",
-      icon: <IconWarn size={13} />,
-    },
-    ok: {
-      background: "var(--build-ok-tint)",
-      border: "1px solid var(--build-ok)",
-      color: "var(--build-ok)",
-      icon: <IconCheck size={13} sw={2.5} />,
-    },
-    warn: {
-      background: "color-mix(in srgb, var(--build-warn) 10%, var(--bg-panel))",
-      border: "1px solid var(--build-warn)",
-      color: "var(--build-warn)",
-      icon: <IconWarn size={13} />,
-    },
+    info: { background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", color: "var(--accent-deep)", icon: <IconWarn size={13} /> },
+    ok:   { background: "var(--build-ok-tint)", border: "1px solid var(--build-ok)", color: "var(--build-ok)", icon: <IconCheck size={13} sw={2.5} /> },
+    warn: { background: "color-mix(in srgb, var(--build-warn) 10%, var(--bg-panel))", border: "1px solid var(--build-warn)", color: "var(--build-warn)", icon: <IconWarn size={13} /> },
   } as const;
-
-  const selected = palette[tone];
-
+  const s = palette[tone];
   return (
-    <div style={{
-      padding: "12px 14px",
-      borderRadius: "var(--r-md)",
-      background: selected.background,
-      border: selected.border,
-      color: selected.color,
-      display: "flex",
-      gap: 10,
-      alignItems: "flex-start",
-    }}>
-      <div style={{ flexShrink: 0, marginTop: 2 }}>{selected.icon}</div>
+    <div style={{ padding: "12px 14px", borderRadius: "var(--r-md)", background: s.background, border: s.border, color: s.color, display: "flex", gap: 10, alignItems: "flex-start" }}>
+      <div style={{ flexShrink: 0, marginTop: 2 }}>{s.icon}</div>
       <div>
-        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 4 }}>
-          {title}
-        </div>
-        <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
-          {body}
-        </div>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>{body}</div>
       </div>
     </div>
   );
@@ -382,54 +564,51 @@ function GuidedSummaryCard({
 export default function SetupLatexView() {
   const navigate = useNavigate();
   const userMode = useSettingsStore((s) => s.userMode);
-  const [info, setInfo] = useState<LatexInfo | null>(null);
+  const [info, setInfo]         = useState<LatexInfo | null>(null);
+  const [platform, setPlatform] = useState<Platform>("linux");
   const [detecting, setDetecting] = useState(false);
-  const [selectedId, setSelectedId] = useState("tectonic");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    handleDetect();
+    (async () => {
+      const p = await api.getPlatform().catch(() => "linux");
+      setPlatform(p);
+      handleDetect(p);
+    })();
   }, []);
 
-  async function handleDetect() {
+  async function handleDetect(p: Platform = platform) {
     setDetecting(true);
     try {
       const result = await api.detectLatex();
       setInfo(result);
-      // Auto-seleccionar la opción instalada, o tectonic por defecto
-      if (result.has_tectonic)       setSelectedId("tectonic");
-      else if (result.latexmk_usable) setSelectedId("miktex");
+      setSelectedId(getDefaultOptionId(p, result));
     } catch {
-      // silencioso en browser-mode
+      setSelectedId(getOptionsForPlatform(p)[0].id);
     } finally {
       setDetecting(false);
     }
   }
 
-  const selectedOption = INSTALL_OPTIONS.find((o) => o.id === selectedId) ?? INSTALL_OPTIONS[0];
+  const options      = getOptionsForPlatform(platform);
+  const recommendedId = options[0].id;
+  const activeId     = selectedId ?? recommendedId;
+  const selectedOption = options.find((o) => o.id === activeId) ?? options[0];
 
   const installedIds = new Set<string>();
-  if (info?.has_tectonic)      installedIds.add("tectonic");
-  if (info?.latexmk_usable)    installedIds.add("miktex");
-  if (info?.latexmk_usable)    installedIds.add("texlive");
+  if (info?.has_tectonic)   installedIds.add("tectonic");
+  if (info?.latexmk_usable) { installedIds.add("miktex"); installedIds.add("texlive"); installedIds.add("mactex"); }
 
-  const guidedRecommendation = info?.is_usable
+  const guidedBody = info?.is_usable
     ? "Ya puedes generar tu PDF desde TeXisStudio. Si un perfil institucional pide algo más, la app te lo irá señalando antes de entregar."
-    : selectedOption.id === "tectonic"
-      ? "Empieza con Tectonic si quieres la ruta más corta. Es la opción más amigable para probar TeXisStudio sin pelearte con instalaciones grandes."
-      : selectedOption.id === "miktex"
-        ? "MiKTeX es buena opción si prefieres instalador gráfico y estás en Windows. Te da un camino bastante cómodo para llegar a tu primer PDF."
-        : "TeX Live conviene si quieres una instalación completa desde el inicio y no te importa ocupar más espacio en disco.";
+    : `En ${getPlatformLabel(platform)}, la opción más recomendada es ${options[0].name}. Sigue los pasos guiados debajo para dejarlo listo.`;
 
   return (
     <>
       <TxAppbar
         left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Preparar generación de PDF</span></>}
         center={null}
-        right={
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
-            ← Volver
-          </button>
-        }
+        right={<button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>← Volver</button>}
       />
 
       <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)", overflow: "auto" }} className="scroll">
@@ -441,43 +620,39 @@ export default function SetupLatexView() {
               Preparar la generación de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>PDF</em>
             </h1>
             <p style={{ margin: 0, color: "var(--fg-muted)", fontSize: "var(--fs-md)", maxWidth: 580 }}>
-              TeXisStudio se encarga del formato y de la compilación, pero necesita una herramienta instalada en tu equipo para convertir tu tesis en PDF.
-              No necesitas aprender LaTeX: aquí solo eliges la ruta más sencilla para tu caso.
+              TeXisStudio se encarga del formato y la compilación, pero necesita una herramienta instalada en tu equipo para convertir tu tesis en PDF.
+              No necesitas aprender LaTeX: elige la ruta más sencilla para tu sistema.
             </p>
             <div style={{ marginTop: 10 }}>
               <AiHelpButton
                 panel="setup_latex"
                 mode="app_help"
-                label="Ayúdame a elegir la opción más sencilla"
+                label="Ayúdame a elegir"
                 question="Estoy en la pantalla para preparar la generación de PDF. ¿Cuál opción me conviene más si solo quiero empezar a compilar mi tesis sin meterme a detalles técnicos?"
                 variant="ghost"
               />
             </div>
           </div>
 
+          {/* Resumen */}
           <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, marginBottom: 24 }}>
-            <GuidedSummaryCard
-              title="Qué hace esta pantalla"
-              body="Te ayuda a dejar listo el paso técnico que convierte tu trabajo en PDF. Después podrás seguir escribiendo normalmente y TeXisStudio se encargará del resto."
+            <SummaryCard
+              title={`Sistema detectado: ${getPlatformLabel(platform)}`}
+              body="Solo se muestran las opciones disponibles y recomendadas para tu sistema operativo."
             />
-            <GuidedSummaryCard
+            <SummaryCard
               title={info?.is_usable ? "Tu equipo ya está listo" : "Recomendación inicial"}
-              body={guidedRecommendation}
+              body={guidedBody}
               tone={info?.is_usable ? "ok" : "info"}
             />
           </div>
 
-          {/* Estado de detección */}
+          {/* Detección */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
               Comprobación del equipo
             </div>
-            <button
-              className="btn btn-sm"
-              onClick={handleDetect}
-              disabled={detecting}
-              style={{ fontSize: "var(--fs-xs)" }}
-            >
+            <button className="btn btn-sm" onClick={() => handleDetect()} disabled={detecting} style={{ fontSize: "var(--fs-xs)" }}>
               <IconRefresh size={12} /> {detecting ? "Detectando…" : "Volver a detectar"}
             </button>
           </div>
@@ -485,22 +660,12 @@ export default function SetupLatexView() {
           {info ? (
             <>
               {info.is_usable ? (
-                <div style={{
-                  padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20,
-                  background: "var(--build-ok-tint)", border: "1px solid var(--build-ok)",
-                  display: "flex", gap: 8, alignItems: "center",
-                  fontSize: "var(--fs-sm)", color: "var(--build-ok)",
-                }}>
+                <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20, background: "var(--build-ok-tint)", border: "1px solid var(--build-ok)", display: "flex", gap: 8, alignItems: "center", fontSize: "var(--fs-sm)", color: "var(--build-ok)" }}>
                   <IconCheck size={13} sw={2.5} />
-                  <strong>Todo listo.</strong> Ya puedes generar tu PDF desde el editor. {userMode === "advanced" && <>Motores disponibles: {info.available_backends.join(", ")}.</>}
+                  <strong>Todo listo.</strong> Ya puedes generar tu PDF desde el editor.{userMode === "advanced" && <> Motores disponibles: {info.available_backends.join(", ")}.</>}
                 </div>
               ) : (
-                <div style={{
-                  padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20,
-                  background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
-                  display: "flex", gap: 8, alignItems: "center",
-                  fontSize: "var(--fs-sm)", color: "var(--accent-deep)",
-                }}>
+                <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20, background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", display: "flex", gap: 8, alignItems: "center", fontSize: "var(--fs-sm)", color: "var(--accent-deep)" }}>
                   <IconWarn size={13} />
                   Aún no encontramos una herramienta para generar el PDF. Elige una opción debajo y sigue los pasos guiados.
                 </div>
@@ -509,49 +674,42 @@ export default function SetupLatexView() {
             </>
           ) : (
             <div style={{ padding: "20px 0 24px", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
-              {detecting ? "Detectando instalaciones…" : "No se pudo detectar el estado de LaTeX (modo browser)."}
+              {detecting ? "Detectando instalaciones…" : "No se pudo detectar el estado (modo browser)."}
             </div>
           )}
 
-          {/* Selector de opción */}
+          {/* Opciones para este OS */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-            Rutas recomendadas
+            Opciones disponibles en {getPlatformLabel(platform)}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12, marginBottom: 32 }}>
-            {INSTALL_OPTIONS.map((opt) => (
+            {options.map((opt) => (
               <OptionCard
                 key={opt.id}
                 option={opt}
-                selected={selectedId === opt.id}
+                selected={activeId === opt.id}
                 installed={installedIds.has(opt.id)}
+                recommended={opt.id === recommendedId}
                 onClick={() => setSelectedId(opt.id)}
               />
             ))}
           </div>
 
-          {/* Instrucciones paso a paso */}
+          {/* Instrucciones */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 20 }}>
-            Pasos guiados — {selectedOption.name}
+            Pasos guiados — {selectedOption.name} en {getPlatformLabel(platform)}
           </div>
-
           <div style={{ maxWidth: 640 }}>
             <InstructionsPanel option={selectedOption} />
           </div>
 
           {userMode === "advanced" && (
-            <div style={{
-              maxWidth: 640,
-              marginTop: 28,
-              padding: "14px 16px",
-              background: "var(--bg-panel)",
-              border: "1px solid var(--border-soft)",
-              borderRadius: "var(--r-md)",
-            }}>
+            <div style={{ maxWidth: 640, marginTop: 28, padding: "14px 16px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)" }}>
               <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--fg-faint)", marginBottom: 8 }}>
                 Detalle técnico
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                TeXisStudio puede apoyarse en motores distintos según lo que encuentre en tu equipo. En modo básico no necesitas preocuparte por eso; en modo avanzado podrás elegir backend y revisar más detalles en la pantalla de entrega.
+                TeXisStudio elige el backend automáticamente según lo instalado. En modo avanzado puedes elegir el motor manualmente en la pantalla de compilación.
               </div>
             </div>
           )}
@@ -564,7 +722,7 @@ export default function SetupLatexView() {
         info?.is_usable
           ? { text: "Listo para generar PDF", dot: "var(--build-ok)" }
           : { text: "Falta preparar la generación de PDF", dot: "var(--build-err)" },
-        { right: true, text: "Vuelve a detectar después de instalar" },
+        { right: true, text: `Sistema: ${getPlatformLabel(platform)}` },
       ]} />
     </>
   );

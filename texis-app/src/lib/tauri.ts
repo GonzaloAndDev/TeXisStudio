@@ -32,6 +32,7 @@ const isTauri = () =>
 
 // Respuestas mock para desarrollo en browser sin Tauri
 const BROWSER_MOCKS: Record<string, unknown> = {
+  get_platform: "macos",
   detect_latex: {
     has_latexmk: false,
     has_xelatex: false,
@@ -213,6 +214,9 @@ export const api = {
     marginCm?: number,
   ): Promise<void> =>
     call("update_typography", { projectPath, fontSize, paperSize, lineSpacing, marginCm }),
+
+  getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>
+    call("get_platform"),
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),

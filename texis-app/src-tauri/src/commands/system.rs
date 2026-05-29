@@ -649,6 +649,12 @@ pub fn create_profile_lock(
     }))
 }
 
+/// Retorna el sistema operativo actual: "macos" | "windows" | "linux" | "unknown"
+#[tauri::command]
+pub fn get_platform() -> &'static str {
+    std::env::consts::OS
+}
+
 /// Detecta si LaTeX está instalado en el sistema.
 #[tauri::command]
 pub fn detect_latex() -> Result<Value, String> {
