@@ -87,6 +87,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
   const [scopeFilter, setScopeFilter] = useState<"all" | string>("all");
   const [institutionFilter, setInstitutionFilter] = useState<"all" | string>("all");
   const [programFilter, setProgramFilter] = useState<"all" | string>("all");
+  const [noviceSafeOnly, setNoviceSafeOnly] = useState(false);
 
   function applyGuidedPreset(preset: "starter" | "verified" | "engineering" | "health" | "doctoral") {
     setNavContinent(null);
@@ -199,7 +200,8 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     const scopeOk = scopeFilter === "all" || (p.profile_scope ?? "unspecified") === scopeFilter;
     const institutionOk = institutionFilter === "all" || (p.institution ?? "unspecified") === institutionFilter;
     const programOk = programFilter === "all" || (p.program_name ?? "unspecified") === programFilter;
-    return statusOk && styleOk && levelOk && disciplineOk && scopeOk && institutionOk && programOk;
+    const noviceOk = !noviceSafeOnly || p.novice_safe === true;
+    return statusOk && styleOk && levelOk && disciplineOk && scopeOk && institutionOk && programOk && noviceOk;
   });
 
   // Build hierarchy from filtered catalog
@@ -334,6 +336,13 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("engineering")}>Ingeniería · IEEE</button>
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("health")}>Salud · Vancouver</button>
           <button className="btn btn-sm" onClick={() => applyGuidedPreset("doctoral")}>Doctorado</button>
+          <button
+            className={noviceSafeOnly ? "btn btn-sm btn-accent" : "btn btn-sm btn-ghost"}
+            onClick={() => setNoviceSafeOnly((v) => !v)}
+            title="Muestra solo perfiles revisados, listos para empezar sin ajustes adicionales"
+          >
+            {noviceSafeOnly ? "✓ " : ""}Seguros para empezar
+          </button>
           <AiHelpButton
             panel="library_profiles"
             mode="app_help"
