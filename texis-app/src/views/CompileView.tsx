@@ -44,6 +44,7 @@ export default function CompileView() {
   const [pkgConflicts, setPkgConflicts]     = useState<Array<{ package_a: string; package_b: string; description: string; is_blocking: boolean }>>([]);
   const [pkgMissing, setPkgMissing]         = useState<Array<{ package_name: string; priority: string }>>([]);
   const [glossaryIssues, setGlossaryIssues] = useState<{ undefined_references: string[]; unused_count: number } | null>(null);
+  const [glossarySummary, setGlossarySummary] = useState<{ entries: number; acronyms: number } | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -66,10 +67,15 @@ export default function CompileView() {
     }).catch(() => {});
     api.analyzeGlossary(activeProjectPath).then((g) => {
       if (g.has_issues) {
-        const unusedCount = [...g.entries, ...g.acronyms].filter(e => e.status === "defined_unused").length;
+        const unusedCount = [...g.entries, ...g.acronyms].filter((e: { status: string }) => e.status === "defined_unused").length;
         setGlossaryIssues({ undefined_references: g.undefined_references, unused_count: unusedCount });
       } else {
         setGlossaryIssues(null);
+      }
+      if (!g.is_empty) {
+        setGlossarySummary({ entries: g.entries.length, acronyms: g.acronyms.length });
+      } else {
+        setGlossarySummary(null);
       }
     }).catch(() => {});
   }, [activeProjectPath]);
@@ -458,6 +464,18 @@ export default function CompileView() {
                     {glossaryIssues.unused_count} entrada{glossaryIssues.unused_count > 1 ? "s" : ""} definida{glossaryIssues.unused_count > 1 ? "s" : ""} sin usar en el documento
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Resumen de glosario (sin issues) */}
+            {compileState === "idle" && !nothingInstalled && !glossaryIssues && glossarySummary && (
+              <div style={{ margin: "12px 16px 0", padding: "9px 14px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ color: "var(--build-ok)", fontWeight: 700 }}>✓</span>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                  Glosario listo — {glossarySummary.acronyms > 0 && `${glossarySummary.acronyms} acrónimo${glossarySummary.acronyms > 1 ? "s" : ""}`}
+                  {glossarySummary.acronyms > 0 && glossarySummary.entries > 0 && " · "}
+                  {glossarySummary.entries > 0 && `${glossarySummary.entries} término${glossarySummary.entries > 1 ? "s" : ""}`}
+                </span>
               </div>
             )}
 

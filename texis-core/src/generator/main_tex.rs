@@ -273,6 +273,8 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\lstset{basicstyle=\\ttfamily\\footnotesize, frame=single, breaklines=true, tabsize=4, showstringspaces=false}\n");
     out.push_str("\\usepackage{algorithm}\n");
     out.push_str("\\usepackage{algpseudocode}\n");
+    out.push_str("\\usepackage{amsmath}\n");
+    out.push_str("\\usepackage{amssymb}\n");
     out.push_str("\\usepackage{amsthm}\n");
 
     // Paquetes adicionales del modelo
