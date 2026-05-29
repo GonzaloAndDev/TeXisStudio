@@ -6,7 +6,7 @@ type NSpell = ReturnType<typeof nspell>;
 const cache: Record<string, Promise<NSpell>> = {};
 
 // Bundled dicts live at /dictionaries/{lang}/index.{aff,dic}
-const BUNDLED_LANGS = new Set(["en", "es"]);
+const BUNDLED_LANGS = new Set(["en", "es", "fr", "de"]);
 
 async function loadDictionary(lang: string): Promise<NSpell> {
   let affUrl: string;
