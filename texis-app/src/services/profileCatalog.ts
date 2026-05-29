@@ -65,6 +65,10 @@ export interface CatalogProfile {
   program_name?: string;
   faculty?: string;
   department?: string;
+  recommended_for_document_kinds?: string[];
+  novice_safe?: boolean;
+  sample_available?: boolean;
+  delivery_verified?: boolean;
   download_url: string;
   sha256?: string | null;
 }
@@ -156,6 +160,47 @@ function validateEntry(raw: unknown, warnings: string[]): CatalogProfile | null 
     ? (e.target_levels as unknown[])
         .filter((level): level is AcademicLevel => typeof level === "string" && ALLOWED_ACADEMIC_LEVELS.has(level))
     : [];
+  const normalizedHaystack = [
+    e.id,
+    e.name,
+    e.description,
+    ...tags,
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+  const recommendedDocumentKinds = new Set<string>();
+  if (normalizedHaystack.includes("tesina")) recommendedDocumentKinds.add("tesina");
+  if (
+    academicLevel === "especialidad"
+    || targetLevels.includes("especialidad")
+    || normalizedHaystack.includes("especialidad")
+  ) {
+    recommendedDocumentKinds.add("especialidad");
+  }
+  if (
+    recommendedDocumentKinds.size === 0
+    || academicLevel === "licenciatura"
+    || academicLevel === "maestria"
+    || academicLevel === "doctorado"
+    || academicLevel === "posdoctorado"
+    || targetLevels.some((level) => ["licenciatura", "maestria", "doctorado", "posdoctorado"].includes(level))
+  ) {
+    recommendedDocumentKinds.add("tesis");
+  }
+  const sampleAvailable = typeof e.ci_evidence === "string"
+    || typeof verification.ci_evidence === "string"
+    || typeof verification.sample_project === "string"
+    || typeof e.sample_project === "string"
+    || typeof e.verified_at === "string"
+    || typeof verification.verified_at === "string";
+  const deliveryVerified = status === "verified"
+    && (typeof e.ci_evidence === "string" || typeof verification.ci_evidence === "string");
+  const noviceSafe = status === "verified"
+    || (
+      status === "reviewed"
+      && (profileScope === undefined || profileScope === "institutional" || profileScope === "degree_specific")
+    );
 
   return {
     id: e.id as string,
@@ -188,6 +233,10 @@ function validateEntry(raw: unknown, warnings: string[]): CatalogProfile | null 
     program_name: typeof e.program_name === "string" ? e.program_name : undefined,
     faculty: typeof e.faculty === "string" ? e.faculty : undefined,
     department: typeof e.department === "string" ? e.department : undefined,
+    recommended_for_document_kinds: [...recommendedDocumentKinds],
+    novice_safe: noviceSafe,
+    sample_available: sampleAvailable,
+    delivery_verified: deliveryVerified,
     download_url: e.download_url as string,
     sha256: typeof e.sha256 === "string" ? e.sha256 : null,
   };

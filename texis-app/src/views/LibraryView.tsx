@@ -1154,6 +1154,41 @@ function CommunityTab({ installedIds, onInstalled, userMode }: {
 
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+  function audienceLabel(cp: CatalogProfile) {
+    if (cp.program_name) return `Pensado para ${cp.program_name}.`;
+    if (cp.department) return `Orientado al departamento de ${cp.department}.`;
+    if (cp.faculty) return `Orientado a ${cp.faculty}.`;
+    if (cp.discipline) return `Útil sobre todo en ${DISCIPLINE_LABEL[cp.discipline] ?? cp.discipline}.`;
+    if (cp.institution) return `Base institucional para ${cp.institution}.`;
+    return "Base general para empezar tu proyecto.";
+  }
+
+  function confidenceSummary(cp: CatalogProfile) {
+    if (cp.delivery_verified) {
+      return "Tiene evidencia fuerte de compilación y entrega final.";
+    }
+    if (cp.sample_available) {
+      return "Cuenta con muestra o evidencia técnica útil para empezar con menos riesgo.";
+    }
+    if (cp.novice_safe) {
+      return "Es una opción razonablemente segura para comenzar sin ajustar demasiado.";
+    }
+    return "Conviene revisarlo con más cuidado antes de adoptarlo como base principal.";
+  }
+
+  function limitationSummary(cp: CatalogProfile) {
+    if (cp.profile_scope === "program_specific") {
+      return "Es específico para un programa; si el tuyo cambia, revisa los detalles antes de usarlo.";
+    }
+    if (cp.profile_scope === "discipline_specific") {
+      return "Está pensado para un área concreta; puede requerir ajustes si tu trabajo sigue otra línea.";
+    }
+    if (!cp.sample_available) {
+      return "Todavía no muestra evidencia técnica fuerte de extremo a extremo.";
+    }
+    return "Si tu escuela pide variantes muy particulares, revisa portada, comité y bibliografía antes de entregar.";
+  }
+
   // Profile card for community
   const renderProfileCard = (cp: CatalogProfile) => {
     const isInstalled = installedIds.has(cp.id);
@@ -1170,9 +1205,26 @@ function CommunityTab({ installedIds, onInstalled, userMode }: {
           </div>
           {cp.institution && <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 4 }}>{cp.institution}{cp.city ? ` · ${cp.city}` : ""}</div>}
           {cp.description && <p style={{ margin: "0 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>{cp.description}</p>}
+          <div style={{ marginBottom: 8, display: "grid", gap: 6 }}>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+              <strong style={{ color: "var(--fg-strong)" }}>Para quién sirve:</strong> {audienceLabel(cp)}
+            </div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+              <strong style={{ color: "var(--fg-strong)" }}>Confianza:</strong> {confidenceSummary(cp)}
+            </div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+              <strong style={{ color: "var(--fg-strong)" }}>Qué revisar:</strong> {limitationSummary(cp)}
+            </div>
+          </div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
             {cp.style_id && <span className="chip" style={{ fontSize: 9 }}>{cp.style_id}</span>}
             {!cp.style_id && cp.bibliography_style && <span className="chip" style={{ fontSize: 9 }}>{cp.bibliography_style}</span>}
+            {cp.novice_safe && <span className="chip" style={{ fontSize: 9 }}>buena base para empezar</span>}
+            {cp.sample_available && <span className="chip" style={{ fontSize: 9 }}>con muestra</span>}
+            {cp.delivery_verified && <span className="chip" style={{ fontSize: 9 }}>entrega verificada</span>}
+            {cp.recommended_for_document_kinds && cp.recommended_for_document_kinds.map((kind) => (
+              <span key={kind} className="chip" style={{ fontSize: 9 }}>para {kind}</span>
+            ))}
             {cp.academic_level && <span className="chip" style={{ fontSize: 9 }}>{ACADEMIC_LEVEL_LABEL[cp.academic_level] ?? cp.academic_level}</span>}
             {!cp.academic_level && cp.target_levels && cp.target_levels.length > 0 && (
               <span className="chip" style={{ fontSize: 9 }}>
