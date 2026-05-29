@@ -41,6 +41,7 @@ export default function CompileView() {
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
   const [pkgConflicts, setPkgConflicts]     = useState<Array<{ package_a: string; package_b: string; description: string; is_blocking: boolean }>>([]);
   const [pkgMissing, setPkgMissing]         = useState<Array<{ package_name: string; priority: string }>>([]);
+  const [glossaryIssues, setGlossaryIssues] = useState<{ undefined_references: string[]; unused_count: number } | null>(null);
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -54,12 +55,20 @@ export default function CompileView() {
     }
   }, [latexInfo]);
 
-  // Analizar paquetes del proyecto al cargar
+  // Analizar paquetes y glosario del proyecto al cargar
   useEffect(() => {
     if (!activeProjectPath) return;
     api.analyzePackages(activeProjectPath).then((analysis) => {
       setPkgConflicts(analysis.conflicts);
       setPkgMissing(analysis.missing.filter((m) => m.priority === "required" && !m.already_declared));
+    }).catch(() => {});
+    api.analyzeGlossary(activeProjectPath).then((g) => {
+      if (g.has_issues) {
+        const unusedCount = [...g.entries, ...g.acronyms].filter(e => e.status === "defined_unused").length;
+        setGlossaryIssues({ undefined_references: g.undefined_references, unused_count: unusedCount });
+      } else {
+        setGlossaryIssues(null);
+      }
     }).catch(() => {});
   }, [activeProjectPath]);
 
@@ -426,6 +435,25 @@ export default function CompileView() {
                     + Falta <span style={{ fontFamily: "var(--font-mono)", color: "var(--fg-strong)" }}>{m.package_name}</span> en el preámbulo
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Advertencias de glosario */}
+            {compileState === "idle" && !nothingInstalled && glossaryIssues && (
+              <div style={{ margin: "12px 16px 0", padding: "12px 14px", borderRadius: "var(--r-md)", background: "color-mix(in srgb, var(--accent) 8%, var(--bg-panel))", border: "1px solid var(--accent-soft)" }}>
+                <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--accent-deep)", marginBottom: 6 }}>
+                  Advertencias de glosario
+                </div>
+                {glossaryIssues.undefined_references.map((k, i) => (
+                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 2 }}>
+                    ⚠ <span style={{ fontFamily: "var(--font-mono)" }}>{k}</span> referenciado con \gls pero no definido
+                  </div>
+                ))}
+                {glossaryIssues.unused_count > 0 && (
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 4 }}>
+                    {glossaryIssues.unused_count} entrada{glossaryIssues.unused_count > 1 ? "s" : ""} definida{glossaryIssues.unused_count > 1 ? "s" : ""} sin usar en el documento
+                  </div>
+                )}
               </div>
             )}
 
