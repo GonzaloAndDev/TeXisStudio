@@ -6,8 +6,10 @@ export type AcademicLevel =
   | "bachillerato"
   | "tecnico"
   | "licenciatura"
+  | "especialidad"
   | "maestria"
-  | "doctorado";
+  | "doctorado"
+  | "posdoctorado";
 
 export type SectionPlacement = "front_matter" | "body" | "back_matter" | "appendix";
 
@@ -459,7 +461,7 @@ export interface LangPackEntry {
   maintainers: LangPackMaintainer[];
   capabilities: LangCapabilities;
   // Download URLs — can be GitHub raw or npm CDN
-  ui_url: string;
+  ui_url?: string;
   spelling_aff_url?: string;
   spelling_dic_url?: string;
   autocorrect_url?: string;
@@ -485,6 +487,13 @@ export interface LangCatalog {
 
 // ── Vocabulary packs (domain-specific, independent of base language) ──
 
+export type VocabPackKind =
+  | "general"
+  | "academic"
+  | "discipline"
+  | "subject"
+  | "program";
+
 /** Entry in catalog.json vocabulary_packs — a domain-specific wordlist */
 export interface VocabPackEntry {
   id: string;               // e.g. "es-engineering", "en-mathematics"
@@ -493,6 +502,11 @@ export interface VocabPackEntry {
   status: LangStatus;
   version: string;
   base_language_hint?: string;  // Suggested pairing (non-binding)
+  pack_kind?: VocabPackKind;
+  discipline?: string;
+  subject?: string;
+  program_name?: string;
+  target_levels?: AcademicLevel[];
   description: string;
   pack_url: string;         // URL to the pack.yaml
 }

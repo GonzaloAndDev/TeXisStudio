@@ -22,6 +22,9 @@ walkdir      = "2"
 zip          = "2"
 regex        = "1"
 chrono       = { version = "0.4", features = ["serde"] }
+uuid         = { version = "1", features = ["v4", "serde"] }
+lazy_static  = "1"
+url          = "2"
 clap         = { version = "4", features = ["derive"] }
 
 insta        = { version = "1", features = ["yaml"] }

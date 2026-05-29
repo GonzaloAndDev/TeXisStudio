@@ -25,3 +25,5 @@ futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tempfile     = { workspace = true }
 tokio        = { version = "1", features = ["rt", "sync", "time"] }
 sha2         = "0.10"
+urlencoding  = "2"
+uuid         = { workspace = true }

@@ -61,8 +61,10 @@ pub enum AcademicLevel {
     Bachillerato,
     Tecnico,
     Licenciatura,
+    Especialidad,
     Maestria,
     Doctorado,
+    Posdoctorado,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

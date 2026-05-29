@@ -1,4 +1,9 @@
+pub mod exporters;
 pub mod formatter;
 pub mod manager;
+pub mod merger;
+pub mod model;
+pub mod normalization;
 pub mod parser;
+pub mod registry;
 pub mod validator;

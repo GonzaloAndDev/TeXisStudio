@@ -211,7 +211,10 @@ fn check_has_body_sections(model: &ProjectModel, issues: &mut Vec<ValidationIssu
 fn check_posgrado_committee(model: &ProjectModel, issues: &mut Vec<ValidationIssue>) {
     use crate::project::model::AcademicLevel;
 
-    if matches!(model.metadata.academic_level, AcademicLevel::Doctorado)
+    if matches!(
+        model.metadata.academic_level,
+        AcademicLevel::Doctorado | AcademicLevel::Posdoctorado
+    )
         && model.student.committee.is_empty()
     {
         issues.push(ValidationIssue {
@@ -307,7 +310,10 @@ fn check_posgrado_abstract(model: &ProjectModel, issues: &mut Vec<ValidationIssu
 
     let is_posgrado = matches!(
         model.metadata.academic_level,
-        AcademicLevel::Maestria | AcademicLevel::Doctorado
+        AcademicLevel::Especialidad
+            | AcademicLevel::Maestria
+            | AcademicLevel::Doctorado
+            | AcademicLevel::Posdoctorado
     );
     if !is_posgrado {
         return;

@@ -13,6 +13,9 @@ thiserror   = { workspace = true }
 walkdir     = { workspace = true }
 regex       = { workspace = true }
 chrono      = { workspace = true }
+uuid        = { workspace = true }
+lazy_static = { workspace = true }
+url         = { workspace = true }
 jsonschema  = { workspace = true }
 schemars    = { workspace = true }
 sha2        = "0.10"

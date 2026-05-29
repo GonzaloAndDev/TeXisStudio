@@ -181,6 +181,11 @@ fn escape_latex_text(s: &str) -> String {
 
 /// Percent-encodes un path de DOI preservando los caracteres seguros en URLs
 /// (RFC 3986 unreserved + `/` y `:` que son estructurales en DOIs).
+/// Alias público para que otros módulos de comandos puedan usarlo.
+pub fn percent_encode_doi(doi: &str) -> String {
+    percent_encode_doi_path(doi)
+}
+
 fn percent_encode_doi_path(doi: &str) -> String {
     let mut out = String::with_capacity(doi.len() * 2);
     for c in doi.chars() {
@@ -650,4 +655,271 @@ mod tests {
         assert!(rendered.contains(r#"title = {R\&D\_100\%}"#));
         assert!(rendered.contains("url   = {https://example.com/a_b?x=1&y=2}"));
     }
+}
+
+// ── Capa de BibliographicRecord — motor bibliográfico unificado ───────────────
+// Convierte la respuesta de Crossref al modelo interno canónico.
+// La capa anterior (fetch_bibtex / work_to_bibtex) se mantiene para compatibilidad
+// con la UI existente; esta capa nueva alimenta el BibliographyRegistry.
+
+use texis_core::bibliography::model::{
+    BibliographicRecord, PersonName, RecordType, provider,
+};
+use texis_core::bibliography::normalization::{
+    clean_title, generate_cite_key, map_crossref_type,
+    normalize_doi as norm_doi, normalize_isbn, parse_crossref_date_parts,
+};
+use chrono::Utc;
+use std::collections::HashSet;
+
+fn work_to_record(work: &CrossrefWork, doi_normalized: &str) -> BibliographicRecord {
+    let record_type = work
+        .work_type
+        .as_deref()
+        .map(map_crossref_type)
+        .unwrap_or(RecordType::Unknown);
+
+    // Citation key
+    let first_family = work
+        .author
+        .as_deref()
+        .and_then(|a| a.first())
+        .and_then(|a| a.family.as_deref())
+        .unwrap_or("");
+
+    let year = work
+        .published
+        .as_ref()
+        .or(work.published_print.as_ref())
+        .or(work.published_online.as_ref())
+        .and_then(|d| d.date_parts.as_deref())
+        .and_then(|parts| parts.first())
+        .and_then(|row| row.first())
+        .copied()
+        .map(|y| y as i32);
+
+    let cite_key = generate_cite_key(
+        first_family,
+        year,
+        Some(doi_normalized),
+        &HashSet::new(),
+    );
+
+    let mut record = BibliographicRecord::new(cite_key, record_type);
+    record.doi = Some(doi_normalized.to_string());
+
+    // Título con subtítulo
+    let title_base = work
+        .title
+        .as_deref()
+        .and_then(|t| t.first())
+        .cloned()
+        .unwrap_or_default();
+    let subtitle_part = work
+        .subtitle
+        .as_deref()
+        .and_then(|s| s.first())
+        .filter(|s| !s.is_empty())
+        .cloned();
+    record.title = Some(clean_title(&title_base));
+    record.subtitle = subtitle_part.map(|s| clean_title(&s));
+
+    // Fecha
+    let date_source = work
+        .published
+        .as_ref()
+        .or(work.published_print.as_ref())
+        .or(work.published_online.as_ref());
+    if let Some(date_field) = date_source {
+        if let Some(parts) = &date_field.date_parts {
+            let parsed = parse_crossref_date_parts(parts);
+            record.year = parsed.year;
+            record.date = parsed.date;
+        }
+    }
+
+    // Autores
+    if let Some(authors) = &work.author {
+        record.authors = authors
+            .iter()
+            .map(|a| {
+                if let (Some(family), Some(given)) = (&a.family, &a.given) {
+                    PersonName::new_person(family, given)
+                } else if let Some(name) = &a.name {
+                    PersonName::new_organization(name)
+                } else {
+                    PersonName::new_organization(
+                        a.family.as_deref().unwrap_or(""),
+                    )
+                }
+            })
+            .collect();
+    }
+
+    // Journal / booktitle / institution según tipo
+    let container = work
+        .container_title
+        .as_deref()
+        .and_then(|t| t.first())
+        .cloned();
+    match &record.record_type {
+        RecordType::Article => record.journal = container,
+        RecordType::BookChapter | RecordType::ConferencePaper => {
+            record.booktitle = container
+                .or_else(|| work.event.as_ref().and_then(|e| e.name.clone()));
+        }
+        RecordType::Thesis | RecordType::TechReport => {
+            record.institution = work
+                .institution
+                .as_deref()
+                .and_then(|i| i.first())
+                .and_then(|i| i.name.clone())
+                .or_else(|| work.publisher.clone());
+        }
+        _ => {}
+    }
+
+    record.publisher = work.publisher.clone();
+    record.volume = work.volume.clone();
+    record.issue = work.issue.clone();
+    record.pages = work.page.clone();
+    record.edition = work.edition_number.clone();
+    record.url = work.url.clone();
+
+    record.isbn = work
+        .isbn
+        .as_deref()
+        .and_then(|v| v.first())
+        .and_then(|s| normalize_isbn(s));
+    record.issn = work
+        .issn
+        .as_deref()
+        .and_then(|v| v.first())
+        .cloned();
+
+    // Provenance
+    record
+        .provenance
+        .set_field_source("*", provider::CROSSREF, Utc::now());
+    record.provenance.primary_provider = Some(provider::CROSSREF.to_string());
+
+    record
+}
+
+/// Fetch interno que retorna BibliographicRecord (motor unificado).
+/// Conserva también el raw payload de Crossref para trazabilidad.
+pub async fn fetch_record(doi_normalized: &str) -> Result<BibliographicRecord, String> {
+    let url = format!("{}{}", CROSSREF_BASE, percent_encode_doi_path(doi_normalized));
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(TIMEOUT_SECS))
+        .user_agent(USER_AGENT)
+        .build()
+        .map_err(|e| format!("Error al crear cliente HTTP: {e}"))?;
+
+    let resp = client
+        .get(&url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Error de red al consultar Crossref: {e}"))?;
+
+    if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err(format!("DOI no encontrado en Crossref: {doi_normalized}"));
+    }
+    if !resp.status().is_success() {
+        return Err(format!("Crossref respondió con HTTP {}", resp.status()));
+    }
+
+    let raw: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Error al parsear respuesta de Crossref: {e}"))?;
+
+    let response: CrossrefResponse = serde_json::from_value(raw.clone())
+        .map_err(|e| format!("Error al deserializar respuesta de Crossref: {e}"))?;
+
+    let mut record = work_to_record(&response.message, doi_normalized);
+    record.provenance.set_raw_payload(provider::CROSSREF, raw);
+    Ok(record)
+}
+
+/// Importa por DOI y retorna BibliographicRecord serializado como JSON.
+/// Usa el motor bibliográfico unificado (a diferencia de import_doi que retorna BibTeX).
+#[tauri::command]
+pub async fn import_doi_as_record(doi: String) -> Result<serde_json::Value, String> {
+    if doi.trim().is_empty() {
+        return Err("El DOI no puede estar vacío.".to_string());
+    }
+    let normalized = norm_doi(doi.trim())
+        .ok_or_else(|| format!("DOI inválido: '{}'", doi))?;
+    let record = fetch_record(&normalized).await?;
+    serde_json::to_value(&record)
+        .map_err(|e| format!("Error al serializar registro: {e}"))
+}
+
+/// Búsqueda por título en Crossref.
+pub async fn search_by_title(query: &str, limit: u8) -> Result<Vec<BibliographicRecord>, String> {
+    let url = format!(
+        "{}?query={}&rows={}",
+        CROSSREF_BASE,
+        urlencoding::encode(query),
+        limit.min(20)
+    );
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(TIMEOUT_SECS))
+        .user_agent(USER_AGENT)
+        .build()
+        .map_err(|e| format!("Error al crear cliente HTTP: {e}"))?;
+
+    let resp = client
+        .get(&url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Error de red: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("Crossref respondió con HTTP {}", resp.status()));
+    }
+
+    #[derive(serde::Deserialize)]
+    struct SearchResponse {
+        message: SearchMessage,
+    }
+    #[derive(serde::Deserialize)]
+    struct SearchMessage {
+        items: Vec<CrossrefWork>,
+    }
+
+    let search: SearchResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("Error al parsear resultados: {e}"))?;
+
+    let records = search
+        .message
+        .items
+        .iter()
+        .filter_map(|work| {
+            let doi_norm = work.doi.as_deref().and_then(norm_doi)?;
+            Some(work_to_record(work, &doi_norm))
+        })
+        .collect();
+
+    Ok(records)
+}
+
+/// Busca por título en Crossref y retorna resultados serializados.
+#[tauri::command]
+pub async fn search_crossref(query: String, limit: Option<u8>) -> Result<Vec<serde_json::Value>, String> {
+    if query.trim().is_empty() {
+        return Err("La consulta no puede estar vacía.".to_string());
+    }
+    let records = search_by_title(&query, limit.unwrap_or(10)).await?;
+    records
+        .iter()
+        .map(|r| serde_json::to_value(r).map_err(|e| format!("{e}")))
+        .collect()
 }

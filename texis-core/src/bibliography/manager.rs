@@ -1,36 +1,42 @@
-// Gestión de referencias bibliográficas — Release 0.1 (stub).
+// BibManager — DEPRECATED.
+// Usar BibliographyRegistry (registry.rs) en su lugar.
+// Este módulo se conserva solo para no romper código existente que lo importa.
+// Será eliminado en la próxima limpieza de API.
 
-use super::parser::{BibEntry, BibParser};
-use crate::error::CoreResult;
-use std::path::Path;
+#[allow(deprecated)]
+#[deprecated(since = "1.1.0", note = "Usa BibliographyRegistry en lugar de BibManager")]
+pub use legacy::BibManager;
 
-pub struct BibManager {
-    entries: Vec<BibEntry>,
-}
+#[allow(deprecated)]
+mod legacy {
+    use super::super::parser::{BibEntry, BibParser};
+    use crate::error::CoreResult;
+    use std::path::Path;
 
-impl BibManager {
-    pub fn new() -> Self {
-        Self { entries: Vec::new() }
+    #[deprecated(since = "1.1.0", note = "Usa BibliographyRegistry")]
+    pub struct BibManager {
+        entries: Vec<BibEntry>,
     }
 
-    pub fn load_from_file(&mut self, path: &Path) -> CoreResult<()> {
-        let parser = BibParser;
-        let new_entries = parser.parse_file(path)?;
-        self.entries.extend(new_entries);
-        Ok(())
+    #[allow(deprecated)]
+    impl BibManager {
+        pub fn new() -> Self { Self { entries: Vec::new() } }
+
+        pub fn load_from_file(&mut self, path: &Path) -> CoreResult<()> {
+            let new_entries = BibParser.parse_file(path)?;
+            self.entries.extend(new_entries);
+            Ok(())
+        }
+
+        pub fn entries(&self) -> &[BibEntry] { &self.entries }
+
+        pub fn find_by_key(&self, key: &str) -> Option<&BibEntry> {
+            self.entries.iter().find(|e| e.key == key)
+        }
     }
 
-    pub fn entries(&self) -> &[BibEntry] {
-        &self.entries
-    }
-
-    pub fn find_by_key(&self, key: &str) -> Option<&BibEntry> {
-        self.entries.iter().find(|e| e.key == key)
-    }
-}
-
-impl Default for BibManager {
-    fn default() -> Self {
-        Self::new()
+    #[allow(deprecated)]
+    impl Default for BibManager {
+        fn default() -> Self { Self::new() }
     }
 }

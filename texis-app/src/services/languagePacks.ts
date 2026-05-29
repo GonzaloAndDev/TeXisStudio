@@ -4,7 +4,8 @@
  * Architecture:
  *  - Catalog lives at CATALOG_URL (GitHub raw)
  *  - UI locale JSON cached in localStorage (key: tx-lang-pack-ui:{id})
- *  - Spelling dicts fetched on-demand from CDN URL (browser HTTP cache handles persistence)
+ *  - Spelling dicts fetched on-demand from approved remote URLs
+ *    (browser HTTP cache handles persistence)
  *  - Installed packs metadata in localStorage (key: tx-installed-packs)
  *
  * Security:

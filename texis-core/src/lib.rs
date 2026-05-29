@@ -1,4 +1,13 @@
+pub mod asset;
 pub mod bibliography;
+pub mod build_engine;
+pub mod commands;
+pub mod dependency_graph;
+pub mod diagnostics;
+pub mod events;
+pub mod plugin;
+pub mod security;
+pub mod template_engine;
 pub mod exporter;
 pub mod compiler;
 pub mod element;
@@ -7,9 +16,11 @@ pub mod generator;
 pub mod postflight;
 pub mod profile;
 pub mod project;
+pub mod reference;
 pub mod schema;
 pub mod system;
 pub mod template;
+pub mod texis_project;
 pub mod validator;
 
 pub use compiler::{CompilationBackend, CompilationOptions, CompilationResult};

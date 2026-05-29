@@ -169,26 +169,84 @@ export function getMergedVocabTerms(): string[] {
   return result;
 }
 
-// ── YAML terms extraction (minimal, no YAML parser dependency) ────────────────
+// ── YAML terms extraction ─────────────────────────────────────────────────────
 
+/**
+ * Extrae los términos de un pack.yaml.
+ * Usa un parser línea a línea robusto que maneja:
+ * - Términos simples:      `- palabra`
+ * - Términos con comillas: `- "two words"` o `- 'two words'`
+ * - Términos con dos puntos en el valor: `- std::vector` (escaped as `"std::vector"`)
+ * - Comentarios: líneas que comienzan con #
+ * - Bloques YAML anidados: detecta fin de bloque por indentación
+ */
 function extractTermsFromPackYaml(yaml: string): string[] {
   const terms: string[] = [];
+  const lines = yaml.split("\n");
   let inTermsBlock = false;
+  let termsIndent = -1;
 
-  for (const line of yaml.split("\n")) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (trimmed === "terms:") {
+
+    // Ignorar comentarios
+    if (trimmed.startsWith("#")) continue;
+    // Ignorar líneas vacías
+    if (!trimmed) continue;
+
+    // Detectar inicio del bloque terms:
+    if (trimmed === "terms:" || trimmed === "terms: []") {
       inTermsBlock = true;
+      // La indentación del bloque será la de los items (línea siguiente con -)
+      termsIndent = -1;
       continue;
     }
-    // A new top-level key ends the terms block
-    if (inTermsBlock && trimmed && !trimmed.startsWith("-") && trimmed.includes(":") && !trimmed.startsWith("#")) {
+
+    if (!inTermsBlock) continue;
+
+    // Calcular indentación de la línea actual
+    const indent = line.length - line.trimStart().length;
+
+    // Una clave de nivel superior (sin guión, con dos puntos, misma o menor indentación) termina el bloque
+    if (
+      !trimmed.startsWith("-") &&
+      !trimmed.startsWith("#") &&
+      trimmed.includes(":") &&
+      indent === 0
+    ) {
       inTermsBlock = false;
+      termsIndent = -1;
+      continue;
     }
-    if (inTermsBlock && trimmed.startsWith("- ")) {
-      const term = trimmed.slice(2).trim().replace(/^['"]|['"]$/g, "");
-      if (term) terms.push(term);
+
+    // Primer item: establecer la indentación del bloque
+    if (trimmed.startsWith("-") && termsIndent === -1) {
+      termsIndent = indent;
+    }
+
+    // Si la indentación baja por debajo del bloque → terminó
+    if (termsIndent >= 0 && !trimmed.startsWith("-") && indent < termsIndent) {
+      inTermsBlock = false;
+      termsIndent = -1;
+      continue;
+    }
+
+    // Extraer el término
+    if (trimmed.startsWith("- ")) {
+      let term = trimmed.slice(2).trim();
+      // Eliminar comentarios inline: `- palabra # comentario`
+      const commentIdx = term.indexOf(" #");
+      if (commentIdx > 0) term = term.slice(0, commentIdx).trim();
+      // Eliminar comillas envolventes
+      term = term.replace(/^(['"])(.*)\1$/, "$2").trim();
+      if (term && !term.startsWith("#")) {
+        terms.push(term);
+      }
+    } else if (trimmed === "-") {
+      // Término vacío — ignorar
     }
   }
+
   return terms;
 }
