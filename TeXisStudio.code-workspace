@@ -6,5 +6,84 @@
   ],
   "settings": {
     "java.autobuild.enabled": false
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "TeXisStudio: Dev",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "presentation": { "group": "texis", "order": 1 }
+      },
+      {
+        "name": "TeXisStudio: Build",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "build"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "presentation": { "group": "texis", "order": 2 }
+      },
+      {
+        "name": "TeXisStudio: Frontend only",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
+        "presentation": { "group": "texis", "order": 3 }
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "TeXisStudio: Run app",
+        "type": "shell",
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
+        "group": { "kind": "build", "isDefault": true },
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated",
+          "clear": false
+        }
+      },
+      {
+        "label": "TeXisStudio: Build current OS",
+        "type": "shell",
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "build"],
+        "group": "build",
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated",
+          "clear": true
+        }
+      },
+      {
+        "label": "TeXisStudio: Frontend only",
+        "type": "shell",
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
+        "group": "test",
+        "problemMatcher": [],
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared",
+          "clear": true
+        }
+      }
+    ]
   }
 }
