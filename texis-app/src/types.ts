@@ -328,6 +328,7 @@ export interface ProfileVerification {
   reviewed_by?: string;
   source_urls: string[];
   review_interval_days?: number;
+  ci_evidence?: string;
 }
 
 export interface PdfaRequirement {

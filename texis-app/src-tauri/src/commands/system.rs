@@ -426,6 +426,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
             "reviewed_by": v.reviewed_by,
             "source_urls": v.source_urls,
             "review_interval_days": v.review_interval_days,
+            "ci_evidence": v.ci_evidence,
         })
     });
 

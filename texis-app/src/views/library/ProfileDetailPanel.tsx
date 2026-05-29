@@ -107,6 +107,12 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
                   {profile.verification.source_urls.length > 1 && ` +${profile.verification.source_urls.length - 1}`}
                 </div>
               )}
+              {profile.verification.ci_evidence && (
+                <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ color: "var(--build-ok)", fontWeight: 700, fontSize: 10 }}>✓</span>
+                  <span>Evidencia CI disponible</span>
+                </div>
+              )}
             </div>
           )}
         </div>
