@@ -1,0 +1,17 @@
+schema_version: "0.1.0"
+id: "chicago.humanities"
+name: "Chicago / Turabian — Humanidades"
+version: "1.0.0"
+description: "Tesis y disertaciones en humanidades, ciencias sociales y artes con estilo Chicago Notes-Bibliography (17ª ed.) / Turabian 9ª ed. Usado en filosofía, historia, literatura, derecho y ciencias sociales."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - chicago
+  - turabian
+  - humanidades
+  - ciencias-sociales
+  - historia
+  - filosofia
+  - notas-al-pie
+  - doctorado
+  - maestria

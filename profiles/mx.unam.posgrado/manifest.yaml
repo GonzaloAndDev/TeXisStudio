@@ -1,0 +1,16 @@
+schema_version: "0.1.0"
+id: "mx.unam.posgrado"
+name: "UNAM — Posgrado"
+version: "1.0.0"
+description: "Tesis y disertaciones de posgrado de la UNAM. Basado en las directrices de la Coordinación de Estudios de Posgrado (CEP-UNAM). APA 7, XeLaTeX, formato oficio."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - unam
+  - posgrado
+  - maestria
+  - doctorado
+  - especialidad
+  - mexico
+  - apa
+  - xelatex

@@ -1,0 +1,193 @@
+schema_version: "1.0.0"
+id: "mx.ipn.sepi"
+name: "IPN SEPI — Posgrado en Ingeniería y Ciencias"
+description: "Tesis de la Sección de Estudios de Posgrado e Investigación (SEPI) del Instituto Politécnico Nacional. Aplica a CINVESTAV, ESIME, ESCOM, UPIITA y unidades SEPI. Bibliografía IEEE para ingeniería y tecnología; formato IPN con márgenes, tipografía y estructura específicos de la Dirección de Posgrado e Investigación."
+author: "Gonzalo Andrade Estrella"
+version: "1.0.0"
+license: "AGPL-3.0"
+status: reviewed
+verification:
+  verified_at: "2026-05-29"
+  verified_by: "Gonzalo Andrade Estrella"
+  source_urls:
+    - "https://www.sepi.ipn.mx/posgrado/tesis"
+    - "https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/"
+  review_interval_days: 365
+tags:
+  - ipn
+  - sepi
+  - cinvestav
+  - esime
+  - escom
+  - posgrado
+  - maestria
+  - doctorado
+  - ingenieria
+  - mexico
+  - ieee
+  - xelatex
+
+document_class:
+  name: "book"
+  options:
+    - "12pt"
+    - "letterpaper"
+    - "oneside"
+
+latex_engine: "xelatex"
+compiler: "latexmk"
+bibliography_backend: "biber"
+bibliography_style: "ieee"
+
+page_layout:
+  top_margin_cm: 2.5
+  bottom_margin_cm: 2.5
+  left_margin_cm: 3.0
+  right_margin_cm: 2.5
+  line_spacing: 1.5
+
+packages:
+  - "fontspec"
+  - "geometry"
+  - "graphicx"
+  - "booktabs"
+  - "array"
+  - "longtable"
+  - "float"
+  - "caption"
+  - "csquotes"
+  - "setspace"
+  - "algorithm2e"
+  - "listings"
+  - "hyperref"
+  - "cleveref"
+
+sections:
+  - id: "portada"
+    element_id: "title_page"
+    placement: "front_matter"
+    required: true
+    title: null
+    guidance: |
+      La portada IPN-SEPI incluye: escudo del IPN, nombre de la unidad académica (ESIME/ESCOM/UPIITA…), título del trabajo, tipo de tesis (para obtener el grado de Maestro/Doctor en…), nombre del alumno, directores de tesis, lugar y año.
+      El perfil genera la portada con los datos del proyecto.
+
+  - id: "resumen"
+    element_id: "abstract_es"
+    placement: "front_matter"
+    required: true
+    title: "Resumen"
+    guidance: |
+      Resumen técnico en español de 200–300 palabras. La SEPI lo exige en español.
+      Debe contener: objetivo, metodología, resultados principales y conclusión.
+      Al final: 5–8 palabras clave técnicas.
+
+  - id: "abstract"
+    element_id: "abstract_en"
+    placement: "front_matter"
+    required: true
+    title: "Abstract"
+    guidance: |
+      Traducción al inglés del resumen. La SEPI-IPN lo requiere en todos los programas de posgrado.
+      Keywords: mismas que en español, en inglés.
+
+  - id: "tabla_contenidos"
+    element_id: "table_of_contents"
+    placement: "front_matter"
+    required: true
+    title: null
+    guidance: |
+      El índice se genera automáticamente. El IPN requiere también lista de figuras, lista de tablas y, si aplica, lista de algoritmos o listados de código.
+
+  - id: "introduccion"
+    element_id: "introduction"
+    placement: "body"
+    required: true
+    title: "Introducción"
+    label: "chap:introduccion"
+    guidance: |
+      La introducción IPN-SEPI debe incluir:
+      1. Contexto tecnológico o científico del problema.
+      2. Motivación y justificación.
+      3. Hipótesis o pregunta de investigación.
+      4. Objetivo general y objetivos específicos.
+      5. Alcances y limitaciones.
+      6. Organización del documento.
+      Las citas en IEEE son numéricas: [1], [2], [3]…
+
+  - id: "estado_arte"
+    element_id: "theoretical_framework"
+    placement: "body"
+    required: true
+    title: "Estado del Arte"
+    label: "chap:estado_arte"
+    guidance: |
+      Revisión crítica del estado del arte. En la SEPI-IPN es obligatoria y debe:
+      • Identificar los trabajos más relevantes (últimos 5–10 años; conferencias y revistas IEEE/ACM/Elsevier).
+      • Comparar enfoques: tablas comparativas de métodos, resultados y limitaciones.
+      • Identificar el hueco o limitación que tu trabajo resuelve.
+      • Justificar por qué tu propuesta es distinta o superior.
+      Cita con número entre corchetes: "Pérez et al. [5] propusieron…"
+
+  - id: "metodologia"
+    element_id: "methodology"
+    placement: "body"
+    required: true
+    title: "Metodología o Desarrollo"
+    label: "chap:metodologia"
+    guidance: |
+      En ingeniería la metodología describe la solución propuesta:
+      • Arquitectura o diseño del sistema.
+      • Modelo matemático o formal si aplica.
+      • Algoritmos desarrollados (usa el bloque Algoritmo).
+      • Implementación: lenguajes, frameworks, hardware.
+      • Diagrama de flujo general del sistema.
+      El nivel de detalle debe permitir replicar el trabajo.
+
+  - id: "resultados"
+    element_id: "results"
+    placement: "body"
+    required: true
+    title: "Resultados y Análisis"
+    label: "chap:resultados"
+    guidance: |
+      Presenta y analiza los resultados experimentales o de simulación:
+      • Configuración experimental: equipo, parámetros, condiciones.
+      • Métricas de evaluación: precisión, tiempo, consumo, rendimiento, etc.
+      • Comparación con el estado del arte (tabla comparativa).
+      • Análisis estadístico si aplica (media, desviación, intervalo de confianza).
+      En IEEE cada figura y tabla debe tener número y descripción concisa.
+
+  - id: "conclusiones"
+    element_id: "conclusions"
+    placement: "body"
+    required: true
+    title: "Conclusiones y Trabajo Futuro"
+    label: "chap:conclusiones"
+    guidance: |
+      Cierra el trabajo con rigor técnico:
+      • Objetivos logrados vs. planteados.
+      • Contribuciones originales del trabajo.
+      • Limitaciones técnicas identificadas.
+      • Trabajo futuro: mejoras concretas, extensiones posibles, problemas abiertos.
+      El IPN-SEPI valora especialmente la mención de posibles publicaciones o aplicaciones industriales.
+
+  - id: "referencias"
+    element_id: "references"
+    placement: "back_matter"
+    required: true
+    title: "Referencias"
+    guidance: |
+      En IEEE las referencias son numéricas en orden de aparición.
+      La lista se genera automáticamente desde tu .bib.
+      Para artículos IEEE y ACM: usa el importador DOI.
+      El IPN requiere incluir el DOI cuando está disponible.
+
+  - id: "anexos"
+    element_id: "appendices"
+    placement: "appendix"
+    required: false
+    title: "Anexos"
+    guidance: |
+      Código fuente completo, scripts, configuraciones de hardware/software, datasheets, manuales de usuario, datos crudos de experimentos.
+      Numera: Anexo A, Anexo B… y referencia cada uno desde el texto.

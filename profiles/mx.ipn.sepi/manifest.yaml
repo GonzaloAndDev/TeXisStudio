@@ -1,0 +1,17 @@
+schema_version: "0.1.0"
+id: "mx.ipn.sepi"
+name: "IPN SEPI — Posgrado en Ingeniería y Ciencias"
+version: "1.0.0"
+description: "Tesis de la Sección de Estudios de Posgrado e Investigación del IPN. Formato IPN con bibliografía IEEE para ingeniería o APA para ciencias. Papel oficio, márgenes específicos IPN."
+author: "Gonzalo Andrade Estrella"
+license: "AGPL-3.0"
+tags:
+  - ipn
+  - sepi
+  - posgrado
+  - maestria
+  - doctorado
+  - ingenieria
+  - mexico
+  - ieee
+  - xelatex
