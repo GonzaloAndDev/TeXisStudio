@@ -46,6 +46,28 @@ pub fn run() {
             commands::zotero::check_zotero_status,
             commands::zotero::search_zotero,
             commands::zotero::import_zotero_items,
+            // Bibliography unified (DOI resolution + multi-provider + exporters)
+            commands::doi::import_doi_as_record,
+            commands::doi::search_crossref,
+            commands::bibliography_unified::import_doi_unified,
+            commands::bibliography_unified::import_dois_unified,
+            commands::bibliography_unified::search_bibliography,
+            commands::bibliography_unified::export_record_to_bibtex,
+            commands::bibliography_unified::export_record_to_csl_json,
+            commands::bibliography_unified::export_record_to_ris,
+            // Additional providers
+            commands::datacite::import_doi_datacite,
+            commands::openalex::search_openalex,
+            commands::openalex::enrich_from_openalex,
+            commands::semantic_scholar::search_semantic_scholar,
+            // Build engine
+            commands::build::detect_latex_toolchain,
+            commands::build::build_project_full,
+            commands::build::build_project_quick,
+            // Template engine
+            commands::template::list_templates,
+            commands::template::create_project_from_template,
+            // AI assistant
             commands::ai::ai_send_message,
             commands::ai::ai_get_action_modes,
         ])

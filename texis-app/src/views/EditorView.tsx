@@ -2596,6 +2596,35 @@ export default function EditorView() {
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
   const aiPanel = useAiStore();
 
+  // Selección de texto real para el panel de IA
+  // Se actualiza cada vez que el usuario selecciona texto en el editor
+  const [aiSelection, setAiSelection] = useState<{
+    text: string;
+    blockId: string;
+    start: number;
+    end: number;
+  } | null>(null);
+
+  const captureSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+      setAiSelection(null);
+      return;
+    }
+    const selectedText = sel.toString();
+    // Buscar en qué bloque está la selección comparando con el contenido
+    const block = localBlocks.find(
+      (b) => b.type === "paragraph" && b.content.includes(selectedText)
+    );
+    if (block && block.type === "paragraph") {
+      const start = block.content.indexOf(selectedText);
+      setAiSelection({ text: selectedText, blockId: block.id, start, end: start + selectedText.length });
+    } else {
+      // Selección sin bloque exacto identificable (por ej. texto heading)
+      setAiSelection({ text: selectedText, blockId: "", start: 0, end: selectedText.length });
+    }
+  }, [localBlocks]);
+
   // Perfil activo: se carga para mostrar guidance por sección y límites
   const [profileSections, setProfileSections] = useState<import("../types").ProfileSectionInfo[]>([]);
   const [profileMaxWords, setProfileMaxWords] = useState<number | undefined>(undefined);
@@ -3128,6 +3157,8 @@ export default function EditorView() {
             style={{ flex: 1, overflow: "auto", padding: "32px 0", background: "var(--bg-app)" }}
             className="scroll"
             onClick={(e) => { if (e.target === e.currentTarget) setEditingId(null); }}
+            onMouseUp={captureSelection}
+            onKeyUp={captureSelection}
           >
             {activeSection ? (
               <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
@@ -3294,30 +3325,54 @@ export default function EditorView() {
       {/* Panel de asistente IA */}
       {aiPanel.isPanelOpen && (
         <AiAssistantPanel
-          currentSelection={undefined}
-          currentFileName={undefined}
+          currentSelection={aiSelection?.text}
+          currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
           currentFileContent={localBlocks
             .filter((b) => b.type === "paragraph" || b.type === "heading")
             .map((b) => ("content" in b ? b.content : ""))
             .join("\n\n")}
           onApplyReplacement={(original, replacement) => {
-            // Buscar y reemplazar en el primer bloque que contenga el texto original
+            // Reemplazar usando el bloque y la posición exacta capturados por captureSelection.
+            // Si aiSelection tiene blockId, operar solo en ese bloque por posición (sin ambigüedad).
+            // Si no, caer en la búsqueda por contenido (texto corto o sin bloque identificado).
             setLocalBlocks((prev) => {
-              let replaced = false;
-              const next = prev.map((b) => {
-                if (replaced || b.type !== "paragraph") return b;
-                if (b.content.includes(original)) {
+              const sel = aiSelection;
+              let next: ContentBlock[];
+
+              if (sel?.blockId) {
+                // Reemplazo preciso por posición en el bloque origen
+                next = prev.map((b) => {
+                  if (b.id !== sel.blockId || b.type !== "paragraph") return b;
+                  return {
+                    ...b,
+                    content:
+                      b.content.slice(0, sel.start) +
+                      replacement +
+                      b.content.slice(sel.end),
+                  };
+                });
+              } else {
+                // Fallback: primer bloque que contenga el texto original
+                let replaced = false;
+                next = prev.map((b) => {
+                  if (replaced || b.type !== "paragraph") return b;
+                  const idx = b.content.indexOf(original);
+                  if (idx === -1) return b;
                   replaced = true;
-                  return { ...b, content: b.content.replace(original, replacement) };
-                }
-                return b;
-              });
-              if (replaced) scheduleAutoSave(next);
+                  return {
+                    ...b,
+                    content: b.content.slice(0, idx) + replacement + b.content.slice(idx + original.length),
+                  };
+                });
+              }
+
+              scheduleAutoSave(next);
+              setAiSelection(null);
               return next;
             });
           }}
           onInsertAtCursor={(content) => {
-            // Insertar como bloque de raw_latex en la posición activa
+            // Insertar después del bloque activo (editingId) o del último bloque de la sección
             const newBlock: ContentBlock = {
               type: "raw_latex",
               id: `ai-${Date.now()}`,
@@ -3325,7 +3380,18 @@ export default function EditorView() {
               user_confirmed: false,
             };
             setLocalBlocks((prev) => {
-              const next = [...prev, newBlock];
+              const insertAfter = editingId ?? (prev.length > 0 ? prev[prev.length - 1].id : null);
+              let next: ContentBlock[];
+              if (insertAfter) {
+                const idx = prev.findIndex((b) => b.id === insertAfter);
+                if (idx !== -1) {
+                  next = [...prev.slice(0, idx + 1), newBlock, ...prev.slice(idx + 1)];
+                } else {
+                  next = [...prev, newBlock];
+                }
+              } else {
+                next = [...prev, newBlock];
+              }
               scheduleAutoSave(next);
               return next;
             });
