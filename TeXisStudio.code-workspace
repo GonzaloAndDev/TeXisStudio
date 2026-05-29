@@ -2,6 +2,12 @@
   "folders": [
     {
       "path": "."
+    },
+    {
+      "path": "../TeXisStudio-Languages"
+    },
+    {
+      "path": "../TeXisStudio-Profiles"
     }
   ],
   "settings": {

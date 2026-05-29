@@ -678,9 +678,37 @@ export default function SetupLatexView() {
             </div>
           )}
 
+          {/* Camino recomendado — solo para básico y cuando no está instalado */}
+          {userMode === "basic" && !info?.is_usable && options.length > 0 && (
+            <div style={{
+              marginBottom: 24, padding: "16px 18px",
+              borderRadius: "var(--r-lg)", background: "var(--accent-tint)",
+              border: "1px solid var(--accent)",
+              display: "flex", gap: 14, alignItems: "flex-start",
+            }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>⭐</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-md)", marginBottom: 4 }}>
+                  Si no sabes cuál elegir, instala <strong>{options[0].name}</strong>
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                  {options[0].tagline} — cubre la mayoría de los casos sin configuración extra.
+                  Puedes instalar otra opción después si la necesitas.
+                </div>
+                <button
+                  className="btn btn-sm btn-accent"
+                  style={{ marginTop: 10 }}
+                  onClick={() => setSelectedId(options[0].id)}
+                >
+                  Ver pasos para instalar {options[0].name}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Opciones para este OS */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-            Opciones disponibles en {getPlatformLabel(platform)}
+            {userMode === "basic" ? "Todas las opciones disponibles" : `Opciones disponibles en ${getPlatformLabel(platform)}`}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12, marginBottom: 32 }}>
             {options.map((opt) => (

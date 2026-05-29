@@ -548,6 +548,9 @@ function StepDatos({
   coAuthors: string[];
   onCoAuthors: (v: string[]) => void;
 }) {
+  const { userMode } = useSettingsStore();
+  const [showOptional, setShowOptional] = useState(userMode === "advanced");
+
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
@@ -557,13 +560,14 @@ function StepDatos({
         Estos datos se usan para la portada, para recomendar el perfil correcto y para los metadatos del PDF.
       </p>
 
-      {/* ── Contexto académico (institución primero) ── */}
+      {/* ── Campos esenciales ── */}
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--fg-faint)", marginBottom: 10 }}>
-        Dónde estudias
+        Lo esencial
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 24 }}>
-        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UNAM-IPN…" />
-        <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 20 }}>
+        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
+        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
+        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UAM…" />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>Nivel académico</label>
           <select
@@ -580,43 +584,57 @@ function StepDatos({
             ))}
           </select>
         </div>
-        <InputField label="Área o disciplina" value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder="Ingeniería eléctrica" />
-        <InputField label="Programa" value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder="Doctorado en Ciencias" />
-        <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
-        <DisciplineHintPanel discipline={form.discipline ?? ""} />
       </div>
 
-      {/* ── Datos personales del trabajo ── */}
-      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--fg-faint)", marginBottom: 10 }}>
-        Tu trabajo
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820 }}>
-        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
-        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
-        <div /> {/* grid spacer */}
-      </div>
-
-      {/* Asesores */}
-      <div style={{ maxWidth: 820, marginTop: 20 }}>
+      {/* Asesor */}
+      <div style={{ maxWidth: 820, marginBottom: 20 }}>
         <DynamicList
-          label="Asesores"
-          sublabel="(Director, Codirector, Sinodales…)"
+          label="Asesor / Director de tesis"
+          sublabel="(obligatorio para la portada)"
           items={advisors}
           onChange={onAdvisors}
           placeholder="Dra. Ana Torres"
         />
       </div>
 
-      {/* Co-autores */}
-      <div style={{ maxWidth: 820, marginTop: 16 }}>
-        <DynamicList
-          label="Co-autores"
-          sublabel="(para trabajos grupales)"
-          items={coAuthors}
-          onChange={onCoAuthors}
-          placeholder="Luis Hernández"
-        />
-      </div>
+      {/* ── Detalles adicionales (colapsable en básico) ── */}
+      <button
+        type="button"
+        onClick={() => setShowOptional((v) => !v)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none",
+          border: "none", cursor: "pointer", padding: "4px 0", marginBottom: 12,
+          fontSize: "var(--fs-sm)", color: "var(--accent-deep)", fontFamily: "var(--font-sans)",
+        }}
+      >
+        <span>{showOptional ? "▾" : "▸"}</span>
+        {showOptional ? "Ocultar detalles adicionales" : "Agregar más detalles (facultad, área, programa…)"}
+      </button>
+
+      {showOptional && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 20 }}>
+            <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
+            <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
+            <InputField label="Área o disciplina" value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder="Ingeniería eléctrica" />
+            <InputField label="Programa" value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder="Doctorado en Ciencias" />
+            <DisciplineHintPanel discipline={form.discipline ?? ""} />
+          </div>
+          <div style={{ maxWidth: 820, marginBottom: 16 }}>
+            <DynamicList
+              label="Co-autores"
+              sublabel="(para trabajos grupales)"
+              items={coAuthors}
+              onChange={onCoAuthors}
+              placeholder="Luis Hernández"
+            />
+          </div>
+        </>
+      )}
+
+      {!showOptional && form.discipline && (
+        <DisciplineHintPanel discipline={form.discipline} />
+      )}
     </>
   );
 }
