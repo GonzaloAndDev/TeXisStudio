@@ -62,6 +62,7 @@ pub fn run() {
             commands::openalex::enrich_from_openalex,
             commands::semantic_scholar::search_semantic_scholar,
             // Package analysis
+            commands::glossary::analyze_glossary,
             commands::package::analyze_packages,
             // Build engine
             commands::build::detect_latex_toolchain,

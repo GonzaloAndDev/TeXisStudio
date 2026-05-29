@@ -33,6 +33,7 @@ const isTauri = () =>
 // Respuestas mock para desarrollo en browser sin Tauri
 const BROWSER_MOCKS: Record<string, unknown> = {
   get_platform: "macos",
+  analyze_glossary: { entries: [], acronyms: [], is_empty: true, has_issues: false, undefined_references: [] },
   analyze_packages: { missing: [], declared: [], conflicts: [], requires_shell_escape: false, has_blocking_issues: false },
   detect_latex: {
     has_latexmk: false,
@@ -218,6 +219,14 @@ export const api = {
 
   getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>
     call("get_platform"),
+
+  analyzeGlossary: (projectRoot: string): Promise<{
+    entries: Array<{ key: string; name: string; description: string; status: string }>;
+    acronyms: Array<{ key: string; short: string; long: string; status: string }>;
+    is_empty: boolean;
+    has_issues: boolean;
+    undefined_references: string[];
+  }> => call("analyze_glossary", { projectRoot }),
 
   analyzePackages: (projectRoot: string): Promise<{
     missing: Array<{ package_name: string; reason: string; priority: string; already_declared: boolean }>;
