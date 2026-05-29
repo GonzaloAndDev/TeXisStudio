@@ -101,16 +101,31 @@ fn parse_provider(s: &str) -> Option<AiProviderId> {
 fn parse_action_mode(s: &str) -> Option<AiActionMode> {
     match s {
         "ask" => Some(AiActionMode::Ask),
+        "review_content" => Some(AiActionMode::ReviewContent),
+        "suggest_sources" => Some(AiActionMode::SuggestSources),
+        "analyze_argument" => Some(AiActionMode::AnalyzeArgument),
+        "check_consistency" => Some(AiActionMode::CheckConsistency),
+        "suggest_structure" => Some(AiActionMode::SuggestStructure),
+        "simulate_examiner" => Some(AiActionMode::SimulateExaminer),
+        "app_help" => Some(AiActionMode::AppHelp),
         "improve_writing" => Some(AiActionMode::ImproveWriting),
         "shorten_text" => Some(AiActionMode::ShortenText),
         "expand_text" => Some(AiActionMode::ExpandText),
+        "rewrite_text" => Some(AiActionMode::RewriteText),
         "convert_to_latex" => Some(AiActionMode::ConvertToLatex),
+        "add_paragraph" => Some(AiActionMode::AddParagraph),
         "explain_latex_error" => Some(AiActionMode::ExplainLatexError),
-        "generate_table_snippet" => Some(AiActionMode::GenerateTableSnippet),
+        "insert_citation" => Some(AiActionMode::InsertCitation),
+        "add_bibliography_entry" => Some(AiActionMode::AddBibliographyEntry),
+        "insert_cross_reference" => Some(AiActionMode::InsertCrossReference),
+        "insert_table" => Some(AiActionMode::InsertTable),
+        "insert_figure_placeholder" => Some(AiActionMode::InsertFigurePlaceholder),
+        "insert_equation" => Some(AiActionMode::InsertEquation),
+        "add_glossary_entry" => Some(AiActionMode::AddGlossaryEntry),
+        "add_acronym" => Some(AiActionMode::AddAcronym),
+        "insert_code_block" => Some(AiActionMode::InsertCodeBlock),
         "generate_caption" => Some(AiActionMode::GenerateCaption),
         "generate_abstract" => Some(AiActionMode::GenerateAbstract),
-        "simulate_examiner" => Some(AiActionMode::SimulateExaminer),
-        "app_help" => Some(AiActionMode::AppHelp),
         _ => None,
     }
 }
@@ -197,16 +212,31 @@ pub fn ai_get_action_modes() -> Vec<serde_json::Value> {
     use crate::ai::safety::AiSafetyPolicy;
     let modes = [
         AiActionMode::Ask,
+        AiActionMode::ReviewContent,
+        AiActionMode::SuggestSources,
+        AiActionMode::AnalyzeArgument,
+        AiActionMode::CheckConsistency,
+        AiActionMode::SuggestStructure,
+        AiActionMode::SimulateExaminer,
+        AiActionMode::AppHelp,
         AiActionMode::ImproveWriting,
         AiActionMode::ShortenText,
         AiActionMode::ExpandText,
+        AiActionMode::RewriteText,
         AiActionMode::ConvertToLatex,
+        AiActionMode::AddParagraph,
         AiActionMode::ExplainLatexError,
-        AiActionMode::GenerateTableSnippet,
+        AiActionMode::InsertCitation,
+        AiActionMode::AddBibliographyEntry,
+        AiActionMode::InsertCrossReference,
+        AiActionMode::InsertTable,
+        AiActionMode::InsertFigurePlaceholder,
+        AiActionMode::InsertEquation,
+        AiActionMode::AddGlossaryEntry,
+        AiActionMode::AddAcronym,
+        AiActionMode::InsertCodeBlock,
         AiActionMode::GenerateCaption,
         AiActionMode::GenerateAbstract,
-        AiActionMode::SimulateExaminer,
-        AiActionMode::AppHelp,
     ];
 
     modes.iter().map(|m| {
@@ -219,4 +249,29 @@ pub fn ai_get_action_modes() -> Vec<serde_json::Value> {
             "requires_confirmation": safety.requires_user_confirmation,
         })
     }).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_action_mode_supports_modes_exposed_in_ui() {
+        assert!(matches!(parse_action_mode("rewrite_text"), Some(AiActionMode::RewriteText)));
+        assert!(matches!(parse_action_mode("review_content"), Some(AiActionMode::ReviewContent)));
+        assert!(matches!(parse_action_mode("insert_table"), Some(AiActionMode::InsertTable)));
+        assert!(matches!(parse_action_mode("add_acronym"), Some(AiActionMode::AddAcronym)));
+    }
+
+    #[test]
+    fn action_mode_catalog_includes_insert_and_review_modes() {
+        let ids = ai_get_action_modes()
+            .into_iter()
+            .filter_map(|v| v.get("id").and_then(|id| id.as_str()).map(str::to_string))
+            .collect::<Vec<_>>();
+
+        assert!(ids.iter().any(|id| id == "review_content"));
+        assert!(ids.iter().any(|id| id == "rewrite_text"));
+        assert!(ids.iter().any(|id| id == "insert_table"));
+    }
 }

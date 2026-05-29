@@ -6,7 +6,7 @@
  */
 
 import { useRef, useState } from "react";
-import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider, DEFAULT_MODELS } from "../stores/ai";
+import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
 import { sendAiMessage, buildErrorMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
 
@@ -178,6 +178,7 @@ export function AiAssistantPanel({
   buildLog,
   onApplyReplacement,
   onInsertAtCursor,
+  onUndoLastChange,
 }: {
   currentSelection?: string;
   aiSelection?: { text: string; blockId: string; start: number; end: number } | null;
@@ -187,6 +188,7 @@ export function AiAssistantPanel({
   buildLog?: string;
   onApplyReplacement?: (original: string, replacement: string) => void;
   onInsertAtCursor?: (content: string) => void;
+  onUndoLastChange?: () => void;
 }) {
   const store = useAiStore();
   const [input, setInput] = useState("");
@@ -203,6 +205,18 @@ export function AiAssistantPanel({
 
   async function handleSend() {
     if (!input.trim() || store.isLoading) return;
+
+    const selectedMode = ACTION_GROUPS
+      .flatMap((group) => group.modes)
+      .find((mode) => mode.id === store.actionMode);
+    if (selectedMode?.needsSelection && (!aiSelection?.blockId || !currentSelection?.trim())) {
+      store.addMessage(provider, {
+        role: "assistant",
+        content: "⚠️ Este modo requiere que selecciones primero un fragmento de texto normal dentro del editor.",
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     const userMessage = input.trim();
     setInput("");
@@ -248,9 +262,19 @@ export function AiAssistantPanel({
         if (action.kind === "replace_selection" && onApplyReplacement && aiSelection) {
           onApplyReplacement(action.original ?? "", action.replacement ?? "");
           store.setChangeNotification({ description: `Texto editado: "${store.actionMode.replace(/_/g, " ")}"` });
-        } else if (action.kind === "insert_at_cursor" && onInsertAtCursor) {
-          onInsertAtCursor(action.content ?? "");
-          store.setChangeNotification({ description: action.description ?? "Contenido insertado por el asistente" });
+        } else if (action.kind === "insert_at_cursor") {
+          // Toda inserción requiere preview y confirmación explícita del usuario.
+          store.setPendingAction({
+            proposed: result.proposed_action as any,
+            safety: {
+              ...(result.safety as any),
+              requires_preview: true,
+              requires_user_confirmation: true,
+              can_apply_automatically: false,
+            },
+            messageIndex: history.length + 1,
+          });
+          return;
         }
         // Auto-dismiss notification after 5 seconds
         setTimeout(() => store.setChangeNotification(null), 5000);
@@ -513,12 +537,26 @@ export function AiAssistantPanel({
           gap: 8,
         }}>
           <span>✓ {store.changeNotification.description} — puedes deshacer con Ctrl+Z</span>
-          <button
-            onClick={() => store.setChangeNotification(null)}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "inherit", padding: 0 }}
-          >
-            ×
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {onUndoLastChange && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  onUndoLastChange();
+                  store.setChangeNotification(null);
+                }}
+                style={{ fontSize: 11, padding: "2px 6px" }}
+              >
+                Deshacer
+              </button>
+            )}
+            <button
+              onClick={() => store.setChangeNotification(null)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "inherit", padding: 0 }}
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 

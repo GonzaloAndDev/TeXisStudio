@@ -129,9 +129,13 @@ impl AiContextPackage {
         .collect::<Vec<_>>()
         .join(" ");
 
-        // Heurística: patrones que indican API keys o tokens
-        all_text.contains("sk-") || all_text.contains("Bearer ") || all_text.contains("api_key")
+        text_contains_credentials(&all_text)
     }
+}
+
+pub fn text_contains_credentials(text: &str) -> bool {
+    // Heurística conservadora: patrones típicos de API keys o tokens.
+    text.contains("sk-") || text.contains("Bearer ") || text.contains("api_key")
 }
 
 fn truncate(s: &str, max: usize) -> &str {
@@ -178,5 +182,10 @@ mod tests {
     fn flags_api_key_pattern() {
         let ctx = AiContextPackage::with_selection("key: sk-abc123".to_string());
         assert!(ctx.contains_credentials());
+    }
+
+    #[test]
+    fn text_helper_flags_bearer_tokens() {
+        assert!(text_contains_credentials("Authorization: Bearer super-secret-token"));
     }
 }

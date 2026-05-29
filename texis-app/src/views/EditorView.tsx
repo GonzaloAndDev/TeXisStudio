@@ -2604,6 +2604,7 @@ export default function EditorView() {
     start: number;
     end: number;
   } | null>(null);
+  const [lastAiUndoBlocks, setLastAiUndoBlocks] = useState<ContentBlock[] | null>(null);
 
   const captureSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -3333,39 +3334,35 @@ export default function EditorView() {
             .map((b) => ("content" in b ? b.content : ""))
             .join("\n\n")}
           onApplyReplacement={(original, replacement) => {
-            // Reemplazar usando el bloque y la posición exacta capturados por captureSelection.
-            // Si aiSelection tiene blockId, operar solo en ese bloque por posición (sin ambigüedad).
-            // Si no, caer en la búsqueda por contenido (texto corto o sin bloque identificado).
+            // Reemplazar SOLO usando la selección y posición exactas capturadas por el editor.
+            // Si no hay selección ordinaria identificable, no aplicar nada.
             setLocalBlocks((prev) => {
               const sel = aiSelection;
-              let next: ContentBlock[];
-
-              if (sel?.blockId) {
-                // Reemplazo preciso por posición en el bloque origen
-                next = prev.map((b) => {
-                  if (b.id !== sel.blockId || b.type !== "paragraph") return b;
-                  return {
-                    ...b,
-                    content:
-                      b.content.slice(0, sel.start) +
-                      replacement +
-                      b.content.slice(sel.end),
-                  };
-                });
-              } else {
-                // Fallback: primer bloque que contenga el texto original
-                let replaced = false;
-                next = prev.map((b) => {
-                  if (replaced || b.type !== "paragraph") return b;
-                  const idx = b.content.indexOf(original);
-                  if (idx === -1) return b;
-                  replaced = true;
-                  return {
-                    ...b,
-                    content: b.content.slice(0, idx) + replacement + b.content.slice(idx + original.length),
-                  };
-                });
+              if (!sel?.blockId) {
+                return prev;
               }
+
+              const sourceBlock = prev.find((b) => b.id === sel.blockId && b.type === "paragraph");
+              if (!sourceBlock || sourceBlock.type !== "paragraph") {
+                return prev;
+              }
+
+              const selectedSlice = sourceBlock.content.slice(sel.start, sel.end);
+              if (!selectedSlice || selectedSlice !== original) {
+                return prev;
+              }
+
+              setLastAiUndoBlocks(prev);
+              const next = prev.map((b) => {
+                if (b.id !== sel.blockId || b.type !== "paragraph") return b;
+                return {
+                  ...b,
+                  content:
+                    b.content.slice(0, sel.start) +
+                    replacement +
+                    b.content.slice(sel.end),
+                };
+              });
 
               scheduleAutoSave(next);
               setAiSelection(null);
@@ -3381,6 +3378,7 @@ export default function EditorView() {
               user_confirmed: false,
             };
             setLocalBlocks((prev) => {
+              setLastAiUndoBlocks(prev);
               const insertAfter = editingId ?? (prev.length > 0 ? prev[prev.length - 1].id : null);
               let next: ContentBlock[];
               if (insertAfter) {
@@ -3396,6 +3394,13 @@ export default function EditorView() {
               scheduleAutoSave(next);
               return next;
             });
+          }}
+          onUndoLastChange={() => {
+            if (!lastAiUndoBlocks) return;
+            setLocalBlocks(lastAiUndoBlocks);
+            scheduleAutoSave(lastAiUndoBlocks);
+            setLastAiUndoBlocks(null);
+            setAiSelection(null);
           }}
         />
       )}

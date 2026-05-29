@@ -1,5 +1,5 @@
 use super::action::{AiActionMode, AiProposedAction};
-use super::context::AiContextPackage;
+use super::context::{text_contains_credentials, AiContextPackage};
 use super::conversation::{AiConversation, AiMessage};
 use super::providers::{
     claude_provider::ClaudeProvider, gemini_provider::GeminiProvider,
@@ -23,6 +23,15 @@ impl AiEngine {
         context: AiContextPackage,
         history: Vec<AiMessage>,
     ) -> Result<AiResponse, AiProviderError> {
+        if text_contains_credentials(&user_message)
+            || history.iter().any(|m| text_contains_credentials(&m.content))
+        {
+            return Err(AiProviderError::SafetyRejection(
+                "La conversación parece contener credenciales. Por seguridad, la solicitud fue cancelada."
+                    .to_string(),
+            ));
+        }
+
         // Verificar que el contexto no contiene credenciales
         if context.contains_credentials() {
             return Err(AiProviderError::SafetyRejection(

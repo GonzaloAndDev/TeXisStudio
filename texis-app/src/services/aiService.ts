@@ -8,10 +8,8 @@ import type {
   AiActionMode,
   AiContextScope,
   AiMessage,
-  AiPendingAction,
   AiProvider,
 } from "../stores/ai";
-import { useProjectStore } from "../stores/project";
 
 export interface AiSendOptions {
   provider: AiProvider;
@@ -40,7 +38,7 @@ export interface AiCommandResponse {
     response?: string;
   };
   safety?: {
-    risk_level: "low" | "medium" | "high" | "forbidden";
+    risk_level: "low" | "auto_with_notification" | "medium" | "high" | "forbidden";
     requires_preview: boolean;
     requires_user_confirmation: boolean;
     can_apply_automatically: boolean;

@@ -142,7 +142,7 @@ impl AiSafetyPolicy {
             AiActionMode::ConvertToLatex =>
                 AiSafetyDecision::auto_notify("Convierte selección a LaTeX — se notifica y se puede deshacer"),
             AiActionMode::AddParagraph =>
-                AiSafetyDecision::auto_notify("Añade párrafo nuevo — se notifica y se puede deshacer"),
+                AiSafetyDecision::medium("Añade párrafo nuevo — requiere preview y confirmación antes de insertarse"),
 
             // ── Medium: preview + confirmación explícita ──────────────────────
             // Razón: inserta contenido nuevo que no existía, o que tiene
@@ -208,6 +208,10 @@ impl AiSafetyPolicy {
         let forbidden = [
             "rm -rf", "sudo ", "shell-escape", "--shell-escape",
             "\\write18", "\\immediate\\write18",
+            "\\documentclass", "\\usepackage", "\\begin{document}", "\\end{document}",
+            "\\input{", "\\include{", "\\includeonly", "\\chapter{", "\\part{",
+            "\\appendix", "\\tableofcontents", "\\listoffigures", "\\listoftables",
+            "\\bibliography{", "\\addbibresource{",
         ];
         let lower = text.to_lowercase();
         for pattern in &forbidden {
@@ -258,10 +262,11 @@ mod tests {
     #[test] fn expand_is_auto_notify() {
         assert_eq!(AiSafetyPolicy::classify_mode(&AiActionMode::ExpandText).risk_level, AiRiskLevel::AutoWithNotification);
     }
-    #[test] fn add_paragraph_is_auto_notify() {
+    #[test] fn add_paragraph_requires_confirmation() {
         let d = AiSafetyPolicy::classify_mode(&AiActionMode::AddParagraph);
-        assert_eq!(d.risk_level, AiRiskLevel::AutoWithNotification);
-        assert!(d.can_apply_automatically);
+        assert_eq!(d.risk_level, AiRiskLevel::Medium);
+        assert!(d.requires_user_confirmation);
+        assert!(!d.can_apply_automatically);
     }
 
     // Medium / confirmation required
@@ -318,6 +323,11 @@ mod tests {
     }
     #[test] fn blocks_rm_rf() {
         assert!(AiSafetyPolicy::validate_response_text("rm -rf /").is_err());
+    }
+    #[test] fn blocks_structural_latex_commands() {
+        assert!(AiSafetyPolicy::validate_response_text("\\chapter{Nuevo capítulo}").is_err());
+        assert!(AiSafetyPolicy::validate_response_text("\\usepackage{minted}").is_err());
+        assert!(AiSafetyPolicy::validate_response_text("\\input{main.tex}").is_err());
     }
     #[test] fn allows_normal_text() {
         assert!(AiSafetyPolicy::validate_response_text("Mejora la redacción del párrafo.").is_ok());
