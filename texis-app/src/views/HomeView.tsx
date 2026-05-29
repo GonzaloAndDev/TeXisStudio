@@ -27,11 +27,7 @@ function formatUpdatedAt(raw: string, t: (k: string, opts?: Record<string, unkno
 }
 
 const MOCK_PROJECTS: RecentProject[] = [
-  { path: "/proyectos/redes-neuronales", title: "Análisis de redes neuronales en clasificación de imágenes médicas", profile_id: "generic.thesis", academic_level: "maestria", updated_at: "hace 2 h" },
-  { path: "/proyectos/rezago-educativo", title: "Determinantes socioeconómicos del rezago educativo en Oaxaca", profile_id: "generic.thesis", academic_level: "licenciatura", updated_at: "hace 1 día" },
-  { path: "/proyectos/catalizadores", title: "Optimización de catalizadores Fischer-Tropsch con Pt/Al₂O₃", profile_id: "generic.thesis", academic_level: "doctorado", updated_at: "hace 4 días" },
-  { path: "/proyectos/epidemiologia", title: "Modelos predictivos en epidemiología hospitalaria", profile_id: "generic.thesis", academic_level: "maestria", updated_at: "la semana pasada" },
-  { path: "/proyectos/ia-derechos", title: "Tesina — Inteligencia artificial y derechos de autor", profile_id: "generic.tesina", academic_level: "licenciatura", updated_at: "hace 2 sem" },
+  { path: "/demo/tesis-ejemplo", title: "Proyecto de ejemplo (modo demo)", profile_id: "generic.thesis", academic_level: "licenciatura", updated_at: String(Math.floor(Date.now() / 1000 - 3600)) },
 ];
 
 const S = {
@@ -87,6 +83,58 @@ const S = {
 };
 
 import React from "react";
+
+function humanizeProfileId(id: string): string {
+  if (!id || id === "generic.thesis" || id === "generic.tesina") return "";
+  // mx_unam_apa7 → "UNAM · APA 7"
+  // us_mit_ieee  → "MIT · IEEE"
+  const parts = id.replace(/^(mx|us|uk|ca|es|de|fr|jp)_/, "").split("_");
+  const styled = parts
+    .map((p) => p.toUpperCase().replace("APA7", "APA 7").replace("APA6", "APA 6")
+      .replace("IEEE", "IEEE").replace("MLA", "MLA").replace("CHICAGO", "Chicago")
+      .replace("VANCOUVER", "Vancouver").replace("HARVARD", "Harvard"))
+    .join(" · ");
+  return styled;
+}
+
+function NextStepBanner({ project, onClick }: { project: RecentProject; onClick: () => void }) {
+  const ts = /^\d+$/.test(project.updated_at)
+    ? parseInt(project.updated_at, 10) * 1000
+    : Date.parse(project.updated_at);
+  const diffH = isNaN(ts) ? 999 : (Date.now() - ts) / 3600000;
+  const isRecent = diffH < 24;
+  const label = isRecent ? "Continúa donde lo dejaste" : "Retoma tu proyecto";
+  const hint = isRecent
+    ? "Tu última sesión fue hace menos de un día."
+    : "Listo para que retomes el hilo.";
+
+  return (
+    <div
+      style={{
+        margin: "0 0 20px", padding: "14px 18px",
+        borderRadius: "var(--r-lg)",
+        background: "var(--bg-panel)",
+        border: "1px solid var(--accent-soft)",
+        display: "flex", gap: 16, alignItems: "center",
+        cursor: "pointer",
+      }}
+      onClick={onClick}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, color: "var(--fg-strong)", fontSize: "var(--fs-sm)", marginBottom: 2 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: "var(--fs-sm)", color: "var(--accent-deep)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {project.title}
+        </div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>{hint}</div>
+      </div>
+      <button className="btn btn-sm btn-accent" style={{ flexShrink: 0 }}>
+        Abrir
+      </button>
+    </div>
+  );
+}
 
 function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
   const navigate = useNavigate();
@@ -319,6 +367,9 @@ export default function HomeView() {
           </div>
 
           {latexInfo && !latexInfo.is_usable && <LatexSetupBanner info={latexInfo} />}
+          {latestProject && latexInfo?.is_usable && (
+            <NextStepBanner project={latestProject} onClick={() => handleOpen(latestProject.path)} />
+          )}
 
           <div style={S.sectionTitle}>
             <span>{t("home.recent_projects")}</span>
@@ -345,7 +396,11 @@ export default function HomeView() {
                 </div>
                 <div style={S.cardMeta}>
                   <span className="chip">{levelLabel(p.academic_level)}</span>
-                  <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-faint)" }}>{p.profile_id}</span>
+                  {humanizeProfileId(p.profile_id) && (
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                      {humanizeProfileId(p.profile_id)}
+                    </span>
+                  )}
                 </div>
                 <div style={S.cardFooter}>
                   <span>{p.path.split(/[/\\]/).pop()}</span>

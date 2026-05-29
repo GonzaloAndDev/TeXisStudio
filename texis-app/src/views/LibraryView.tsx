@@ -15,12 +15,36 @@ import { CommunityTab } from "./library/CommunityTab";
 
 type LibTab = "profiles" | "community" | "styles" | "elements";
 
+const COUNTRY_LABELS: Record<string, string> = {
+  mx: "México", us: "EE.UU.", uk: "Reino Unido", ca: "Canadá",
+  es: "España", de: "Alemania", fr: "Francia", jp: "Japón",
+  br: "Brasil", ar: "Argentina", co: "Colombia", cl: "Chile",
+  generic: "Genérico",
+};
+
+const DEGREE_TAGS = ["licenciatura", "maestria", "doctorado", "especialidad", "posdoctorado"];
+const DEGREE_LABELS: Record<string, string> = {
+  licenciatura: "Licenciatura", maestria: "Maestría", doctorado: "Doctorado",
+  especialidad: "Especialidad", posdoctorado: "Posdoctorado",
+};
+
+function profileCountry(id: string): string {
+  const match = id.match(/^([a-z]{2})_/);
+  return match ? match[1] : "generic";
+}
+
+function profileDegrees(tags: string[]): string[] {
+  return tags.filter((t) => DEGREE_TAGS.includes(t));
+}
+
 export default function LibraryView() {
   const navigate = useNavigate();
   const userMode = useSettingsStore((s) => s.userMode);
   const [profiles, setProfiles]     = useState<ProfileInfo[]>([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
+  const [filterCountry, setFilterCountry] = useState<string>("all");
+  const [filterDegree, setFilterDegree]   = useState<string>("all");
   const [tab, setTab]               = useState<LibTab>("profiles");
   const [selected, setSelected]     = useState<ProfileInfo | null>(null);
   const [editing, setEditing]       = useState(false);
@@ -39,9 +63,23 @@ export default function LibraryView() {
       .catch(() => setLoading(false));
   }, []);
 
-  const filtered = profiles.filter(
-    (p) => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.tags.some((t) => t.includes(search.toLowerCase()))
+  const availableCountries = [...new Set(profiles.map((p) => profileCountry(p.id)))].sort();
+  const availableDegrees   = [...new Set(profiles.flatMap((p) => profileDegrees(p.tags)))].sort(
+    (a, b) => DEGREE_TAGS.indexOf(a) - DEGREE_TAGS.indexOf(b)
   );
+
+  const filtered = profiles.filter((p) => {
+    if (search) {
+      const q = search.toLowerCase();
+      const match = p.name.toLowerCase().includes(q)
+        || (p.description ?? "").toLowerCase().includes(q)
+        || p.tags.some((t) => t.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+    if (filterCountry !== "all" && profileCountry(p.id) !== filterCountry) return false;
+    if (filterDegree !== "all" && !profileDegrees(p.tags).includes(filterDegree)) return false;
+    return true;
+  });
 
   async function handleImport() {
     setImporting(true);
@@ -171,9 +209,50 @@ export default function LibraryView() {
                   Si no encuentras una coincidencia exacta, empieza con un perfil genérico o con la variante más cercana y ajusta después.
                 </div>
               </div>
-              <div style={{ position: "relative", maxWidth: 380, marginBottom: 24 }}>
-                <IconSearch size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-faint)" }} />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o etiqueta…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none" }} />
+              <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <div style={{ position: "relative", flex: "0 0 300px" }}>
+                  <IconSearch size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-faint)" }} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar institución, área, estilo…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none" }} />
+                </div>
+                {availableCountries.length > 1 && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 2 }}>País:</span>
+                    {["all", ...availableCountries].map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setFilterCountry(c)}
+                        className={filterCountry === c ? "btn btn-xs btn-accent" : "btn btn-xs btn-ghost"}
+                        style={{ fontSize: "var(--fs-xs)", padding: "2px 8px" }}
+                      >
+                        {c === "all" ? "Todos" : (COUNTRY_LABELS[c] ?? c.toUpperCase())}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {availableDegrees.length > 1 && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 2 }}>Grado:</span>
+                    {["all", ...availableDegrees].map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setFilterDegree(d)}
+                        className={filterDegree === d ? "btn btn-xs btn-accent" : "btn btn-xs btn-ghost"}
+                        style={{ fontSize: "var(--fs-xs)", padding: "2px 8px" }}
+                      >
+                        {d === "all" ? "Todos" : (DEGREE_LABELS[d] ?? d)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {(filterCountry !== "all" || filterDegree !== "all" || search) && (
+                  <button
+                    className="btn btn-xs btn-ghost"
+                    style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", padding: "2px 8px" }}
+                    onClick={() => { setFilterCountry("all"); setFilterDegree("all"); setSearch(""); }}
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
               </div>
               {loading ? (
                 <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "40px 0" }}>Cargando perfiles…</div>

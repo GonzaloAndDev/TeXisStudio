@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
+import { useSettingsStore } from "../stores/settings";
 import { sendAiMessage, buildErrorMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
 
@@ -90,6 +91,14 @@ const ACTION_GROUPS: ActionGroup[] = [
     ],
   },
 ];
+
+// Acciones disponibles en modo básico (sin terminología técnica de LaTeX)
+const BASIC_ACTION_IDS = new Set<AiActionMode>([
+  "ask", "explain_latex_error", "app_help", "review_content", "suggest_sources",
+  "improve_writing", "shorten_text", "expand_text", "rewrite_text", "add_paragraph",
+  "insert_citation", "insert_table", "insert_figure_placeholder", "insert_equation",
+  "generate_abstract", "generate_caption",
+]);
 
 const CONTEXT_SCOPES: { id: AiContextScope; label: string }[] = [
   { id: "none", label: "Sin contexto" },
@@ -192,10 +201,17 @@ export function AiAssistantPanel({
   onUndoLastChange?: () => void;
 }) {
   const store = useAiStore();
+  const { userMode } = useSettingsStore();
   const [input, setInput] = useState("");
   const [keyVisible, setKeyVisible] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+
+  const visibleGroups = userMode === "basic"
+    ? ACTION_GROUPS
+        .map((g) => ({ ...g, modes: g.modes.filter((m) => BASIC_ACTION_IDS.has(m.id)) }))
+        .filter((g) => g.modes.length > 0)
+    : ACTION_GROUPS;
 
   const provider = store.activeProvider;
   const providerInfo = PROVIDERS.find((p) => p.id === provider)!;
@@ -479,7 +495,7 @@ export function AiAssistantPanel({
 
       {/* Selector de modo agrupado */}
       <div style={{ padding: "6px 10px", borderBottom: "1px solid var(--border-subtle)", maxHeight: 160, overflowY: "auto" }}>
-        {ACTION_GROUPS.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.group} style={{ marginBottom: 6 }}>
             <div style={{ fontSize: 9, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
               {group.group}

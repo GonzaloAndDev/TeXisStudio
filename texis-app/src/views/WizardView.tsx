@@ -29,7 +29,7 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     id: "generic.thesis",
     name: "Tesis genérica",
     description: "Estructura clásica para licenciatura, especialidad, maestría, doctorado o posdoctorado.",
-    meta: "XeLaTeX · biber · APA 7",
+    meta: "Tesis · Bibliografía automática · APA 7",
     tags: ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
     sections_count: 13,
     sections: [],
@@ -41,7 +41,7 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
     id: "generic.tesina",
     name: "Tesina genérica",
     description: "Versión simplificada para licenciatura: introducción, desarrollo y cierre.",
-    meta: "XeLaTeX · biber · APA 7",
+    meta: "Tesis · Bibliografía automática · APA 7",
     tags: ["tesina", "licenciatura"],
     sections_count: 6,
     sections: [],
@@ -501,6 +501,7 @@ function StepPerfil({
   discipline: string;
   programName: string;
 }) {
+  const { userMode } = useSettingsStore();
   const selProfile = profiles.find((p) => p.id === selected);
   const recommended = recommendProfile(
     profiles,
@@ -578,7 +579,12 @@ function StepPerfil({
                   <p style={{ margin: "3px 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.4 }}>{p.description}</p>
                 )}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>{p.meta}</span>
+                  {userMode === "advanced" && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>{p.meta}</span>
+                  )}
+                  {userMode === "basic" && p.meta && (
+                    <span style={{ fontSize: 10, color: "var(--fg-muted)" }}>{p.meta}</span>
+                  )}
                   {p.sections_count > 0 && (
                     <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>· {p.sections_count} secciones</span>
                   )}
