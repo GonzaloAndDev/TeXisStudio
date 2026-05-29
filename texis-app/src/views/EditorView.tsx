@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
+import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconFile,
   IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
@@ -116,6 +117,25 @@ export default function EditorView() {
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen] = useState(false);
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
+  const [projectAssets, setProjectAssets] = useState<Array<{ name: string; path: string }>>([]);
+
+  // Labels disponibles de todos los bloques del proyecto (para \cref{})
+  const availableLabels = useMemo(() => {
+    const labels: Array<{ key: string; kind: string; caption: string }> = [];
+    for (const section of activeProject?.sections ?? []) {
+      for (const block of section.blocks ?? []) {
+        if (block.type === "figure" && block.label)
+          labels.push({ key: block.label, kind: "figura", caption: block.caption ?? "" });
+        else if (block.type === "table" && block.label)
+          labels.push({ key: block.label, kind: "tabla", caption: block.caption ?? "" });
+        else if (block.type === "equation" && block.label)
+          labels.push({ key: block.label, kind: "ecuación", caption: "" });
+        else if (block.type === "algorithm" && block.label)
+          labels.push({ key: block.label, kind: "algoritmo", caption: block.caption ?? "" });
+      }
+    }
+    return labels;
+  }, [activeProject]);
 
   // Paneles de revisión de texto
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
@@ -425,6 +445,12 @@ export default function EditorView() {
   }, [activeProjectPath]);
 
   useEffect(() => { reloadBibRefs(); }, [reloadBibRefs]);
+
+  // Cargar assets del proyecto
+  useEffect(() => {
+    if (!activeProjectPath) return;
+    api.listProjectAssets(activeProjectPath).then(setProjectAssets).catch(() => {});
+  }, [activeProjectPath]);
 
   // Atajos de teclado
   useEffect(() => {
@@ -748,6 +774,8 @@ export default function EditorView() {
                         dragging={dragId === block.id}
                         dragOver={dropId === block.id}
                         availableCiteKeys={bibRefs.map((r) => r.key)}
+                        availableLabels={availableLabels}
+                        availableAssets={projectAssets}
                         onDragStart={() => { setDragId(block.id); setEditingId(null); }}
                         onDragEnd={() => { setDragId(null); setDropId(null); }}
                         onDragOver={() => { if (dragId && dragId !== block.id) setDropId(block.id); }}
@@ -775,7 +803,7 @@ export default function EditorView() {
           </div>
         </div>
 
-        {/* ── Panel derecho: metadata editable ───────────────────── */}
+        {/* ── Panel derecho: metadata + diagnósticos ─────────────── */}
         <EditorMetaPanel
           project={activeProject}
           wordCount={bodyWordCount}
@@ -785,6 +813,7 @@ export default function EditorView() {
           userMode={userMode}
           onSave={saveMetadata}
           onCompile={() => navigate(`/project/${encodedPath}/compile`)}
+          diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
         />
       </div>
 

@@ -25,6 +25,7 @@ pub fn run() {
             commands::project::check_pdf_postflight,
             commands::project::generate_review_report,
             commands::project::get_section_progress,
+            commands::project::list_project_assets,
             commands::compiler::compile_project,
             commands::compiler::cancel_compile,
             commands::system::create_profile,

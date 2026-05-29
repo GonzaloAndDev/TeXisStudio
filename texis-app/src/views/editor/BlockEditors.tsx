@@ -10,15 +10,34 @@ import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from ".
 // ── Componentes de bloque: modo edición ───────────────────────────
 
 export function ParagraphEditor({
-  content, onChange, onBlur,
+  content, onChange, onBlur, availableLabels,
 }: {
   content: string;
   onChange: (v: string) => void;
   onBlur: () => void;
+  availableLabels?: Array<{ key: string; kind: string; caption: string }>;
 }) {
   const { t } = useTranslation();
   const { autocorrectEnabled, spellLang } = useSettingsStore();
   const ref = useRef<HTMLTextAreaElement>(null);
+  const [refPickerOpen, setRefPickerOpen] = useState(false);
+
+  function insertRef(key: string) {
+    const el = ref.current;
+    if (!el) return;
+    const cursor = el.selectionStart ?? content.length;
+    const inserted = `\\cref{${key}}`;
+    const newContent = content.slice(0, cursor) + inserted + content.slice(cursor);
+    onChange(newContent);
+    setRefPickerOpen(false);
+    requestAnimationFrame(() => {
+      if (el) {
+        const pos = cursor + inserted.length;
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      }
+    });
+  }
 
   useEffect(() => {
     ref.current?.focus();
@@ -53,26 +72,69 @@ export function ParagraphEditor({
   }
 
   return (
-    <textarea
-      ref={ref}
-      value={content}
-      spellCheck={!!spellLang}
-      lang={spellLang ?? undefined}
-      onChange={(e) => {
-        onChange(e.target.value);
-        e.target.style.height = "auto";
-        e.target.style.height = e.target.scrollHeight + "px";
-      }}
-      onBlur={onBlur}
-      onKeyDown={handleKeyDown}
-      style={{
-        width: "100%", border: "none", outline: "none", resize: "none",
-        fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65,
-        color: "var(--fg-default)", background: "transparent",
-        padding: 0, minHeight: 50,
-      }}
-      placeholder={t("editor.placeholder_paragraph")}
-    />
+    <div style={{ position: "relative" }}>
+      <textarea
+        ref={ref}
+        value={content}
+        spellCheck={!!spellLang}
+        lang={spellLang ?? undefined}
+        onChange={(e) => {
+          onChange(e.target.value);
+          e.target.style.height = "auto";
+          e.target.style.height = e.target.scrollHeight + "px";
+        }}
+        onBlur={onBlur}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: "100%", border: "none", outline: "none", resize: "none",
+          fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65,
+          color: "var(--fg-default)", background: "transparent",
+          padding: 0, minHeight: 50,
+        }}
+        placeholder={t("editor.placeholder_paragraph")}
+      />
+      {availableLabels && availableLabels.length > 0 && (
+        <div style={{ position: "relative", marginTop: 4 }}>
+          <button
+            type="button"
+            onClick={() => setRefPickerOpen((o) => !o)}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--fg-faint)", padding: 0, display: "flex", alignItems: "center", gap: 4 }}
+          >
+            ⌗ Insertar referencia cruzada ({availableLabels.length})
+          </button>
+          {refPickerOpen && (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setRefPickerOpen(false)} />
+              <div style={{
+                position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100,
+                background: "var(--bg-chrome)", border: "1px solid var(--border-firm)",
+                borderRadius: "var(--r-md)", boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+                minWidth: 260, maxHeight: 200, overflow: "auto",
+              }} className="scroll">
+                {availableLabels.map((lbl) => (
+                  <button
+                    key={lbl.key}
+                    type="button"
+                    onClick={() => insertRef(lbl.key)}
+                    style={{
+                      width: "100%", display: "flex", flexDirection: "column", gap: 1,
+                      padding: "8px 12px", border: "none", background: "transparent",
+                      cursor: "pointer", textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-selected)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  >
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--accent-deep)" }}>{lbl.key}</span>
+                    {lbl.caption && <span style={{ fontSize: 10, color: "var(--fg-muted)" }}>{lbl.caption}</span>}
+                    <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>{lbl.kind}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -379,28 +441,43 @@ export function ListEditor({
 // ── FigureEditor ─────────────────────────────────────────────────
 
 export function FigureEditor({
-  file, caption, width, label,
+  file, caption, width, label, availableAssets,
   onChange,
 }: {
   file: string; caption: string; width: string; label: string;
+  availableAssets?: Array<{ name: string; path: string }>;
   onChange: (u: Record<string, unknown>) => void;
 }) {
-  const input = (lbl: string, key: string, val: string, ph: string) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{lbl}</label>
-      <input
-        value={val}
-        onChange={(e) => onChange({ [key]: e.target.value })}
-        placeholder={ph}
-        style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none" }}
-      />
-    </div>
-  );
+  const assetsListId = "figure-assets-datalist";
+  const fieldStyle = { border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none", width: "100%" } as const;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {input("Archivo (en content/figures/)", "file", file, "diagrama.png")}
-      {input("Leyenda", "caption", caption, "Descripción de la figura")}
-      {input("Label LaTeX", "label", label, "fig:nombre")}
+      {availableAssets && availableAssets.length > 0 && (
+        <datalist id={assetsListId}>
+          {availableAssets.map((a) => <option key={a.path} value={a.name} />)}
+        </datalist>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+          Archivo{availableAssets && availableAssets.length > 0 ? ` (${availableAssets.length} en assets/)` : " (en assets/)"}
+        </label>
+        <input
+          autoFocus
+          list={availableAssets && availableAssets.length > 0 ? assetsListId : undefined}
+          value={file}
+          onChange={(e) => onChange({ file: e.target.value })}
+          placeholder="imagen.png"
+          style={fieldStyle}
+        />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda</label>
+        <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Descripción de la figura" style={fieldStyle} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+        <input value={label} onChange={(e) => onChange({ label: e.target.value })} placeholder="fig:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Ancho</label>
         <div style={{ display: "flex", gap: 6 }}>

@@ -1,3 +1,4 @@
+import React from "react";
 import { ReadinessOverview } from "./ReadinessOverview";
 import { IconBuild } from "./Icons";
 import { deriveProjectReadiness } from "../lib/projectReadiness";
@@ -72,6 +73,7 @@ export function EditorMetaPanel({
   userMode,
   onSave,
   onCompile,
+  diagnosticsPanel,
 }: {
   project: ProjectModel;
   wordCount: number;
@@ -81,6 +83,7 @@ export function EditorMetaPanel({
   userMode: "basic" | "advanced";
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
+  diagnosticsPanel?: React.ReactNode;
 }) {
   const readiness = deriveProjectReadiness(project);
 
@@ -362,6 +365,8 @@ export function EditorMetaPanel({
           ))}
         </div>
       </div>
+
+      {diagnosticsPanel}
 
       <div style={{ marginTop: "auto", paddingTop: 12 }}>
         <button className="btn btn-accent" style={{ width: "100%" }} onClick={onCompile}>

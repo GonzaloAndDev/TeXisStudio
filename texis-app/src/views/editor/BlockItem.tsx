@@ -12,7 +12,7 @@ import {
 
 export function BlockItem({
   block, isEditing, onStartEdit, onUpdate, onDelete,
-  dragging, dragOver, availableCiteKeys,
+  dragging, dragOver, availableCiteKeys, availableLabels, availableAssets,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
 }: {
   block: ContentBlock;
@@ -23,6 +23,8 @@ export function BlockItem({
   dragging?: boolean;
   dragOver?: boolean;
   availableCiteKeys?: string[];
+  availableLabels?: Array<{ key: string; kind: string; caption: string }>;
+  availableAssets?: Array<{ name: string; path: string }>;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -39,6 +41,7 @@ export function BlockItem({
             content={block.content}
             onChange={(content) => onUpdate({ content } as Partial<ContentBlock>)}
             onBlur={() => {}}
+            availableLabels={availableLabels}
           />
         );
       case "heading":
@@ -78,6 +81,7 @@ export function BlockItem({
             caption={block.caption}
             width={block.width}
             label={block.label}
+            availableAssets={availableAssets}
             onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
           />
         );

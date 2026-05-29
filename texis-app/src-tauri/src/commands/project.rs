@@ -1204,3 +1204,46 @@ pub fn get_section_progress(project_path: String) -> Result<Vec<SectionProgress>
 
     Ok(progress)
 }
+
+/// Lista los assets disponibles en el directorio assets/ del proyecto.
+/// Retorna rutas relativas al root del proyecto, extensión y nombre canónico.
+#[tauri::command]
+pub fn list_project_assets(project_path: String) -> Result<Value, String> {
+    let root = PathBuf::from(&project_path);
+    let assets_dir = root.join("assets");
+
+    if !assets_dir.exists() {
+        return Ok(serde_json::json!([]));
+    }
+
+    let mut files: Vec<serde_json::Value> = Vec::new();
+    collect_assets_recursive(&assets_dir, &root, &mut files);
+    files.sort_by(|a, b| {
+        a["name"].as_str().unwrap_or("").cmp(b["name"].as_str().unwrap_or(""))
+    });
+
+    Ok(serde_json::json!(files))
+}
+
+fn collect_assets_recursive(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<serde_json::Value>) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let image_exts = ["png", "jpg", "jpeg", "pdf", "svg", "eps", "bmp", "tiff"];
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_assets_recursive(&path, root, out);
+        } else {
+            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+            if image_exts.contains(&ext.as_str()) {
+                let relative = path.strip_prefix(root).unwrap_or(&path);
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+                out.push(serde_json::json!({
+                    "name": name,
+                    "path": relative.to_string_lossy().replace('\\', "/"),
+                    "ext": ext,
+                }));
+            }
+        }
+    }
+}
