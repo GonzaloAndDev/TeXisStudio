@@ -412,15 +412,18 @@ function StepDatos({
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>¿Quién</em> y ¿dónde?
+        Contexto <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>académico</em> y datos personales
       </h1>
-      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 540 }}>
-        Datos básicos. Se usan para la portada, la recomendación de perfil y los metadatos del PDF.
+      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 20, maxWidth: 560 }}>
+        Estos datos se usan para la portada, para recomendar el perfil correcto y para los metadatos del PDF.
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820 }}>
-        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
-        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
-        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM" />
+
+      {/* ── Contexto académico (institución primero) ── */}
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--fg-faint)", marginBottom: 10 }}>
+        Dónde estudias
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 24 }}>
+        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UNAM-IPN…" />
         <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>Nivel académico</label>
@@ -441,6 +444,15 @@ function StepDatos({
         <InputField label="Área o disciplina" value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder="Ingeniería eléctrica" />
         <InputField label="Programa" value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder="Doctorado en Ciencias" />
         <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
+      </div>
+
+      {/* ── Datos personales del trabajo ── */}
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--fg-faint)", marginBottom: 10 }}>
+        Tu trabajo
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820 }}>
+        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
+        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
         <div /> {/* grid spacer */}
       </div>
 
