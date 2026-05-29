@@ -81,7 +81,7 @@ pub fn get_profiles(app: tauri::AppHandle) -> Result<Value, String> {
                 "id": "generic.thesis",
                 "name": "Tesis genérica",
                 "description": "Estructura clásica para licenciatura, especialidad, maestría, doctorado o posdoctorado.",
-                "meta": "XeLaTeX · biber · APA 7",
+                "meta": "Tesis · Bibliografía automática · APA 7",
                 "tags": ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
                 "sections_count": 8,
                 "author": "Gonzalo Andrade Estrella",
@@ -92,7 +92,7 @@ pub fn get_profiles(app: tauri::AppHandle) -> Result<Value, String> {
                 "id": "generic.tesina",
                 "name": "Tesina genérica",
                 "description": "Versión simplificada para licenciatura: introducción, desarrollo y cierre.",
-                "meta": "XeLaTeX · biber · APA 7",
+                "meta": "Tesina · Bibliografía automática · APA 7",
                 "tags": ["tesina", "licenciatura"],
                 "sections_count": 5,
                 "author": "Gonzalo Andrade Estrella",
@@ -386,11 +386,11 @@ pub fn create_profile(
 // ── Helpers ──────────────────────────────────────────────────────
 
 fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
+    // meta muestra información relevante para el usuario, no detalles de implementación
     let meta = format!(
-        "{} · {} · {}",
+        "Bibliografía {} · {}",
+        bib_style_label(&p.bibliography_style),
         engine_label(&p.latex_engine),
-        p.bibliography_backend,
-        bib_style_label(&p.bibliography_style)
     );
 
     let sections: Vec<Value> = p
