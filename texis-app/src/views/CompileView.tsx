@@ -504,6 +504,8 @@ export default function CompileView() {
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
+  const [pkgConflicts, setPkgConflicts]     = useState<Array<{ package_a: string; package_b: string; description: string; is_blocking: boolean }>>([]);
+  const [pkgMissing, setPkgMissing]         = useState<Array<{ package_name: string; priority: string }>>([]);
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -516,6 +518,15 @@ export default function CompileView() {
       setBackend(latexInfo.preferred_backend as Backend);
     }
   }, [latexInfo]);
+
+  // Analizar paquetes del proyecto al cargar
+  useEffect(() => {
+    if (!activeProjectPath) return;
+    api.analyzePackages(activeProjectPath).then((analysis) => {
+      setPkgConflicts(analysis.conflicts);
+      setPkgMissing(analysis.missing.filter((m) => m.priority === "required" && !m.already_declared));
+    }).catch(() => {});
+  }, [activeProjectPath]);
 
   useEffect(() => {
     setShowTechnicalLog(userMode === "advanced");
@@ -856,6 +867,30 @@ export default function CompileView() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Advertencias de paquetes */}
+            {compileState === "idle" && !nothingInstalled && (pkgConflicts.length > 0 || pkgMissing.length > 0) && (
+              <div style={{ margin: "12px 16px 0", padding: "12px 14px", borderRadius: "var(--r-md)", background: "color-mix(in srgb, var(--build-warn) 10%, var(--bg-panel))", border: "1px solid var(--build-warn)" }}>
+                <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--build-warn)", marginBottom: 6 }}>
+                  Advertencias de paquetes LaTeX
+                </div>
+                {pkgConflicts.filter(c => c.is_blocking).map((c, i) => (
+                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", marginBottom: 4 }}>
+                    ✗ Conflicto bloqueante: {c.description}
+                  </div>
+                ))}
+                {pkgConflicts.filter(c => !c.is_blocking).map((c, i) => (
+                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 4 }}>
+                    ⚠ {c.description}
+                  </div>
+                ))}
+                {pkgMissing.map((m, i) => (
+                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 2 }}>
+                    + Falta <span style={{ fontFamily: "var(--font-mono)", color: "var(--fg-strong)" }}>{m.package_name}</span> en el preámbulo
+                  </div>
+                ))}
               </div>
             )}
 
