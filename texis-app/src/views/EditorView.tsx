@@ -13,6 +13,8 @@ import {
 import { LanguagePicker } from "../components/LanguagePicker";
 import { SpellPanel } from "../components/SpellPanel";
 import { GrammarPanel } from "../components/GrammarPanel";
+import { AiAssistantPanel } from "../components/AiAssistantPanel";
+import { useAiStore } from "../stores/ai";
 import { applyAutocorrect } from "../services/autocorrect";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
@@ -2592,6 +2594,7 @@ export default function EditorView() {
   // Paneles de revisión de texto
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
+  const aiPanel = useAiStore();
 
   // Perfil activo: se carga para mostrar guidance por sección y límites
   const [profileSections, setProfileSections] = useState<import("../types").ProfileSectionInfo[]>([]);
@@ -3080,6 +3083,14 @@ export default function EditorView() {
             >
               LT
             </button>
+            <button
+              className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => aiPanel.togglePanel()}
+              title="Asistente IA"
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+            >
+              ✦ IA
+            </button>
 
             <div style={{ display: "none" }} />
 
@@ -3279,6 +3290,48 @@ export default function EditorView() {
         />
       )}
       </div>
+
+      {/* Panel de asistente IA */}
+      {aiPanel.isPanelOpen && (
+        <AiAssistantPanel
+          currentSelection={undefined}
+          currentFileName={undefined}
+          currentFileContent={localBlocks
+            .filter((b) => b.type === "paragraph" || b.type === "heading")
+            .map((b) => ("content" in b ? b.content : ""))
+            .join("\n\n")}
+          onApplyReplacement={(original, replacement) => {
+            // Buscar y reemplazar en el primer bloque que contenga el texto original
+            setLocalBlocks((prev) => {
+              let replaced = false;
+              const next = prev.map((b) => {
+                if (replaced || b.type !== "paragraph") return b;
+                if (b.content.includes(original)) {
+                  replaced = true;
+                  return { ...b, content: b.content.replace(original, replacement) };
+                }
+                return b;
+              });
+              if (replaced) scheduleAutoSave(next);
+              return next;
+            });
+          }}
+          onInsertAtCursor={(content) => {
+            // Insertar como bloque de raw_latex en la posición activa
+            const newBlock: ContentBlock = {
+              type: "raw_latex",
+              id: `ai-${Date.now()}`,
+              content,
+              user_confirmed: false,
+            };
+            setLocalBlocks((prev) => {
+              const next = [...prev, newBlock];
+              scheduleAutoSave(next);
+              return next;
+            });
+          }}
+        />
+      )}
 
       {/* Paleta de comandos (Ctrl+K) */}
       {paletteOpen && (

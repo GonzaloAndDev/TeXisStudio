@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -45,6 +46,8 @@ pub fn run() {
             commands::zotero::check_zotero_status,
             commands::zotero::search_zotero,
             commands::zotero::import_zotero_items,
+            commands::ai::ai_send_message,
+            commands::ai::ai_get_action_modes,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar TeXisStudio");

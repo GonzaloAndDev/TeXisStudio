@@ -1,6 +1,7 @@
 // Comandos Tauri — delgados: validan entrada y delegan al core.
 // Sin lógica de negocio aquí.
 
+pub mod ai;
 pub mod bibliography_unified;
 pub mod build;
 pub mod compiler;
