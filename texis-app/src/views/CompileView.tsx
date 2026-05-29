@@ -3,11 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
+import { ReadinessOverview } from "../components/ReadinessOverview";
 import {
   IconBuild, IconCheck, IconChevronL, IconCheckCircle, IconErr,
   IconFile, IconPlay, IconRefresh, IconWarn, IconX, IconMore,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
+import { deriveProjectReadiness } from "../lib/projectReadiness";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
@@ -441,7 +443,7 @@ export default function CompileView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
-  const { lang } = useSettingsStore();
+  const { lang, userMode } = useSettingsStore();
 
   const [compileState, setCompileState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
@@ -455,6 +457,7 @@ export default function CompileView() {
   const [exportResult, setExportResult] = useState<ExportDeliveryResult | null>(null);
   const [postflightResult, setPostflightResult] = useState<PdfPostflightResult | null>(null);
   const [postflightBusy, setPostflightBusy] = useState(false);
+  const [showTechnicalLog, setShowTechnicalLog] = useState(userMode === "advanced");
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
@@ -462,6 +465,7 @@ export default function CompileView() {
   const logRef = useRef<HTMLDivElement>(null);
 
   const projectName = activeProject?.metadata.title ?? "Proyecto";
+  const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
 
   // Detectar backend preferido al montar
   useEffect(() => {
@@ -469,6 +473,10 @@ export default function CompileView() {
       setBackend(latexInfo.preferred_backend as Backend);
     }
   }, [latexInfo]);
+
+  useEffect(() => {
+    setShowTechnicalLog(userMode === "advanced");
+  }, [userMode]);
 
   // Auto-scroll del log
   useEffect(() => {
@@ -607,6 +615,28 @@ export default function CompileView() {
       : result?.log_preview
         ? result.log_preview.split("\n")
         : liveLog;
+  const blockingIssues = result?.user_errors.length ?? 0;
+  const warningCount = result?.warnings.length ?? 0;
+  const readinessLabel =
+    compileState === "success"
+      ? "Listo para revisar y entregar"
+      : compileState === "error"
+      ? "Hay problemas que debes corregir antes de entregar"
+      : compileState === "compiling"
+      ? "Estamos preparando tu PDF"
+      : nothingInstalled
+      ? "Tu entorno todavía no está listo"
+      : "Tu proyecto está listo para intentar una compilación";
+  const nextActionLabel =
+    compileState === "success"
+      ? "Revisa el PDF y genera tu paquete de entrega."
+      : compileState === "error"
+      ? "Corrige primero los problemas bloqueantes. Puedes abrir el detalle técnico solo si lo necesitas."
+      : compileState === "compiling"
+      ? "Espera a que termine la compilación. Te mostraremos primero el resultado útil."
+      : nothingInstalled
+      ? "Instala un compilador LaTeX para poder generar y verificar tu documento."
+      : "Cuando quieras, compila para validar portada, bibliografía y estructura.";
 
   return (
     <>
@@ -633,18 +663,32 @@ export default function CompileView() {
           </>
         }
         center={
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Motor:</span>
-            <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
-            <BackendChip id="latexmk"  label="latexmk"  available={latexmkOk}  version={latexInfo?.latexmk_version}  selected={backend === "latexmk"}  onClick={() => setBackend("latexmk")} />
-            <BackendChip id="tectonic" label="Tectonic" available={tectonicOk} version={latexInfo?.tectonic_version} selected={backend === "tectonic"} onClick={() => setBackend("tectonic")} />
-          </div>
+          userMode === "advanced" ? (
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Motor:</span>
+              <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
+              <BackendChip id="latexmk"  label="latexmk"  available={latexmkOk}  version={latexInfo?.latexmk_version}  selected={backend === "latexmk"}  onClick={() => setBackend("latexmk")} />
+              <BackendChip id="tectonic" label="Tectonic" available={tectonicOk} version={latexInfo?.tectonic_version} selected={backend === "tectonic"} onClick={() => setBackend("tectonic")} />
+            </div>
+          ) : (
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+              Centro de entrega · modo guiado
+            </span>
+          )
         }
         right={
           <>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/project/${encodedPath}`)}>
               <IconChevronL size={13} /> Editor
             </button>
+            {userMode === "advanced" && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowTechnicalLog((value) => !value)}
+              >
+                {showTechnicalLog ? "Ocultar detalles" : "Ver detalles técnicos"}
+              </button>
+            )}
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", cursor: "pointer" }}>
               <input
                 type="checkbox"
@@ -676,7 +720,7 @@ export default function CompileView() {
       <div style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: showPdf ? "280px 1fr 1fr" : "1fr 1fr",
+        gridTemplateColumns: showPdf ? "320px 1fr 1fr" : "360px 1fr",
         minHeight: 0,
         background: "var(--bg-app)",
       }}>
@@ -704,6 +748,34 @@ export default function CompileView() {
           </div>
 
           <div style={{ flex: 1, overflow: "auto" }} className="scroll">
+            <div style={{ padding: "16px 16px 0" }}>
+              <div style={{
+                padding: "14px 16px", borderRadius: "var(--r-md)",
+                background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+                marginBottom: 12,
+              }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                  Salud del proyecto
+                </div>
+                <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 6 }}>
+                  {readinessLabel}
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                  {nextActionLabel}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                  <span className="chip">{blockingIssues} bloqueantes</span>
+                  <span className="chip">{warningCount} advertencias</span>
+                  <span className="chip">{showPdf && result?.pdf_path ? "PDF visible" : "PDF no visible"}</span>
+                </div>
+                {readiness && (
+                  <div style={{ marginTop: 10 }}>
+                    <ReadinessOverview readiness={readiness} />
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* LaTeX no instalado */}
             {compileState === "idle" && nothingInstalled && (
               <div style={{ padding: "20px 16px" }}>
@@ -787,6 +859,14 @@ export default function CompileView() {
                       {showPdf ? "Ocultar PDF" : "Ver PDF"}
                     </button>
                   )}
+                </div>
+
+                <div style={{
+                  padding: "12px 14px", borderRadius: "var(--r-md)",
+                  background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+                  fontSize: "var(--fs-sm)", color: "var(--accent-deep)", lineHeight: 1.6, marginBottom: 12,
+                }}>
+                  <strong>Qué sigue:</strong> revisa el PDF, ejecuta la verificación final si tu institución la pide y luego exporta el paquete de entrega.
                 </div>
 
                 {/* Paquete de entrega */}
@@ -884,7 +964,7 @@ export default function CompileView() {
           </div>
         </div>
 
-        {/* ── Panel central: log de compilación ────────────────── */}
+        {/* ── Panel central: resumen / detalle técnico ──────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, borderRight: showPdf ? "1px solid var(--border-subtle)" : undefined }}>
           <div style={{
             height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
@@ -892,36 +972,67 @@ export default function CompileView() {
             background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
           }}>
             <IconFile size={14} />
-            Log de compilación
-            {compileState === "compiling" && (
-              <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--fg-faint)", fontWeight: 400 }}>
-                {liveLog.length} líneas
-              </span>
-            )}
+            {showTechnicalLog ? "Detalles técnicos" : "Resumen guiado"}
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ marginLeft: "auto", fontSize: 10 }}
+              onClick={() => setShowTechnicalLog((value) => !value)}
+            >
+              {showTechnicalLog ? "Ocultar detalle" : "Ver detalles técnicos"}
+            </button>
           </div>
-          <div
-            ref={logRef}
-            style={{
-              flex: 1, overflow: "auto",
-              fontFamily: "var(--font-mono)", fontSize: 11,
-              background: "var(--ink-900)", color: "#C8C2B5",
-              padding: "14px 18px", lineHeight: 1.65,
-            }}
-            className="scroll"
-          >
-            {displayLog.length > 0
-              ? displayLog.map((line, i) => (
-                  <div key={i} style={{ color: logColor(line), whiteSpace: "pre" }}>
-                    {line || " "}
+          {showTechnicalLog ? (
+            <div
+              ref={logRef}
+              style={{
+                flex: 1, overflow: "auto",
+                fontFamily: "var(--font-mono)", fontSize: 11,
+                background: "var(--ink-900)", color: "#C8C2B5",
+                padding: "14px 18px", lineHeight: 1.65,
+              }}
+              className="scroll"
+            >
+              {displayLog.length > 0
+                ? displayLog.map((line, i) => (
+                    <div key={i} style={{ color: logColor(line), whiteSpace: "pre" }}>
+                      {line || " "}
+                    </div>
+                  ))
+                : (
+                  <div style={{ color: "#9C9685" }}>
+                    {compileState === "idle" ? "— esperando compilación —" : compileState === "compiling" ? "iniciando…" : "sin log"}
                   </div>
-                ))
-              : (
-                <div style={{ color: "#9C9685" }}>
-                  {compileState === "idle" ? "— esperando compilación —" : compileState === "compiling" ? "iniciando…" : "sin log"}
+                )
+              }
+            </div>
+          ) : (
+            <div style={{ flex: 1, overflow: "auto", padding: "20px 22px" }} className="scroll">
+              <div style={{
+                background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+                borderRadius: "var(--r-lg)", padding: 18, marginBottom: 12,
+              }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+                  Qué hace TeXisStudio por ti
                 </div>
-              )
-            }
-          </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.9 }}>
+                  <li>Genera los archivos necesarios para tu tesis.</li>
+                  <li>Intenta compilar el PDF y detectar errores importantes.</li>
+                  <li>Te ayuda a verificar antes de exportar la entrega final.</li>
+                </ul>
+              </div>
+              <div style={{
+                background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+                borderRadius: "var(--r-lg)", padding: 18,
+              }}>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 8 }}>
+                  ¿Cuándo abrir los detalles técnicos?
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+                  Solo cuando un error no se entienda con el resumen principal, cuando soporte te lo pida o cuando quieras revisar el backend exacto usado.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Panel derecho: visor PDF (solo cuando showPdf) ────── */}

@@ -8,7 +8,7 @@ import i18n, { registerDynamicLocale } from "../i18n/index";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import { useVocabPacksStore } from "../stores/vocabularyPacks";
-import type { LangPackEntry } from "../types";
+import type { LangPackEntry, VocabPackKind } from "../types";
 
 // ── Layout constants ──────────────────────────────────────────────────────
 
@@ -24,6 +24,14 @@ const SECTIONS = [
 ] as const;
 
 type Section = (typeof SECTIONS)[number];
+
+const BASIC_SECTIONS: Section[] = [
+  "language",
+  "community",
+  "text",
+  "help",
+  "about",
+];
 
 const SHORTCUT_ROWS: Array<[string, string]> = [
   ["shortcut_save", "Ctrl+S"],
@@ -101,10 +109,10 @@ export default function SettingsView() {
   const { section: sectionParam } = useParams<{ section?: string }>();
   const { t } = useTranslation();
   const {
-    lang, spellLang,
+    lang, userMode, spellLang,
     autocorrectEnabled, grammarAutoCheck, grammarEnabled,
     customDictionary, userName, userInstitution, userEmail, projectDir,
-    setLang, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
+    setLang, setUserMode, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
     addToCustomDictionary, removeFromCustomDictionary,
     setUserName, setUserInstitution, setUserEmail, setProjectDir,
   } = useSettingsStore();
@@ -152,7 +160,14 @@ export default function SettingsView() {
     setLang(code);
     i18n.changeLanguage(code);
     const spellCode = SPELL_CHECK_LANGS[code];
-    if (spellLang !== undefined) setSpellLang(spellCode);
+    const installedPack = installedPacks.find((p) => p.id === code);
+    if (spellCode !== undefined) {
+      setSpellLang(spellCode);
+    } else if (installedPack?.entry.capabilities.spelling) {
+      setSpellLang(code);
+    } else {
+      setSpellLang(null);
+    }
   }
 
   function handleAddWord() {
@@ -194,6 +209,28 @@ export default function SettingsView() {
     label: t(`settings.section_${key}`),
   }));
 
+  useEffect(() => {
+    if (userMode === "basic" && !BASIC_SECTIONS.includes(activeSection)) {
+      setActiveSection("text");
+    }
+  }, [activeSection, userMode]);
+
+  const visibleNavItems = userMode === "basic"
+    ? navItems.filter((item) => BASIC_SECTIONS.includes(item.key))
+    : navItems;
+
+  const spellLanguageOptions = [
+    ...SUPPORTED_LANGUAGES,
+    ...installedPacks
+      .filter((p) => p.entry.capabilities.ui || p.entry.capabilities.spelling)
+      .map((p) => ({
+        code: p.id,
+        label: p.entry.native_name,
+        flag: p.entry.flag,
+        bundled: false,
+      })),
+  ].filter((entry, index, all) => all.findIndex((candidate) => candidate.code === entry.code) === index);
+
   return (
     <>
       <TxAppbar
@@ -221,7 +258,7 @@ export default function SettingsView() {
           padding: "20px 14px", display: "flex", flexDirection: "column", gap: 2,
           background: "var(--bg-chrome)",
         }}>
-          {navItems.map(({ key, label }) => (
+          {visibleNavItems.map(({ key, label }) => (
             <div
               key={key}
               onClick={() => setActiveSection(key)}
@@ -237,10 +274,44 @@ export default function SettingsView() {
               {label}
             </div>
           ))}
+          {userMode === "basic" && (
+            <div style={{
+              marginTop: 12,
+              padding: "10px",
+              borderRadius: "var(--r-md)",
+              background: "var(--bg-panel)",
+              border: "1px solid var(--border-subtle)",
+              fontSize: "var(--fs-xs)",
+              color: "var(--fg-muted)",
+              lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 600, color: "var(--fg-strong)", marginBottom: 4 }}>
+                Modo básico activo
+              </div>
+              Te mostramos solo lo necesario para escribir y entregar sin complicarte.
+              Puedes activar <strong style={{ color: "var(--fg-strong)" }}>Opciones avanzadas</strong> en la sección de texto.
+            </div>
+          )}
         </aside>
 
         {/* Content */}
         <main className="scroll" style={{ flex: 1, overflow: "auto", padding: "32px 48px 64px" }}>
+          {userMode === "basic" && (
+            <div style={{
+              maxWidth: 840,
+              marginBottom: 18,
+              padding: "14px 16px",
+              borderRadius: "var(--r-lg)",
+              background: "var(--accent-tint)",
+              border: "1px solid var(--accent-soft)",
+              color: "var(--accent-deep)",
+              fontSize: "var(--fs-sm)",
+              lineHeight: 1.7,
+            }}>
+              Esta configuración está pensada para que tomes decisiones útiles sin tener que entrar al detalle técnico de LaTeX.
+              Si más adelante necesitas control fino, puedes cambiar a <strong>Opciones avanzadas</strong>.
+            </div>
+          )}
 
           {/* ── Language ── */}
           {activeSection === "language" && (
@@ -298,13 +369,14 @@ export default function SettingsView() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {[
-                    ...SUPPORTED_LANGUAGES,
-                    ...installedPacks.filter((p) => p.entry.capabilities.ui).map((p) => ({
-                      code: p.id, label: p.entry.native_name, flag: p.entry.flag, bundled: false,
-                    })),
+                    ...spellLanguageOptions,
                   ].map((l) => {
-                    const hasSpell = SPELL_CHECK_LANGS[l.code] !== null ||
+                    const hasBundledSpell =
+                      Object.prototype.hasOwnProperty.call(SPELL_CHECK_LANGS, l.code)
+                      && SPELL_CHECK_LANGS[l.code] !== null;
+                    const hasInstalledSpell =
                       installedPacks.some((p) => p.id === l.code && p.entry.capabilities.spelling);
+                    const hasSpell = hasBundledSpell || hasInstalledSpell;
                     return (
                       <button
                         key={l.code}
@@ -667,6 +739,31 @@ export default function SettingsView() {
               <SectionHeading>{t("settings.section_text")}</SectionHeading>
 
               <Card style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
+                  Modo de uso
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+                  <button
+                    className={`btn ${userMode === "basic" ? "btn-accent" : "btn-ghost"}`}
+                    onClick={() => setUserMode("basic")}
+                  >
+                    Modo básico
+                  </button>
+                  <button
+                    className={`btn ${userMode === "advanced" ? "btn-accent" : "btn-ghost"}`}
+                    onClick={() => setUserMode("advanced")}
+                  >
+                    Opciones avanzadas
+                  </button>
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                  {userMode === "basic"
+                    ? "Mostramos primero lo importante para escribir, revisar y entregar. Los detalles técnicos quedan ocultos hasta que los necesites."
+                    : "Mostramos controles técnicos, detalles de compilación y opciones finas para usuarios que quieren ver el stack completo."}
+                </div>
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
                 <Toggle
                   checked={autocorrectEnabled}
                   onChange={setAutocorrect}
@@ -693,11 +790,11 @@ export default function SettingsView() {
                 <div style={{
                   paddingLeft: 24, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6,
                 }}>
-                  Powered by{" "}
+                  En este momento la revisión gramatical usa{" "}
                   <a href="https://languagetool.org" style={{ color: "var(--link)" }} target="_blank" rel="noreferrer">
                     LanguageTool
                   </a>
-                  {" "}— texto enviado a sus servidores para análisis
+                  {" "}en modo remoto. Es útil para revisar redacción, pero envía el texto al servicio para su análisis.
                 </div>
               </Card>
             </div>
@@ -808,6 +905,7 @@ function VocabularyPacksPanel() {
   const [repoError, setRepoError]       = useState<string | null>(null);
   const [showAddRepo, setShowAddRepo]   = useState(false);
   const [langFilter, setLangFilter]     = useState<"all" | "es" | "en">("all");
+  const [kindFilter, setKindFilter]     = useState<"all" | VocabPackKind>("all");
 
   useEffect(() => { loadOfficialCatalog(); }, []);
 
@@ -824,9 +922,22 @@ function VocabularyPacksPanel() {
     ...officialPacks,
     ...customRepos.flatMap((r) => (r.packs ?? []).map((p) => ({ ...p, _repoId: r.id }))),
   ];
-  const allPacks = langFilter === "all"
-    ? allPacksRaw
-    : allPacksRaw.filter((p) => (p.base_language_hint ?? "").toLowerCase() === langFilter);
+  const allPacks = allPacksRaw.filter((p) => {
+    const langOk = langFilter === "all"
+      || (p.base_language_hint ?? "").toLowerCase() === langFilter;
+    const kindOk = kindFilter === "all"
+      || (p.pack_kind ?? "discipline") === kindFilter;
+    return langOk && kindOk;
+  });
+
+  const kindOptions: Array<{ id: "all" | VocabPackKind; label: string }> = [
+    { id: "all", label: "Todos" },
+    { id: "general", label: "General" },
+    { id: "academic", label: "Académico" },
+    { id: "discipline", label: "Área" },
+    { id: "subject", label: "Materia" },
+    { id: "program", label: "Programa" },
+  ];
 
   const inputStyle: React.CSSProperties = {
     padding: "6px 10px", borderRadius: "var(--r-sm)",
@@ -878,30 +989,50 @@ function VocabularyPacksPanel() {
         </div>
       )}
 
-      {/* Language filter tabs */}
+      {/* Structured filters */}
       {allPacksRaw.length > 0 && (
-        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-          {(["all", "es", "en"] as const).map((f) => {
-            const count = f === "all" ? allPacksRaw.length : allPacksRaw.filter((p) => (p.base_language_hint ?? "") === f).length;
-            return (
-              <button
-                key={f}
-                onClick={() => setLangFilter(f)}
-                className={`btn btn-sm ${langFilter === f ? "btn-accent" : "btn-ghost"}`}
-                style={{ fontSize: 11, padding: "2px 10px" }}
-              >
-                {f === "all" ? `Todos (${count})` : f === "es" ? `Español (${count})` : `English (${count})`}
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "wrap" }}>
+            {(["all", "es", "en"] as const).map((f) => {
+              const count = f === "all" ? allPacksRaw.length : allPacksRaw.filter((p) => (p.base_language_hint ?? "") === f).length;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setLangFilter(f)}
+                  className={`btn btn-sm ${langFilter === f ? "btn-accent" : "btn-ghost"}`}
+                  style={{ fontSize: 11, padding: "2px 10px" }}
+                >
+                  {f === "all" ? `Todos (${count})` : f === "es" ? `Español (${count})` : `English (${count})`}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+            {kindOptions.map((opt) => {
+              const count = opt.id === "all"
+                ? allPacksRaw.length
+                : allPacksRaw.filter((p) => (p.pack_kind ?? "discipline") === opt.id).length;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setKindFilter(opt.id)}
+                  className={`btn btn-sm ${kindFilter === opt.id ? "btn-accent" : "btn-ghost"}`}
+                  style={{ fontSize: 11, padding: "2px 10px" }}
+                >
+                  {opt.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Official + custom packs list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
         {allPacks.length === 0 && !catalogLoading && (
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", padding: "8px 0" }}>
-            {allPacksRaw.length > 0 ? `Sin paquetes para "${langFilter}". Prueba otro filtro.` : "Sin paquetes disponibles. Recarga el catálogo."}
+            {allPacksRaw.length > 0 ? "Sin paquetes para esta combinación de filtros. Prueba otra." : "Sin paquetes disponibles. Recarga el catálogo."}
           </div>
         )}
         {allPacks.map((pack) => {
@@ -915,6 +1046,11 @@ function VocabularyPacksPanel() {
                 <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
                   <span className="chip" style={{ fontSize: 9 }}>{pack.status}</span>
                   {pack.base_language_hint && <span className="chip" style={{ fontSize: 9 }}>{pack.base_language_hint}</span>}
+                  {pack.pack_kind && <span className="chip" style={{ fontSize: 9 }}>{pack.pack_kind}</span>}
+                  {pack.discipline && <span className="chip" style={{ fontSize: 9 }}>{pack.discipline}</span>}
+                  {pack.subject && <span className="chip" style={{ fontSize: 9 }}>{pack.subject}</span>}
+                  {pack.program_name && <span className="chip" style={{ fontSize: 9 }}>{pack.program_name}</span>}
+                  {pack.target_levels?.length ? <span className="chip" style={{ fontSize: 9 }}>{pack.target_levels.join(", ")}</span> : null}
                   <span className="chip" style={{ fontSize: 9 }}>v{pack.version}</span>
                 </div>
               </div>

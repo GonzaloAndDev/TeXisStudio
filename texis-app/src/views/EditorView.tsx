@@ -4,6 +4,7 @@ import "katex/dist/katex.min.css";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
+import { ReadinessOverview } from "../components/ReadinessOverview";
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconDrag, IconFile,
   IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
@@ -16,6 +17,7 @@ import { applyAutocorrect } from "../services/autocorrect";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
+import { deriveProjectReadiness } from "../lib/projectReadiness";
 import { useProjectStore } from "../stores/project";
 import type { BatchDoiResult, BibReference, CommitteeMember, ContentBlock, HeadingLevel, LatexTypography, ProjectModel, ProjectSection, SectionStatus, TheoremKind, ZoteroImportResult, ZoteroItem, ZoteroStatus } from "../types";
 
@@ -221,7 +223,11 @@ const STATUS_CONFIG: Record<SectionStatus, { label: string; color: string; bg: s
 };
 
 function SectionGuidance({ guidance }: { guidance?: string }) {
-  const [open, setOpen] = useState(false);
+  const { userMode } = useSettingsStore();
+  const [open, setOpen] = useState(userMode === "basic");
+  useEffect(() => {
+    if (userMode === "basic") setOpen(true);
+  }, [userMode]);
   if (!guidance) return null;
   return (
     <div style={{ marginBottom: 16 }}>
@@ -1292,11 +1298,13 @@ const PALETTE_BLOCK_ITEMS = [
 
 function CommandPalette({
   sections,
+  userMode,
   onInsertBlock,
   onJumpSection,
   onClose,
 }: {
   sections: ProjectSection[];
+  userMode: "basic" | "advanced";
   onInsertBlock: (type: ContentBlock["type"]) => void;
   onJumpSection: (id: string) => void;
   onClose: () => void;
@@ -1308,10 +1316,13 @@ function CommandPalette({
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const q = query.toLowerCase();
+  const allowedBlockTypes = userMode === "basic"
+    ? new Set<ContentBlock["type"]>(["paragraph", "heading", "list", "citation", "figure", "table", "equation"])
+    : null;
 
   const blockItems = PALETTE_BLOCK_ITEMS.filter(
     (b) => !q || b.label.toLowerCase().includes(q) || b.hint.toLowerCase().includes(q)
-  );
+  ).filter((b) => !allowedBlockTypes || allowedBlockTypes.has(b.type));
 
   const sectionItems = sections
     .filter((s) => s.enabled && (!q || (s.title ?? s.id).toLowerCase().includes(q)))
@@ -1357,7 +1368,7 @@ function CommandPalette({
             ref={inputRef}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
-            placeholder="Insertar bloque o ir a sección…"
+            placeholder={userMode === "basic" ? "Agregar contenido o ir a una sección…" : "Insertar bloque o ir a sección…"}
             style={{
               flex: 1, border: "none", outline: "none", background: "transparent",
               fontSize: "var(--fs-md)", color: "var(--fg-strong)",
@@ -1377,7 +1388,7 @@ function CommandPalette({
           {blockItems.length > 0 && (
             <>
               <div style={{ padding: "6px 16px 4px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
-                Insertar bloque
+                {userMode === "basic" ? "Agregar contenido" : "Insertar bloque"}
               </div>
               {blockItems.map((b, i) => {
                 const globalIdx = i;
@@ -2093,19 +2104,43 @@ function MetaField({
 }
 
 function MetaPanel({
-  project, wordCount, blockCount, maxWords, onSave, onCompile,
+  project, wordCount, blockCount, maxWords, activeSection, userMode, onSave, onCompile,
 }: {
   project: ProjectModel;
   wordCount: number;
   blockCount: number;
   maxWords?: number;
+  activeSection?: ProjectSection;
+  userMode: "basic" | "advanced";
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
 }) {
+  const readiness = deriveProjectReadiness(project);
   return (
     <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll">
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-        Proyecto
+        {userMode === "basic" ? "Guía del proyecto" : "Proyecto"}
+      </div>
+
+      {userMode === "basic" && (
+        <div style={{
+          marginBottom: 14, padding: "12px 14px",
+          borderRadius: "var(--r-md)", background: "var(--accent-tint)",
+          border: "1px solid var(--accent-soft)",
+        }}>
+          <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
+            Qué hacer aquí
+          </div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+            {activeSection?.title
+              ? `Estás trabajando en “${activeSection.title}”. Escribe el contenido principal, agrega citas cuando uses fuentes y compila cuando quieras revisar cómo se verá el documento.`
+              : "Escribe el contenido principal de tu trabajo. Luego podrás revisar, compilar y exportar la entrega final."}
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 14 }}>
+        <ReadinessOverview readiness={readiness} showPending />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: "var(--fs-sm)" }}>
@@ -2251,7 +2286,7 @@ function MetaPanel({
           </div>
           {(project.student.committee ?? []).length === 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic", padding: "4px 0" }}>
-              Sin comité — opcional para maestría, recomendado para doctorado
+              Sin comité — opcional para especialidad y maestría, recomendado para doctorado y posdoctorado
             </div>
           )}
           {(project.student.committee ?? []).map((m, i) => (
@@ -2364,6 +2399,19 @@ function MetaPanel({
 
         <div style={{ height: 1, background: "var(--border-subtle)", margin: "4px 0" }} />
 
+        {userMode === "basic" && (
+          <div style={{
+            padding: "10px 12px", borderRadius: "var(--r-md)",
+            background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+            fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7,
+          }}>
+            <div style={{ fontWeight: 600, color: "var(--fg-default)", marginBottom: 4 }}>Ruta sugerida</div>
+            <div>1. Escribe el contenido de la sección.</div>
+            <div>2. Agrega citas, figuras o tablas si las necesitas.</div>
+            <div>3. Compila para revisar el PDF antes de entregar.</div>
+          </div>
+        )}
+
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.9 }}>
           <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 2 }}>Atajos</div>
           {([
@@ -2383,7 +2431,7 @@ function MetaPanel({
 
       <div style={{ marginTop: "auto", paddingTop: 12 }}>
         <button className="btn btn-accent" style={{ width: "100%" }} onClick={onCompile}>
-          <IconBuild size={13} /> Compilar PDF
+          <IconBuild size={13} /> {userMode === "basic" ? "Revisar y compilar" : "Compilar PDF"}
         </button>
       </div>
     </div>
@@ -2512,6 +2560,7 @@ export default function EditorView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
+  const { userMode } = useSettingsStore();
 
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -2866,6 +2915,30 @@ export default function EditorView() {
     .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks), 0);
 
   const projectName = activeProject.metadata.title;
+  const toolbarItems: [ContentBlock["type"], React.ReactNode, string][] = userMode === "basic"
+    ? [
+        ["paragraph", <IconText size={12} />, "Párrafo"],
+        ["heading", <IconHeading size={12} />, "Título"],
+        ["list", <IconList size={12} />, "Lista"],
+        ["citation", <IconMore size={12} />, "Cita"],
+        ["figure", <IconImage size={12} />, "Figura"],
+        ["table", <IconTable size={12} />, "Tabla"],
+        ["equation", <IconSigma size={12} />, "Ecuación"],
+      ]
+    : [
+        ["paragraph", <IconText size={12} />, "Párrafo"],
+        ["heading", <IconHeading size={12} />, "Título"],
+        ["list", <IconList size={12} />, "Lista"],
+        ["equation", <IconSigma size={12} />, "Ecuación"],
+        ["figure", <IconImage size={12} />, "Figura"],
+        ["table", <IconTable size={12} />, "Tabla"],
+        ["raw_latex", <IconCode size={12} />, "LaTeX"],
+        ["code", <IconCode size={12} />, "Código"],
+        ["algorithm", <IconAlgorithm size={12} />, "Algoritmo"],
+        ["theorem", <IconTheorem size={12} />, "Teorema"],
+        ["glossary_entry", <IconGlossaryEntry size={12} />, "Glosario"],
+        ["acronym_entry", <IconAcronym size={12} />, "Acrónimo"],
+      ];
 
   const saveLabel =
     saveStatus === "saving"  ? t("editor.saving") :
@@ -2899,13 +2972,15 @@ export default function EditorView() {
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>
-            <button
-              className={`btn btn-ghost btn-icon${docOptionsOpen ? " btn-active" : ""}`}
-              title="Opciones del documento"
-              onClick={() => setDocOptionsOpen(true)}
-            >
-              <IconSettings size={14} />
-            </button>
+            {userMode === "advanced" && (
+              <button
+                className={`btn btn-ghost btn-icon${docOptionsOpen ? " btn-active" : ""}`}
+                title="Opciones del documento"
+                onClick={() => setDocOptionsOpen(true)}
+              >
+                <IconSettings size={14} />
+              </button>
+            )}
             <LanguagePicker />
             <button
               className="btn btn-ghost btn-icon"
@@ -2924,7 +2999,7 @@ export default function EditorView() {
         {/* ── Árbol de secciones ─────────────────────────────────── */}
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            Secciones
+            {userMode === "basic" ? "Ruta del documento" : "Secciones"}
             <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
           </div>
           <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
@@ -2960,28 +3035,15 @@ export default function EditorView() {
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
           <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
-            {([
-              ["paragraph",      <IconText size={12} />,           "Párrafo"],
-              ["heading",        <IconHeading size={12} />,         "Título"],
-              ["list",           <IconList size={12} />,            "Lista"],
-              ["equation",       <IconSigma size={12} />,          "Ecuación"],
-              ["figure",         <IconImage size={12} />,           "Figura"],
-              ["table",          <IconTable size={12} />,           "Tabla"],
-              ["raw_latex",      <IconCode size={12} />,            "LaTeX"],
-              ["code",           <IconCode size={12} />,            "Código"],
-              ["algorithm",      <IconAlgorithm size={12} />,       "Algoritmo"],
-              ["theorem",        <IconTheorem size={12} />,         "Teorema"],
-              ["glossary_entry", <IconGlossaryEntry size={12} />,   "Glosario"],
-              ["acronym_entry",  <IconAcronym size={12} />,         "Acrónimo"],
-            ] as [ContentBlock["type"], React.ReactNode, string][]).map(([type, icon, label]) => (
+            {toolbarItems.map(([type, icon, label]) => (
               <button
                 key={type}
                 className="btn btn-ghost btn-sm"
                 onClick={() => addBlock(type)}
-                title={`Agregar ${label}`}
+                title={`${userMode === "basic" ? "Agregar" : "Insertar"} ${label}`}
                 style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
               >
-                {icon}<span>{label}</span>
+                {icon}<span>{userMode === "basic" && type === "citation" ? "Agregar cita" : label}</span>
               </button>
             ))}
 
@@ -3059,11 +3121,22 @@ export default function EditorView() {
             {activeSection ? (
               <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", marginBottom: 4 }}>
-                  {activeSection.element_id}
+                  {userMode === "advanced" ? activeSection.element_id : "Sección activa"}
                 </div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--fg-strong)", margin: "4px 0 16px", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
                   {activeSection.title ?? activeSection.element_id}
                 </div>
+
+                {userMode === "basic" && (
+                  <div style={{
+                    marginBottom: 16, padding: "10px 12px",
+                    borderRadius: "var(--r-md)", background: "var(--accent-tint)",
+                    border: "1px solid var(--accent-soft)", fontSize: "var(--fs-sm)",
+                    color: "var(--accent-deep)", lineHeight: 1.6,
+                  }}>
+                    Empieza escribiendo el contenido principal de esta sección. Si usas una fuente, agrega una cita. Si necesitas material visual, agrega una figura o una tabla.
+                  </div>
+                )}
 
                 <SectionGuidance
                   guidance={profileSections.find((ps) => ps.element_id === activeSection.element_id)?.guidance}
@@ -3080,9 +3153,11 @@ export default function EditorView() {
                     style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", cursor: "text" }}
                     onClick={() => addBlock("paragraph")}
                   >
-                    <p style={{ margin: 0 }}>Sección vacía.</p>
+                    <p style={{ margin: 0 }}>{userMode === "basic" ? "Empieza a escribir aquí." : "Sección vacía."}</p>
                     <p style={{ fontSize: "var(--fs-sm)", marginTop: 8, color: "var(--fg-faint)" }}>
-                      Clic aquí para agregar un párrafo, o usa la barra de herramientas arriba.
+                      {userMode === "basic"
+                        ? "Haz clic para agregar tu primer párrafo. Después podrás sumar citas, figuras o tablas."
+                        : "Clic aquí para agregar un párrafo, o usa la barra de herramientas arriba."}
                     </p>
                   </div>
                 ) : (
@@ -3130,6 +3205,8 @@ export default function EditorView() {
           wordCount={bodyWordCount}
           blockCount={localBlocks.length}
           maxWords={profileMaxWords}
+          activeSection={activeSection}
+          userMode={userMode}
           onSave={saveMetadata}
           onCompile={() => navigate(`/project/${encodedPath}/compile`)}
         />
@@ -3207,6 +3284,7 @@ export default function EditorView() {
       {paletteOpen && (
         <CommandPalette
           sections={activeProject.sections}
+          userMode={userMode}
           onInsertBlock={(type) => addBlock(type)}
           onJumpSection={(id) => { setActiveSectionId(id); }}
           onClose={() => setPaletteOpen(false)}

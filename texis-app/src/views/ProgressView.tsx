@@ -5,9 +5,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
+import { ReadinessOverview } from "../components/ReadinessOverview";
 import {
   IconDoc, IconDownload, IconRefresh,
 } from "../components/Icons";
+import { deriveProjectReadiness } from "../lib/projectReadiness";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { SectionProgress } from "../types";
@@ -265,6 +267,7 @@ export default function ProgressView() {
 
   const projectTitle = activeProject?.metadata.title ?? "Proyecto";
   const projectId    = activeProjectPath?.split("/").pop() ?? "proyecto";
+  const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
 
   return (
     <>
@@ -302,10 +305,10 @@ export default function ProgressView() {
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16 }}>
                 <div>
                   <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>
-                    Progreso de redacción
+                    Avance de tu tesis
                   </h1>
                   <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>
-                    Estado editorial de cada sección. Actualiza el estado desde el editor.
+                    Aquí ves qué tan listo está tu proyecto para seguir escribiendo, revisar con tu asesor o preparar la entrega final.
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -334,6 +337,11 @@ export default function ProgressView() {
                 </div>
               ) : (
                 <>
+                  {readiness && (
+                    <div style={{ marginBottom: 20 }}>
+                      <ReadinessOverview readiness={readiness} showPending />
+                    </div>
+                  )}
                   <ProgressStats sections={sections} />
                   <SectionTable sections={sections} />
                 </>

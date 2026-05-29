@@ -8,6 +8,7 @@ import {
   IconTable, IconText, IconTrash, IconUpload, IconX,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
+import { useSettingsStore } from "../stores/settings";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 import { fetchProfileCatalog, type CatalogProfile } from "../services/profileCatalog";
@@ -219,6 +220,33 @@ const COUNTRY_LABEL: Record<string, string> = {
 const TYPE_LABEL: Record<string, string> = {
   author_date: "Autor-Fecha", numeric: "Numérico",
   notes_bibliography: "Notas-Bibliog.", author_page: "Autor-Página",
+};
+
+const ACADEMIC_LEVEL_LABEL: Record<string, string> = {
+  bachillerato: "Bachillerato",
+  tecnico: "Técnico",
+  licenciatura: "Licenciatura",
+  especialidad: "Especialidad",
+  maestria: "Maestría",
+  doctorado: "Doctorado",
+  posdoctorado: "Posdoctorado",
+};
+
+const PROFILE_SCOPE_LABEL: Record<string, string> = {
+  institutional: "Institucional",
+  degree_specific: "Por grado",
+  program_specific: "Por programa",
+  discipline_specific: "Por área",
+};
+
+const DISCIPLINE_LABEL: Record<string, string> = {
+  all_disciplines: "Todas las disciplinas",
+  engineering: "Ingeniería",
+  social_sciences: "Ciencias sociales",
+  humanities: "Humanidades",
+  health_sciences: "Ciencias de la salud",
+  computing: "Computación",
+  natural_sciences: "Ciencias naturales",
 };
 
 // ── ProfileCard ───────────────────────────────────────────────────────────────
@@ -943,9 +971,10 @@ function StylesTab() {
 
 // CatalogProfile and catalog URL are now in services/profileCatalog.ts
 
-function CommunityTab({ installedIds, onInstalled }: {
+function CommunityTab({ installedIds, onInstalled, userMode }: {
   installedIds: Set<string>;
   onInstalled: (profile: ProfileInfo) => void;
+  userMode: "basic" | "advanced";
 }) {
   const [catalog, setCatalog]       = useState<CatalogProfile[]>([]);
   const [catLoading, setCatLoading] = useState(false);
@@ -961,6 +990,70 @@ function CommunityTab({ installedIds, onInstalled }: {
   const [customUrl, setCustomUrl]     = useState("");
   const [fetchingCustom, setFetchingCustom] = useState(false);
   const [search, setSearch]           = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | string>("all");
+  const [styleFilter, setStyleFilter] = useState<"all" | string>("all");
+  const [levelFilter, setLevelFilter] = useState<"all" | string>("all");
+  const [disciplineFilter, setDisciplineFilter] = useState<"all" | string>("all");
+  const [scopeFilter, setScopeFilter] = useState<"all" | string>("all");
+  const [institutionFilter, setInstitutionFilter] = useState<"all" | string>("all");
+  const [programFilter, setProgramFilter] = useState<"all" | string>("all");
+
+  function applyGuidedPreset(preset: "starter" | "verified" | "engineering" | "health" | "doctoral") {
+    setNavContinent(null);
+    setNavCountry(null);
+
+    if (preset === "starter") {
+      setStatusFilter("all");
+      setStyleFilter("all");
+      setLevelFilter("all");
+      setDisciplineFilter("all");
+      setScopeFilter("institutional");
+      setInstitutionFilter("all");
+      setProgramFilter("all");
+      return;
+    }
+
+    if (preset === "verified") {
+      setStatusFilter("verified");
+      setStyleFilter("all");
+      setLevelFilter("all");
+      setDisciplineFilter("all");
+      setScopeFilter("all");
+      setInstitutionFilter("all");
+      setProgramFilter("all");
+      return;
+    }
+
+    if (preset === "engineering") {
+      setStatusFilter("all");
+      setStyleFilter("ieee");
+      setLevelFilter("all");
+      setDisciplineFilter("engineering");
+      setScopeFilter("all");
+      setInstitutionFilter("all");
+      setProgramFilter("all");
+      return;
+    }
+
+    if (preset === "health") {
+      setStatusFilter("all");
+      setStyleFilter("vancouver");
+      setLevelFilter("all");
+      setDisciplineFilter("health_sciences");
+      setScopeFilter("all");
+      setInstitutionFilter("all");
+      setProgramFilter("all");
+      return;
+    }
+
+    setStatusFilter("all");
+    setStyleFilter("all");
+    setLevelFilter("doctorado");
+    setDisciplineFilter("all");
+    setScopeFilter("all");
+    setInstitutionFilter("all");
+    setProgramFilter("all");
+  }
 
   async function fetchCatalog() {
     setCatLoading(true); setCatError(null);
@@ -1003,19 +1096,58 @@ function CommunityTab({ installedIds, onInstalled }: {
     finally { setFetchingCustom(false); }
   }
 
-  // Build hierarchy from catalog
-  const continents = [...new Set(catalog.map((p) => p.continent))].sort();
+  const filteredCatalog = catalog.filter((p) => {
+    const statusOk = statusFilter === "all" || (p.status ?? "unspecified") === statusFilter;
+    const styleOk = styleFilter === "all" || (p.style_id ?? p.bibliography_style ?? "unspecified") === styleFilter;
+    const profileLevels = [
+      ...(p.academic_level ? [p.academic_level] : []),
+      ...((p.target_levels ?? []).filter((level) => level !== p.academic_level)),
+    ];
+    const levelOk = levelFilter === "all"
+      || (profileLevels.length === 0 ? "unspecified" === levelFilter : profileLevels.includes(levelFilter as typeof profileLevels[number]));
+    const disciplineOk = disciplineFilter === "all" || (p.discipline ?? "unspecified") === disciplineFilter;
+    const scopeOk = scopeFilter === "all" || (p.profile_scope ?? "unspecified") === scopeFilter;
+    const institutionOk = institutionFilter === "all" || (p.institution ?? "unspecified") === institutionFilter;
+    const programOk = programFilter === "all" || (p.program_name ?? "unspecified") === programFilter;
+    return statusOk && styleOk && levelOk && disciplineOk && scopeOk && institutionOk && programOk;
+  });
+
+  // Build hierarchy from filtered catalog
+  const continents = [...new Set(filteredCatalog.map((p) => p.continent))].sort();
   const countriesInContinent = (continent: string) =>
-    [...new Set(catalog.filter((p) => p.continent === continent).map((p) => p.country))].sort();
+    [...new Set(filteredCatalog.filter((p) => p.continent === continent).map((p) => p.country))].sort();
   const profilesInCountry = (continent: string, country: string) =>
-    catalog.filter((p) => p.continent === continent && p.country === country);
+    filteredCatalog.filter((p) => p.continent === continent && p.country === country);
+
+  const availableStatuses = [...new Set(catalog.map((p) => p.status ?? "unspecified"))].sort();
+  const availableStyles = [...new Set(catalog.map((p) => p.style_id ?? p.bibliography_style ?? "unspecified"))].sort();
+  const availableLevels = [...new Set(
+    catalog.flatMap((p) => {
+      const levels = [
+        ...(p.academic_level ? [p.academic_level] : []),
+        ...(p.target_levels ?? []),
+      ];
+      return levels.length ? levels : ["unspecified"];
+    }),
+  )].sort();
+  const availableDisciplines = [...new Set(catalog.map((p) => p.discipline ?? "unspecified"))].sort();
+  const availableScopes = [...new Set(catalog.map((p) => p.profile_scope ?? "unspecified"))].sort();
+  const availableInstitutions = [...new Set(catalog.map((p) => p.institution ?? "unspecified"))].sort();
+  const availablePrograms = [...new Set(catalog.map((p) => p.program_name ?? "unspecified"))].sort();
 
   // Search flattens everything
   const searchResults = search.trim()
-    ? catalog.filter((p) =>
+    ? filteredCatalog.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.id.toLowerCase().includes(search.toLowerCase()) ||
         (p.institution ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.institution_id ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.style_id ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.bibliography_style ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.discipline ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.program_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.faculty ?? "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.department ?? "").toLowerCase().includes(search.toLowerCase()) ||
         p.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
       )
     : [];
@@ -1034,11 +1166,27 @@ function CommunityTab({ installedIds, onInstalled }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
             <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{cp.name}</span>
+            {cp.status ? <ProfileStatusBadge status={cp.status} /> : null}
           </div>
           {cp.institution && <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 4 }}>{cp.institution}{cp.city ? ` · ${cp.city}` : ""}</div>}
           {cp.description && <p style={{ margin: "0 0 6px", fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>{cp.description}</p>}
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-            {cp.bibliography_style && <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>{cp.bibliography_style.toUpperCase()}</span>}
+            {cp.style_id && <span className="chip" style={{ fontSize: 9 }}>{cp.style_id}</span>}
+            {!cp.style_id && cp.bibliography_style && <span className="chip" style={{ fontSize: 9 }}>{cp.bibliography_style}</span>}
+            {cp.academic_level && <span className="chip" style={{ fontSize: 9 }}>{ACADEMIC_LEVEL_LABEL[cp.academic_level] ?? cp.academic_level}</span>}
+            {!cp.academic_level && cp.target_levels && cp.target_levels.length > 0 && (
+              <span className="chip" style={{ fontSize: 9 }}>
+                {cp.target_levels.map((level) => ACADEMIC_LEVEL_LABEL[level] ?? level).join(" · ")}
+              </span>
+            )}
+            {cp.discipline && <span className="chip" style={{ fontSize: 9 }}>{DISCIPLINE_LABEL[cp.discipline] ?? cp.discipline}</span>}
+            {cp.program_name && <span className="chip" style={{ fontSize: 9 }}>{cp.program_name}</span>}
+            {cp.faculty && <span className="chip" style={{ fontSize: 9 }}>{cp.faculty}</span>}
+            {cp.department && <span className="chip" style={{ fontSize: 9 }}>{cp.department}</span>}
+            {cp.profile_scope && <span className="chip" style={{ fontSize: 9 }}>{PROFILE_SCOPE_LABEL[cp.profile_scope] ?? cp.profile_scope}</span>}
+            {cp.verified_at && <span className="chip" style={{ fontSize: 9 }}>verificado {cp.verified_at}</span>}
+            {!cp.verified_at && cp.reviewed_at && <span className="chip" style={{ fontSize: 9 }}>revisado {cp.reviewed_at}</span>}
+            {cp.ci_evidence && <span className="chip" style={{ fontSize: 9 }}>CI</span>}
             {cp.tags.slice(0, 4).map((t) => <span key={t} className="chip" style={{ fontSize: 9 }}>{t}</span>)}
           </div>
         </div>
@@ -1062,10 +1210,49 @@ function CommunityTab({ installedIds, onInstalled }: {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
           <div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>Comunidad</h1>
-            <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>Perfiles verificados por institución. Requiere conexión a internet.</p>
+            <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>Perfiles por institución, grado, área y programa. Requiere conexión a internet.</p>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={fetchCatalog} disabled={catLoading} style={{ flexShrink: 0 }}><IconRefresh size={12} /> {catLoading ? "Cargando…" : "Actualizar"}</button>
         </div>
+
+        {userMode === "basic" && (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1.3fr 1fr",
+            gap: 12,
+            marginBottom: 18,
+          }}>
+            <div style={{
+              padding: "14px 16px",
+              borderRadius: "var(--r-lg)",
+              background: "var(--accent-tint)",
+              border: "1px solid var(--accent-soft)",
+            }}>
+              <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
+                No necesitas saber el nombre exacto del perfil
+              </div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+                Empieza por tu institución o por una combinación parecida de grado, área y estilo de citas.
+                Si no existe una coincidencia exacta, conviene arrancar con una base institucional simple y ajustar después.
+              </div>
+            </div>
+            <div style={{
+              padding: "14px 16px",
+              borderRadius: "var(--r-lg)",
+              background: "var(--bg-panel)",
+              border: "1px solid var(--border-soft)",
+            }}>
+              <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 6 }}>
+                Cómo leer la confianza
+              </div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+                <strong style={{ color: "var(--fg-strong)" }}>Verified</strong> indica evidencia fuerte.
+                <strong style={{ color: "var(--fg-strong)" }}> Reviewed</strong> indica revisión editorial sólida.
+                Si vas con prisa, prioriza perfiles con evidencia y muestra asociada.
+              </div>
+            </div>
+          </div>
+        )}
 
         {!isTauri && (
           <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", fontSize: "var(--fs-sm)", color: "var(--accent-deep)", marginBottom: 16 }}>
@@ -1077,11 +1264,70 @@ function CommunityTab({ installedIds, onInstalled }: {
         {opSuccess && <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--build-ok-tint, #edfff3)", border: "1px solid var(--build-ok)", color: "var(--build-ok)", fontSize: "var(--fs-sm)", marginBottom: 14 }}>{opSuccess}</div>}
         {catError && <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--build-err-tint, #ffeded)", border: "1px solid var(--build-err)", color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 14 }}>{catError}</div>}
 
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("starter")}>Base institucional simple</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("verified")}>Solo perfiles verificados</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("engineering")}>Ingeniería · IEEE</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("health")}>Salud · Vancouver</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("doctoral")}>Doctorado</button>
+        </div>
+
         {/* Search bar */}
         <div style={{ position: "relative", marginBottom: 20 }}>
           <IconSearch size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-faint)" }} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setNavContinent(null); setNavCountry(null); }} placeholder="Buscar institución, país, estilo…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none", boxSizing: "border-box" }} />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setNavContinent(null); setNavCountry(null); }} placeholder="Buscar institución, país, facultad, programa o área…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none", boxSizing: "border-box" }} />
           {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}><IconX size={12} /></button>}
+        </div>
+
+        {/* Structured filters */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 18 }}>
+          <select value={institutionFilter} onChange={(e) => { setInstitutionFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todas las instituciones</option>
+            {availableInstitutions.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Institución no indicada" : value}</option>
+            ))}
+          </select>
+          <select value={programFilter} onChange={(e) => { setProgramFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todos los programas</option>
+            {availablePrograms.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Programa no indicado" : value}</option>
+            ))}
+          </select>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todos los estados</option>
+            {availableStatuses.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Estado no indicado" : value}</option>
+            ))}
+          </select>
+          <select value={styleFilter} onChange={(e) => { setStyleFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todos los estilos</option>
+            {availableStyles.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Estilo no indicado" : value}</option>
+            ))}
+          </select>
+          <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todos los grados</option>
+            {availableLevels.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Grado no indicado" : (ACADEMIC_LEVEL_LABEL[value] ?? value)}</option>
+            ))}
+          </select>
+          <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todas las áreas</option>
+            {availableDisciplines.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Área no indicada" : (DISCIPLINE_LABEL[value] ?? value)}</option>
+            ))}
+          </select>
+          <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">Todos los alcances</option>
+            {availableScopes.map((value) => (
+              <option key={value} value={value}>{value === "unspecified" ? "Alcance no indicado" : (PROFILE_SCOPE_LABEL[value] ?? value)}</option>
+            ))}
+          </select>
         </div>
 
         {/* Search results */}
@@ -1097,6 +1343,8 @@ function CommunityTab({ installedIds, onInstalled }: {
           <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "40px 0", textAlign: "center" }}>Cargando catálogo…</div>
         ) : catLoaded && catalog.length === 0 ? (
           <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>El catálogo está vacío.</div>
+        ) : catLoaded && filteredCatalog.length === 0 ? (
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>Ningún perfil coincide con los filtros actuales.</div>
         ) : catLoaded ? (
           <>
             {/* Breadcrumb */}
@@ -1122,7 +1370,7 @@ function CommunityTab({ installedIds, onInstalled }: {
             {!navContinent && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 32 }}>
                 {continents.map((continent) => {
-                  const count = catalog.filter((p) => p.continent === continent).length;
+                  const count = filteredCatalog.filter((p) => p.continent === continent).length;
                   const color = CONTINENT_COLOR[continent] ?? "var(--accent)";
                   return (
                     <div key={continent} onClick={() => setNavContinent(continent)}
@@ -1202,6 +1450,7 @@ type LibTab = "profiles" | "community" | "styles" | "elements";
 
 export default function LibraryView() {
   const navigate = useNavigate();
+  const userMode = useSettingsStore((s) => s.userMode);
   const [profiles, setProfiles]     = useState<ProfileInfo[]>([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
@@ -1325,6 +1574,19 @@ export default function LibraryView() {
                   <button className="btn btn-accent btn-sm" onClick={() => navigate("/new")}><IconPlus size={13} /> Nuevo proyecto</button>
                 </div>
               </div>
+              <div style={{
+                maxWidth: 920, marginBottom: 20, padding: "14px 16px",
+                borderRadius: "var(--r-lg)", background: "var(--accent-tint)",
+                border: "1px solid var(--accent-soft)",
+              }}>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
+                  Cómo elegir un perfil sin complicarte
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+                  Primero busca tu institución o una parecida. Luego revisa si el perfil cubre tu grado, tu área y el estilo de citas que necesitas.
+                  Si no encuentras una coincidencia exacta, empieza con un perfil genérico o con la variante más cercana y ajusta después.
+                </div>
+              </div>
               <div style={{ position: "relative", maxWidth: 380, marginBottom: 24 }}>
                 <IconSearch size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-faint)" }} />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o etiqueta…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none" }} />
@@ -1350,6 +1612,7 @@ export default function LibraryView() {
           <CommunityTab
             installedIds={new Set(profiles.map((p) => p.id))}
             onInstalled={(p) => { setProfiles((prev) => { const exists = prev.some((x) => x.id === p.id); return exists ? prev : [...prev, p]; }); }}
+            userMode={userMode}
           />
         )}
 

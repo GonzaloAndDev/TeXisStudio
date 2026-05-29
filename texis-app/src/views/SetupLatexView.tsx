@@ -9,6 +9,7 @@ import {
   IconCheck, IconChevronR, IconErr, IconRefresh, IconWarn,
 } from "../components/Icons";
 import { api } from "../lib/tauri";
+import { useSettingsStore } from "../stores/settings";
 import type { LatexInfo } from "../types";
 
 // ── Constantes de instalación ─────────────────────────────────────
@@ -319,10 +320,67 @@ function InstructionsPanel({ option }: { option: typeof INSTALL_OPTIONS[0] }) {
   );
 }
 
+function GuidedSummaryCard({
+  title,
+  body,
+  tone = "info",
+}: {
+  title: string;
+  body: string;
+  tone?: "info" | "ok" | "warn";
+}) {
+  const palette = {
+    info: {
+      background: "var(--accent-tint)",
+      border: "1px solid var(--accent-soft)",
+      color: "var(--accent-deep)",
+      icon: <IconWarn size={13} />,
+    },
+    ok: {
+      background: "var(--build-ok-tint)",
+      border: "1px solid var(--build-ok)",
+      color: "var(--build-ok)",
+      icon: <IconCheck size={13} sw={2.5} />,
+    },
+    warn: {
+      background: "color-mix(in srgb, var(--build-warn) 10%, var(--bg-panel))",
+      border: "1px solid var(--build-warn)",
+      color: "var(--build-warn)",
+      icon: <IconWarn size={13} />,
+    },
+  } as const;
+
+  const selected = palette[tone];
+
+  return (
+    <div style={{
+      padding: "12px 14px",
+      borderRadius: "var(--r-md)",
+      background: selected.background,
+      border: selected.border,
+      color: selected.color,
+      display: "flex",
+      gap: 10,
+      alignItems: "flex-start",
+    }}>
+      <div style={{ flexShrink: 0, marginTop: 2 }}>{selected.icon}</div>
+      <div>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 4 }}>
+          {title}
+        </div>
+        <div style={{ fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
+          {body}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function SetupLatexView() {
   const navigate = useNavigate();
+  const userMode = useSettingsStore((s) => s.userMode);
   const [info, setInfo] = useState<LatexInfo | null>(null);
   const [detecting, setDetecting] = useState(false);
   const [selectedId, setSelectedId] = useState("tectonic");
@@ -353,10 +411,18 @@ export default function SetupLatexView() {
   if (info?.latexmk_usable)    installedIds.add("miktex");
   if (info?.latexmk_usable)    installedIds.add("texlive");
 
+  const guidedRecommendation = info?.is_usable
+    ? "Ya puedes generar tu PDF desde TeXisStudio. Si un perfil institucional pide algo más, la app te lo irá señalando antes de entregar."
+    : selectedOption.id === "tectonic"
+      ? "Empieza con Tectonic si quieres la ruta más corta. Es la opción más amigable para probar TeXisStudio sin pelearte con instalaciones grandes."
+      : selectedOption.id === "miktex"
+        ? "MiKTeX es buena opción si prefieres instalador gráfico y estás en Windows. Te da un camino bastante cómodo para llegar a tu primer PDF."
+        : "TeX Live conviene si quieres una instalación completa desde el inicio y no te importa ocupar más espacio en disco.";
+
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Configurar LaTeX</span></>}
+        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Preparar generación de PDF</span></>}
         center={null}
         right={
           <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
@@ -371,18 +437,30 @@ export default function SetupLatexView() {
           {/* Encabezado */}
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: "0 0 6px", color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>
-              Configurar compilador <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>LaTeX</em>
+              Preparar la generación de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>PDF</em>
             </h1>
             <p style={{ margin: 0, color: "var(--fg-muted)", fontSize: "var(--fs-md)", maxWidth: 580 }}>
-              TeXisStudio genera los archivos LaTeX, pero necesitas un motor instalado para compilar el PDF.
-              Elige el que mejor se adapte a tu situación.
+              TeXisStudio se encarga del formato y de la compilación, pero necesita una herramienta instalada en tu equipo para convertir tu tesis en PDF.
+              No necesitas aprender LaTeX: aquí solo eliges la ruta más sencilla para tu caso.
             </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, marginBottom: 24 }}>
+            <GuidedSummaryCard
+              title="Qué hace esta pantalla"
+              body="Te ayuda a dejar listo el paso técnico que convierte tu trabajo en PDF. Después podrás seguir escribiendo normalmente y TeXisStudio se encargará del resto."
+            />
+            <GuidedSummaryCard
+              title={info?.is_usable ? "Tu equipo ya está listo" : "Recomendación inicial"}
+              body={guidedRecommendation}
+              tone={info?.is_usable ? "ok" : "info"}
+            />
           </div>
 
           {/* Estado de detección */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
-              Estado actual
+              Comprobación del equipo
             </div>
             <button
               className="btn btn-sm"
@@ -404,7 +482,7 @@ export default function SetupLatexView() {
                   fontSize: "var(--fs-sm)", color: "var(--build-ok)",
                 }}>
                   <IconCheck size={13} sw={2.5} />
-                  <strong>Todo listo.</strong> Backends disponibles: {info.available_backends.join(", ")}. Puedes compilar desde el editor.
+                  <strong>Todo listo.</strong> Ya puedes generar tu PDF desde el editor. {userMode === "advanced" && <>Motores disponibles: {info.available_backends.join(", ")}.</>}
                 </div>
               ) : (
                 <div style={{
@@ -414,7 +492,7 @@ export default function SetupLatexView() {
                   fontSize: "var(--fs-sm)", color: "var(--accent-deep)",
                 }}>
                   <IconWarn size={13} />
-                  No se encontró ningún compilador LaTeX. Sigue las instrucciones debajo para instalar uno.
+                  Aún no encontramos una herramienta para generar el PDF. Elige una opción debajo y sigue los pasos guiados.
                 </div>
               )}
               <DetectionStatus info={info} />
@@ -427,7 +505,7 @@ export default function SetupLatexView() {
 
           {/* Selector de opción */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-            Opciones de instalación
+            Rutas recomendadas
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12, marginBottom: 32 }}>
             {INSTALL_OPTIONS.map((opt) => (
@@ -443,12 +521,30 @@ export default function SetupLatexView() {
 
           {/* Instrucciones paso a paso */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 20 }}>
-            Cómo instalar — {selectedOption.name}
+            Pasos guiados — {selectedOption.name}
           </div>
 
           <div style={{ maxWidth: 640 }}>
             <InstructionsPanel option={selectedOption} />
           </div>
+
+          {userMode === "advanced" && (
+            <div style={{
+              maxWidth: 640,
+              marginTop: 28,
+              padding: "14px 16px",
+              background: "var(--bg-panel)",
+              border: "1px solid var(--border-soft)",
+              borderRadius: "var(--r-md)",
+            }}>
+              <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--fg-faint)", marginBottom: 8 }}>
+                Detalle técnico
+              </div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
+                TeXisStudio puede apoyarse en motores distintos según lo que encuentre en tu equipo. En modo básico no necesitas preocuparte por eso; en modo avanzado podrás elegir backend y revisar más detalles en la pantalla de entrega.
+              </div>
+            </div>
+          )}
 
           <div style={{ height: 48 }} />
         </div>
@@ -456,9 +552,9 @@ export default function SetupLatexView() {
 
       <TxStatusbar items={[
         info?.is_usable
-          ? { text: `Listo — ${info.available_backends.join(" · ")}`, dot: "var(--build-ok)" }
-          : { text: "LaTeX no configurado", dot: "var(--build-err)" },
-        { right: true, text: "Detecta de nuevo después de instalar" },
+          ? { text: "Listo para generar PDF", dot: "var(--build-ok)" }
+          : { text: "Falta preparar la generación de PDF", dot: "var(--build-err)" },
+        { right: true, text: "Vuelve a detectar después de instalar" },
       ]} />
     </>
   );

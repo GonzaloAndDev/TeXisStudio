@@ -5,11 +5,12 @@ import { documentDir } from "@tauri-apps/api/path";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconFile,
-  IconFolder, IconPlus, IconSearch, IconSettings, IconStar, IconClock, IconTrash, IconUpload,
+  IconFolder, IconPlus, IconSearch, IconSettings, IconUpload,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
+import { useSettingsStore } from "../stores/settings";
 import type { RecentProject } from "../types";
 
 function formatUpdatedAt(raw: string, t: (k: string, opts?: Record<string, unknown>) => string): string {
@@ -64,6 +65,7 @@ const S = {
     margin: "24px 0 12px", display: "flex", alignItems: "center", gap: 8,
   },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } as const,
+  journeyGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 18 } as const,
   card: {
     background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
     borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
@@ -124,8 +126,8 @@ export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
+  const { userMode } = useSettingsStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
-  const [tab, setTab] = useState<"projects" | "favorites" | "recent" | "archived">("projects");
 
   useEffect(() => {
     api.detectLatex().then(setLatexInfo).catch(() => {});
@@ -165,12 +167,46 @@ export default function HomeView() {
     ? { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" }
     : { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
 
-  const navItems = [
-    { key: "projects", icon: <IconBook size={13} />, label: t("home.nav_projects") },
-    { key: "favorites", icon: <IconStar size={13} />, label: t("home.nav_favorites") },
-    { key: "recent", icon: <IconClock size={13} />, label: t("home.nav_recent") },
-    { key: "archived", icon: <IconTrash size={13} />, label: t("home.nav_archived") },
-  ] as const;
+  const latestProject = projects[0];
+  const latestProjectRoute = latestProject
+    ? `/project/${encodeURIComponent(latestProject.path)}`
+    : "/new";
+  const latestCompileRoute = latestProject
+    ? `/project/${encodeURIComponent(latestProject.path)}/compile`
+    : "/new";
+
+  const workMoments = [
+    {
+      label: "Empezar",
+      hint: "Crea una tesis nueva o importa una existente.",
+      icon: <IconPlus size={13} />,
+      onClick: () => navigate("/new"),
+    },
+    {
+      label: "Configurar",
+      hint: "Elige perfil, universidad, grado e idioma.",
+      icon: <IconFolder size={13} />,
+      onClick: () => navigate("/library"),
+    },
+    {
+      label: "Escribir",
+      hint: latestProject ? "Vuelve a tu proyecto más reciente." : "Abre un proyecto para empezar a redactar.",
+      icon: <IconBook size={13} />,
+      onClick: () => navigate(latestProjectRoute),
+    },
+    {
+      label: "Revisar",
+      hint: "Ajusta idioma, ortografía y apoyos de escritura.",
+      icon: <IconSearch size={13} />,
+      onClick: () => navigate("/settings/text"),
+    },
+    {
+      label: "Entregar",
+      hint: latestProject ? "Compila, verifica el PDF y exporta tu entrega." : "Compila tu proyecto cuando ya tengas contenido.",
+      icon: <IconUpload size={13} />,
+      onClick: () => navigate(latestCompileRoute),
+    },
+  ];
 
   return (
     <>
@@ -190,8 +226,9 @@ export default function HomeView() {
 
       <div style={S.root}>
         <aside style={S.side}>
-          {navItems.map(({ key, icon, label }) => (
-            <div key={key} style={S.sideItem(tab === key)} onClick={() => setTab(key)}>
+          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>Ruta sugerida</div>
+          {workMoments.map(({ label, icon, onClick }) => (
+            <div key={label} style={S.sideItem(false)} onClick={onClick}>
               {icon} {label}
             </div>
           ))}
@@ -225,7 +262,9 @@ export default function HomeView() {
               )}
             </h1>
             <p style={S.sub}>
-              {t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
+              {userMode === "basic"
+                ? "TeXisStudio está en modo guiado: tú enfócate en tu trabajo y la app te acompaña con formato, bibliografía y entrega."
+                : t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
             <div style={S.actions}>
               <button className="btn btn-accent" onClick={() => navigate("/new")}>
@@ -235,6 +274,34 @@ export default function HomeView() {
                 <IconUpload size={13} /> {t("home.import_tex")}
               </button>
               <button className="btn btn-ghost">{t("home.open_folder")}</button>
+            </div>
+            <div style={S.journeyGrid}>
+              {workMoments.map(({ label, hint, icon, onClick }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={onClick}
+                  style={{
+                    textAlign: "left",
+                    background: "var(--bg-panel)",
+                    border: "1px solid var(--border-soft)",
+                    borderRadius: "var(--r-lg)",
+                    padding: "14px 16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
+                    {icon}
+                    {label}
+                  </div>
+                  <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                    {hint}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 

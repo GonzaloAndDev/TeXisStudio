@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 interface SettingsState {
   lang: string;
+  userMode: "basic" | "advanced";
   spellLang: string | null;
   autocorrectEnabled: boolean;
   grammarAutoCheck: boolean;
@@ -13,6 +14,7 @@ interface SettingsState {
   projectDir: string;
 
   setLang: (lang: string) => void;
+  setUserMode: (mode: "basic" | "advanced") => void;
   setSpellLang: (lang: string | null) => void;
   setAutocorrect: (v: boolean) => void;
   setGrammarAutoCheck: (v: boolean) => void;
@@ -40,6 +42,7 @@ function save<T>(key: string, v: T): void {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   lang: load("tx-lang", "es"),
+  userMode: load("tx-user-mode", "basic"),
   spellLang: load("tx-spell-lang", "es"),
   autocorrectEnabled: load("tx-autocorrect", true),
   grammarAutoCheck: load("tx-grammar-auto", false),
@@ -53,6 +56,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setLang: (lang) => {
     save("tx-lang", lang);
     set({ lang });
+  },
+  setUserMode: (userMode) => {
+    save("tx-user-mode", userMode);
+    set({ userMode });
   },
   setSpellLang: (spellLang) => {
     save("tx-spell-lang", spellLang);

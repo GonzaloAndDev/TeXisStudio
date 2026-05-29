@@ -11,8 +11,9 @@ interface Props {
   onClose: () => void;
 }
 
-// Bundled languages that have grammar support via LanguageTool
-const BUNDLED_GRAMMAR_LANGS = new Set(["es", "en", "fr", "de", "zh", "ja"]);
+// Only English and Spanish remain bundled in the app by default.
+// Any other grammar-capable language must come from an installed pack.
+const BUNDLED_GRAMMAR_LANGS = new Set(["es", "en"]);
 
 export function GrammarPanel({ text, onAccept, onClose }: Props) {
   const { t } = useTranslation();
@@ -100,6 +101,16 @@ export function GrammarPanel({ text, onAccept, onClose }: Props) {
           }}>
             <span style={{ fontWeight: 500, color: "var(--accent-deep)" }}>{t("grammar.powered_by")}</span>
             <span>{t("grammar.privacy_notice")}</span>
+          </div>
+
+          <div style={{
+            padding: "10px 14px", borderBottom: "1px solid var(--border-subtle)",
+            background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6,
+          }}>
+            <div style={{ fontWeight: 600, color: "var(--fg-default)", marginBottom: 4 }}>
+              {t("grammar.guided_title")}
+            </div>
+            <div>{t("grammar.guided_body")}</div>
           </div>
 
           {/* Auto-check toggle */}

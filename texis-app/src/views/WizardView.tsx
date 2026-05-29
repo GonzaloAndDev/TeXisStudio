@@ -25,9 +25,9 @@ const BUILTIN_PROFILES: ProfileInfo[] = [
   {
     id: "generic.thesis",
     name: "Tesis genérica",
-    description: "Estructura clásica con marco teórico, metodología, resultados y conclusiones.",
+    description: "Estructura clásica para licenciatura, especialidad, maestría, doctorado o posdoctorado.",
     meta: "XeLaTeX · biber · APA 7",
-    tags: ["tesis", "licenciatura", "maestria", "doctorado"],
+    tags: ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
     sections_count: 13,
     sections: [],
     author: "Gonzalo Andrade Estrella",
@@ -109,16 +109,18 @@ function StepTipo({
   selected: string; onSelect: (v: string) => void;
 }) {
   const options = [
-    { id: "tesis", title: "Tesis", desc: "Investigación original para grado académico.", meta: "Licenciatura · Maestría · Doctorado" },
-    { id: "tesina", title: "Tesina", desc: "Trabajo monográfico o ensayo académico.", meta: "Licenciatura" },
+    { id: "tesina", title: "Tesina", desc: "Trabajo corto o monográfico con estructura sencilla.", meta: "Licenciatura" },
+    { id: "tesis", title: "Tesis", desc: "Investigación formal para licenciatura o posgrado.", meta: "Licenciatura · Maestría · Doctorado" },
+    { id: "especialidad", title: "Especialidad", desc: "Trabajo profesional o clínico con requisitos más acotados.", meta: "Especialidad" },
+    { id: "posdoctorado", title: "Posdoctorado", desc: "Reporte avanzado con énfasis en resultados y publicaciones.", meta: "Posdoctorado" },
   ];
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        ¿Qué tipo de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>documento</em> es?
+        ¿Qué tipo de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>trabajo académico</em> vas a crear?
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 540 }}>
-        Define la estructura base. Todo es configurable después.
+        TeXisStudio te propondrá una estructura inicial. Después podrás ajustar secciones, portada y requisitos institucionales.
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, maxWidth: 820 }}>
         {options.map((o) => (
@@ -318,22 +320,41 @@ const PLACEMENT_SHORT: Record<string, string> = {
 
 // Paso 3: selección de perfil con preview de secciones
 function StepPerfil({
-  profiles, selected, onSelect,
+  profiles, selected, onSelect, docType, institution,
 }: {
-  profiles: ProfileInfo[]; selected: string; onSelect: (id: string) => void;
+  profiles: ProfileInfo[]; selected: string; onSelect: (id: string) => void; docType: string; institution: string;
 }) {
   const selProfile = profiles.find((p) => p.id === selected);
+  const institutionText = institution.trim().toLowerCase();
+  const recommendedProfile =
+    profiles.find((p) => institutionText && p.name.toLowerCase().includes(institutionText)) ??
+    profiles.find((p) => docType === "tesina" ? p.id.includes("tesina") : p.id.includes("thesis")) ??
+    profiles[0];
 
   return (
     <div style={{ display: "flex", gap: 24, maxWidth: 900, alignItems: "flex-start" }}>
       {/* Listado */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-          ¿Qué <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>perfil</em> usarás?
+          Elige tu <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>perfil académico</em>
         </h1>
         <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 22, maxWidth: 500 }}>
-          Cada perfil define la clase LaTeX, paquetes y estructura de secciones.
+          Nosotros te sugerimos uno. Si tu institución no aparece exacta, puedes empezar con la mejor coincidencia y cambiarlo después.
         </p>
+        {recommendedProfile && (
+          <div style={{
+            marginBottom: 14, padding: "12px 14px", borderRadius: "var(--r-md)",
+            background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+            fontSize: "var(--fs-sm)", color: "var(--accent-deep)", lineHeight: 1.6,
+          }}>
+            <strong>Recomendación inicial:</strong> {recommendedProfile.name}
+            <div style={{ color: "var(--fg-muted)", marginTop: 4 }}>
+              {institution.trim()
+                ? `La elegimos porque se parece a ${institution.trim()} y al tipo de trabajo que seleccionaste.`
+                : "La elegimos como punto de partida seguro para este tipo de trabajo."}
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {profiles.map((p) => (
             <div
@@ -360,6 +381,11 @@ function StepPerfil({
                   <span style={{ fontSize: "var(--fs-md)", fontWeight: 500, color: "var(--fg-strong)" }}>{p.name}</span>
                   <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                     <ProfileStatusBadge status={p.status} />
+                    {recommendedProfile?.id === p.id && (
+                      <span className="chip" style={{ fontSize: 10 }}>
+                        recomendado
+                      </span>
+                    )}
                     {selected === p.id && (
                       <span className="chip chip-accent" style={{ fontSize: 10 }}>
                         <IconCheck size={8} sw={2.5} /> seleccionado
@@ -427,6 +453,75 @@ function StepPerfil({
   );
 }
 
+function StepReview({
+  docType,
+  form,
+  profile,
+  advisors,
+  coAuthors,
+  outputPath,
+}: {
+  docType: string;
+  form: Record<string, string>;
+  profile?: ProfileInfo;
+  advisors: string[];
+  coAuthors: string[];
+  outputPath: string;
+}) {
+  const summaryRows = [
+    ["Trabajo", docType],
+    ["Título", form.title || "Pendiente"],
+    ["Autoría", form.full_name || "Pendiente"],
+    ["Institución", form.institution || "Pendiente"],
+    ["Facultad / departamento", form.faculty || "Opcional"],
+    ["Perfil", profile?.name ?? "Pendiente"],
+    ["Carpeta de destino", outputPath || "Pendiente"],
+  ];
+
+  return (
+    <>
+      <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
+        Revisa tu <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>configuración inicial</em>
+      </h1>
+      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 620 }}>
+        Estás a un paso de crear tu proyecto. Luego podrás escribir, revisar y entregar sin tocar LaTeX directamente.
+      </p>
+      <div style={{
+        maxWidth: 820, background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+        borderRadius: "var(--r-lg)", padding: 20, display: "flex", flexDirection: "column", gap: 10,
+      }}>
+        {summaryRows.map(([label, value]) => (
+          <div
+            key={label}
+            style={{ display: "flex", justifyContent: "space-between", gap: 16, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 10 }}
+          >
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>{label}</span>
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", textAlign: "right" }}>{value}</span>
+          </div>
+        ))}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+              Asesores y comité
+            </div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+              {advisors.filter((item) => item.trim()).length > 0 ? advisors.filter((item) => item.trim()).join(", ") : "Podrás agregarlos después."}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+              Coautores
+            </div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+              {coAuthors.filter((item) => item.trim()).length > 0 ? coAuthors.filter((item) => item.trim()).join(", ") : "No definidos."}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function WizardView() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -454,15 +549,26 @@ export default function WizardView() {
       .catch(() => {}); // silencioso, usa BUILTIN_PROFILES como fallback
   }, []);
 
+  useEffect(() => {
+    if (docType === "tesina") {
+      setProfileId("generic.tesina");
+      return;
+    }
+    if (["tesis", "especialidad", "posdoctorado"].includes(docType)) {
+      setProfileId("generic.thesis");
+    }
+  }, [docType]);
+
   async function handlePickFolder() {
     const picked = await api.pickFolder();
     if (picked) setOutputPath(picked);
   }
 
   const steps = [
-    { name: "Tipo de documento", hint: docType ? docType : "Tesis · Tesina" },
-    { name: "Datos del trabajo", hint: form.institution || "Institución, autor, asesor" },
-    { name: "Perfil", hint: profiles.find((p) => p.id === profileId)?.name ?? "Estructura y normas" },
+    { name: "Tipo de trabajo", hint: docType ? docType : "Tesina · Tesis · Posgrado" },
+    { name: "Contexto académico", hint: form.institution || "Institución, autoría y comité" },
+    { name: "Perfil recomendado", hint: profiles.find((p) => p.id === profileId)?.name ?? "Estructura y normas" },
+    { name: "Revisión final", hint: "Resumen antes de crear el proyecto" },
   ];
 
   async function handleCreate() {
@@ -523,7 +629,7 @@ export default function WizardView() {
       <TxAppbar
         left={<TxLogo />}
         center={<span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
-          Nuevo proyecto · paso {step + 1} de {steps.length}
+          Asistente de tesis · paso {step + 1} de {steps.length}
         </span>}
         right={
           <button className="btn btn-ghost btn-sm" onClick={() => navigate("/")}>
@@ -535,10 +641,10 @@ export default function WizardView() {
       <div style={S.shell}>
         <aside style={S.rail}>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)", fontWeight: 500, color: "var(--fg-strong)", margin: "0 0 4px", letterSpacing: "-0.01em" }}>
-            Crear proyecto
+            Asistente de tesis
           </h2>
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 28 }}>
-            Te guiamos en la configuración inicial. Todo es editable después.
+            Te guiamos para dejar listo el proyecto sin pedirte que conozcas LaTeX. Todo se puede ajustar después.
           </p>
           {steps.map((s, i) => (
             <WizStep
@@ -576,7 +682,23 @@ export default function WizardView() {
             />
           )}
           {step === 2 && (
-            <StepPerfil profiles={profiles} selected={profileId} onSelect={setProfileId} />
+            <StepPerfil
+              profiles={profiles}
+              selected={profileId}
+              onSelect={setProfileId}
+              docType={docType}
+              institution={form.institution ?? ""}
+            />
+          )}
+          {step === 3 && (
+            <StepReview
+              docType={docType}
+              form={form}
+              profile={profiles.find((p) => p.id === profileId)}
+              advisors={advisors}
+              coAuthors={coAuthors}
+              outputPath={outputPath}
+            />
           )}
 
           {/* Campo de carpeta de destino — visible solo en el último paso */}

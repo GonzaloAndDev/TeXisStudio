@@ -1,17 +1,18 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
-import AboutView from "./views/AboutView";
-import CompileView from "./views/CompileView";
-import EditorView from "./views/EditorView";
-import HomeView from "./views/HomeView";
-import LibraryView from "./views/LibraryView";
-import ProfileWizardView from "./views/ProfileWizardView";
-import ProgressView from "./views/ProgressView";
-import SetupLatexView from "./views/SetupLatexView";
-import SettingsView from "./views/SettingsView";
-import WizardView from "./views/WizardView";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
+
+const AboutView = lazy(() => import("./views/AboutView"));
+const CompileView = lazy(() => import("./views/CompileView"));
+const EditorView = lazy(() => import("./views/EditorView"));
+const HomeView = lazy(() => import("./views/HomeView"));
+const LibraryView = lazy(() => import("./views/LibraryView"));
+const ProfileWizardView = lazy(() => import("./views/ProfileWizardView"));
+const ProgressView = lazy(() => import("./views/ProgressView"));
+const SetupLatexView = lazy(() => import("./views/SetupLatexView"));
+const SettingsView = lazy(() => import("./views/SettingsView"));
+const WizardView = lazy(() => import("./views/WizardView"));
 
 // Proyecto demo para previsualizar el editor en dev-browser sin Tauri
 const DEMO_PROJECT: ProjectModel = {
@@ -167,22 +168,33 @@ export default function App() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Routes>
-          <Route path="/" element={<HomeView />} />
-          <Route path="/new" element={<WizardView />} />
-          <Route path="/demo" element={<DemoLoader />} />
-          <Route path="/project/:id" element={<EditorView />} />
-          <Route path="/project/:id/compile" element={<CompileView />} />
-          <Route path="/project/:id/progress" element={<ProgressView />} />
-          <Route path="/library" element={<LibraryView />} />
-          <Route path="/new-profile" element={<ProfileWizardView />} />
-          <Route path="/new-profile/:id" element={<ProfileWizardView />} />
-          <Route path="/about" element={<AboutView />} />
-          <Route path="/setup-latex" element={<SetupLatexView />} />
-          <Route path="/settings" element={<SettingsView />} />
-          <Route path="/settings/:section" element={<SettingsView />} />
-          <Route path="*" element={<HomeView />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <div style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "var(--bg-app)", color: "var(--fg-muted)", fontSize: "var(--fs-sm)",
+            }}>
+              Cargando vista…
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/new" element={<WizardView />} />
+            <Route path="/demo" element={<DemoLoader />} />
+            <Route path="/project/:id" element={<EditorView />} />
+            <Route path="/project/:id/compile" element={<CompileView />} />
+            <Route path="/project/:id/progress" element={<ProgressView />} />
+            <Route path="/library" element={<LibraryView />} />
+            <Route path="/new-profile" element={<ProfileWizardView />} />
+            <Route path="/new-profile/:id" element={<ProfileWizardView />} />
+            <Route path="/about" element={<AboutView />} />
+            <Route path="/setup-latex" element={<SetupLatexView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="/settings/:section" element={<SettingsView />} />
+            <Route path="*" element={<HomeView />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </div>
   );
