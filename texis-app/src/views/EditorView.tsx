@@ -506,29 +506,29 @@ export default function EditorView() {
     .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks), 0);
 
   const projectName = activeProject.metadata.title;
-  const toolbarItems: [ContentBlock["type"], React.ReactNode, string][] = userMode === "basic"
+  const toolbarItems: [ContentBlock["type"], React.ReactNode, string, string?][] = userMode === "basic"
     ? [
-        ["paragraph", <IconText size={12} />, "Agregar texto"],
-        ["heading", <IconHeading size={12} />, "Agregar título"],
-        ["list", <IconList size={12} />, "Agregar lista"],
-        ["citation", <IconMore size={12} />, "Agregar cita"],
-        ["figure", <IconImage size={12} />, "Agregar figura"],
-        ["table", <IconTable size={12} />, "Agregar tabla"],
-        ["equation", <IconSigma size={12} />, "Agregar ecuación"],
+        ["paragraph", <IconText size={12} />, "Agregar texto", "Escribe un párrafo de contenido"],
+        ["heading", <IconHeading size={12} />, "Agregar título", "Sección, subsección o apartado"],
+        ["list", <IconList size={12} />, "Agregar lista", "Lista con viñetas o numerada"],
+        ["citation", <IconMore size={12} />, "Agregar cita", "Cita bibliográfica de tu lista de referencias"],
+        ["figure", <IconImage size={12} />, "Agregar figura", "Imagen con caption y número automático"],
+        ["table", <IconTable size={12} />, "Agregar tabla", "Tabla con filas, columnas y caption"],
+        ["equation", <IconSigma size={12} />, "Agregar ecuación", "Ecuación numerada en LaTeX (amsmath)"],
       ]
     : [
-        ["paragraph", <IconText size={12} />, "Párrafo"],
-        ["heading", <IconHeading size={12} />, "Título"],
-        ["list", <IconList size={12} />, "Lista"],
-        ["equation", <IconSigma size={12} />, "Ecuación"],
+        ["paragraph", <IconText size={12} />, "Párrafo", "Párrafo de texto"],
+        ["heading", <IconHeading size={12} />, "Título", "Sección / Subsección"],
+        ["list", <IconList size={12} />, "Lista", "Itemize / Enumerate"],
+        ["equation", <IconSigma size={12} />, "Ecuación", "equation / equation* (amsmath)"],
         ["figure", <IconImage size={12} />, "Figura"],
         ["table", <IconTable size={12} />, "Tabla"],
-        ["raw_latex", <IconCode size={12} />, "LaTeX"],
-        ["code", <IconCode size={12} />, "Código"],
-        ["algorithm", <IconAlgorithm size={12} />, "Algoritmo"],
-        ["theorem", <IconTheorem size={12} />, "Teorema"],
-        ["glossary_entry", <IconGlossaryEntry size={12} />, "Glosario"],
-        ["acronym_entry", <IconAcronym size={12} />, "Acrónimo"],
+        ["raw_latex", <IconCode size={12} />, "LaTeX", "Bloque LaTeX directo (requiere confirmación)"],
+        ["code", <IconCode size={12} />, "Código", "lstlisting — código fuente con resaltado"],
+        ["algorithm", <IconAlgorithm size={12} />, "Algoritmo", "algpseudocode — pseudocódigo numerado"],
+        ["theorem", <IconTheorem size={12} />, "Teorema", "amsthm — Teorema / Proposición / Lema"],
+        ["glossary_entry", <IconGlossaryEntry size={12} />, "Glosario", "Término con definición en la sección de glosario"],
+        ["acronym_entry", <IconAcronym size={12} />, "Acrónimo", "Acrónimo con forma completa en el glosario"],
       ];
 
   const saveLabel =
@@ -626,12 +626,12 @@ export default function EditorView() {
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
           <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
-            {toolbarItems.map(([type, icon, label]) => (
+            {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
                 className="btn btn-ghost btn-sm"
                 onClick={() => addBlock(type)}
-                title={label}
+                title={tooltip ?? label}
                 style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
               >
                 {icon}<span>{label}</span>
