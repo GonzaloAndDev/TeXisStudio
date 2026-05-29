@@ -275,6 +275,20 @@ export function AiAssistantPanel({
         </button>
       </div>
 
+      {/* Principio de responsabilidad — visible siempre */}
+      <div style={{
+        padding: "7px 12px",
+        borderBottom: "1px solid var(--border-subtle)",
+        fontSize: 10,
+        color: "var(--fg-faint)",
+        lineHeight: 1.6,
+        background: "var(--bg-panel)",
+      }}>
+        El asistente apoya tu trabajo como redactor, editor, revisor, asesor y sinodal simulado.
+        {" "}<strong style={{ color: "var(--fg-muted)" }}>No reemplaza a ningún actor real.</strong>
+        {" "}La autoría, la corrección y la responsabilidad del trabajo son del autor.
+      </div>
+
       {/* Pestañas de proveedor */}
       <div style={{ display: "flex", borderBottom: "1px solid var(--border-subtle)" }}>
         {PROVIDERS.map((p) => (
