@@ -108,8 +108,7 @@ impl AiActionMode {
             AiActionMode::CheckConsistency => "Verificar consistencia",
             AiActionMode::SuggestStructure => "Sugerir estructura",
             AiActionMode::SimulateExaminer => "Sinodal simulado",
-            AiActionMode::AppHelp
-                | AiActionMode::LearnLatex => "Ayuda de la app",
+            AiActionMode::AppHelp => "Ayuda de la app",
             AiActionMode::LearnLatex => "Entender el LaTeX",
             // Auto
             AiActionMode::ImproveWriting => "Mejorar redacción",
@@ -145,6 +144,7 @@ impl AiActionMode {
                 | AiActionMode::SuggestStructure
                 | AiActionMode::SimulateExaminer
                 | AiActionMode::AppHelp
+                | AiActionMode::LearnLatex
         )
     }
 }
