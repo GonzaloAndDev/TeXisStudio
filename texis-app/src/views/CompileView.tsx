@@ -479,8 +479,8 @@ export default function CompileView() {
               </div>
             )}
 
-            {/* Estado idle normal */}
-            {compileState === "idle" && !nothingInstalled && (
+            {/* Estado idle normal — solo cuando no hay otro panel informativo visible */}
+            {compileState === "idle" && !nothingInstalled && !glossarySummary && !glossaryIssues && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ margin: 0 }}>Presiona <strong>Compilar</strong> para generar el PDF.</p>

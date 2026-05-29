@@ -51,6 +51,51 @@ pub fn analyze_glossary(project_root: String) -> Result<serde_json::Value, Strin
 /// referencias `\gls{...}` encontradas en bloques RawLatex del mismo proyecto.
 ///
 /// Retorna None si no existe un proyecto YAML o no tiene entradas de glosario.
+/// Extrae definiciones de glosario/acrónimos y fuentes raw_latex de una sección
+/// y de todas sus subsecciones (children), recursivamente.
+fn collect_blocks_from_section(
+    section: &texis_core::project::model::ProjectSection,
+    entries: &mut Vec<GlossaryEntry>,
+    acronyms: &mut Vec<AcronymEntry>,
+    raw_sources: &mut Vec<String>,
+) {
+    for block in &section.blocks {
+        match block {
+            ContentBlock::GlossaryEntry(g) => {
+                entries.push(GlossaryEntry {
+                    key: g.id.clone(),
+                    name: g.term.clone(),
+                    name_plural: None,
+                    description: g.definition.clone(),
+                    symbol: None,
+                    category: None,
+                    status: GlossaryEntryStatus::DefinedUnused,
+                });
+            }
+            ContentBlock::AcronymEntry(a) => {
+                acronyms.push(AcronymEntry {
+                    key: a.id.clone(),
+                    short: a.acronym.clone(),
+                    long: a.full_form.clone(),
+                    long_plural: None,
+                    description: a.description.clone(),
+                    status: GlossaryEntryStatus::DefinedUnused,
+                });
+            }
+            // Solo bloques confirmados: los no confirmados no deberían influir
+            // en el análisis de uso (producirían falsos UsedUndefined).
+            ContentBlock::RawLatex(r) if r.user_confirmed => {
+                raw_sources.push(r.content.clone());
+            }
+            _ => {}
+        }
+    }
+    // Recursión en subsecciones
+    for child in &section.children {
+        collect_blocks_from_section(child, entries, acronyms, raw_sources);
+    }
+}
+
 fn load_glossary_from_yaml(root: &std::path::Path) -> Option<GlossaryRegistry> {
     let project_file = find_project_file(root)?;
 
@@ -61,37 +106,14 @@ fn load_glossary_from_yaml(root: &std::path::Path) -> Option<GlossaryRegistry> {
     let mut defined_acronyms: Vec<AcronymEntry> = Vec::new();
     let mut raw_latex_sources: Vec<String> = Vec::new();
 
+    // Recorre secciones y subsecciones recursivamente.
     for section in &model.sections {
-        for block in &section.blocks {
-            match block {
-                ContentBlock::GlossaryEntry(g) => {
-                    defined_entries.push(GlossaryEntry {
-                        key: g.id.clone(),
-                        name: g.term.clone(),
-                        name_plural: None,
-                        description: g.definition.clone(),
-                        symbol: None,
-                        category: None,
-                        // Estado provisional; se recalcula abajo
-                        status: GlossaryEntryStatus::DefinedUnused,
-                    });
-                }
-                ContentBlock::AcronymEntry(a) => {
-                    defined_acronyms.push(AcronymEntry {
-                        key: a.id.clone(),
-                        short: a.acronym.clone(),
-                        long: a.full_form.clone(),
-                        long_plural: None,
-                        description: a.description.clone(),
-                        status: GlossaryEntryStatus::DefinedUnused,
-                    });
-                }
-                ContentBlock::RawLatex(r) if r.user_confirmed => {
-                    raw_latex_sources.push(r.content.clone());
-                }
-                _ => {}
-            }
-        }
+        collect_blocks_from_section(
+            section,
+            &mut defined_entries,
+            &mut defined_acronyms,
+            &mut raw_latex_sources,
+        );
     }
 
     if defined_entries.is_empty() && defined_acronyms.is_empty() {

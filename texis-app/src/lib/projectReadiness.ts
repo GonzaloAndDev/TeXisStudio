@@ -17,7 +17,10 @@ function countWords(blocks: ContentBlock[]): number {
 }
 
 export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness {
-  const hasAdvisor = (project.student.advisors?.length ?? 0) > 0;
+  // Acepta el campo nuevo (array) O el campo legacy (string), filtrando strings vacíos.
+  const hasAdvisor =
+    project.student.advisors?.some((a) => a.trim().length > 0) ??
+    (project.student.advisor?.trim().length ?? 0) > 0;
   const setupChecks = [
     { ok: !!project.metadata.title.trim(), label: "Define el título del trabajo" },
     { ok: !!project.student.full_name.trim(), label: "Completa la autoría principal" },

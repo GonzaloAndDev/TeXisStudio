@@ -33,19 +33,18 @@ const AUTO_GENERATED_ELEMENTS: &[&str] = &[
     // Portada — nombres canónicos y aliases comunes
     "title_page",
     "cover",
-    // Índices automáticos
+    // Índices automáticos (LaTeX genera el contenido de estos)
     "table_of_contents",
     "toc",
     "list_of_figures",
     "list_of_tables",
     "list_of_algorithms",
     "list_of_listings",
-    // Bibliografía automática
+    // Bibliografía automática (la genera biblatex)
     "references",
     "bibliography",
-    // Glosario/acrónimos cuando no tienen entradas manuales
-    "glossary",
-    "acronyms",
+    // NOTA: "glossary" y "acronyms" NO están aquí — si un perfil los declara
+    // como required: true, el usuario debe agregar entradas reales.
 ];
 
 fn check_profile_required_sections(

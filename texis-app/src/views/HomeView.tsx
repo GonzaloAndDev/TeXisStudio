@@ -84,15 +84,19 @@ const S = {
 
 import React from "react";
 
+// Todos los prefijos de país usados en el catálogo de perfiles.
+const PROFILE_COUNTRY_PREFIX_RE = /^(mx|us|uk|ca|es|de|fr|jp|br|ar|co|cl|cn|in|kr|sg|nl|se|it)_/;
+
 function humanizeProfileId(id: string): string {
-  if (!id || id === "generic.thesis" || id === "generic.tesina") return "";
-  // mx_unam_apa7 → "UNAM · APA 7"
-  // us_mit_ieee  → "MIT · IEEE"
-  const parts = id.replace(/^(mx|us|uk|ca|es|de|fr|jp)_/, "").split("_");
+  // Perfiles genéricos no tienen institución que mostrar
+  if (!id || id.startsWith("generic.")) return "";
+  // mx_unam_apa7 → "UNAM · APA 7"  |  br_usp_abnt → "USP · ABNT"
+  const parts = id.replace(PROFILE_COUNTRY_PREFIX_RE, "").split("_");
   const styled = parts
-    .map((p) => p.toUpperCase().replace("APA7", "APA 7").replace("APA6", "APA 6")
-      .replace("IEEE", "IEEE").replace("MLA", "MLA").replace("CHICAGO", "Chicago")
-      .replace("VANCOUVER", "Vancouver").replace("HARVARD", "Harvard"))
+    .map((p) => p.toUpperCase()
+      .replace("APA7", "APA 7").replace("APA6", "APA 6")
+      .replace("CHICAGO", "Chicago").replace("VANCOUVER", "Vancouver")
+      .replace("HARVARD", "Harvard").replace("ABNT", "ABNT"))
     .join(" · ");
   return styled;
 }

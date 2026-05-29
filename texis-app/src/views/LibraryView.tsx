@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import { IconFolder, IconGlobe, IconGrid, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
@@ -63,9 +63,15 @@ export default function LibraryView() {
       .catch(() => setLoading(false));
   }, []);
 
-  const availableCountries = [...new Set(profiles.map((p) => profileCountry(p.id)))].sort();
-  const availableDegrees   = [...new Set(profiles.flatMap((p) => profileDegrees(p.tags)))].sort(
-    (a, b) => DEGREE_TAGS.indexOf(a) - DEGREE_TAGS.indexOf(b)
+  const availableCountries = useMemo(
+    () => [...new Set(profiles.map((p) => profileCountry(p.id)))].sort(),
+    [profiles]
+  );
+  const availableDegrees = useMemo(
+    () => [...new Set(profiles.flatMap((p) => profileDegrees(p.tags)))].sort(
+      (a, b) => DEGREE_TAGS.indexOf(a) - DEGREE_TAGS.indexOf(b)
+    ),
+    [profiles]
   );
 
   const filtered = profiles.filter((p) => {

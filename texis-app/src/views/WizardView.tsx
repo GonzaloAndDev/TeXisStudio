@@ -149,10 +149,18 @@ const DISCIPLINE_MATRIX: Record<string, DisciplineSupport> = {
   },
 };
 
+// Pre-normalized keys — se computan una sola vez al cargar el módulo.
+const DISCIPLINE_MATRIX_NORMALIZED: Array<[string, DisciplineSupport]> =
+  Object.entries(DISCIPLINE_MATRIX).map(([k, v]) => [normalize(k), v]);
+
 function getDisciplineSupport(discipline: string): DisciplineSupport | null {
   const norm = normalize(discipline);
-  for (const [key, value] of Object.entries(DISCIPLINE_MATRIX)) {
-    if (norm.includes(normalize(key)) || normalize(key).includes(norm)) {
+  // Requiere al menos 3 caracteres para evitar falsos positivos con "a", "co", etc.
+  if (norm.length < 3) return null;
+  for (const [normKey, value] of DISCIPLINE_MATRIX_NORMALIZED) {
+    // Solo la dirección: la clave contiene el input del usuario (coincidencia por prefijo/substring).
+    // La dirección inversa (norm.includes(key)) daría false-positive con keys cortas.
+    if (normKey.includes(norm) || norm.includes(normKey)) {
       return value;
     }
   }
