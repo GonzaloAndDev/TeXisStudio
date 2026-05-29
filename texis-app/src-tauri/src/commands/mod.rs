@@ -3,6 +3,7 @@
 
 pub mod ai;
 pub mod bibliography_unified;
+pub mod package;
 pub mod build;
 pub mod compiler;
 pub mod datacite;
