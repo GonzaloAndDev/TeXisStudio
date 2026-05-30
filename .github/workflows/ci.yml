@@ -49,8 +49,8 @@ jobs:
         if: runner.os != 'Linux'
         run: cargo test --package texis-core --lib
 
-      - name: Integration tests (snapshots + broken)
-        run: cargo test --workspace --test snapshots --test broken
+      - name: Integration tests (snapshots + broken + e2e)
+        run: cargo test --workspace --test snapshots --test broken --test e2e
 
       - name: Checkout TeXisStudio-Profiles (para tests de perfiles)
         uses: actions/checkout@v4
