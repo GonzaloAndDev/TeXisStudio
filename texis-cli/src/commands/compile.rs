@@ -1,7 +1,9 @@
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use texis_core::{
-    compiler::{latexmk::LatexmkBackend, CompilationBackend, CompilationOptions},
+    compiler::{
+        latexmk::LatexmkBackend, tectonic::TectonicBackend, CompilationBackend, CompilationOptions,
+    },
     profile::loader::ProfileLoader,
     project::{loader::ProjectLoader, model::LatexEngine},
     LaTeXGenerator,
@@ -71,7 +73,20 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
             println!("Compilando con latexmk...");
             backend.compile(&build_dir, &options)?
         }
-        other => anyhow::bail!("Backend '{}' no reconocido. Usa 'latexmk'.", other),
+        "tectonic" => {
+            let backend = TectonicBackend::new();
+            if !backend.is_available() {
+                anyhow::bail!(
+                    "tectonic no está instalado. Instala Tectonic o usa '--backend latexmk'."
+                );
+            }
+            println!("Compilando con tectonic...");
+            backend.compile(&build_dir, &options)?
+        }
+        other => anyhow::bail!(
+            "Backend '{}' no reconocido. Usa 'latexmk' o 'tectonic'.",
+            other
+        ),
     };
 
     if result.success {
