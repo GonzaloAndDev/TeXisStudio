@@ -314,6 +314,10 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\usepackage{booktabs}\n");
     out.push_str("\\usepackage{array}\n");
     out.push_str("\\usepackage{longtable}\n");
+    // rotating: requerido por sidewaystable (TableStyle::Wide)
+    if has_wide_table(model) {
+        out.push_str("\\usepackage{rotating}\n");
+    }
     out.push_str("\\usepackage{float}\n");
     out.push_str("\\usepackage{caption}\n");
     out.push_str("\\usepackage{setspace}\n");
@@ -650,6 +654,15 @@ fn render_estilo(model: &ProjectModel) -> String {
     out.push_str("\\newtheorem*{definition*}{Definici\\'{o}n}\n");
 
     out
+}
+
+fn has_wide_table(model: &ProjectModel) -> bool {
+    use crate::project::model::{ContentBlock, TableStyle};
+    model.sections.iter().any(|s| {
+        s.blocks.iter().any(
+            |b| matches!(b, ContentBlock::Table(t) if matches!(t.table_style, TableStyle::Wide)),
+        )
+    })
 }
 
 fn render_datos_tesis(model: &ProjectModel) -> String {

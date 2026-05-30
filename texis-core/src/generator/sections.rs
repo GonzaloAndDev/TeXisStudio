@@ -302,63 +302,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             )
         }
 
-        ContentBlock::Table(t) => {
-            let n = t.headers.len();
-            let caption = if t.verbatim_caption {
-                t.caption.clone()
-            } else {
-                latex_escape(&t.caption)
-            };
-            let headers = t
-                .headers
-                .iter()
-                .map(|h| {
-                    if t.raw_headers {
-                        h.clone()
-                    } else {
-                        latex_escape(h)
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" & ");
-            let rows: String = t
-                .rows
-                .iter()
-                .map(|row| {
-                    let cells = row
-                        .iter()
-                        .map(|c| {
-                            if t.raw_cells {
-                                c.clone()
-                            } else {
-                                latex_escape(c)
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join(" & ");
-                    format!("    {} \\\\\n", cells)
-                })
-                .collect();
-            // Todas las tablas usan adjustbox: es inerte cuando el contenido ya
-            // cabe en el margen y escala automáticamente cuando desborda.
-            // No hay costo ni diferencia visual en tablas que entran normalmente.
-            let tabular_body = format!(
-                "    \\begin{{tabular}}{{{}}}\n    \\toprule\n    {} \\\\\n    \\midrule\n{}    \\bottomrule\n    \\end{{tabular}}",
-                (0..n).map(|_| "l").collect::<Vec<_>>().join(" "),
-                headers,
-                rows,
-            );
-            let inner = format!(
-                "    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{}\n    \\end{{adjustbox}}",
-                tabular_body
-            );
-            format!(
-                "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{}}}\n    \\label{{{}}}\n{}\n\\end{{table}}\n\n",
-                caption,
-                t.label,
-                inner,
-            )
-        }
+        ContentBlock::Table(t) => render_table(t),
 
         ContentBlock::RawLatex(r) => {
             if !r.user_confirmed {
@@ -493,6 +437,143 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             format!(
                 "\\begin{{{}}}{}\n    {}\n\\end{{{}}}\n\n",
                 env, title_opt, body, env
+            )
+        }
+    }
+}
+
+// ── Tablas ────────────────────────────────────────────────────────────────────
+
+fn render_table(t: &crate::project::model::TableBlock) -> String {
+    use crate::project::model::TableStyle;
+
+    let n = t.headers.len();
+    let caption = if t.verbatim_caption {
+        t.caption.clone()
+    } else {
+        latex_escape(&t.caption)
+    };
+
+    let escape_cell = |s: &str, raw: bool| -> String {
+        if raw {
+            s.to_string()
+        } else {
+            latex_escape(s)
+        }
+    };
+
+    let header_row = t
+        .headers
+        .iter()
+        .map(|h| escape_cell(h, t.raw_headers))
+        .collect::<Vec<_>>()
+        .join(" & ");
+
+    let col_spec = (0..n).map(|_| "l").collect::<Vec<_>>().join(" ");
+
+    match &t.table_style {
+        // ── Simple: tabular básico sin booktabs, sin adjustbox ────────────────
+        TableStyle::Simple => {
+            let rows: String = t
+                .rows
+                .iter()
+                .map(|row| {
+                    let cells = row
+                        .iter()
+                        .map(|c| escape_cell(c, t.raw_cells))
+                        .collect::<Vec<_>>()
+                        .join(" & ");
+                    format!("    {} \\\\\n", cells)
+                })
+                .collect();
+            format!(
+                "\\begin{{table}}[htbp]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{tabular}}{{{col_spec}}}\n    \\hline\n    {header_row} \\\\\n    \\hline\n{rows}    \\hline\n  \\end{{tabular}}\n\\end{{table}}\n\n",
+                caption = caption,
+                label = t.label,
+                col_spec = col_spec,
+                header_row = header_row,
+                rows = rows,
+            )
+        }
+
+        // ── Wide: tabla apaisada (sidewaystable) con adjustbox ────────────────
+        TableStyle::Wide => {
+            let rows: String = t
+                .rows
+                .iter()
+                .map(|row| {
+                    let cells = row
+                        .iter()
+                        .map(|c| escape_cell(c, t.raw_cells))
+                        .collect::<Vec<_>>()
+                        .join(" & ");
+                    format!("      {} \\\\\n", cells)
+                })
+                .collect();
+            format!(
+                "\\begin{{sidewaystable}}[htbp]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{adjustbox}}{{max width=\\textheight}}\n    \\begin{{tabular}}{{{col_spec}}}\n    \\toprule\n    {header_row} \\\\\n    \\midrule\n{rows}    \\bottomrule\n    \\end{{tabular}}\n  \\end{{adjustbox}}\n\\end{{sidewaystable}}\n\n",
+                caption = caption,
+                label = t.label,
+                col_spec = col_spec,
+                header_row = header_row,
+                rows = rows,
+            )
+        }
+
+        // ── Long: tabla multi-página con longtable ─────────────────────────────
+        TableStyle::Long => {
+            let rows: String = t
+                .rows
+                .iter()
+                .map(|row| {
+                    let cells = row
+                        .iter()
+                        .map(|c| escape_cell(c, t.raw_cells))
+                        .collect::<Vec<_>>()
+                        .join(" & ");
+                    format!("  {} \\\\\n", cells)
+                })
+                .collect();
+            // longtable no va dentro de \begin{table} — es su propio entorno flotante
+            format!(
+                "\\begin{{longtable}}{{{col_spec}}}\n  \\caption{{{caption}}}\\label{{{label}}} \\\\\n  \\toprule\n  {header_row} \\\\\n  \\midrule\n  \\endfirsthead\n  \\caption*{{\\tablename~\\thetable\\ (continuación)}} \\\\\n  \\toprule\n  {header_row} \\\\\n  \\midrule\n  \\endhead\n  \\midrule\n  \\multicolumn{{{n}}}{{r}}{{Continúa en la página siguiente\\ldots}}\n  \\endfoot\n  \\bottomrule\n  \\endlastfoot\n{rows}\\end{{longtable}}\n\n",
+                col_spec = col_spec,
+                caption = caption,
+                label = t.label,
+                header_row = header_row,
+                n = n,
+                rows = rows,
+            )
+        }
+
+        // ── Booktabs (default): tabla profesional con adjustbox ───────────────
+        TableStyle::Booktabs => {
+            let rows: String = t
+                .rows
+                .iter()
+                .map(|row| {
+                    let cells = row
+                        .iter()
+                        .map(|c| escape_cell(c, t.raw_cells))
+                        .collect::<Vec<_>>()
+                        .join(" & ");
+                    format!("    {} \\\\\n", cells)
+                })
+                .collect();
+            let tabular_body = format!(
+                "    \\begin{{tabular}}{{{col_spec}}}\n    \\toprule\n    {header_row} \\\\\n    \\midrule\n{rows}    \\bottomrule\n    \\end{{tabular}}",
+                col_spec = col_spec,
+                header_row = header_row,
+                rows = rows,
+            );
+            let inner = format!(
+                "    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{tabular_body}\n    \\end{{adjustbox}}"
+            );
+            format!(
+                "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{caption}}}\n    \\label{{{label}}}\n{inner}\n\\end{{table}}\n\n",
+                caption = caption,
+                label = t.label,
+                inner = inner,
             )
         }
     }
@@ -931,5 +1012,63 @@ mod tests {
         });
         let out = render_block(&block);
         assert!(out.contains("\\begin{lemma*}"));
+    }
+
+    fn make_table(style: crate::project::model::TableStyle) -> ContentBlock {
+        use crate::project::model::TableBlock;
+        ContentBlock::Table(TableBlock {
+            id: "t1".to_string(),
+            caption: "Resultados".to_string(),
+            source: None,
+            label: "tab:resultados".to_string(),
+            include_in_list: true,
+            raw_headers: false,
+            raw_cells: false,
+            verbatim_caption: false,
+            headers: vec!["Col A".to_string(), "Col B".to_string()],
+            rows: vec![vec!["1".to_string(), "2".to_string()]],
+            table_style: style,
+        })
+    }
+
+    #[test]
+    fn tabla_booktabs_usa_adjustbox_y_toprule() {
+        use crate::project::model::TableStyle;
+        let out = render_block(&make_table(TableStyle::Booktabs));
+        assert!(out.contains("\\begin{table}"), "debe ser entorno table");
+        assert!(out.contains("\\toprule"), "debe tener toprule");
+        assert!(out.contains("adjustbox"), "debe usar adjustbox");
+        assert!(out.contains("tab:resultados"));
+    }
+
+    #[test]
+    fn tabla_simple_usa_hline_sin_adjustbox() {
+        use crate::project::model::TableStyle;
+        let out = render_block(&make_table(TableStyle::Simple));
+        assert!(out.contains("\\hline"), "Simple usa \\hline");
+        assert!(!out.contains("\\toprule"), "Simple NO usa toprule");
+        assert!(!out.contains("adjustbox"), "Simple NO usa adjustbox");
+    }
+
+    #[test]
+    fn tabla_long_usa_longtable_con_endfirsthead() {
+        use crate::project::model::TableStyle;
+        let out = render_block(&make_table(TableStyle::Long));
+        assert!(out.contains("\\begin{longtable}"));
+        assert!(out.contains("\\endfirsthead"));
+        assert!(out.contains("\\endlastfoot"));
+        assert!(!out.contains("\\begin{table}"), "Long NO usa entorno table");
+    }
+
+    #[test]
+    fn tabla_wide_usa_sidewaystable() {
+        use crate::project::model::TableStyle;
+        let out = render_block(&make_table(TableStyle::Wide));
+        assert!(out.contains("\\begin{sidewaystable}"));
+        assert!(out.contains("\\toprule"));
+        assert!(
+            !out.contains("\\begin{table}["),
+            "Wide NO usa entorno table estándar"
+        );
     }
 }
