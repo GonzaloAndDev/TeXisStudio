@@ -285,20 +285,27 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 FigureWidth::ThreeQuarters => "0.75\\linewidth",
                 FigureWidth::Full => "\\linewidth",
             };
+            let caption = if f.verbatim_caption {
+                f.caption.clone()
+            } else {
+                latex_escape(&f.caption)
+            };
             format!(
                 "\\begin{{figure}}[htbp]\n    \\centering\n    \\includegraphics[width={}]{{../content/figures/{}}}\n    \\caption{{{}}}\n    \\label{{{}}}\n\\end{{figure}}\n\n",
                 width,
                 f.file,
-                latex_escape(&f.caption),
+                caption,
                 f.label
             )
         }
 
         ContentBlock::Table(t) => {
-            let col_spec = (0..t.headers.len())
-                .map(|_| "l")
-                .collect::<Vec<_>>()
-                .join(" ");
+            let n = t.headers.len();
+            let caption = if t.verbatim_caption {
+                t.caption.clone()
+            } else {
+                latex_escape(&t.caption)
+            };
             let headers = t
                 .headers
                 .iter()
@@ -311,19 +318,31 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 .map(|row| {
                     let cells = row
                         .iter()
-                        .map(|c| latex_escape(c))
+                        .map(|c| if t.raw_cells { c.clone() } else { latex_escape(c) })
                         .collect::<Vec<_>>()
                         .join(" & ");
                     format!("    {} \\\\\n", cells)
                 })
                 .collect();
-            format!(
-                "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{}}}\n    \\label{{{}}}\n    \\begin{{tabular}}{{{}}}\n    \\toprule\n    {} \\\\\n    \\midrule\n{}    \\bottomrule\n    \\end{{tabular}}\n\\end{{table}}\n\n",
-                latex_escape(&t.caption),
-                t.label,
-                col_spec,
+            // Tablas anchas (≥5 cols o con celdas verbatim) usan adjustbox para
+            // escalar automáticamente al ancho de texto sin desbordar el margen.
+            let wide = n >= 5 || t.raw_cells;
+            let tabular_body = format!(
+                "    \\begin{{tabular}}{{{}}}\n    \\toprule\n    {} \\\\\n    \\midrule\n{}    \\bottomrule\n    \\end{{tabular}}",
+                (0..n).map(|_| "l").collect::<Vec<_>>().join(" "),
                 headers,
-                rows
+                rows,
+            );
+            let inner = if wide {
+                format!("    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{}\n    \\end{{adjustbox}}", tabular_body)
+            } else {
+                tabular_body
+            };
+            format!(
+                "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{}}}\n    \\label{{{}}}\n{}\n\\end{{table}}\n\n",
+                caption,
+                t.label,
+                inner,
             )
         }
 
@@ -450,11 +469,16 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 Some(ti) if !ti.trim().is_empty() => format!("[{}]", latex_escape(ti)),
                 _ => String::new(),
             };
+            let body = if t.verbatim {
+                t.content.clone()
+            } else {
+                latex_escape(&t.content)
+            };
             format!(
                 "\\begin{{{}}}{}\n    {}\n\\end{{{}}}\n\n",
                 env,
                 title_opt,
-                latex_escape(&t.content),
+                body,
                 env
             )
         }
@@ -823,6 +847,7 @@ mod tests {
             title: Some("Pitágoras".to_string()),
             content: "En un triángulo rectángulo...".to_string(),
             numbered: true,
+            verbatim: false,
         });
         let out = render_block(&block);
         assert!(out.contains("\\begin{theorem}[Pit"));
@@ -838,6 +863,7 @@ mod tests {
             title: None,
             content: "Contenido del lema.".to_string(),
             numbered: false,
+            verbatim: false,
         });
         let out = render_block(&block);
         assert!(out.contains("\\begin{lemma*}"));

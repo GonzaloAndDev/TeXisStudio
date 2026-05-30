@@ -220,12 +220,40 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\usepackage{setspace}\n");
     out.push_str("\\usepackage{microtype}\n");
     out.push_str("\\usepackage{csquotes}\n");
+    // adjustbox: escala tablas anchas para que no desborden el margen
+    out.push_str("\\usepackage{adjustbox}\n");
 
-    // ── Configuración de idioma (paquetes de la comunidad) ───────────────────
-    // Sólo se emite cuando el frontend pasa un lang_config extraído de la
-    // localStorage del pack instalado (tx-lang-pack-latex:{id}).
-    // Si no hay config de idioma, el documento queda en el idioma por defecto
-    // de la clase (generalmente español/inglés del perfil).
+    // ── Configuración de idioma ───────────────────────────────────────────────
+    // Prioridad: (1) lang_config del pack instalado, (2) model.metadata.language.
+    // Esto garantiza que documentos en español siempre tengan el idioma correcto
+    // aunque no haya un pack de idioma instalado.
+    if lang_config.is_none() {
+        match model.metadata.language.as_str() {
+            "es" => {
+                out.push_str("\n% Idioma del documento (detectado desde metadata)\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{spanish}\n");
+                out.push_str("\\setotherlanguage{english}\n");
+            }
+            "fr" => {
+                out.push_str("\n% Idioma del documento\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{french}\n");
+            }
+            "pt" => {
+                out.push_str("\n% Idioma del documento\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{portuges}\n");
+            }
+            "de" => {
+                out.push_str("\n% Idioma del documento\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{german}\n");
+            }
+            _ => {} // inglés: default de LaTeX, no se necesita paquete
+        }
+    }
+
     if let Some(cfg) = lang_config {
         let polyglossia = cfg.get("polyglossia_name").and_then(|v| v.as_str());
         let babel = cfg.get("babel_name").and_then(|v| v.as_str());

@@ -154,6 +154,7 @@ pub fn broken_missing_image() -> (ProjectModel, TempDir) {
         width: FigureWidth::Full,
         label: "fig:diagrama".to_string(),
         include_in_list: true,
+        verbatim_caption: false,
     }));
 
     (model, dir)
@@ -188,6 +189,7 @@ pub fn broken_duplicate_label() -> (ProjectModel, TempDir) {
         width: FigureWidth::Full,
         label: "fig:duplicado".to_string(),
         include_in_list: true,
+        verbatim_caption: false,
     }));
     intro.blocks.push(ContentBlock::Figure(FigureBlock {
         id: "fig2".to_string(),
@@ -197,6 +199,7 @@ pub fn broken_duplicate_label() -> (ProjectModel, TempDir) {
         width: FigureWidth::Full,
         label: "fig:duplicado".to_string(), // mismo label
         include_in_list: true,
+        verbatim_caption: false,
     }));
 
     (model, dir)

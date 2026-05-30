@@ -311,6 +311,7 @@ mod tests {
             width: FigureWidth::Full,
             label: label.into(),
             include_in_list: true,
+            verbatim_caption: false,
         })
     }
 
@@ -322,6 +323,8 @@ mod tests {
             label: label.into(),
             include_in_list: true,
             raw_headers: false,
+            raw_cells: false,
+            verbatim_caption: false,
             headers: vec![],
             rows: vec![],
             table_style: TableStyle::Simple,

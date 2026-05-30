@@ -86,46 +86,46 @@ title_page_template:
     \end{tikzpicture}
     \vspace*{2.6cm}
     \begin{center}
-      {\color{ipnguinda}\large\bfseries\scshape Instituto Politécnico Nacional\par}
-      \vspace{0.25cm}
-      {\color{ipngris}\normalsize Escuela Superior de Física y Matemáticas\par}
+      {\color{ipnguinda}\normalsize\bfseries\scshape Instituto Politécnico Nacional\par}
       \vspace{0.15cm}
-      {\color{ipngris}\small Departamento de Física\par}
-      \vspace{1.8cm}
+      {\color{ipngris}\small Escuela Superior de Física y Matemáticas\par}
+      \vspace{0.1cm}
+      {\color{ipngris}\footnotesize Departamento de Física\par}
+      \vspace{0.9cm}
       % Línea decorativa
-      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}%
-      {\color{ipnguinda}\rule{0.1\textwidth}{2pt}}%
-      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}
-      \vspace{0.5cm}
+      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}%
+      {\color{ipnguinda}\rule{0.1\textwidth}{1.5pt}}%
+      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}
+      \vspace{0.35cm}
       \begin{minipage}{0.88\textwidth}
         \centering
-        {\Large\bfseries\color{ipnguinda} {{ title | latex_escape }}\par}
+        {\large\bfseries\color{ipnguinda} {{ title | latex_escape }}\par}
       \end{minipage}
-      \vspace{0.5cm}
-      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}%
-      {\color{ipnguinda}\rule{0.1\textwidth}{2pt}}%
-      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}
-      \vspace{1.4cm}
-      {\normalsize\color{ipngris} {{ doc_kind_label }}\par}
-      \vspace{0.2cm}
-      {\small que para obtener el grado de\par}
-      \vspace{0.2cm}
-      {\normalsize\bfseries\color{ipnguinda} {{ degree_label }}\par}
-      \vspace{1.2cm}
-      {\small P\;R\;E\;S\;E\;N\;T\;A:\par}
-      \vspace{0.4cm}
-      {\large\bfseries {{ author | latex_escape }}\par}
-      \vspace{1.2cm}
-      {% if advisors %}
-      {\small {{ advisor_label }}\par}
-      \vspace{0.3cm}
-      {% for a in advisors %}
-      {\normalsize {{ a | latex_escape }}\par}
-      {% endfor %}
+      \vspace{0.35cm}
+      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}%
+      {\color{ipnguinda}\rule{0.1\textwidth}{1.5pt}}%
+      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}
       \vspace{0.8cm}
+      {\small\color{ipngris} {{ doc_kind_label }}\par}
+      \vspace{0.1cm}
+      {\footnotesize que para obtener el grado de\par}
+      \vspace{0.1cm}
+      {\normalsize\bfseries\color{ipnguinda} {{ degree_label }}\par}
+      \vspace{0.8cm}
+      {\footnotesize P\;R\;E\;S\;E\;N\;T\;A:\par}
+      \vspace{0.2cm}
+      {\normalsize\bfseries {{ author | latex_escape }}\par}
+      \vspace{0.8cm}
+      {% if advisors %}
+      {\footnotesize {{ advisor_label }}\par}
+      \vspace{0.15cm}
+      {% for a in advisors %}
+      {\small {{ a | latex_escape }}\par}
+      {% endfor %}
+      \vspace{0.5cm}
       {% endif %}
       \vfill
-      {\small\color{ipngris} {{ city | latex_escape }},~{{ year }}\par}
+      {\footnotesize\color{ipngris} {{ city | latex_escape }},~{{ year }}\par}
     \end{center}
     \end{titlepage}
 

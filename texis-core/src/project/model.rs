@@ -325,6 +325,9 @@ pub struct FigureBlock {
     pub width: FigureWidth,
     pub label: String,
     pub include_in_list: bool,
+    /// Cuando true, el caption se pasa verbatim (permite math inline en la leyenda).
+    #[serde(default)]
+    pub verbatim_caption: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -346,6 +349,12 @@ pub struct TableBlock {
     /// Cuando true, los headers se pasan verbatim (permiten math: $\Delta V$).
     #[serde(default)]
     pub raw_headers: bool,
+    /// Cuando true, las celdas de datos se pasan verbatim (permiten math inline).
+    #[serde(default)]
+    pub raw_cells: bool,
+    /// Cuando true, el caption se pasa verbatim (permite math inline en el pie de tabla).
+    #[serde(default)]
+    pub verbatim_caption: bool,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     #[serde(default)]
@@ -476,6 +485,9 @@ pub struct TheoremBlock {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     pub content: String,
+    /// Cuando true, el contenido se pasa verbatim (permite notación LaTeX/math).
+    #[serde(default)]
+    pub verbatim: bool,
     #[serde(default = "default_true")]
     pub numbered: bool,
 }

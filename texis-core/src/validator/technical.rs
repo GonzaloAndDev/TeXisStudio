@@ -305,6 +305,7 @@ mod tests {
             width: FigureWidth::Full,
             label: label.to_string(),
             include_in_list: false,
+            verbatim_caption: false,
         })
     }
 
