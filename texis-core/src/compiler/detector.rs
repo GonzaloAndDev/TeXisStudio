@@ -157,6 +157,7 @@ pub fn find_texlive_bin() -> Option<PathBuf> {
     None
 }
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn find_in_dir(base: &str, arch_suffixes: &[&str]) -> Option<PathBuf> {
     let base_path = Path::new(base);
     if !base_path.exists() {
