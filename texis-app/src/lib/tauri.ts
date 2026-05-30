@@ -229,15 +229,18 @@ export const api = {
   ): Promise<void> =>
     call("update_preamble_config", {
       projectPath,
-      cjkMainFont:     config.cjk_main_font,
-      cjkJapaneseFont: config.cjk_japanese_font,
-      cjkKoreanFont:   config.cjk_korean_font,
-      mainFont:        config.main_font,
-      sansFont:        config.sans_font,
-      monoFont:        config.mono_font,
-      mathOperators:   config.math_operators,
-      extraTheorems:   config.extra_theorems,
-      extra:           config.extra,
+      payload: {
+        cjk_main_font:     config.cjk_main_font,
+        cjk_japanese_font: config.cjk_japanese_font,
+        cjk_korean_font:   config.cjk_korean_font,
+        cyrillic_font:     (config as { cyrillic_font?: string }).cyrillic_font,
+        main_font:         config.main_font,
+        sans_font:         config.sans_font,
+        mono_font:         config.mono_font,
+        math_operators:    config.math_operators,
+        extra_theorems:    config.extra_theorems,
+        extra:             config.extra,
+      },
     }),
 
   getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>

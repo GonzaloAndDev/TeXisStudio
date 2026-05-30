@@ -7,9 +7,7 @@
 // 4. Compila con: cd build && latexmk -xelatex main.tex
 
 use crate::error::{CoreError, CoreResult};
-use crate::project::model::{
-    BibliographyBackend, ContentBlock, ProjectModel, SectionPlacement,
-};
+use crate::project::model::{BibliographyBackend, ContentBlock, ProjectModel, SectionPlacement};
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
 use serde_json::Value;
@@ -20,10 +18,10 @@ use std::path::Path;
 /// Scripts de escritura detectados en el documento.
 #[derive(Debug, Default)]
 struct ScriptDetection {
-    pub cjk: bool,          // Chino / Japonés / Coreano
-    pub devanagari: bool,   // Hindi / Sanskrit
+    pub cjk: bool,        // Chino / Japonés / Coreano
+    pub devanagari: bool, // Hindi / Sanskrit
     pub arabic: bool,
-    pub cyrillic: bool,     // Ruso / búlgaro / serbio…
+    pub cyrillic: bool, // Ruso / búlgaro / serbio…
     pub hebrew: bool,
     pub thai: bool,
 }
@@ -34,16 +32,17 @@ fn detect_scripts(model: &ProjectModel) -> ScriptDetection {
         for block in &section.blocks {
             let text = match block {
                 ContentBlock::Paragraph(p) => p.content.as_str(),
-                ContentBlock::RawLatex(r)  => r.content.as_str(),
-                ContentBlock::Heading(h)   => h.content.as_str(),
+                ContentBlock::RawLatex(r) => r.content.as_str(),
+                ContentBlock::Heading(h) => h.content.as_str(),
                 _ => continue,
             };
             for c in text.chars() {
                 let u = c as u32;
                 match u {
                     // CJK unificado + extensiones + compatibilidad
-                    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF |
-                    0x20000..=0x2A6DF => det.cjk = true,
+                    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF | 0x20000..=0x2A6DF => {
+                        det.cjk = true
+                    }
                     // Hiragana + Katakana (japonés)
                     0x3040..=0x30FF => det.cjk = true,
                     // Hangul (coreano)
@@ -60,7 +59,9 @@ fn detect_scripts(model: &ProjectModel) -> ScriptDetection {
                     0x0E00..=0x0E7F => det.thai = true,
                     _ => {}
                 }
-                if det.cjk && det.devanagari && det.arabic && det.cyrillic { break; }
+                if det.cjk && det.devanagari && det.arabic && det.cyrillic {
+                    break;
+                }
             }
         }
     }
@@ -268,9 +269,13 @@ fn emit_cyrillic_font(pc: &crate::project::model::PreambleConfig, out: &mut Stri
         // Fuentes de fallback por SO
         _ => {
             #[cfg(target_os = "macos")]
-            { "Arial Unicode MS" }
+            {
+                "Arial Unicode MS"
+            }
             #[cfg(not(target_os = "macos"))]
-            { "CMU Serif" }
+            {
+                "CMU Serif"
+            }
         }
     };
     out.push_str(&format!(
@@ -325,12 +330,21 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
         || pc.cjk_main_font.is_some()
         || pc.cjk_japanese_font.is_some()
         || pc.cjk_korean_font.is_some()
-        || model.latex_config.packages_required.iter().any(|p| p == "xeCJK");
+        || model
+            .latex_config
+            .packages_required
+            .iter()
+            .any(|p| p == "xeCJK");
 
     if needs_cjk {
         out.push_str("\n% Soporte CJK (auto-detectado del contenido del documento)\n");
         // Solo añadir xeCJK si no está ya en packages_required (evitar doble carga)
-        if !model.latex_config.packages_required.iter().any(|p| p == "xeCJK") {
+        if !model
+            .latex_config
+            .packages_required
+            .iter()
+            .any(|p| p == "xeCJK")
+        {
             out.push_str("\\usepackage{xeCJK}\n");
         }
         let cjk_main = pc.cjk_main_font.as_deref().unwrap_or("Heiti SC");
@@ -381,21 +395,14 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 out.push_str("\n% Idioma del documento\n");
                 out.push_str("\\usepackage{polyglossia}\n");
                 out.push_str("\\setmainlanguage{russian}\n");
+                emit_cyrillic_font(pc, &mut out);
             }
-            "en" | "" => {
-                // Añadir ruso como otherlanguage si hay cirílico en el doc
-                if scripts.cyrillic {
-                    out.push_str("\n% Soporte multilingüe (Cirílico detectado)\n");
-                    out.push_str("\\usepackage{polyglossia}\n");
-                    out.push_str("\\setmainlanguage{english}\n");
-                    out.push_str("\\setotherlanguage{russian}\n");
-                    emit_cyrillic_font(pc, &mut out);
-                }
-            }
-            "ru" => {
-                out.push_str("\n% Idioma del documento\n");
+            "en" | "" if scripts.cyrillic => {
+                // Cirílico detectado en documento de idioma inglés
+                out.push_str("\n% Soporte multilingüe (Cirílico detectado)\n");
                 out.push_str("\\usepackage{polyglossia}\n");
-                out.push_str("\\setmainlanguage{russian}\n");
+                out.push_str("\\setmainlanguage{english}\n");
+                out.push_str("\\setotherlanguage{russian}\n");
                 emit_cyrillic_font(pc, &mut out);
             }
             _ => {}
@@ -438,7 +445,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     // Auto-detectados del contenido — el usuario no necesita declararlos.
     {
         use crate::project::model::ContentBlock;
-        use crate::visual::{required_package, extra_packages};
+        use crate::visual::{extra_packages, required_package};
         let mut vis_pkgs: std::collections::HashSet<&str> = std::collections::HashSet::new();
         for section in &model.sections {
             for block in &section.blocks {
@@ -457,8 +464,16 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
             sorted.sort();
             for pkg in sorted {
                 // No duplicar paquetes ya cargados en packages_required
-                let already = model.latex_config.packages_required.iter().any(|p| p == *pkg)
-                    || model.latex_config.packages_with_options.iter().any(|p| p.name == *pkg);
+                let already = model
+                    .latex_config
+                    .packages_required
+                    .iter()
+                    .any(|p| p == *pkg)
+                    || model
+                        .latex_config
+                        .packages_with_options
+                        .iter()
+                        .any(|p| p.name == *pkg);
                 if !already {
                     out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
                 }
@@ -502,7 +517,9 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     // ── Paquetes simples adicionales ──────────────────────────────────────────
     // (excluir xeCJK si ya lo cargamos arriba)
     for pkg in &model.latex_config.packages_required {
-        if pkg == "xeCJK" && needs_cjk { continue; } // ya cargado
+        if pkg == "xeCJK" && needs_cjk {
+            continue;
+        } // ya cargado
         out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
     }
 
@@ -526,17 +543,21 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 match &thm.parent_counter {
                     Some(parent) => out.push_str(&format!(
                         "\\newtheorem{{{}}}{{{}}}[{}]\n",
-                        thm.id, latex_escape(&thm.label), parent
+                        thm.id,
+                        latex_escape(&thm.label),
+                        parent
                     )),
                     None => out.push_str(&format!(
                         "\\newtheorem{{{}}}{{{}}}\n",
-                        thm.id, latex_escape(&thm.label)
+                        thm.id,
+                        latex_escape(&thm.label)
                     )),
                 }
             } else {
                 out.push_str(&format!(
                     "\\newtheorem*{{{}}}{{{}}}\n",
-                    thm.id, latex_escape(&thm.label)
+                    thm.id,
+                    latex_escape(&thm.label)
                 ));
             }
         }

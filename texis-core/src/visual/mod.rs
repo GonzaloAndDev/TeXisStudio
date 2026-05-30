@@ -5,8 +5,8 @@
 // El usuario nunca ve este código — lo genera TeXisStudio automáticamente.
 
 pub mod bio_pathway;
-pub mod circuit;
 pub mod chem;
+pub mod circuit;
 pub mod feynman;
 pub mod flow;
 pub mod music;
@@ -28,15 +28,15 @@ pub fn render_visual(block: &VisualBlock) -> String {
     }
 
     let inner = match &block.config {
-        VisualConfig::VennEuler(c)    => venn::render(c),
-        VisualConfig::FlowDiagram(c)  => flow::render(c),
-        VisualConfig::Timeline(c)     => timeline::render(c),
+        VisualConfig::VennEuler(c) => venn::render(c),
+        VisualConfig::FlowDiagram(c) => flow::render(c),
+        VisualConfig::Timeline(c) => timeline::render(c),
         VisualConfig::ChemReaction(c) => chem::render_reaction(c),
-        VisualConfig::Molecule(c)     => chem::render_molecule(c),
-        VisualConfig::Circuit(c)      => circuit::render(c),
-        VisualConfig::Feynman(c)      => feynman::render(c),
-        VisualConfig::BioPathway(c)   => bio_pathway::render(c),
-        VisualConfig::MusicFragment(c)=> music::render(c),
+        VisualConfig::Molecule(c) => chem::render_molecule(c),
+        VisualConfig::Circuit(c) => circuit::render(c),
+        VisualConfig::Feynman(c) => feynman::render(c),
+        VisualConfig::BioPathway(c) => bio_pathway::render(c),
+        VisualConfig::MusicFragment(c) => music::render(c),
     };
 
     wrap_in_figure(&inner, block)
@@ -44,7 +44,7 @@ pub fn render_visual(block: &VisualBlock) -> String {
 
 fn wrap_in_figure(inner: &str, block: &VisualBlock) -> String {
     let caption = latex_escape(&block.caption);
-    let label   = &block.label;
+    let label = &block.label;
     format!(
         "\\begin{{figure}}[htbp]\n  \\centering\n{}\n  \\caption{{{}}}\n  \\label{{{}}}\n\\end{{figure}}\n\n",
         indent(inner, 2),
@@ -56,7 +56,13 @@ fn wrap_in_figure(inner: &str, block: &VisualBlock) -> String {
 fn indent(s: &str, n: usize) -> String {
     let pad = " ".repeat(n);
     s.lines()
-        .map(|l| if l.trim().is_empty() { String::new() } else { format!("{}{}", pad, l) })
+        .map(|l| {
+            if l.trim().is_empty() {
+                String::new()
+            } else {
+                format!("{}{}", pad, l)
+            }
+        })
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -64,15 +70,15 @@ fn indent(s: &str, n: usize) -> String {
 /// Devuelve el paquete LaTeX principal que requiere este tipo de visual.
 pub fn required_package(config: &VisualConfig) -> &'static str {
     match config {
-        VisualConfig::VennEuler(_)    => "tikz",
-        VisualConfig::FlowDiagram(_)  => "tikz",
-        VisualConfig::Timeline(_)     => "tikz",
-        VisualConfig::BioPathway(_)   => "tikz",
+        VisualConfig::VennEuler(_) => "tikz",
+        VisualConfig::FlowDiagram(_) => "tikz",
+        VisualConfig::Timeline(_) => "tikz",
+        VisualConfig::BioPathway(_) => "tikz",
         VisualConfig::ChemReaction(_) => "mhchem",
-        VisualConfig::Molecule(_)     => "chemfig",
-        VisualConfig::Circuit(_)      => "circuitikz",
-        VisualConfig::Feynman(_)      => "tikz",    // tikz-feynman usa tikz base
-        VisualConfig::MusicFragment(_)=> "musixtex",
+        VisualConfig::Molecule(_) => "chemfig",
+        VisualConfig::Circuit(_) => "circuitikz",
+        VisualConfig::Feynman(_) => "tikz", // tikz-feynman usa tikz base
+        VisualConfig::MusicFragment(_) => "musixtex",
     }
 }
 
@@ -99,8 +105,14 @@ mod tests {
             advanced_override_confirmed: false,
             config: VisualConfig::VennEuler(VennEulerConfig {
                 sets: vec![
-                    VennSet { label: "A".to_string(), color: "red".to_string() },
-                    VennSet { label: "B".to_string(), color: "blue".to_string() },
+                    VennSet {
+                        label: "A".to_string(),
+                        color: "red".to_string(),
+                    },
+                    VennSet {
+                        label: "B".to_string(),
+                        color: "blue".to_string(),
+                    },
                 ],
                 intersections: [("01".to_string(), "A∩B".to_string())].into(),
                 style: "circles".to_string(),
@@ -116,7 +128,10 @@ mod tests {
         // Serializar a YAML
         let yaml = serde_yaml::to_string(&block_in_enum).unwrap();
         assert!(yaml.contains("type: visual"), "debe tener type: visual");
-        assert!(yaml.contains("kind: venn_euler"), "debe tener kind: venn_euler");
+        assert!(
+            yaml.contains("kind: venn_euler"),
+            "debe tener kind: venn_euler"
+        );
         assert!(yaml.contains("fig:venn"), "debe tener el label");
 
         // Deserializar de vuelta
@@ -127,8 +142,12 @@ mod tests {
             if let VisualConfig::VennEuler(c) = vb.config {
                 assert_eq!(c.sets.len(), 2);
                 assert_eq!(c.intersections.get("01").map(|s| s.as_str()), Some("A∩B"));
-            } else { panic!("config debe ser VennEuler"); }
-        } else { panic!("back debe ser Visual"); }
+            } else {
+                panic!("config debe ser VennEuler");
+            }
+        } else {
+            panic!("back debe ser Visual");
+        }
     }
 
     #[test]
@@ -136,7 +155,10 @@ mod tests {
         let block = venn_block();
         let latex = render_visual(&block);
         assert!(latex.contains("\\begin{figure}"), "debe envolver en figure");
-        assert!(latex.contains("\\caption{Venn de prueba}"), "debe tener caption");
+        assert!(
+            latex.contains("\\caption{Venn de prueba}"),
+            "debe tener caption"
+        );
         assert!(latex.contains("\\label{fig:venn}"), "debe tener label");
         assert!(latex.contains("tikzpicture"), "debe contener tikzpicture");
         assert!(latex.contains("circle"), "debe dibujar círculos");
@@ -160,7 +182,10 @@ mod tests {
             }),
         };
         let latex = render_visual(&block);
-        assert!(latex.contains("\\ce{"), "debe usar el comando \\ce de mhchem");
+        assert!(
+            latex.contains("\\ce{"),
+            "debe usar el comando \\ce de mhchem"
+        );
         assert!(latex.contains("H2"), "debe contener reactivos");
         assert!(latex.contains("\\begin{figure}"), "debe tener figure env");
     }
@@ -188,29 +213,47 @@ mod tests {
     #[test]
     fn advanced_override_sustituye_latex_generado() {
         let mut block = venn_block();
-        block.advanced_latex_override = Some("% Mi LaTeX personalizado\n\\textbf{override}".to_string());
+        block.advanced_latex_override =
+            Some("% Mi LaTeX personalizado\n\\textbf{override}".to_string());
         block.advanced_override_confirmed = true;
         let latex = render_visual(&block);
         assert!(latex.contains("override"), "debe usar el override");
-        assert!(!latex.contains("tikzpicture"), "NO debe generar TikZ cuando hay override confirmado");
+        assert!(
+            !latex.contains("tikzpicture"),
+            "NO debe generar TikZ cuando hay override confirmado"
+        );
     }
 
     #[test]
     fn required_package_correcto_por_tipo() {
         use crate::project::model::*;
-        let venn = VisualConfig::VennEuler(VennEulerConfig { sets: vec![], intersections: Default::default(), style: "circles".to_string() });
+        let venn = VisualConfig::VennEuler(VennEulerConfig {
+            sets: vec![],
+            intersections: Default::default(),
+            style: "circles".to_string(),
+        });
         assert_eq!(required_package(&venn), "tikz");
 
         let chem = VisualConfig::ChemReaction(ChemReactionConfig {
-            equation: "".to_string(), catalyst: None, conditions: None,
-            reaction_type: "forward".to_string(), display_mode: true,
+            equation: "".to_string(),
+            catalyst: None,
+            conditions: None,
+            reaction_type: "forward".to_string(),
+            display_mode: true,
         });
         assert_eq!(required_package(&chem), "mhchem");
 
-        let mol = VisualConfig::Molecule(MoleculeConfig { preset: None, chemfig_formula: None, scale: 1.0 });
+        let mol = VisualConfig::Molecule(MoleculeConfig {
+            preset: None,
+            chemfig_formula: None,
+            scale: 1.0,
+        });
         assert_eq!(required_package(&mol), "chemfig");
 
-        let cir = VisualConfig::Circuit(CircuitConfig { preset: "rc_series".to_string(), component_values: Default::default() });
+        let cir = VisualConfig::Circuit(CircuitConfig {
+            preset: "rc_series".to_string(),
+            component_values: Default::default(),
+        });
         assert_eq!(required_package(&cir), "circuitikz");
     }
 

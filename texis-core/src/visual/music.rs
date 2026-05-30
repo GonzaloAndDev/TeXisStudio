@@ -10,7 +10,9 @@ pub fn render(c: &MusicFragmentConfig) -> String {
     if !c.try_musixtex {
         return render_placeholder(&format!(
             "Partitura: {}. Importar como figura SVG/PDF externa.",
-            c.instrument.as_deref().unwrap_or("instrumento no especificado")
+            c.instrument
+                .as_deref()
+                .unwrap_or("instrumento no especificado")
         ));
     }
 
@@ -22,22 +24,24 @@ pub fn render(c: &MusicFragmentConfig) -> String {
 }
 
 fn render_placeholder(msg: &str) -> String {
-    format!(r#"\begin{{center}}
+    format!(
+        r#"\begin{{center}}
   \fbox{{\begin{{minipage}}{{0.7\linewidth}}\centering\vspace{{8pt}}
     \textit{{\small {}}}
   \vspace{{8pt}}\end{{minipage}}}}
-\end{{center}}"#, msg)
+\end{{center}}"#,
+        msg
+    )
 }
 
 fn render_musixtex_from_abc(c: &MusicFragmentConfig) -> String {
-    // Extraer algunas propiedades básicas del ABC
-    let title = extract_abc_field(&c.abc_notation, 'T')
-        .unwrap_or_else(|| c.instrument.as_deref().unwrap_or("Fragmento").to_string());
-    let key  = extract_abc_field(&c.abc_notation, 'K').unwrap_or_else(|| "C".to_string());
+    // Extraer el metro del ABC; título y clave se usan solo para metadatos futuros
     let meter = extract_abc_field(&c.abc_notation, 'M').unwrap_or_else(|| "4/4".to_string());
 
     // Extraer body (notas)
-    let body = c.abc_notation.lines()
+    let body = c
+        .abc_notation
+        .lines()
         .filter(|l| !l.starts_with(|c: char| c.is_ascii_uppercase() && c != 'X'))
         .collect::<Vec<_>>()
         .join(" ")
@@ -59,7 +63,10 @@ fn render_musixtex_from_abc(c: &MusicFragmentConfig) -> String {
     out.push_str("\\parindent 8mm\n");
     out.push_str("\\instrumentnumber{1}\n");
     out.push_str("\\setname1{}\n");
-    out.push_str(&format!("\\generalmeter{{\\meterfrac{{{}}}{{{}}}}}\n", numer, denom));
+    out.push_str(&format!(
+        "\\generalmeter{{\\meterfrac{{{}}}{{{}}}}}\n",
+        numer, denom
+    ));
     out.push_str("\\startextract\n");
     out.push_str(&notes_out);
     out.push('\n');
@@ -75,11 +82,21 @@ fn extract_abc_field(abc: &str, field: char) -> Option<String> {
 }
 
 fn parse_meter(meter: &str) -> (u8, u8) {
-    if meter == "C" || meter == "c" { return (4, 4); }
-    if meter == "C|" || meter == "c|" { return (2, 2); }
+    if meter == "C" || meter == "c" {
+        return (4, 4);
+    }
+    if meter == "C|" || meter == "c|" {
+        return (2, 2);
+    }
     let parts: Vec<&str> = meter.splitn(2, '/').collect();
-    let num = parts.get(0).and_then(|s| s.trim().parse().ok()).unwrap_or(4u8);
-    let den = parts.get(1).and_then(|s| s.trim().parse().ok()).unwrap_or(4u8);
+    let num = parts
+        .first()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(4u8);
+    let den = parts
+        .get(1)
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(4u8);
     (num, den)
 }
 
@@ -87,10 +104,20 @@ fn abc_to_musixtex_basic(abc_body: &str) -> String {
     // Mapeo muy básico: letras ABC a notas musixtex (solo octava media)
     let mut notes = String::new();
     let note_map: &[(&str, &str)] = &[
-        ("C", "c"), ("D", "d"), ("E", "e"), ("F", "f"),
-        ("G", "g"), ("A", "a"), ("B", "b"),
-        ("c", "h"), ("d", "i"), ("e", "j"), ("f", "k"),
-        ("g", "l"), ("a", "m"), ("b", "n"),
+        ("C", "c"),
+        ("D", "d"),
+        ("E", "e"),
+        ("F", "f"),
+        ("G", "g"),
+        ("A", "a"),
+        ("B", "b"),
+        ("c", "h"),
+        ("d", "i"),
+        ("e", "j"),
+        ("f", "k"),
+        ("g", "l"),
+        ("a", "m"),
+        ("b", "n"),
     ];
 
     let clean = abc_body

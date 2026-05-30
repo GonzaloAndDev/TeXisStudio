@@ -149,6 +149,17 @@
           "type": "null"
         }
       ]
+    },
+    "title_page_template": {
+      "description": "Plantilla MiniJinja para la portada institucional. Si None, el generador usa una portada genérica centrada.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TitlePageTemplate"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "definitions": {
@@ -210,6 +221,13 @@
           ],
           "format": "uint32",
           "minimum": 0.0
+        },
+        "ci_evidence": {
+          "description": "URL o referencia a la ejecución de CI que respaldó el status 'verified'. Obligatorio para perfiles con status: verified (ver POL_VERIFIED_NO_CI_EVIDENCE). Ejemplo: \"https://github.com/GonzaloAndDev/TeXisStudio-Profiles/actions/runs/12345\"",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -363,6 +381,26 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "TitlePageTemplate": {
+      "description": "Template MiniJinja para la portada del documento.\n\nLa cadena `template` puede usar las variables del contexto de portada: {{ institution_name }}, {{ faculty }}, {{ department }}, {{ title }}, {{ author }}, {{ advisors }} (lista), {{ committee }} (lista de {name, role}), {{ city }}, {{ year }}, {{ degree_label }}, {{ doc_kind_label }}\n\nTodos los valores de texto deben pasar por el filtro `| latex_escape` a menos que sean LaTeX intencional (usa `| raw` en ese caso).",
+      "type": "object",
+      "required": [
+        "template"
+      ],
+      "properties": {
+        "template": {
+          "description": "Plantilla MiniJinja que produce el bloque LaTeX completo de la portada.",
+          "type": "string"
+        },
+        "assets": {
+          "description": "Archivos de assets (logos, sellos) referenciados por la plantilla. Rutas relativas al directorio del perfil, ej. [\"assets/logo.png\"].",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     }

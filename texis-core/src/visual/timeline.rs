@@ -19,13 +19,13 @@ pub fn render(c: &TimelineConfig) -> String {
 
 fn tikz_color(color: &str) -> &str {
     match color {
-        "blue"|"#3498DB"   => "blue",
-        "red"|"#E74C3C"    => "red",
-        "green"|"#27AE60"  => "green!60!black",
-        "purple"|"#9B59B6" => "purple",
-        "orange"|"#E67E22" => "orange!80!black",
-        "teal"|"#1ABC9C"   => "teal",
-        _                  => "blue",
+        "blue" | "#3498DB" => "blue",
+        "red" | "#E74C3C" => "red",
+        "green" | "#27AE60" => "green!60!black",
+        "purple" | "#9B59B6" => "purple",
+        "orange" | "#E67E22" => "orange!80!black",
+        "teal" | "#1ABC9C" => "teal",
+        _ => "blue",
     }
 }
 
@@ -43,14 +43,15 @@ fn render_horizontal(c: &TimelineConfig, color: &str) -> String {
         let above = i % 2 == 0;
         let y_mark = if above { 0.15 } else { -0.15 };
         let y_label = if above { 0.5 } else { -0.5 };
-        let y_date  = if above { 0.25 } else { -0.25 };
-        let anchor  = if above { "south" } else { "north" };
+        let y_date = if above { 0.25 } else { -0.25 };
 
-        let y_title = if above { y_label + 0.05 } else { y_label - 0.05 };
-        let y_d     = if above { y_date  + 0.05 } else { y_date  - 0.05 };
-        out.push_str(&format!(
-            "  \\fill[{color}] ({x:.2},0) circle (3pt);\n",
-        ));
+        let y_title = if above {
+            y_label + 0.05
+        } else {
+            y_label - 0.05
+        };
+        let y_d = if above { y_date + 0.05 } else { y_date - 0.05 };
+        out.push_str(&format!("  \\fill[{color}] ({x:.2},0) circle (3pt);\n",));
         out.push_str(&format!(
             "  \\draw[{color}] ({x:.2},{y_mark:.2}) -- ({x:.2},{y_label:.2});\n",
         ));

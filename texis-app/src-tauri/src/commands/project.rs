@@ -623,46 +623,55 @@ pub fn update_typography(
         .map_err(err)
 }
 
+/// Payload para update_preamble_config. Agrupa los 11 campos en un struct
+/// para respetar el límite de 7 argumentos de clippy en Tauri commands.
+#[derive(serde::Deserialize)]
+pub struct PreambleConfigPayload {
+    pub cjk_main_font: Option<String>,
+    pub cjk_japanese_font: Option<String>,
+    pub cjk_korean_font: Option<String>,
+    pub cyrillic_font: Option<String>,
+    pub main_font: Option<String>,
+    pub sans_font: Option<String>,
+    pub mono_font: Option<String>,
+    pub math_operators: Option<serde_json::Value>,
+    pub extra_theorems: Option<serde_json::Value>,
+    pub extra: Option<String>,
+}
+
 /// Actualiza la configuración de preámbulo del proyecto.
 /// Gestiona fuentes CJK, fuentes del documento, operadores matemáticos,
 /// teoremas adicionales y preámbulo extra.
 #[tauri::command]
 pub fn update_preamble_config(
     project_path: String,
-    cjk_main_font: Option<String>,
-    cjk_japanese_font: Option<String>,
-    cjk_korean_font: Option<String>,
-    cyrillic_font: Option<String>,
-    main_font: Option<String>,
-    sans_font: Option<String>,
-    mono_font: Option<String>,
-    math_operators: Option<serde_json::Value>,
-    extra_theorems: Option<serde_json::Value>,
-    extra: Option<String>,
+    payload: PreambleConfigPayload,
 ) -> Result<(), String> {
     use texis_core::project::model::{ExtraTheorem, MathOperator, PreambleConfig};
 
     let project_yaml = std::path::Path::new(&project_path).join("tesis.project.yaml");
     let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
 
-    let ops: Vec<MathOperator> = math_operators
+    let ops: Vec<MathOperator> = payload
+        .math_operators
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
-    let thms: Vec<ExtraTheorem> = extra_theorems
+    let thms: Vec<ExtraTheorem> = payload
+        .extra_theorems
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
 
     model.latex_config.preamble_config = PreambleConfig {
-        cyrillic_font: cyrillic_font.filter(|s| !s.is_empty()),
-        cjk_main_font: cjk_main_font.filter(|s| !s.is_empty()),
-        cjk_japanese_font: cjk_japanese_font.filter(|s| !s.is_empty()),
-        cjk_korean_font: cjk_korean_font.filter(|s| !s.is_empty()),
-        main_font: main_font.filter(|s| !s.is_empty()),
-        sans_font: sans_font.filter(|s| !s.is_empty()),
-        mono_font: mono_font.filter(|s| !s.is_empty()),
+        cyrillic_font: payload.cyrillic_font.filter(|s| !s.is_empty()),
+        cjk_main_font: payload.cjk_main_font.filter(|s| !s.is_empty()),
+        cjk_japanese_font: payload.cjk_japanese_font.filter(|s| !s.is_empty()),
+        cjk_korean_font: payload.cjk_korean_font.filter(|s| !s.is_empty()),
+        main_font: payload.main_font.filter(|s| !s.is_empty()),
+        sans_font: payload.sans_font.filter(|s| !s.is_empty()),
+        mono_font: payload.mono_font.filter(|s| !s.is_empty()),
         math_operators: ops,
         extra_theorems: thms,
-        extra: extra.filter(|s| !s.trim().is_empty()),
+        extra: payload.extra.filter(|s| !s.trim().is_empty()),
     };
 
     ProjectSaver

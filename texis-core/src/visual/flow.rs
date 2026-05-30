@@ -8,7 +8,8 @@ pub fn render(c: &FlowDiagramConfig) -> String {
     let node_defs = render_nodes(&c.nodes, is_vertical);
     let edge_defs = render_edges(c, &c.nodes);
 
-    format!(r#"\begin{{tikzpicture}}[
+    format!(
+        r#"\begin{{tikzpicture}}[
   node distance=1.4cm,
   rect/.style={{draw, rounded corners=4pt, minimum width=3cm, minimum height=0.8cm,
                align=center, font=\small, fill=blue!10, draw=blue!60}},
@@ -23,7 +24,8 @@ pub fn render(c: &FlowDiagramConfig) -> String {
 ]
 {node_defs}
 {edge_defs}
-\end{{tikzpicture}}"#)
+\end{{tikzpicture}}"#
+    )
 }
 
 fn render_nodes(nodes: &[FlowNode], vertical: bool) -> String {
@@ -31,16 +33,16 @@ fn render_nodes(nodes: &[FlowNode], vertical: bool) -> String {
     for (i, node) in nodes.iter().enumerate() {
         let style = match node.shape.as_str() {
             "diamond" => "diamond",
-            "circle"  => "circle_node",
+            "circle" => "circle_node",
             "rounded" => "rounded",
-            _         => "rect",
+            _ => "rect",
         };
         let position = if i == 0 {
             String::new()
         } else if vertical {
-            format!("[below of={}]", nodes[i-1].id)
+            format!("[below of={}]", nodes[i - 1].id)
         } else {
-            format!("[right of={}]", nodes[i-1].id)
+            format!("[right of={}]", nodes[i - 1].id)
         };
         out.push_str(&format!(
             "  \\node[{}] ({}) {} {{{}}};\n",
@@ -60,7 +62,8 @@ fn render_edges(c: &FlowDiagramConfig, nodes: &[FlowNode]) -> String {
         for i in 1..nodes.len() {
             out.push_str(&format!(
                 "  \\draw[->] ({}) -- ({});\n",
-                nodes[i-1].id, nodes[i].id
+                nodes[i - 1].id,
+                nodes[i].id
             ));
         }
         return out;
@@ -69,11 +72,14 @@ fn render_edges(c: &FlowDiagramConfig, nodes: &[FlowNode]) -> String {
         let style = match edge.style.as_str() {
             "dashed" => "->, dashed",
             "double" => "->>, thick",
-            _        => "->",
+            _ => "->",
         };
         let label_part = match &edge.label {
-            Some(l) => format!(" node[midway, right, font=\\footnotesize] {{{}}}", latex_escape(l)),
-            None    => String::new(),
+            Some(l) => format!(
+                " node[midway, right, font=\\footnotesize] {{{}}}",
+                latex_escape(l)
+            ),
+            None => String::new(),
         };
         out.push_str(&format!(
             "  \\draw[{}] ({}){} -- ({});\n",

@@ -51,12 +51,13 @@ fn cambridge_apa7_carga_sin_errores() {
 }
 
 #[test]
-fn cambridge_apa7_status_reviewed() {
+fn cambridge_apa7_status_at_least_reviewed() {
     let p = load_profile("europe/uk/cambridge/apa7/profile.yaml");
-    assert_eq!(
-        p.status,
-        ProfileStatus::Reviewed,
-        "Cambridge APA7 debe tener status reviewed"
+    // Acepta Reviewed o Verified (Verified es superior — tiene ci_evidence)
+    assert!(
+        p.status == ProfileStatus::Reviewed || p.status == ProfileStatus::Verified,
+        "Cambridge APA7 debe tener status Reviewed o Verified, tiene {:?}",
+        p.status
     );
 }
 

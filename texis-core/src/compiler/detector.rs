@@ -24,21 +24,34 @@ impl LatexInstallation {
         let extra_bin = find_texlive_bin();
 
         let has_latexmk = cmd_available("latexmk")
-            || extra_bin.as_ref().map(|p| p.join("latexmk").exists()).unwrap_or(false);
+            || extra_bin
+                .as_ref()
+                .map(|p| p.join("latexmk").exists())
+                .unwrap_or(false);
         let has_xelatex = cmd_available("xelatex")
-            || extra_bin.as_ref().map(|p| p.join("xelatex").exists()).unwrap_or(false);
+            || extra_bin
+                .as_ref()
+                .map(|p| p.join("xelatex").exists())
+                .unwrap_or(false);
         let has_biber = cmd_available("biber")
-            || extra_bin.as_ref().map(|p| p.join("biber").exists()).unwrap_or(false);
+            || extra_bin
+                .as_ref()
+                .map(|p| p.join("biber").exists())
+                .unwrap_or(false);
 
-        let latexmk_bin = extra_bin.as_ref()
+        let latexmk_bin = extra_bin
+            .as_ref()
             .map(|p| p.join("latexmk"))
             .filter(|p| p.exists());
 
-        let latexmk_version = version_string("latexmk", &["--version"])
-            .or_else(|| latexmk_bin.as_ref().and_then(|b| version_path(b, &["--version"])));
+        let latexmk_version = version_string("latexmk", &["--version"]).or_else(|| {
+            latexmk_bin
+                .as_ref()
+                .and_then(|b| version_path(b, &["--version"]))
+        });
 
-        let texlive_year = detect_texlive_year()
-            .or_else(|| extra_bin.as_ref().and_then(|p| year_from_path(p)));
+        let texlive_year =
+            detect_texlive_year().or_else(|| extra_bin.as_ref().and_then(|p| year_from_path(p)));
 
         Self {
             has_latexmk,
@@ -104,7 +117,10 @@ pub fn find_texlive_bin() -> Option<PathBuf> {
     //        Las versiones antiguas usan /bin/x86_64-darwin o /bin/aarch64-darwin
     #[cfg(target_os = "macos")]
     {
-        if let Some(p) = find_in_dir("/usr/local/texlive", &["universal-darwin", "x86_64-darwin", "aarch64-darwin"]) {
+        if let Some(p) = find_in_dir(
+            "/usr/local/texlive",
+            &["universal-darwin", "x86_64-darwin", "aarch64-darwin"],
+        ) {
             return Some(p);
         }
         // MacTeX también puede estar en /Library/TeX/texbin como symlink
@@ -151,11 +167,7 @@ fn find_in_dir(base: &str, arch_suffixes: &[&str]) -> Option<PathBuf> {
     let mut years: Vec<u32> = std::fs::read_dir(base_path)
         .ok()?
         .filter_map(|e| e.ok())
-        .filter_map(|e| {
-            e.file_name()
-                .to_str()
-                .and_then(|s| s.parse::<u32>().ok())
-        })
+        .filter_map(|e| e.file_name().to_str().and_then(|s| s.parse::<u32>().ok()))
         .filter(|&y| y > 2000 && y < 2100)
         .collect();
     years.sort_unstable_by(|a, b| b.cmp(a)); // más reciente primero

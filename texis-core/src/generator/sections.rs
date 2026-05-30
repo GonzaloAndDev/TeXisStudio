@@ -246,7 +246,10 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             if eq.numbered {
                 let label = eq.label.as_deref().unwrap_or("");
                 if label.is_empty() {
-                    format!("\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n", content)
+                    format!(
+                        "\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n",
+                        content
+                    )
                 } else {
                     format!(
                         "\\begin{{equation}}\n    {}\n    \\label{{{}}}\n\\end{{equation}}\n\n",
@@ -309,7 +312,13 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             let headers = t
                 .headers
                 .iter()
-                .map(|h| if t.raw_headers { h.clone() } else { latex_escape(h) })
+                .map(|h| {
+                    if t.raw_headers {
+                        h.clone()
+                    } else {
+                        latex_escape(h)
+                    }
+                })
                 .collect::<Vec<_>>()
                 .join(" & ");
             let rows: String = t
@@ -318,7 +327,13 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 .map(|row| {
                     let cells = row
                         .iter()
-                        .map(|c| if t.raw_cells { c.clone() } else { latex_escape(c) })
+                        .map(|c| {
+                            if t.raw_cells {
+                                c.clone()
+                            } else {
+                                latex_escape(c)
+                            }
+                        })
                         .collect::<Vec<_>>()
                         .join(" & ");
                     format!("    {} \\\\\n", cells)
@@ -447,9 +462,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             )
         }
 
-        ContentBlock::Visual(v) => {
-            crate::visual::render_visual(v)
-        }
+        ContentBlock::Visual(v) => crate::visual::render_visual(v),
 
         ContentBlock::Theorem(t) => {
             let base_env = match t.kind {
@@ -479,10 +492,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             };
             format!(
                 "\\begin{{{}}}{}\n    {}\n\\end{{{}}}\n\n",
-                env,
-                title_opt,
-                body,
-                env
+                env, title_opt, body, env
             )
         }
     }
@@ -507,32 +517,66 @@ fn build_title_page_context(model: &ProjectModel) -> HashMap<String, JinjaValue>
     let mut ctx: HashMap<String, JinjaValue> = HashMap::new();
 
     // Institución
-    ctx.insert("institution_name".into(), JinjaValue::from(model.institution.name.clone()));
+    ctx.insert(
+        "institution_name".into(),
+        JinjaValue::from(model.institution.name.clone()),
+    );
     ctx.insert(
         "faculty".into(),
-        model.institution.faculty.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
+        model
+            .institution
+            .faculty
+            .as_deref()
+            .map(JinjaValue::from)
+            .unwrap_or(JinjaValue::UNDEFINED),
     );
     ctx.insert(
         "department".into(),
-        model.institution.department.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
+        model
+            .institution
+            .department
+            .as_deref()
+            .map(JinjaValue::from)
+            .unwrap_or(JinjaValue::UNDEFINED),
     );
-    ctx.insert("country".into(), JinjaValue::from(model.institution.country.clone()));
+    ctx.insert(
+        "country".into(),
+        JinjaValue::from(model.institution.country.clone()),
+    );
 
     // Metadata del documento
-    ctx.insert("title".into(), JinjaValue::from(model.metadata.title.clone()));
+    ctx.insert(
+        "title".into(),
+        JinjaValue::from(model.metadata.title.clone()),
+    );
     if let Some(sub) = &model.metadata.subtitle {
         ctx.insert("subtitle".into(), JinjaValue::from(sub.clone()));
     }
     ctx.insert("city".into(), JinjaValue::from(model.metadata.city.clone()));
     ctx.insert("year".into(), JinjaValue::from(model.metadata.year));
-    ctx.insert("language".into(), JinjaValue::from(model.metadata.language.clone()));
+    ctx.insert(
+        "language".into(),
+        JinjaValue::from(model.metadata.language.clone()),
+    );
 
     // Etiquetas computadas (localizadas al español)
-    ctx.insert("degree_label".into(), JinjaValue::from(academic_level_label(&model.metadata.academic_level)));
-    ctx.insert("doc_kind_label".into(), JinjaValue::from(doc_kind_label(&model.metadata.document_kind, &model.metadata.academic_level)));
+    ctx.insert(
+        "degree_label".into(),
+        JinjaValue::from(academic_level_label(&model.metadata.academic_level)),
+    );
+    ctx.insert(
+        "doc_kind_label".into(),
+        JinjaValue::from(doc_kind_label(
+            &model.metadata.document_kind,
+            &model.metadata.academic_level,
+        )),
+    );
 
     // Estudiante
-    ctx.insert("author".into(), JinjaValue::from(model.student.full_name.clone()));
+    ctx.insert(
+        "author".into(),
+        JinjaValue::from(model.student.full_name.clone()),
+    );
 
     // Asesores: lista de strings
     let all_advisors: Vec<&str> = if !model.student.advisors.is_empty() {
@@ -542,11 +586,20 @@ fn build_title_page_context(model: &ProjectModel) -> HashMap<String, JinjaValue>
     };
     ctx.insert(
         "advisors".into(),
-        JinjaValue::from(all_advisors.iter().map(|s| JinjaValue::from(*s)).collect::<Vec<_>>()),
+        JinjaValue::from(
+            all_advisors
+                .iter()
+                .map(|s| JinjaValue::from(*s))
+                .collect::<Vec<_>>(),
+        ),
     );
     ctx.insert(
         "advisor_label".into(),
-        JinjaValue::from(if all_advisors.len() > 1 { "Directores de tesis:" } else { "Director de tesis:" }),
+        JinjaValue::from(if all_advisors.len() > 1 {
+            "Directores de tesis:"
+        } else {
+            "Director de tesis:"
+        }),
     );
     // Primer asesor para plantillas simples
     ctx.insert(
@@ -555,15 +608,23 @@ fn build_title_page_context(model: &ProjectModel) -> HashMap<String, JinjaValue>
     );
 
     // Comité: lista de objetos {name, role}
-    let committee: Vec<JinjaValue> = model.student.committee.iter().map(|m| {
-        let mut obj: HashMap<String, JinjaValue> = HashMap::new();
-        obj.insert("name".into(), JinjaValue::from(m.full_name.clone()));
-        obj.insert(
-            "role".into(),
-            m.role.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
-        );
-        JinjaValue::from_object(texis_core_jinja_map(obj))
-    }).collect();
+    let committee: Vec<JinjaValue> = model
+        .student
+        .committee
+        .iter()
+        .map(|m| {
+            let mut obj: HashMap<String, JinjaValue> = HashMap::new();
+            obj.insert("name".into(), JinjaValue::from(m.full_name.clone()));
+            obj.insert(
+                "role".into(),
+                m.role
+                    .as_deref()
+                    .map(JinjaValue::from)
+                    .unwrap_or(JinjaValue::UNDEFINED),
+            );
+            JinjaValue::from_object(texis_core_jinja_map(obj))
+        })
+        .collect();
     ctx.insert("committee".into(), JinjaValue::from(committee));
 
     // ORCID
@@ -612,7 +673,10 @@ fn render_title_page(model: &ProjectModel) -> String {
         latex_escape(&model.metadata.title)
     ));
     out.push_str("  \\vspace{1.5cm}\n");
-    let kind_label = doc_kind_label(&model.metadata.document_kind, &model.metadata.academic_level);
+    let kind_label = doc_kind_label(
+        &model.metadata.document_kind,
+        &model.metadata.academic_level,
+    );
     let level_label = academic_level_label(&model.metadata.academic_level);
     out.push_str(&format!("  {{\\large {}\\par}}\n", kind_label));
     out.push_str("  \\vspace{0.3cm}\n");
@@ -644,10 +708,7 @@ fn render_title_page(model: &ProjectModel) -> String {
         out.push_str(&format!("  {{\\normalsize {}\\par}}\n", label));
         out.push_str("  \\vspace{0.3cm}\n");
         for a in &all_advisors {
-            out.push_str(&format!(
-                "  {{\\normalsize {}\\par}}\n",
-                latex_escape(a)
-            ));
+            out.push_str(&format!("  {{\\normalsize {}\\par}}\n", latex_escape(a)));
         }
         out.push_str("  \\vspace{1cm}\n");
     }

@@ -17,12 +17,12 @@ pub fn render(c: &FeynmanConfig) -> String {
 }"#;
 
     let diagram = match c.preset.as_str() {
-        "compton"          => compton(),
-        "muon_decay"       => muon_decay(),
-        "pair_production"  => pair_production(),
-        "bhabha"           => bhabha(),
+        "compton" => compton(),
+        "muon_decay" => muon_decay(),
+        "pair_production" => pair_production(),
+        "bhabha" => bhabha(),
         "higgs_production" => higgs_production(),
-        _                  => vertex_qed(),
+        _ => vertex_qed(),
     };
 
     format!("{}\n{}", header, diagram)
@@ -35,7 +35,8 @@ fn vertex_qed() -> String {
   \draw[photon,  thick, red!80]   (0,0) -- (0,-1.3) node[below] {$\gamma$};
   \filldraw[black] (0,0) circle (2.5pt);
   \node[above right=2pt, font=\scriptsize] at (0,0) {QED};
-\end{tikzpicture}"#.to_string()
+\end{tikzpicture}"#
+        .to_string()
 }
 
 fn compton() -> String {
@@ -46,7 +47,8 @@ fn compton() -> String {
   \draw[fermion, thick, blue!80] (0,0) -- (1.3, 0.6) node[right] {$e^-$};
   \draw[photon,  thick, red!80]  (0,0) -- (1.3,-0.6) node[right] {$\gamma$};
   \node[below=4pt, font=\scriptsize] at (0,0) {Compton};
-\end{tikzpicture}"#.to_string()
+\end{tikzpicture}"#
+        .to_string()
 }
 
 fn muon_decay() -> String {
@@ -58,7 +60,8 @@ fn muon_decay() -> String {
   \draw[fermion, thick, blue!80]  (1.0,0) -- (2.2, 0.7) node[right] {$e^-$};
   \draw[antifermion, thick, green!60!black] (1.0,0) -- (2.2,-0.7) node[right] {$\bar{\nu}_e$};
   \draw[fermion, thick, purple!60] (0,0) -- (1.0, 0.9) node[right] {$\nu_\mu$};
-\end{tikzpicture}"#.to_string()
+\end{tikzpicture}"#
+        .to_string()
 }
 
 fn pair_production() -> String {
@@ -68,7 +71,8 @@ fn pair_production() -> String {
   \filldraw[black] (0,0) circle (2.5pt);
   \draw[fermion, thick, blue!80]      (0,0) -- (1.3, 0.6) node[right] {$e^-$};
   \draw[antifermion, thick, red!60]   (0,0) -- (1.3,-0.6) node[right] {$e^+$};
-\end{tikzpicture}"#.to_string()
+\end{tikzpicture}"#
+        .to_string()
 }
 
 fn bhabha() -> String {
@@ -97,5 +101,6 @@ fn higgs_production() -> String {
   \filldraw[black] (-0.5,-0.3) circle (2pt);
   \filldraw[black] (0.5,0.3) circle (2pt);
   \filldraw[black] (0.5,-0.3) circle (2pt);
-\end{tikzpicture}"#.to_string()
+\end{tikzpicture}"#
+        .to_string()
 }

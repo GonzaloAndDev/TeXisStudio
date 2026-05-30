@@ -223,14 +223,17 @@ pub struct PreflightReport {
 
 impl PreflightReport {
     pub fn ok() -> Self {
-        Self { issues: vec![], has_critical: false }
+        Self {
+            issues: vec![],
+            has_critical: false,
+        }
     }
 }
 
 /// Configuración del entorno para el check.
 #[derive(Debug, Clone)]
 pub struct EnvContext {
-    pub backend: String,         // "latexmk" | "tectonic" | "auto"
+    pub backend: String, // "latexmk" | "tectonic" | "auto"
     pub needs_biber: bool,
     pub needs_makeglossaries: bool,
     pub platform: Platform,
@@ -314,14 +317,20 @@ impl PreflightChecker {
                 if ctx.needs_biber && has_biber {
                     if let Some(mismatch) = check_biber_tectonic_compat() {
                         if mismatch {
-                            issues.push(build_issue("tectonic_biber_version_mismatch", &ctx.platform));
+                            issues.push(build_issue(
+                                "tectonic_biber_version_mismatch",
+                                &ctx.platform,
+                            ));
                         }
                     }
                 }
 
                 // Tectonic + makeglossaries: no soportado
                 if ctx.needs_makeglossaries {
-                    issues.push(build_issue("tectonic_makeglossaries_not_supported", &ctx.platform));
+                    issues.push(build_issue(
+                        "tectonic_makeglossaries_not_supported",
+                        &ctx.platform,
+                    ));
                 }
             }
             _ => {}
@@ -333,18 +342,18 @@ impl PreflightChecker {
 
 // ── Helpers internos ──────────────────────────────────────────────────────────
 
-fn resolve_backend<'a>(
-    requested: &str,
-    has_latexmk: bool,
-    has_tectonic: bool,
-) -> Option<&'a str> {
+fn resolve_backend<'a>(requested: &str, has_latexmk: bool, has_tectonic: bool) -> Option<&'a str> {
     match requested {
         "latexmk" if has_latexmk => Some("latexmk"),
         "tectonic" if has_tectonic => Some("tectonic"),
         "auto" => {
-            if has_latexmk { Some("latexmk") }
-            else if has_tectonic { Some("tectonic") }
-            else { None }
+            if has_latexmk {
+                Some("latexmk")
+            } else if has_tectonic {
+                Some("tectonic")
+            } else {
+                None
+            }
         }
         _ => None,
     }
@@ -377,12 +386,39 @@ fn check_biber_tectonic_compat() -> Option<bool> {
     // Biber 2.20+ usa formato .bcf 3.11+ que tectonic no produce todavía.
     // Consideramos mismatch si biber >= 2.20 (produce bcf >= 3.11).
     // Esta heurística se actualizará cuando tectonic actualice biblatex.
-    Some(biber_major >= 2)  // Siempre detectar para ser conservadores; refinamos abajo.
+    Some(biber_major >= 2) // Siempre detectar para ser conservadores; refinamos abajo.
 }
 
 fn build_issue(id: &str, platform: &Platform) -> DependencyIssue {
-    let rule = RULES.iter().find(|r| r.id == id)
+    let rule = RULES
+        .iter()
+        .find(|r| r.id == id)
         .expect("rule id must exist in RULES");
+
+    // Las instrucciones se incluyen para todos los SO; el frontend muestra
+    // solo las del SO actual. Aquí las filtramos también para logs del backend.
+    let instructions = match platform {
+        Platform::MacOs => OsInstructions {
+            macos: rule.macos_instructions.map(str::to_string),
+            linux: None,
+            windows: None,
+        },
+        Platform::Linux => OsInstructions {
+            macos: None,
+            linux: rule.linux_instructions.map(str::to_string),
+            windows: None,
+        },
+        Platform::Windows => OsInstructions {
+            macos: None,
+            linux: None,
+            windows: rule.windows_instructions.map(str::to_string),
+        },
+        Platform::Other => OsInstructions {
+            macos: rule.macos_instructions.map(str::to_string),
+            linux: rule.linux_instructions.map(str::to_string),
+            windows: rule.windows_instructions.map(str::to_string),
+        },
+    };
 
     DependencyIssue {
         id: id.to_string(),
@@ -392,11 +428,7 @@ fn build_issue(id: &str, platform: &Platform) -> DependencyIssue {
         required_by: rule.required_by.to_string(),
         why_it_matters: rule.why_it_matters.to_string(),
         recommended_action: rule.recommended_action.to_string(),
-        instructions: OsInstructions {
-            macos: rule.macos_instructions.map(str::to_string),
-            linux: rule.linux_instructions.map(str::to_string),
-            windows: rule.windows_instructions.map(str::to_string),
-        },
+        instructions,
         can_retry: rule.can_retry,
         simple_alternative: rule.simple_alternative.map(str::to_string),
     }
@@ -404,7 +436,10 @@ fn build_issue(id: &str, platform: &Platform) -> DependencyIssue {
 
 fn finish(issues: Vec<DependencyIssue>) -> PreflightReport {
     let has_critical = issues.iter().any(|i| i.severity == IssueSeverity::Critical);
-    PreflightReport { issues, has_critical }
+    PreflightReport {
+        issues,
+        has_critical,
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -443,7 +478,11 @@ mod tests {
             let has_any = rule.macos_instructions.is_some()
                 || rule.linux_instructions.is_some()
                 || rule.windows_instructions.is_some();
-            assert!(has_any, "regla '{}' no tiene instrucciones de ningún SO", rule.id);
+            assert!(
+                has_any,
+                "regla '{}' no tiene instrucciones de ningún SO",
+                rule.id
+            );
         }
     }
 }

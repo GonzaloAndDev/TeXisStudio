@@ -727,7 +727,9 @@ pub fn open_in_system(path: String) -> Result<(), String> {
         std::process::Command::new("xdg-open").arg(&path).spawn()
     };
 
-    result.map(|_| ()).map_err(|e| format!("No se pudo abrir el archivo: {e}"))
+    result
+        .map(|_| ())
+        .map_err(|e| format!("No se pudo abrir el archivo: {e}"))
 }
 
 /// Verifica las dependencias del entorno para un proyecto dado.
@@ -742,16 +744,24 @@ pub fn check_toolchain(project_path: String, backend: String) -> Result<Value, S
 
     // Cargar modelo para saber qué features usa el proyecto
     let loader = ProjectLoader;
-    let model = loader.load_from_file(&yaml_path).map_err(|e| e.to_string())?;
+    let model = loader
+        .load_from_file(&yaml_path)
+        .map_err(|e| e.to_string())?;
 
     use texis_core::project::model::BibliographyBackend;
-    let needs_biber = matches!(model.latex_config.bibliography_backend, BibliographyBackend::Biber);
+    let needs_biber = matches!(
+        model.latex_config.bibliography_backend,
+        BibliographyBackend::Biber
+    );
 
     // Detectar si el proyecto tiene glosario o acrónimos en alguna sección
     use texis_core::project::model::ContentBlock;
     let needs_glossary = model.sections.iter().any(|s| {
         s.blocks.iter().any(|b| {
-            matches!(b, ContentBlock::GlossaryEntry(_) | ContentBlock::AcronymEntry(_))
+            matches!(
+                b,
+                ContentBlock::GlossaryEntry(_) | ContentBlock::AcronymEntry(_)
+            )
         })
     });
 
@@ -764,27 +774,31 @@ pub fn check_toolchain(project_path: String, backend: String) -> Result<Value, S
 
     let report = PreflightChecker::check(&ctx);
 
-    let issues_json: Vec<Value> = report.issues.iter().map(|issue| {
-        serde_json::json!({
-            "id": issue.id,
-            "severity": match issue.severity {
-                texis_core::build_engine::preflight::IssueSeverity::Critical => "critical",
-                texis_core::build_engine::preflight::IssueSeverity::Warning  => "warning",
-                texis_core::build_engine::preflight::IssueSeverity::Info     => "info",
-            },
-            "component": format!("{:?}", issue.component),
-            "required_by": issue.required_by,
-            "why_it_matters": issue.why_it_matters,
-            "recommended_action": issue.recommended_action,
-            "instructions": {
-                "macos":   issue.instructions.macos,
-                "linux":   issue.instructions.linux,
-                "windows": issue.instructions.windows,
-            },
-            "can_retry": issue.can_retry,
-            "simple_alternative": issue.simple_alternative,
+    let issues_json: Vec<Value> = report
+        .issues
+        .iter()
+        .map(|issue| {
+            serde_json::json!({
+                "id": issue.id,
+                "severity": match issue.severity {
+                    texis_core::build_engine::preflight::IssueSeverity::Critical => "critical",
+                    texis_core::build_engine::preflight::IssueSeverity::Warning  => "warning",
+                    texis_core::build_engine::preflight::IssueSeverity::Info     => "info",
+                },
+                "component": format!("{:?}", issue.component),
+                "required_by": issue.required_by,
+                "why_it_matters": issue.why_it_matters,
+                "recommended_action": issue.recommended_action,
+                "instructions": {
+                    "macos":   issue.instructions.macos,
+                    "linux":   issue.instructions.linux,
+                    "windows": issue.instructions.windows,
+                },
+                "can_retry": issue.can_retry,
+                "simple_alternative": issue.simple_alternative,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(serde_json::json!({
         "issues": issues_json,

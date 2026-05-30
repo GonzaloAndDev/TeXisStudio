@@ -675,7 +675,9 @@ pub struct VennEulerConfig {
     pub style: String,
 }
 
-fn default_venn_style() -> String { "circles".to_string() }
+fn default_venn_style() -> String {
+    "circles".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VennSet {
@@ -685,7 +687,9 @@ pub struct VennSet {
     pub color: String,
 }
 
-fn default_set_color() -> String { "blue".to_string() }
+fn default_set_color() -> String {
+    "blue".to_string()
+}
 
 // ── Flow Diagram ──────────────────────────────────────────────────
 
@@ -697,7 +701,9 @@ pub struct FlowDiagramConfig {
     pub orientation: String, // "vertical" | "horizontal"
 }
 
-fn default_flow_orientation() -> String { "vertical".to_string() }
+fn default_flow_orientation() -> String {
+    "vertical".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowNode {
@@ -709,7 +715,9 @@ pub struct FlowNode {
     pub color: String,
 }
 
-fn default_node_shape() -> String { "rect".to_string() }
+fn default_node_shape() -> String {
+    "rect".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowEdge {
@@ -721,7 +729,9 @@ pub struct FlowEdge {
     pub style: String, // "arrow" | "dashed" | "double"
 }
 
-fn default_arrow_style() -> String { "arrow".to_string() }
+fn default_arrow_style() -> String {
+    "arrow".to_string()
+}
 
 // ── Timeline ──────────────────────────────────────────────────────
 
@@ -734,7 +744,9 @@ pub struct TimelineConfig {
     pub accent_color: String,
 }
 
-fn default_timeline_orientation() -> String { "horizontal".to_string() }
+fn default_timeline_orientation() -> String {
+    "horizontal".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimelineEvent {
@@ -763,7 +775,9 @@ pub struct ChemReactionConfig {
     pub display_mode: bool,
 }
 
-fn default_reaction_type() -> String { "forward".to_string() }
+fn default_reaction_type() -> String {
+    "forward".to_string()
+}
 
 // ── Molecule (chemfig) ────────────────────────────────────────────
 
@@ -780,19 +794,29 @@ pub struct MoleculeConfig {
     pub scale: f32,
 }
 
-fn default_mol_scale() -> f32 { 1.0 }
+fn default_mol_scale() -> f32 {
+    1.0
+}
 
 /// Presets disponibles de moléculas con sus fórmulas chemfig.
 pub const MOLECULE_PRESETS: &[(&str, &str, &str)] = &[
     // (id, nombre, fórmula chemfig)
-    ("benzene",  "Benceno",     "*6(-=-=-=)"),
-    ("water",    "Agua",        "H-O-H"),
-    ("co2",      "CO₂",         "O=C=O"),
-    ("ethanol",  "Etanol",      "H_3C-CH_2-OH"),
-    ("glucose",  "Glucosa",     "HO-[2]CH_2-[6](-[8]OH)-[2](-[8]OH)-[6](-[8]OH)-[2](-[8]OH)-[6]=O"),
-    ("aspirin",  "Aspirina",    "*6(=-(-[2]OH)=(-[6](-[7]CH_3)=[8]O)-=-)"),
-    ("nacl",     "Cloruro de sodio", "Na^{+}-Cl^{-}"),
-    ("methane",  "Metano",      "H-C(-[2]H)(-[6]H)-H"),
+    ("benzene", "Benceno", "*6(-=-=-=)"),
+    ("water", "Agua", "H-O-H"),
+    ("co2", "CO₂", "O=C=O"),
+    ("ethanol", "Etanol", "H_3C-CH_2-OH"),
+    (
+        "glucose",
+        "Glucosa",
+        "HO-[2]CH_2-[6](-[8]OH)-[2](-[8]OH)-[6](-[8]OH)-[2](-[8]OH)-[6]=O",
+    ),
+    (
+        "aspirin",
+        "Aspirina",
+        "*6(=-(-[2]OH)=(-[6](-[7]CH_3)=[8]O)-=-)",
+    ),
+    ("nacl", "Cloruro de sodio", "Na^{+}-Cl^{-}"),
+    ("methane", "Metano", "H-C(-[2]H)(-[6]H)-H"),
 ];
 
 // ── Circuit (circuitikz) ──────────────────────────────────────────
@@ -809,11 +833,11 @@ pub struct CircuitConfig {
 
 /// Presets de circuitos disponibles.
 pub const CIRCUIT_PRESETS: &[(&str, &str)] = &[
-    ("rc_series",          "Circuito RC en serie"),
-    ("rlc_parallel",       "Circuito RLC en paralelo"),
-    ("voltage_divider",    "Divisor de voltaje resistivo"),
-    ("inverting_opamp",    "Amplificador operacional inversor"),
-    ("full_wave_rectifier","Rectificador de onda completa"),
+    ("rc_series", "Circuito RC en serie"),
+    ("rlc_parallel", "Circuito RLC en paralelo"),
+    ("voltage_divider", "Divisor de voltaje resistivo"),
+    ("inverting_opamp", "Amplificador operacional inversor"),
+    ("full_wave_rectifier", "Rectificador de onda completa"),
 ];
 
 // ── Feynman Diagram (tikz-feynman) ────────────────────────────────
@@ -832,12 +856,15 @@ pub struct FeynmanConfig {
 }
 
 pub const FEYNMAN_PRESETS: &[(&str, &str)] = &[
-    ("vertex_qed",       "Vértice QED (e⁻ + γ)"),
-    ("compton",          "Dispersión Compton"),
-    ("muon_decay",       "Desintegración del muón (μ⁻ → e⁻ νμ ν̄e)"),
-    ("pair_production",  "Producción de par (γ → e⁺ e⁻)"),
-    ("bhabha",           "Dispersión Bhabha (e⁺e⁻ → e⁺e⁻)"),
-    ("higgs_production", "Producción de Higgs vía fusión de gluones"),
+    ("vertex_qed", "Vértice QED (e⁻ + γ)"),
+    ("compton", "Dispersión Compton"),
+    ("muon_decay", "Desintegración del muón (μ⁻ → e⁻ νμ ν̄e)"),
+    ("pair_production", "Producción de par (γ → e⁺ e⁻)"),
+    ("bhabha", "Dispersión Bhabha (e⁺e⁻ → e⁺e⁻)"),
+    (
+        "higgs_production",
+        "Producción de Higgs vía fusión de gluones",
+    ),
 ];
 
 // ── Bio Pathway (TikZ presets) ────────────────────────────────────
@@ -856,11 +883,11 @@ pub struct BioPathwayConfig {
 }
 
 pub const BIO_PATHWAY_PRESETS: &[(&str, &str)] = &[
-    ("krebs_cycle",          "Ciclo de Krebs (ácido cítrico)"),
-    ("glycolysis",           "Glucólisis (Embden-Meyerhof)"),
-    ("photosynthesis",       "Fotosíntesis (ciclo de Calvin)"),
-    ("electron_transport",   "Cadena de transporte de electrones"),
-    ("beta_oxidation",       "Beta-oxidación de ácidos grasos"),
+    ("krebs_cycle", "Ciclo de Krebs (ácido cítrico)"),
+    ("glycolysis", "Glucólisis (Embden-Meyerhof)"),
+    ("photosynthesis", "Fotosíntesis (ciclo de Calvin)"),
+    ("electron_transport", "Cadena de transporte de electrones"),
+    ("beta_oxidation", "Beta-oxidación de ácidos grasos"),
 ];
 
 // ── Music Fragment (MusiXTeX / ABC) ──────────────────────────────
