@@ -623,6 +623,51 @@ pub fn update_typography(
         .map_err(err)
 }
 
+/// Actualiza la configuración de preámbulo del proyecto.
+/// Gestiona fuentes CJK, fuentes del documento, operadores matemáticos,
+/// teoremas adicionales y preámbulo extra.
+#[tauri::command]
+pub fn update_preamble_config(
+    project_path: String,
+    cjk_main_font: Option<String>,
+    cjk_japanese_font: Option<String>,
+    cjk_korean_font: Option<String>,
+    main_font: Option<String>,
+    sans_font: Option<String>,
+    mono_font: Option<String>,
+    math_operators: Option<serde_json::Value>,
+    extra_theorems: Option<serde_json::Value>,
+    extra: Option<String>,
+) -> Result<(), String> {
+    use texis_core::project::model::{ExtraTheorem, MathOperator, PreambleConfig};
+
+    let project_yaml = std::path::Path::new(&project_path).join("tesis.project.yaml");
+    let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
+
+    let ops: Vec<MathOperator> = math_operators
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+    let thms: Vec<ExtraTheorem> = extra_theorems
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+
+    model.latex_config.preamble_config = PreambleConfig {
+        cjk_main_font: cjk_main_font.filter(|s| !s.is_empty()),
+        cjk_japanese_font: cjk_japanese_font.filter(|s| !s.is_empty()),
+        cjk_korean_font: cjk_korean_font.filter(|s| !s.is_empty()),
+        main_font: main_font.filter(|s| !s.is_empty()),
+        sans_font: sans_font.filter(|s| !s.is_empty()),
+        mono_font: mono_font.filter(|s| !s.is_empty()),
+        math_operators: ops,
+        extra_theorems: thms,
+        extra: extra.filter(|s| !s.trim().is_empty()),
+    };
+
+    ProjectSaver
+        .save_to_file(&model, &project_yaml)
+        .map_err(err)
+}
+
 /// Actualiza el estado editorial y las notas internas de una sección.
 /// No toca los bloques ni los campos; solo status y notes.
 #[tauri::command]
@@ -837,6 +882,8 @@ fn build_model_from_profile(name: &str, profile: &Profile) -> ProjectModel {
             packages_required: profile.packages.clone(),
             typography: Default::default(),
             page_layout: map_profile_page_layout(profile),
+            packages_with_options: vec![],
+            preamble_config: Default::default(),
         },
         sections,
         file_states: HashMap::new(),

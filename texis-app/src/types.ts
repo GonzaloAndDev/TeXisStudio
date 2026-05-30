@@ -240,10 +240,50 @@ export interface LatexTypography {
   margin_cm?: number;
 }
 
+export interface MathOperator {
+  command: string;   // sin backslash: "rank", "tr"
+  text: string;      // texto en PDF: "rank", "tr"
+}
+
+export interface ExtraTheorem {
+  id: string;
+  label: string;
+  parent_counter?: string;
+  numbered: boolean;
+}
+
+/**
+ * Configuración explícita del preámbulo LaTeX.
+ * La mayoría de campos son opcionales — el generador infiere lo que puede
+ * automáticamente del contenido (por ejemplo, activa xeCJK si detecta
+ * caracteres chinos o japoneses en el documento).
+ */
+export interface PreambleConfig {
+  /** Fuente principal CJK. Si no se especifica y hay CJK en el doc, usa "Heiti SC". */
+  cjk_main_font?: string;
+  /** Fuente japonesa específica (override sobre cjk_main_font). */
+  cjk_japanese_font?: string;
+  /** Fuente coreana específica. */
+  cjk_korean_font?: string;
+  /** Fuente principal del documento (override sobre el perfil). */
+  main_font?: string;
+  /** Fuente sans-serif. */
+  sans_font?: string;
+  /** Fuente monoespaciada. */
+  mono_font?: string;
+  /** Operadores matemáticos adicionales (\DeclareMathOperator). */
+  math_operators?: MathOperator[];
+  /** Entornos de teoremas adicionales (\newtheorem). */
+  extra_theorems?: ExtraTheorem[];
+  /** LaTeX adicional para el preámbulo (sólo usuarios avanzados). */
+  extra?: string;
+}
+
 export interface LatexConfig {
   document_class: { name: string; options: string[] };
   bibliography_style: string;
   typography: LatexTypography;
+  preamble_config?: PreambleConfig;
 }
 
 export interface ProjectModel {

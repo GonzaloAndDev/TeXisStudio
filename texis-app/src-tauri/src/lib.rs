@@ -21,6 +21,7 @@ pub fn run() {
             commands::project::delete_snapshot,
             commands::project::update_section_meta,
             commands::project::update_typography,
+            commands::project::update_preamble_config,
             commands::project::export_delivery,
             commands::project::check_pdf_postflight,
             commands::project::generate_review_report,

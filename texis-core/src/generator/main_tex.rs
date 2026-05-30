@@ -7,11 +7,65 @@
 // 4. Compila con: cd build && latexmk -xelatex main.tex
 
 use crate::error::{CoreError, CoreResult};
-use crate::project::model::{BibliographyBackend, ProjectModel, SectionPlacement};
+use crate::project::model::{
+    BibliographyBackend, ContentBlock, ProjectModel, SectionPlacement,
+};
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
 use serde_json::Value;
 use std::path::Path;
+
+// ── Detección de scripts Unicode en el contenido ──────────────────────────────
+
+/// Scripts de escritura detectados en el documento.
+#[derive(Debug, Default)]
+struct ScriptDetection {
+    pub cjk: bool,          // Chino / Japonés / Coreano
+    pub devanagari: bool,   // Hindi / Sanskrit
+    pub arabic: bool,
+    pub cyrillic: bool,     // Ruso / búlgaro / serbio…
+    pub hebrew: bool,
+    pub thai: bool,
+}
+
+fn detect_scripts(model: &ProjectModel) -> ScriptDetection {
+    let mut det = ScriptDetection::default();
+    for section in &model.sections {
+        for block in &section.blocks {
+            let text = match block {
+                ContentBlock::Paragraph(p) => p.content.as_str(),
+                ContentBlock::RawLatex(r)  => r.content.as_str(),
+                ContentBlock::Heading(h)   => h.content.as_str(),
+                _ => continue,
+            };
+            for c in text.chars() {
+                let u = c as u32;
+                match u {
+                    // CJK unificado + extensiones + compatibilidad
+                    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF |
+                    0x20000..=0x2A6DF => det.cjk = true,
+                    // Hiragana + Katakana (japonés)
+                    0x3040..=0x30FF => det.cjk = true,
+                    // Hangul (coreano)
+                    0xAC00..=0xD7AF | 0x1100..=0x11FF => det.cjk = true,
+                    // Devanagari (Hindi, Sanskrit, Marathi, Nepali…)
+                    0x0900..=0x097F => det.devanagari = true,
+                    // Árabe
+                    0x0600..=0x06FF | 0x0750..=0x077F => det.arabic = true,
+                    // Cirílico
+                    0x0400..=0x04FF => det.cyrillic = true,
+                    // Hebreo
+                    0x0590..=0x05FF | 0xFB1D..=0xFB4F => det.hebrew = true,
+                    // Thai
+                    0x0E00..=0x0E7F => det.thai = true,
+                    _ => {}
+                }
+                if det.cjk && det.devanagari && det.arabic && det.cyrillic { break; }
+            }
+        }
+    }
+    det
+}
 
 const HEADER_COMMENT: &str = "\
 % ─────────────────────────────────────────────────────────────────
@@ -207,8 +261,10 @@ fn render_geometry(model: &ProjectModel) -> String {
 
 fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
+    let pc = &model.latex_config.preamble_config;
+    let scripts = detect_scripts(model);
 
-    // Paquetes base según el motor
+    // ── Paquetes base ─────────────────────────────────────────────────────────
     out.push_str("\\usepackage{fontspec}\n");
     out.push_str(&render_geometry(model));
     out.push_str("\\usepackage{graphicx}\n");
@@ -220,20 +276,62 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\usepackage{setspace}\n");
     out.push_str("\\usepackage{microtype}\n");
     out.push_str("\\usepackage{csquotes}\n");
-    // adjustbox: escala tablas anchas para que no desborden el margen
+    // adjustbox: escala tablas anchas automáticamente
     out.push_str("\\usepackage{adjustbox}\n");
+
+    // ── Fuentes del documento (override sobre perfil) ─────────────────────────
+    if let Some(f) = &pc.main_font {
+        out.push_str(&format!("\\setmainfont{{{}}}\n", latex_escape(f)));
+    }
+    if let Some(f) = &pc.sans_font {
+        out.push_str(&format!("\\setsansfont{{{}}}\n", latex_escape(f)));
+    }
+    if let Some(f) = &pc.mono_font {
+        out.push_str(&format!("\\setmonofont{{{}}}\n", latex_escape(f)));
+    }
+
+    // ── Soporte CJK ──────────────────────────────────────────────────────────
+    // Auto-detectado del contenido O si el usuario declaró cjk_main_font.
+    // xeCJK se carga ANTES de polyglossia para evitar conflictos.
+    let needs_cjk = scripts.cjk
+        || pc.cjk_main_font.is_some()
+        || pc.cjk_japanese_font.is_some()
+        || pc.cjk_korean_font.is_some()
+        || model.latex_config.packages_required.iter().any(|p| p == "xeCJK");
+
+    if needs_cjk {
+        out.push_str("\n% Soporte CJK (auto-detectado del contenido del documento)\n");
+        // Solo añadir xeCJK si no está ya en packages_required (evitar doble carga)
+        if !model.latex_config.packages_required.iter().any(|p| p == "xeCJK") {
+            out.push_str("\\usepackage{xeCJK}\n");
+        }
+        let cjk_main = pc.cjk_main_font.as_deref().unwrap_or("Heiti SC");
+        out.push_str(&format!("\\setCJKmainfont{{{}}}\n", latex_escape(cjk_main)));
+        // xeCJK permite variantes de fuente por idioma con el parámetro Language=
+        // Fuente japonesa: [Language=Japanese] — necesita xeCJK >= 3.x
+        if let Some(ja) = &pc.cjk_japanese_font {
+            out.push_str(&format!(
+                "\\setCJKmainfont[Language=Japanese]{{{}}}\n",
+                latex_escape(ja)
+            ));
+        }
+        // Los que usen cjk_korean_font pueden poner la fuente en preamble_config.extra
+        // ya que la API varía según la versión de xeCJK disponible.
+    }
 
     // ── Configuración de idioma ───────────────────────────────────────────────
     // Prioridad: (1) lang_config del pack instalado, (2) model.metadata.language.
-    // Esto garantiza que documentos en español siempre tengan el idioma correcto
-    // aunque no haya un pack de idioma instalado.
     if lang_config.is_none() {
         match model.metadata.language.as_str() {
             "es" => {
-                out.push_str("\n% Idioma del documento (detectado desde metadata)\n");
+                out.push_str("\n% Idioma del documento\n");
                 out.push_str("\\usepackage{polyglossia}\n");
                 out.push_str("\\setmainlanguage{spanish}\n");
                 out.push_str("\\setotherlanguage{english}\n");
+                // Ruso también si se detectó cirílico
+                if scripts.cyrillic {
+                    out.push_str("\\setotherlanguage{russian}\n");
+                }
             }
             "fr" => {
                 out.push_str("\n% Idioma del documento\n");
@@ -250,7 +348,21 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 out.push_str("\\usepackage{polyglossia}\n");
                 out.push_str("\\setmainlanguage{german}\n");
             }
-            _ => {} // inglés: default de LaTeX, no se necesita paquete
+            "ru" => {
+                out.push_str("\n% Idioma del documento\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{russian}\n");
+            }
+            "en" | "" => {
+                // Añadir ruso como otherlanguage si hay cirílico en el doc
+                if scripts.cyrillic {
+                    out.push_str("\n% Soporte multilingüe (Cirílico detectado)\n");
+                    out.push_str("\\usepackage{polyglossia}\n");
+                    out.push_str("\\setmainlanguage{english}\n");
+                    out.push_str("\\setotherlanguage{russian}\n");
+                }
+            }
+            _ => {}
         }
     }
 
@@ -260,23 +372,19 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
         let xelatex_font = cfg.get("xelatex_font").and_then(|v| v.as_str());
 
         if let Some(lang_name) = polyglossia {
-            // polyglossia es el paquete preferido para XeLaTeX/LuaLaTeX
             out.push_str("\n% Idioma del documento (polyglossia)\n");
             out.push_str("\\usepackage{polyglossia}\n");
             out.push_str(&format!("\\setmainlanguage{{{}}}\n", lang_name));
         } else if let Some(lang_name) = babel {
-            // Fallback a babel cuando polyglossia no está disponible
             out.push_str("\n% Idioma del documento (babel)\n");
             out.push_str(&format!("\\usepackage[{}]{{babel}}\n", lang_name));
         }
-
         if let Some(font) = xelatex_font {
-            // Fuente especificada por el pack (necesaria para scripts no-latinos)
             out.push_str(&format!("\\setmainfont{{{}}}\n", font));
         }
     }
 
-    // Bibliografía
+    // ── Bibliografía ──────────────────────────────────────────────────────────
     let bib_style = &model.latex_config.bibliography_style;
     let bib_backend = match &model.latex_config.bibliography_backend {
         BibliographyBackend::Biber => "biber",
@@ -290,7 +398,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
 
     out.push_str("\\usepackage[hidelinks]{hyperref}\n");
 
-    // Posgrado: código fuente, algoritmos, teoremas
+    // ── Paquetes de posgrado (base) ───────────────────────────────────────────
     out.push_str("\n% Paquetes de posgrado\n");
     out.push_str("\\usepackage{listings}\n");
     out.push_str("\\lstset{basicstyle=\\ttfamily\\footnotesize, frame=single, breaklines=true, tabsize=4, showstringspaces=false}\n");
@@ -299,12 +407,76 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\usepackage{amsmath}\n");
     out.push_str("\\usepackage{amssymb}\n");
     out.push_str("\\usepackage{amsthm}\n");
-    out.push_str("\\usepackage{mathtools}\n"); // amplía amsmath: \coloneqq, \prescript, etc.
-    out.push_str("\\usepackage{bm}\n"); // negritas en modo math: \bm{}
+    out.push_str("\\usepackage{mathtools}\n");
+    out.push_str("\\usepackage{bm}\n");
 
-    // Paquetes adicionales del modelo
+    // ── Paquetes con opciones declarados por el usuario ───────────────────────
+    if !model.latex_config.packages_with_options.is_empty() {
+        out.push_str("\n% Paquetes con opciones\n");
+        for pkg in &model.latex_config.packages_with_options {
+            if pkg.options.is_empty() {
+                out.push_str(&format!("\\usepackage{{{}}}\n", pkg.name));
+            } else {
+                out.push_str(&format!(
+                    "\\usepackage[{}]{{{}}}\n",
+                    pkg.options.join(","),
+                    pkg.name
+                ));
+            }
+        }
+    }
+
+    // ── Paquetes simples adicionales ──────────────────────────────────────────
+    // (excluir xeCJK si ya lo cargamos arriba)
     for pkg in &model.latex_config.packages_required {
+        if pkg == "xeCJK" && needs_cjk { continue; } // ya cargado
         out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
+    }
+
+    // ── Operadores matemáticos personalizados ─────────────────────────────────
+    if !pc.math_operators.is_empty() {
+        out.push_str("\n% Operadores matemáticos\n");
+        for op in &pc.math_operators {
+            out.push_str(&format!(
+                "\\DeclareMathOperator{{\\{}}}{{{}}}\n",
+                latex_escape(&op.command),
+                latex_escape(&op.text)
+            ));
+        }
+    }
+
+    // ── Entornos de teoremas adicionales ─────────────────────────────────────
+    if !pc.extra_theorems.is_empty() {
+        out.push_str("\n% Entornos de teoremas adicionales\n");
+        for thm in &pc.extra_theorems {
+            if thm.numbered {
+                match &thm.parent_counter {
+                    Some(parent) => out.push_str(&format!(
+                        "\\newtheorem{{{}}}{{{}}}[{}]\n",
+                        thm.id, latex_escape(&thm.label), parent
+                    )),
+                    None => out.push_str(&format!(
+                        "\\newtheorem{{{}}}{{{}}}\n",
+                        thm.id, latex_escape(&thm.label)
+                    )),
+                }
+            } else {
+                out.push_str(&format!(
+                    "\\newtheorem*{{{}}}{{{}}}\n",
+                    thm.id, latex_escape(&thm.label)
+                ));
+            }
+        }
+    }
+
+    // ── Preámbulo extra (escape hatch) ────────────────────────────────────────
+    if let Some(extra) = &pc.extra {
+        let trimmed = extra.trim();
+        if !trimmed.is_empty() {
+            out.push_str("\n% Preámbulo adicional (configurado por el usuario)\n");
+            out.push_str(trimmed);
+            out.push('\n');
+        }
     }
 
     out

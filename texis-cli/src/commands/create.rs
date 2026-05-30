@@ -101,6 +101,8 @@ fn create_minimal_model(profile_id: &str, name: &str) -> ProjectModel {
             packages_required: vec![],
             typography: LatexTypography::default(),
             page_layout: None,
+            packages_with_options: vec![],
+            preamble_config: Default::default(),
         },
         sections: vec![
             ProjectSection {

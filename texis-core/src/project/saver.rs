@@ -54,6 +54,8 @@ mod tests {
                 packages_required: vec![],
                 typography: Default::default(),
                 page_layout: None,
+            packages_with_options: vec![],
+            preamble_config: Default::default(),
             },
             sections: vec![],
             file_states: HashMap::new(),

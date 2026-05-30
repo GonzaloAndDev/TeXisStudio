@@ -12,6 +12,7 @@ import type {
   ExportDeliveryResult,
   LatexInfo,
   PdfPostflightResult,
+  PreambleConfig,
   ProfileInfo,
   ProfileLockStatus,
   ProfileStatus,
@@ -58,6 +59,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     { key: "he2016deep",          entry_type: "inproceedings", title: "Deep Residual Learning for Image Recognition",   author: "He, Kaiming et al.",                                      year: "2016", journal: "CVPR" },
   ] as BibReference[],
   check_toolchain: { issues: [] as DependencyIssue[], has_critical: false },
+  update_preamble_config: undefined,
   open_in_system: undefined,
   run_system_doctor: {
     checks: [],
@@ -220,6 +222,23 @@ export const api = {
     marginCm?: number,
   ): Promise<void> =>
     call("update_typography", { projectPath, fontSize, paperSize, lineSpacing, marginCm }),
+
+  updatePreambleConfig: (
+    projectPath: string,
+    config: PreambleConfig,
+  ): Promise<void> =>
+    call("update_preamble_config", {
+      projectPath,
+      cjkMainFont:     config.cjk_main_font,
+      cjkJapaneseFont: config.cjk_japanese_font,
+      cjkKoreanFont:   config.cjk_korean_font,
+      mainFont:        config.main_font,
+      sansFont:        config.sans_font,
+      monoFont:        config.mono_font,
+      mathOperators:   config.math_operators,
+      extraTheorems:   config.extra_theorems,
+      extra:           config.extra,
+    }),
 
   getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>
     call("get_platform"),

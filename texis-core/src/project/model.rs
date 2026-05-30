@@ -126,6 +126,80 @@ pub struct StudentData {
     pub orcid: Option<String>,
 }
 
+/// Declaración de un paquete LaTeX con opciones.
+/// Alternativa estructurada a escribir `\usepackage[opts]{pkg}` a mano.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageConfig {
+    pub name: String,
+    /// Opciones del paquete, ej. ["version=4"] → \usepackage[version=4]{mhchem}
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub options: Vec<String>,
+}
+
+/// Operador matemático personalizado.
+/// Genera `\DeclareMathOperator{\<command>}{<text>}` en el preámbulo.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MathOperator {
+    /// Nombre del comando sin backslash: "rank", "tr", "Im", "Re"
+    pub command: String,
+    /// Texto que aparece en el PDF: "rank", "tr", "Im", "Re"
+    pub text: String,
+}
+
+/// Entorno de teorema adicional (más allá de los ya definidos por el perfil).
+/// Genera `\newtheorem{id}{label}[parent]` en el preámbulo.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtraTheorem {
+    /// Identificador del entorno: "hypothesis", "conjecture", "claim"
+    pub id: String,
+    /// Etiqueta que aparece en el PDF: "Hipótesis", "Conjetura"
+    pub label: String,
+    /// Contador padre (numeración dentro de capítulo/sección). None = numeración global.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_counter: Option<String>,
+    #[serde(default = "default_true")]
+    pub numbered: bool,
+}
+
+/// Configuración explícita del preámbulo LaTeX.
+/// Todo lo que no sea texto narrativo y que el generador no emite automáticamente.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PreambleConfig {
+    /// Fuente CJK principal (chino simplificado / coreano).
+    /// Si None y el documento contiene caracteres CJK, el generador usa "Heiti SC".
+    /// macOS: "Heiti SC", "Songti SC", "STSong"
+    /// Windows/Linux: "Noto Sans CJK SC", "WenQuanYi Micro Hei"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cjk_main_font: Option<String>,
+    /// Fuente japonesa (override sobre cjk_main_font para texto japonés).
+    /// macOS: "Hiragino Mincho ProN", "Hiragino Kaku Gothic Pro"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cjk_japanese_font: Option<String>,
+    /// Fuente coreana (override sobre cjk_main_font para texto coreano).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cjk_korean_font: Option<String>,
+    /// Fuente principal del documento (override sobre el perfil activo).
+    /// XeLaTeX: nombre exacto de la fuente OpenType/TrueType del sistema.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub main_font: Option<String>,
+    /// Fuente sans-serif del documento.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sans_font: Option<String>,
+    /// Fuente monoespaciada del documento.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mono_font: Option<String>,
+    /// Operadores matemáticos adicionales.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub math_operators: Vec<MathOperator>,
+    /// Entornos de teoremas adicionales (hipótesis, conjeturas, etc.).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_theorems: Vec<ExtraTheorem>,
+    /// LaTeX adicional para el preámbulo (escape hatch para usuarios avanzados).
+    /// ADVERTENCIA: puede romper la compilación si contiene errores.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extra: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LatexConfig {
     pub document_class: DocumentClassConfig,
@@ -133,7 +207,12 @@ pub struct LatexConfig {
     pub compiler: CompilerKind,
     pub bibliography_backend: BibliographyBackend,
     pub bibliography_style: String,
+    /// Paquetes simples (sin opciones). Para paquetes con opciones usa packages_with_options.
     pub packages_required: Vec<String>,
+    /// Paquetes con opciones. Ej: {name: "mhchem", options: ["version=4"]}
+    /// Se emiten como \usepackage[opts]{name} ANTES de packages_required.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub packages_with_options: Vec<PackageConfig>,
     /// Ajustes tipográficos del usuario. Tienen prioridad sobre los valores del perfil.
     #[serde(default)]
     pub typography: LatexTypography,
@@ -141,6 +220,11 @@ pub struct LatexConfig {
     /// None en proyectos creados antes de P1.1 — el generador usa margin_cm como fallback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub page_layout: Option<PageLayout>,
+    /// Configuración explícita del preámbulo: fuentes CJK, operadores matemáticos,
+    /// teoremas adicionales y preámbulo extra. El generador completa automáticamente
+    /// lo que puede inferir del contenido (ej. xeCJK si hay caracteres CJK).
+    #[serde(default)]
+    pub preamble_config: PreambleConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

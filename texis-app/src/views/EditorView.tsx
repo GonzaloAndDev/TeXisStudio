@@ -464,15 +464,18 @@ export default function EditorView() {
     }
   }, [activeProjectPath, activeProject]);
 
-  // ── Tipografía del documento ───────────────────────────────────
-  const handleSaveTypography = useCallback(async (typo: LatexTypography) => {
+  // ── Tipografía y preámbulo del documento ─────────────────────────
+  const handleSaveTypography = useCallback(async (opts: { typography: LatexTypography; preamble: import("../types").PreambleConfig }) => {
     if (!activeProjectPath || !activeProject) return;
+    const typo = opts.typography;
+    const preamble = opts.preamble;
     // Actualizar en el store
     const updated = {
       ...activeProject,
       latex_config: {
         ...(activeProject.latex_config ?? { document_class: { name: "book", options: [] }, bibliography_style: "apa", typography: {} }),
         typography: typo,
+        preamble_config: preamble,
       },
     };
     useProjectStore.getState().updateProject(updated);
@@ -486,6 +489,8 @@ export default function EditorView() {
           typo.line_spacing,
           typo.margin_cm,
         );
+        await api.updatePreambleConfig(activeProjectPath, preamble)
+          .catch((e: unknown) => console.error("Error guardando preámbulo:", e));
       } catch (e) {
         console.error("Error guardando tipografía:", e);
       }
@@ -1176,13 +1181,29 @@ export default function EditorView() {
       )}
 
       {/* ── Panel de opciones del documento ──────────────────────── */}
-      {docOptionsOpen && (
-        <DocumentOptionsPanel
-          typography={activeProject.latex_config?.typography ?? {}}
-          onSave={handleSaveTypography}
-          onClose={() => setDocOptionsOpen(false)}
-        />
-      )}
+      {docOptionsOpen && (() => {
+        // Detectar si hay CJK en el documento (para mostrar la sección CJK automáticamente)
+        const hasCjk = activeProject.sections.some((s) =>
+          s.blocks?.some((b) => {
+            const text = b.type === "paragraph" ? b.content
+              : b.type === "raw_latex" ? b.content
+              : b.type === "heading" ? b.content : "";
+            return typeof text === "string" && [...text].some((c) => {
+              const u = c.codePointAt(0) ?? 0;
+              return (u >= 0x4E00 && u <= 0x9FFF) || (u >= 0x3040 && u <= 0x30FF) || (u >= 0xAC00 && u <= 0xD7AF);
+            });
+          })
+        );
+        return (
+          <DocumentOptionsPanel
+            typography={activeProject.latex_config?.typography ?? {}}
+            preamble={activeProject.latex_config?.preamble_config ?? {}}
+            hasCjkContent={hasCjk}
+            onSave={handleSaveTypography}
+            onClose={() => setDocOptionsOpen(false)}
+          />
+        );
+      })()}
 
       {/* ── Modal: cambios sin guardar al navegar ─────────────────── */}
       {blocker.state === "blocked" && (
