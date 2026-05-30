@@ -42,14 +42,16 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
     {
       id: "mactex",
       name: "MacTeX",
-      tagline: "Recomendado — distribución oficial para Mac",
+      tagline: "Recomendado — resultados más finos, estables y completos",
       description:
-        "MacTeX es la distribución TeX Live adaptada para macOS. Incluye todo: latexmk, xelatex, biber y miles de paquetes. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete específico. Puede coexistir con Tectonic sin conflicto.",
+        "MacTeX es la distribución TeX Live completa para macOS. Produce los resultados más precisos y estables: tipografía perfecta, bibliografías APA/IEEE/Vancouver correctas al 100%, soporte nativo para Cirílico, CJK, Devanagari y cualquier paquete LaTeX publicado. Ideal para tesis finales, revistas y cualquier documento que deba verse impecable.",
       pros: [
-        "Incluye todos los paquetes LaTeX sin descargas adicionales",
+        "Tipografía y salida más fina que cualquier alternativa ligera",
+        "Bibliografías compatibles al 100% (biber versión correcta incluida)",
+        "Todos los paquetes CTAN disponibles sin restricción",
+        "Soporte nativo multilingüe: Cirílico, CJK, Árabe, Devanagari",
+        "Compilación multi-pasada correcta: TOC, índices, referencias cruzadas",
         "Instalación con Homebrew en un comando",
-        "Actualizable con brew upgrade",
-        "Compatible con cualquier perfil institucional",
       ],
       cons: [
         "Descarga grande (~5 GB)",
@@ -132,14 +134,16 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
     {
       id: "texlive",
       name: "TeX Live",
-      tagline: "Recomendado — distribución completa vía gestor de paquetes",
+      tagline: "Recomendado — resultados más finos, estables y completos",
       description:
-        "TeX Live es la distribución LaTeX estándar en Linux. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
+        "TeX Live es la distribución LaTeX completa estándar en Linux. Produce resultados más precisos y estables que cualquier opción ligera: tipografía perfecta, bibliografías correctas al 100%, soporte multilingüe completo (Cirílico, CJK, Devanagari) y todos los paquetes CTAN disponibles. La opción correcta para documentos que deben verse impecables.",
       pros: [
-        "Instalación con un solo comando",
-        "Mantenida por la distribución — actualizaciones automáticas",
-        "Compatible con cualquier perfil institucional",
-        "Incluye latexmk, xelatex, biber y más",
+        "Tipografía y salida más fina que alternativas ligeras",
+        "Bibliografías 100% correctas — biber versión compatible incluida",
+        "Todos los paquetes CTAN sin restricción",
+        "Soporte multilingüe nativo: Cirílico, CJK, Árabe, Devanagari",
+        "Compilación multi-pasada correcta: TOC, índices, referencias cruzadas",
+        "Instalación con un solo comando del sistema",
       ],
       cons: [
         "Instalación completa ocupa 3–5 GB",
@@ -226,14 +230,16 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
     {
       id: "miktex",
       name: "MiKTeX",
-      tagline: "Recomendado en Windows — instalador gráfico, sin Perl",
+      tagline: "Recomendado en Windows — resultados más finos, completo sin Perl",
       description:
-        "Distribución LaTeX nativa en Windows con instalador gráfico. Recomendado para tesis con matemáticas avanzadas, física o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
+        "MiKTeX es la distribución LaTeX completa para Windows. Produce resultados más precisos y estables que Tectonic: tipografía perfecta, bibliografías correctas al 100%, soporte multilingüe completo y todos los paquetes CTAN disponibles. Descarga automáticamente solo lo que necesitas — eficiente y completo al mismo tiempo.",
       pros: [
+        "Tipografía y salida más fina que alternativas ligeras",
+        "Bibliografías 100% correctas — biber incluido y compatible",
+        "Todos los paquetes CTAN, descargados bajo demanda",
+        "No necesita Strawberry Perl (a diferencia de latexmk manual)",
+        "Soporte multilingüe: Cirílico, CJK, Árabe, Devanagari",
         "Instalador gráfico .exe fácil de usar",
-        "Descarga paquetes bajo demanda automáticamente",
-        "Incluye latexmk y biber",
-        "No necesita Strawberry Perl para compilar",
       ],
       cons: [
         "La consola de MiKTeX puede confundir al principio",
@@ -303,12 +309,14 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
     {
       id: "texlive",
       name: "TeX Live",
-      tagline: "Completo — todas las herramientas, sin sorpresas",
+      tagline: "Completo — resultados más finos, estables, sin sorpresas",
       description:
-        "Distribución LaTeX completa para tesis muy exigentes: matemáticas avanzadas, física teórica, o cuando Tectonic no logra compilar algún paquete. Puede coexistir con Tectonic sin conflicto — si tienes ambos, la app te deja elegir cuál usar.",
+        "TeX Live en Windows produce los resultados más precisos y estables posibles: tipografía perfecta, bibliografías al 100%, soporte multilingüe completo y todos los paquetes CTAN. Para tesis que deben verse impecables — física teórica, matemáticas avanzadas, documentos multilingüe — es la elección correcta.",
       pros: [
-        "Todos los paquetes LaTeX incluidos",
-        "Sin descargas adicionales después de instalar",
+        "Tipografía y salida más fina que alternativas ligeras",
+        "Todos los paquetes CTAN incluidos, sin descargas adicionales",
+        "Bibliografías 100% correctas — biber compatible incluido",
+        "Soporte multilingüe nativo: Cirílico, CJK, Árabe, Devanagari",
         "Compatible con cualquier perfil institucional",
       ],
       cons: [
