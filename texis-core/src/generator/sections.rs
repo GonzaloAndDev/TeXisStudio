@@ -48,6 +48,53 @@ pub fn generate_all(
     Ok(())
 }
 
+/// Variante de generate_all que respeta FileState::Manual.
+/// Registra archivos generados y preservados en el DriftReport.
+pub fn generate_all_respecting_manual(
+    model: &ProjectModel,
+    build_dir: &Path,
+    engine: &TemplateEngine,
+    title_page_template: Option<&str>,
+    report: &mut super::DriftReport,
+) -> CoreResult<()> {
+    use crate::project::model::FileState;
+    let mut body_idx = 0usize;
+
+    for section in &model.sections {
+        if !section.enabled {
+            continue;
+        }
+        let current_body_idx = body_idx;
+        if matches!(section.placement, SectionPlacement::Body) {
+            body_idx += 1;
+        }
+        let rel_str = match section_output_path(section, current_body_idx) {
+            Some(p) => p,
+            None => continue,
+        };
+
+        let is_manual = model
+            .file_states
+            .get(&rel_str)
+            .map(|s| matches!(s, FileState::Manual))
+            .unwrap_or(false);
+
+        if is_manual {
+            report.preserved_manual.push(rel_str);
+            continue;
+        }
+
+        let content = render_section(section, engine, model, title_page_template)?;
+        let file_path = build_dir.join(&rel_str);
+        if let Some(parent) = file_path.parent() {
+            std::fs::create_dir_all(parent).map_err(CoreError::Io)?;
+        }
+        std::fs::write(&file_path, &content).map_err(CoreError::Io)?;
+        report.generated.push(rel_str);
+    }
+    Ok(())
+}
+
 /// Renderiza una sección por su ID. Usado en tests sin escribir a disco.
 pub fn render_section_to_string(
     model: &ProjectModel,

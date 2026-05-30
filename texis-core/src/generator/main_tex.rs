@@ -302,6 +302,11 @@ fn emit_cyrillic_font(pc: &crate::project::model::PreambleConfig, out: &mut Stri
     ));
 }
 
+/// Versión pública de render_paquetes para uso desde el DriftReport generator.
+pub fn render_paquetes_pub(model: &ProjectModel, lang_config: Option<&Value>) -> String {
+    render_paquetes(model, lang_config)
+}
+
 fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
     let pc = &model.latex_config.preamble_config;

@@ -8,8 +8,8 @@
 // 7. La clase LaTeX viene del perfil, no está hardcodeada.
 // 8. Al crear proyecto: genera .gitignore y README-compilacion.txt.
 
-use crate::error::CoreResult;
-use crate::project::model::ProjectModel;
+use crate::error::{CoreError, CoreResult};
+use crate::project::model::{FileState, ProjectModel};
 use crate::template::engine::TemplateEngine;
 use serde_json::Value;
 use std::path::Path;
@@ -87,6 +87,105 @@ impl LaTeXGenerator {
         section_id: &str,
     ) -> CoreResult<String> {
         sections::render_section_to_string(model, section_id, &self.engine)
+    }
+
+    /// Genera archivos respetando `FileState::Manual`.
+    ///
+    /// Los archivos marcados como `Manual` en `model.file_states` no se sobreescriben.
+    /// Devuelve un `DriftReport` con qué archivos se generaron y cuáles se preservaron.
+    pub fn generate_respecting_manual_edits(
+        &self,
+        model: &ProjectModel,
+        build_dir: &Path,
+        lang_config: Option<&Value>,
+        title_page_template: Option<&str>,
+    ) -> CoreResult<DriftReport> {
+        project::create_structure(build_dir)?;
+
+        let mut report = DriftReport::default();
+
+        // Archivos de configuración fijos
+        let main_content = main_tex::render_to_string(model, &self.engine, lang_config)?;
+        safe_write(
+            build_dir,
+            "main.tex",
+            main_content.as_bytes(),
+            model,
+            &mut report,
+        )?;
+
+        let paquetes = crate::generator::main_tex::render_paquetes_pub(model, lang_config);
+        safe_write(
+            build_dir,
+            "configuracion/paquetes.tex",
+            paquetes.as_bytes(),
+            model,
+            &mut report,
+        )?;
+
+        // Secciones
+        sections::generate_all_respecting_manual(
+            model,
+            build_dir,
+            &self.engine,
+            title_page_template,
+            &mut report,
+        )?;
+
+        // Glosario
+        let glossary = glossary_tex::render_to_string(model);
+        safe_write(
+            build_dir,
+            "configuracion/glossary.tex",
+            glossary.as_bytes(),
+            model,
+            &mut report,
+        )?;
+
+        Ok(report)
+    }
+}
+
+/// Escribe `content` en `build_dir/rel_path` salvo que el archivo esté marcado como Manual.
+fn safe_write(
+    build_dir: &Path,
+    rel_path: &str,
+    content: &[u8],
+    model: &ProjectModel,
+    report: &mut DriftReport,
+) -> CoreResult<()> {
+    let is_manual = model
+        .file_states
+        .get(rel_path)
+        .map(|s| matches!(s, FileState::Manual))
+        .unwrap_or(false);
+
+    if is_manual {
+        report.preserved_manual.push(rel_path.to_string());
+        return Ok(());
+    }
+
+    let full_path = build_dir.join(rel_path);
+    if let Some(parent) = full_path.parent() {
+        std::fs::create_dir_all(parent).map_err(CoreError::Io)?;
+    }
+    std::fs::write(&full_path, content).map_err(CoreError::Io)?;
+    report.generated.push(rel_path.to_string());
+    Ok(())
+}
+
+/// Resultado del generador cuando respeta ediciones manuales.
+#[derive(Debug, Default, Clone)]
+pub struct DriftReport {
+    /// Archivos generados o actualizados.
+    pub generated: Vec<String>,
+    /// Archivos preservados sin modificación por tener FileState::Manual.
+    pub preserved_manual: Vec<String>,
+}
+
+impl DriftReport {
+    pub fn has_preserved(&self) -> bool {
+        !self.preserved_manual.is_empty()
     }
 }
 
