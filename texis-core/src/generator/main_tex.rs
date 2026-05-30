@@ -146,7 +146,13 @@ pub fn render_to_string(
     // Archivos de configuración
     out.push_str("\\input{configuracion/paquetes}\n");
     out.push_str("\\input{configuracion/estilo}\n");
-    out.push_str("\\input{configuracion/datos_tesis}\n\n");
+    out.push_str("\\input{configuracion/datos_tesis}\n");
+
+    // Entradas de glosario/acrónimos (generadas automáticamente cuando existen)
+    if crate::generator::glossary_tex::has_glossary_content(model) {
+        out.push_str("\\input{configuracion/glossary}\n");
+    }
+    out.push('\n');
 
     out.push_str("\\begin{document}\n");
 
@@ -211,6 +217,10 @@ pub fn render_to_string(
                     // biblatex siempre usa \printbibliography, independientemente del backend
                     "references" => {
                         out.push_str("\n\\printbibliography[heading=bibintoc]\n");
+                    }
+                    // Sección de glosario explícita → emitir \printglossaries
+                    "glossary" | "list_glossary" | "glossary_section" => {
+                        out.push_str("\n\\printglossaries\n");
                     }
                     _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
                 }
@@ -440,6 +450,15 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\addbibresource{../content/bibliography/references.bib}\n");
 
     out.push_str("\\usepackage[hidelinks]{hyperref}\n");
+
+    // ── Glosario y acrónimos (auto-detectados del contenido) ──────────────────
+    // glossaries debe cargarse DESPUÉS de hyperref para que los hipervínculos
+    // funcionen correctamente. \makeglossaries activa la indexación.
+    if crate::generator::glossary_tex::has_glossary_content(model) {
+        out.push_str("\n% Glosario y acrónimos (detectados en el contenido del proyecto)\n");
+        out.push_str("\\usepackage[toc,acronym,nonumberlist]{glossaries}\n");
+        out.push_str("\\makeglossaries\n");
+    }
 
     // ── Paquetes requeridos por VisualBlocks ─────────────────────────────────
     // Auto-detectados del contenido — el usuario no necesita declararlos.

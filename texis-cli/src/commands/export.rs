@@ -1,8 +1,9 @@
 use anyhow::{bail, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use texis_core::{
     exporter::{create_delivery_package, DeliveryInput, DeliveryOptions},
     postflight::PdfChecker,
+    profile::loader::ProfileLoader,
     project::{loader::ProjectLoader, model::LatexEngine},
     validator::Validator,
 };
@@ -134,12 +135,14 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
     // ── 5. Generar ZIP ────────────────────────────────────────────
     std::fs::create_dir_all(output_dir)?;
 
+    // Intentar cargar el perfil para incluir policy_report.json en el ZIP.
+    // Busca en TEXIS_PROFILES_PATH (env) o en <workspace>/profiles/<profile_id>/profile.yaml.
+    let profile_opt = load_profile_for_model(&model.profile_id);
+
     let input = DeliveryInput {
         project_dir,
         model: &model,
-        // CLI no carga perfil por defecto — policy_report.json se omite si None.
-        // En futuro: --profile-path flag para cargar perfil explícitamente.
-        profile: None,
+        profile: profile_opt.as_ref(),
         validation: &validation,
         postflight: &postflight,
     };
@@ -165,5 +168,83 @@ pub fn run_delivery(project_dir: &Path, output_dir: &Path, mode: &str) -> Result
         },
     );
 
+    Ok(())
+}
+
+/// Intenta cargar el perfil institucional a partir del profile_id del modelo.
+///
+/// Busca en:
+///   1. TEXIS_PROFILES_PATH env → busca recursivamente profile.yaml con el id correcto
+///   2. profiles/<profile_id>/profile.yaml relativo al workspace de cargo
+fn load_profile_for_model(profile_id: &str) -> Option<texis_core::profile::model::Profile> {
+    for path in profile_search_paths(profile_id) {
+        if path.exists() {
+            if let Ok(p) = ProfileLoader.load_from_file(&path) {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+fn profile_search_paths(profile_id: &str) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    // 1. TEXIS_PROFILES_PATH env (CI y desarrollo)
+    if let Ok(base) = std::env::var("TEXIS_PROFILES_PATH") {
+        let root = PathBuf::from(&base);
+        // Atajo directo (estructura plana tipo profiles/<id>/profile.yaml)
+        paths.push(root.join(profile_id).join("profile.yaml"));
+        // Búsqueda recursiva en árbol continent/country/institution/style
+        if let Ok(found) = glob_profile_yaml(&root, profile_id) {
+            paths.extend(found);
+        }
+    }
+
+    // 2. profiles/ relativo al workspace de cargo (desarrollo local)
+    let workspace_profiles = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .map(|p| p.join("profiles"))
+        .unwrap_or_else(|| PathBuf::from("profiles"));
+    paths.push(workspace_profiles.join(profile_id).join("profile.yaml"));
+
+    paths
+}
+
+/// Busca recursivamente (máx 5 niveles) un profile.yaml cuyo campo `id` sea profile_id.
+fn glob_profile_yaml(root: &Path, profile_id: &str) -> std::io::Result<Vec<PathBuf>> {
+    let mut found = Vec::new();
+    visit_profile_dirs(root, 0, 5, profile_id, &mut found)?;
+    Ok(found)
+}
+
+fn visit_profile_dirs(
+    dir: &Path,
+    depth: usize,
+    max_depth: usize,
+    profile_id: &str,
+    found: &mut Vec<PathBuf>,
+) -> std::io::Result<()> {
+    if depth > max_depth {
+        return Ok(());
+    }
+    let candidate = dir.join("profile.yaml");
+    if candidate.exists() {
+        if let Ok(content) = std::fs::read_to_string(&candidate) {
+            if content.contains(&format!("id: {}", profile_id))
+                || content.contains(&format!("id: \"{}\"", profile_id))
+            {
+                found.push(candidate);
+                return Ok(());
+            }
+        }
+    }
+    if depth < max_depth {
+        for entry in std::fs::read_dir(dir)?.flatten() {
+            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                visit_profile_dirs(&entry.path(), depth + 1, max_depth, profile_id, found)?;
+            }
+        }
+    }
     Ok(())
 }

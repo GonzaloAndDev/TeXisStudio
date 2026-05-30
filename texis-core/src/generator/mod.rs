@@ -14,6 +14,7 @@ use crate::template::engine::TemplateEngine;
 use serde_json::Value;
 use std::path::Path;
 
+pub mod glossary_tex;
 pub mod labels;
 pub mod main_tex;
 pub mod project;
@@ -70,6 +71,7 @@ impl LaTeXGenerator {
         project::create_structure(build_dir)?;
         main_tex::generate(model, build_dir, &self.engine, lang_config)?;
         sections::generate_all(model, build_dir, &self.engine, title_page_template)?;
+        glossary_tex::generate(model, build_dir)?;
         Ok(())
     }
 
