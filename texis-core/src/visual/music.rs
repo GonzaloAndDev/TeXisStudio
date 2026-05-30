@@ -48,25 +48,24 @@ fn render_musixtex_from_abc(c: &MusicFragmentConfig) -> String {
     let musixtex_notes = abc_to_musixtex_basic(&body);
 
     let (numer, denom) = parse_meter(&meter);
-    let clef = if key.contains('b') || key.contains('#') || key.len() == 1 { "\\treble" } else { "\\treble" };
-
-    format!(r#"\begin{{music}}
-\parindent 8mm
-\instrumentnumber{{1}}
-\setname1{{}}
-\generalmeter{{\meterfrac{{{numer}}}{{{denom}}}}}
-\startextract
-{notes}
-\endextract
-\end{{music}}"#,
-        numer = numer,
-        denom = denom,
-        notes = if musixtex_notes.is_empty() {
-            format!("\\Notes \\qu{{c}}\\qu{{d}}\\qu{{e}}\\qu{{f}} \\en")
-        } else {
-            musixtex_notes
-        },
-    )
+    let notes_out = if musixtex_notes.is_empty() {
+        "\\Notes \\qu{c}\\qu{d}\\qu{e}\\qu{f} \\en".to_string()
+    } else {
+        musixtex_notes
+    };
+    // No usar format! con {} literal — construir con push_str
+    let mut out = String::new();
+    out.push_str("\\begin{music}\n");
+    out.push_str("\\parindent 8mm\n");
+    out.push_str("\\instrumentnumber{1}\n");
+    out.push_str("\\setname1{}\n");
+    out.push_str(&format!("\\generalmeter{{\\meterfrac{{{}}}{{{}}}}}\n", numer, denom));
+    out.push_str("\\startextract\n");
+    out.push_str(&notes_out);
+    out.push('\n');
+    out.push_str("\\endextract\n");
+    out.push_str("\\end{music}");
+    out
 }
 
 fn extract_abc_field(abc: &str, field: char) -> Option<String> {

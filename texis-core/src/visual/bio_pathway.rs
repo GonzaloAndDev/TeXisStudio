@@ -14,7 +14,13 @@ pub fn render(c: &BioPathwayConfig) -> String {
 }
 
 fn label(c: &BioPathwayConfig, key: &str, default: &str) -> String {
-    latex_escape(c.custom_labels.get(key).map(|s| s.as_str()).unwrap_or(default))
+    // Los defaults son LaTeX intencional (pueden contener $\alpha$, etc.) — no escapar.
+    // Los labels del usuario sí se escapan porque vienen de texto libre.
+    if let Some(user_label) = c.custom_labels.get(key) {
+        latex_escape(user_label)
+    } else {
+        default.to_string()
+    }
 }
 
 fn krebs_cycle(c: &BioPathwayConfig) -> String {

@@ -46,18 +46,22 @@ fn render_horizontal(c: &TimelineConfig, color: &str) -> String {
         let y_date  = if above { 0.25 } else { -0.25 };
         let anchor  = if above { "south" } else { "north" };
 
+        let y_title = if above { y_label + 0.05 } else { y_label - 0.05 };
+        let y_d     = if above { y_date  + 0.05 } else { y_date  - 0.05 };
         out.push_str(&format!(
             "  \\fill[{color}] ({x:.2},0) circle (3pt);\n",
         ));
         out.push_str(&format!(
             "  \\draw[{color}] ({x:.2},{y_mark:.2}) -- ({x:.2},{y_label:.2});\n",
         ));
+        // anchor= para nodo de título
+        let anchor_title = if above { "south" } else { "north" };
         out.push_str(&format!(
-            "  \\node[font=\\scriptsize\\bfseries, {anchor}={y_label:.2}cm, align=center] at ({x:.2},0) {{{}}};\n",
+            "  \\node[font=\\scriptsize\\bfseries, anchor={anchor_title}, align=center] at ({x:.2},{y_title:.2}) {{{}}};\n",
             latex_escape(&event.title),
         ));
         out.push_str(&format!(
-            "  \\node[font=\\tiny, {anchor}={y_date:.2}cm, text=gray] at ({x:.2},0) {{{}}};\n",
+            "  \\node[font=\\tiny, anchor={anchor_title}, text=gray] at ({x:.2},{y_d:.2}) {{{}}};\n",
             latex_escape(&event.date),
         ));
     }
