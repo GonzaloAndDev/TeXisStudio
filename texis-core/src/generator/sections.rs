@@ -4,17 +4,20 @@
 use super::labels::section_output_path;
 use crate::error::{CoreError, CoreResult};
 use crate::project::model::{
-    CitationType, ContentBlock, FigureWidth, HeadingLevel, ListType, ProjectModel, ProjectSection,
-    SectionPlacement, TheoremKind,
+    AcademicLevel, CitationBlock, CitationType, ContentBlock, DocumentKind, FigureWidth,
+    HeadingLevel, ListType, ProjectModel, ProjectSection, SectionPlacement, TheoremKind,
 };
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
+use minijinja::Value as JinjaValue;
+use std::collections::HashMap;
 use std::path::Path;
 
 pub fn generate_all(
     model: &ProjectModel,
     build_dir: &Path,
     engine: &TemplateEngine,
+    title_page_template: Option<&str>,
 ) -> CoreResult<()> {
     let mut body_idx = 0usize;
 
@@ -33,7 +36,7 @@ pub fn generate_all(
             None => continue, // inline en main.tex
         };
 
-        let content = render_section(section, engine)?;
+        let content = render_section(section, engine, model, title_page_template)?;
         let file_path = build_dir.join(&rel_path);
 
         if let Some(parent) = file_path.parent() {
@@ -59,10 +62,24 @@ pub fn render_section_to_string(
             message: format!("sección '{}' no encontrada", section_id),
         })?;
 
-    render_section(section, engine)
+    render_section(section, engine, model, None)
 }
 
-fn render_section(section: &ProjectSection, _engine: &TemplateEngine) -> CoreResult<String> {
+fn render_section(
+    section: &ProjectSection,
+    engine: &TemplateEngine,
+    model: &ProjectModel,
+    title_page_template: Option<&str>,
+) -> CoreResult<String> {
+    // La portada se genera desde los metadatos del proyecto
+    if section.element_id == "title_page" {
+        return if let Some(tpl) = title_page_template {
+            render_title_page_from_template(model, tpl, engine)
+        } else {
+            Ok(render_title_page(model))
+        };
+    }
+
     let mut out = String::new();
 
     if let Some(title) = &section.title {
@@ -83,8 +100,9 @@ fn chapter_command(section: &ProjectSection) -> &'static str {
     }
 }
 
-/// Renderiza una secuencia de bloques, agrupando entradas de glosario/acrónimos consecutivas
-/// en un único entorno `description` para que el espaciado LaTeX sea correcto.
+/// Renderiza una secuencia de bloques con lógica de agrupación y fusión:
+/// - GlossaryEntry / AcronymEntry consecutivos → un único `description` con subtítulo
+/// - Párrafo seguido de cita(s) → cita fusionada al final del párrafo
 fn render_blocks(blocks: &[ContentBlock]) -> String {
     let mut out = String::new();
     let mut i = 0;
@@ -92,13 +110,19 @@ fn render_blocks(blocks: &[ContentBlock]) -> String {
     while i < blocks.len() {
         match &blocks[i] {
             ContentBlock::GlossaryEntry(_) => {
+                out.push_str("\\subsection*{Términos}\n\n");
                 out.push_str("\\begin{description}\n");
                 while i < blocks.len() {
                     if let ContentBlock::GlossaryEntry(g) = &blocks[i] {
+                        let def = if g.verbatim {
+                            g.definition.clone()
+                        } else {
+                            latex_escape(&g.definition)
+                        };
                         out.push_str(&format!(
                             "  \\item[\\textbf{{{}}}] {}\n",
                             latex_escape(&g.term),
-                            latex_escape(&g.definition)
+                            def,
                         ));
                         i += 1;
                     } else {
@@ -108,6 +132,7 @@ fn render_blocks(blocks: &[ContentBlock]) -> String {
                 out.push_str("\\end{description}\n\n");
             }
             ContentBlock::AcronymEntry(_) => {
+                out.push_str("\\subsection*{Acrónimos}\n\n");
                 out.push_str("\\begin{description}\n");
                 while i < blocks.len() {
                     if let ContentBlock::AcronymEntry(a) = &blocks[i] {
@@ -130,6 +155,26 @@ fn render_blocks(blocks: &[ContentBlock]) -> String {
                 }
                 out.push_str("\\end{description}\n\n");
             }
+            ContentBlock::Paragraph(p) => {
+                // Los párrafos absorben las citas inmediatamente siguientes
+                let text = if p.verbatim {
+                    p.content.trim_end_matches('\n').to_string()
+                } else {
+                    latex_escape(p.content.trim_end_matches('\n'))
+                };
+                let mut full = text;
+                i += 1;
+                while i < blocks.len() {
+                    if let ContentBlock::Citation(c) = &blocks[i] {
+                        full.push(' ');
+                        full.push_str(&render_citation_cmd(c));
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                }
+                out.push_str(&format!("{}\n\n", full));
+            }
             block => {
                 out.push_str(&render_block(block));
                 i += 1;
@@ -140,10 +185,51 @@ fn render_blocks(blocks: &[ContentBlock]) -> String {
     out
 }
 
+/// Construye el comando de cita sin newlines. Usado tanto por render_block
+/// como por la fusión párrafo+cita en render_blocks.
+fn render_citation_cmd(c: &CitationBlock) -> String {
+    let cmd = match c.citation_type {
+        CitationType::Parenthetical => "parencite",
+        CitationType::Narrative => "textcite",
+        CitationType::Multiple => "parencite",
+        CitationType::Footnote => "footcite",
+    };
+    let prefix = c
+        .prefix
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(latex_escape);
+    let mut postnote_parts = Vec::new();
+    if let Some(page) = c.page.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        postnote_parts.push(latex_escape(page));
+    }
+    if let Some(suffix) = c.suffix.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        postnote_parts.push(latex_escape(suffix));
+    }
+    let postnote = if postnote_parts.is_empty() {
+        None
+    } else {
+        Some(postnote_parts.join(", "))
+    };
+    let options = match (prefix, postnote) {
+        (Some(pre), Some(post)) => format!("[{}][{}]", pre, post),
+        (Some(pre), None) => format!("[{}]", pre),
+        (None, Some(post)) => format!("[{}]", post),
+        (None, None) => String::new(),
+    };
+    format!("\\{}{}{{{}}}", cmd, options, c.citation_key)
+}
+
 pub(crate) fn render_block(block: &ContentBlock) -> String {
     match block {
         ContentBlock::Paragraph(p) => {
-            format!("{}\n\n", latex_escape(&p.content))
+            let text = if p.verbatim {
+                p.content.trim_end_matches('\n').to_string()
+            } else {
+                latex_escape(p.content.trim_end_matches('\n'))
+            };
+            format!("{}\n\n", text)
         }
 
         ContentBlock::Heading(h) => {
@@ -156,23 +242,21 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
         }
 
         ContentBlock::Equation(eq) => {
+            let content = eq.latex_content.trim();
             if eq.numbered {
                 let label = eq.label.as_deref().unwrap_or("");
                 if label.is_empty() {
-                    format!(
-                        "\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n",
-                        eq.latex_content
-                    )
+                    format!("\\begin{{equation}}\n    {}\n\\end{{equation}}\n\n", content)
                 } else {
                     format!(
                         "\\begin{{equation}}\n    {}\n    \\label{{{}}}\n\\end{{equation}}\n\n",
-                        eq.latex_content, label
+                        content, label
                     )
                 }
             } else {
                 format!(
                     "\\begin{{equation*}}\n    {}\n\\end{{equation*}}\n\n",
-                    eq.latex_content
+                    content
                 )
             }
         }
@@ -192,39 +276,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
         }
 
         ContentBlock::Citation(c) => {
-            let cmd = match c.citation_type {
-                CitationType::Parenthetical => "parencite",
-                CitationType::Narrative => "textcite",
-                CitationType::Multiple => "parencite",
-                CitationType::Footnote => "footcite",
-            };
-            let prefix = c
-                .prefix
-                .as_deref()
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(latex_escape);
-            let mut postnote_parts = Vec::new();
-            if let Some(page) = c.page.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-                postnote_parts.push(latex_escape(page));
-            }
-            if let Some(suffix) = c.suffix.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-                postnote_parts.push(latex_escape(suffix));
-            }
-            let postnote = if postnote_parts.is_empty() {
-                None
-            } else {
-                Some(postnote_parts.join(", "))
-            };
-
-            let options = match (prefix, postnote) {
-                (Some(pre), Some(post)) => format!("[{}][{}]", pre, post),
-                (Some(pre), None) => format!("[{}]", pre),
-                (None, Some(post)) => format!("[{}]", post),
-                (None, None) => String::new(),
-            };
-
-            format!("\\{}{}{{{}}}\n\n", cmd, options, c.citation_key)
+            format!("{}\n\n", render_citation_cmd(c))
         }
 
         ContentBlock::Figure(f) => {
@@ -250,7 +302,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             let headers = t
                 .headers
                 .iter()
-                .map(|h| latex_escape(h))
+                .map(|h| if t.raw_headers { h.clone() } else { latex_escape(h) })
                 .collect::<Vec<_>>()
                 .join(" & ");
             let rows: String = t
@@ -289,10 +341,15 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
         // GlossaryEntry y AcronymEntry se renderizan agrupados en render_blocks.
         // Este arm sólo se llama si un bloque aparece fuera de contexto (no debería ocurrir).
         ContentBlock::GlossaryEntry(g) => {
+            let def = if g.verbatim {
+                g.definition.clone()
+            } else {
+                latex_escape(&g.definition)
+            };
             format!(
                 "\\begin{{description}}\n  \\item[\\textbf{{{}}}] {}\n\\end{{description}}\n\n",
                 latex_escape(&g.term),
-                latex_escape(&g.definition)
+                def,
             )
         }
 
@@ -404,6 +461,204 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
     }
 }
 
+// ── Portada ───────────────────────────────────────────────────────────────────
+
+/// Renderiza la portada usando la plantilla MiniJinja del perfil.
+fn render_title_page_from_template(
+    model: &ProjectModel,
+    template: &str,
+    engine: &TemplateEngine,
+) -> CoreResult<String> {
+    let ctx = build_title_page_context(model);
+    engine.render(template, &ctx)
+}
+
+/// Construye el contexto MiniJinja con todos los campos de portada.
+/// Todos los valores de texto son strings crudos (sin escapar);
+/// el template debe aplicar `| latex_escape` donde corresponda.
+fn build_title_page_context(model: &ProjectModel) -> HashMap<String, JinjaValue> {
+    let mut ctx: HashMap<String, JinjaValue> = HashMap::new();
+
+    // Institución
+    ctx.insert("institution_name".into(), JinjaValue::from(model.institution.name.clone()));
+    ctx.insert(
+        "faculty".into(),
+        model.institution.faculty.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
+    );
+    ctx.insert(
+        "department".into(),
+        model.institution.department.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
+    );
+    ctx.insert("country".into(), JinjaValue::from(model.institution.country.clone()));
+
+    // Metadata del documento
+    ctx.insert("title".into(), JinjaValue::from(model.metadata.title.clone()));
+    if let Some(sub) = &model.metadata.subtitle {
+        ctx.insert("subtitle".into(), JinjaValue::from(sub.clone()));
+    }
+    ctx.insert("city".into(), JinjaValue::from(model.metadata.city.clone()));
+    ctx.insert("year".into(), JinjaValue::from(model.metadata.year));
+    ctx.insert("language".into(), JinjaValue::from(model.metadata.language.clone()));
+
+    // Etiquetas computadas (localizadas al español)
+    ctx.insert("degree_label".into(), JinjaValue::from(academic_level_label(&model.metadata.academic_level)));
+    ctx.insert("doc_kind_label".into(), JinjaValue::from(doc_kind_label(&model.metadata.document_kind, &model.metadata.academic_level)));
+
+    // Estudiante
+    ctx.insert("author".into(), JinjaValue::from(model.student.full_name.clone()));
+
+    // Asesores: lista de strings
+    let all_advisors: Vec<&str> = if !model.student.advisors.is_empty() {
+        model.student.advisors.iter().map(|s| s.as_str()).collect()
+    } else {
+        model.student.advisor.as_deref().into_iter().collect()
+    };
+    ctx.insert(
+        "advisors".into(),
+        JinjaValue::from(all_advisors.iter().map(|s| JinjaValue::from(*s)).collect::<Vec<_>>()),
+    );
+    ctx.insert(
+        "advisor_label".into(),
+        JinjaValue::from(if all_advisors.len() > 1 { "Directores de tesis:" } else { "Director de tesis:" }),
+    );
+    // Primer asesor para plantillas simples
+    ctx.insert(
+        "advisor".into(),
+        JinjaValue::from(all_advisors.first().copied().unwrap_or("")),
+    );
+
+    // Comité: lista de objetos {name, role}
+    let committee: Vec<JinjaValue> = model.student.committee.iter().map(|m| {
+        let mut obj: HashMap<String, JinjaValue> = HashMap::new();
+        obj.insert("name".into(), JinjaValue::from(m.full_name.clone()));
+        obj.insert(
+            "role".into(),
+            m.role.as_deref().map(JinjaValue::from).unwrap_or(JinjaValue::UNDEFINED),
+        );
+        JinjaValue::from_object(texis_core_jinja_map(obj))
+    }).collect();
+    ctx.insert("committee".into(), JinjaValue::from(committee));
+
+    // ORCID
+    if let Some(orcid) = &model.student.orcid {
+        ctx.insert("orcid".into(), JinjaValue::from(orcid.clone()));
+    }
+
+    ctx
+}
+
+/// Adaptador simple para pasar un HashMap como objeto MiniJinja.
+fn texis_core_jinja_map(map: HashMap<String, JinjaValue>) -> impl minijinja::value::Object {
+    TexisJinjaMap(map)
+}
+
+#[derive(Debug)]
+struct TexisJinjaMap(HashMap<String, JinjaValue>);
+
+impl minijinja::value::Object for TexisJinjaMap {
+    fn get_value(self: &std::sync::Arc<Self>, key: &JinjaValue) -> Option<JinjaValue> {
+        key.as_str().and_then(|k| self.0.get(k).cloned())
+    }
+}
+
+fn render_title_page(model: &ProjectModel) -> String {
+    let mut out = String::new();
+    out.push_str("\\thispagestyle{empty}\n");
+    out.push_str("\\begin{titlepage}\n");
+    out.push_str("  \\centering\n");
+    out.push_str("  \\vspace*{1cm}\n");
+    out.push_str(&format!(
+        "  {{\\scshape\\Large {}\\par}}\n",
+        latex_escape(&model.institution.name)
+    ));
+    if let Some(fac) = &model.institution.faculty {
+        out.push_str("  \\vspace{0.3cm}\n");
+        out.push_str(&format!("  {{\\large {}\\par}}\n", latex_escape(fac)));
+    }
+    if let Some(dep) = &model.institution.department {
+        out.push_str("  \\vspace{0.2cm}\n");
+        out.push_str(&format!("  {{\\normalsize {}\\par}}\n", latex_escape(dep)));
+    }
+    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str(&format!(
+        "  {{\\huge\\bfseries {}\\par}}\n",
+        latex_escape(&model.metadata.title)
+    ));
+    out.push_str("  \\vspace{1.5cm}\n");
+    let kind_label = doc_kind_label(&model.metadata.document_kind, &model.metadata.academic_level);
+    let level_label = academic_level_label(&model.metadata.academic_level);
+    out.push_str(&format!("  {{\\large {}\\par}}\n", kind_label));
+    out.push_str("  \\vspace{0.3cm}\n");
+    out.push_str("  {\\normalsize que para obtener el grado de\\par}\n");
+    out.push_str(&format!(
+        "  {{\\normalsize\\bfseries {}\\par}}\n",
+        level_label
+    ));
+    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str("  {\\normalsize Presenta:\\par}\n");
+    out.push_str("  \\vspace{0.3cm}\n");
+    out.push_str(&format!(
+        "  {{\\large\\bfseries {}\\par}}\n",
+        latex_escape(&model.student.full_name)
+    ));
+    out.push_str("  \\vspace{1.5cm}\n");
+
+    let all_advisors: Vec<&str> = if !model.student.advisors.is_empty() {
+        model.student.advisors.iter().map(|s| s.as_str()).collect()
+    } else {
+        model.student.advisor.as_deref().into_iter().collect()
+    };
+    if !all_advisors.is_empty() {
+        let label = if all_advisors.len() > 1 {
+            "Directores de tesis:"
+        } else {
+            "Director de tesis:"
+        };
+        out.push_str(&format!("  {{\\normalsize {}\\par}}\n", label));
+        out.push_str("  \\vspace{0.3cm}\n");
+        for a in &all_advisors {
+            out.push_str(&format!(
+                "  {{\\normalsize {}\\par}}\n",
+                latex_escape(a)
+            ));
+        }
+        out.push_str("  \\vspace{1cm}\n");
+    }
+
+    out.push_str("  \\vfill\n");
+    out.push_str(&format!(
+        "  {{\\normalsize {}, {}\\par}}\n",
+        latex_escape(&model.metadata.city),
+        model.metadata.year
+    ));
+    out.push_str("\\end{titlepage}\n");
+    out
+}
+
+fn academic_level_label(level: &AcademicLevel) -> &'static str {
+    match level {
+        AcademicLevel::Doctorado => "Doctorado",
+        AcademicLevel::Maestria => "Maestría",
+        AcademicLevel::Especialidad => "Especialidad",
+        AcademicLevel::Licenciatura => "Licenciatura",
+        AcademicLevel::Tecnico => "Técnico Superior",
+        AcademicLevel::Bachillerato => "Bachillerato",
+        AcademicLevel::Posdoctorado => "Posdoctorado",
+    }
+}
+
+fn doc_kind_label(kind: &DocumentKind, level: &AcademicLevel) -> &'static str {
+    match kind {
+        DocumentKind::Tesis | DocumentKind::TesisPosgrado => match level {
+            AcademicLevel::Doctorado => "Tesis de Doctorado",
+            AcademicLevel::Maestria => "Tesis de Maestría",
+            AcademicLevel::Licenciatura => "Tesis de Licenciatura",
+            _ => "Tesis",
+        },
+        DocumentKind::Tesina => "Tesina",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -447,11 +702,13 @@ mod tests {
                 id: "g1".to_string(),
                 term: "Ontología".to_string(),
                 definition: "Rama de la filosofía que estudia el ser.".to_string(),
+                verbatim: false,
             }),
             ContentBlock::GlossaryEntry(GlossaryEntryBlock {
                 id: "g2".to_string(),
                 term: "Epistemología".to_string(),
                 definition: "Teoría del conocimiento.".to_string(),
+                verbatim: false,
             }),
         ];
         let out = render_blocks(&blocks);
@@ -462,6 +719,81 @@ mod tests {
         );
         assert!(out.contains("Ontología"));
         assert!(out.contains("Epistemología"));
+    }
+
+    #[test]
+    fn paragraph_verbatim_no_escapa_math() {
+        use crate::project::model::ParagraphBlock;
+        let block = ContentBlock::Paragraph(ParagraphBlock {
+            id: "p1".to_string(),
+            content: "La función $f(x) = x^2$ es continua.".to_string(),
+            verbatim: true,
+        });
+        let out = render_block(&block);
+        assert!(out.contains("$f(x) = x^2$"), "math debe pasar verbatim");
+        assert!(!out.contains("\\$"), "no debe escapar el signo de dólar");
+    }
+
+    #[test]
+    fn paragraph_sin_verbatim_escapa_especiales() {
+        use crate::project::model::ParagraphBlock;
+        let block = ContentBlock::Paragraph(ParagraphBlock {
+            id: "p2".to_string(),
+            content: "El 100% de A&B".to_string(),
+            verbatim: false,
+        });
+        let out = render_block(&block);
+        assert!(out.contains("100\\%"));
+        assert!(out.contains("A\\&B"));
+    }
+
+    #[test]
+    fn citation_block_renderiza_opciones_y_salto_final() {
+        let block = ContentBlock::Citation(CitationBlock {
+            id: "c1".to_string(),
+            citation_key: "lamport1978time".to_string(),
+            citation_type: CitationType::Parenthetical,
+            page: Some("558--565".to_string()),
+            prefix: Some("see".to_string()),
+            suffix: Some("sec. 2".to_string()),
+        });
+        let out = render_block(&block);
+        assert_eq!(
+            out,
+            "\\parencite[see][558--565, sec. 2]{lamport1978time}\n\n"
+        );
+    }
+
+    #[test]
+    fn parrafo_absorbe_cita_siguiente() {
+        use crate::project::model::ParagraphBlock;
+        let blocks = vec![
+            ContentBlock::Paragraph(ParagraphBlock {
+                id: "p1".to_string(),
+                content: "El control por modos deslizantes es robusto.".to_string(),
+                verbatim: false,
+            }),
+            ContentBlock::Citation(CitationBlock {
+                id: "c1".to_string(),
+                citation_key: "slotine1991".to_string(),
+                citation_type: CitationType::Parenthetical,
+                page: None,
+                prefix: None,
+                suffix: None,
+            }),
+        ];
+        let out = render_blocks(&blocks);
+        // La cita debe quedar en la misma "línea" que el párrafo, no como párrafo aparte
+        assert!(
+            out.contains("robusto. \\parencite{slotine1991}"),
+            "la cita debe fusionarse al final del párrafo: {}",
+            out
+        );
+        // No debe haber doble salto entre párrafo y cita
+        assert!(
+            !out.contains("robusto.\n\n\\parencite"),
+            "no debe haber párrafo vacío entre texto y cita"
+        );
     }
 
     #[test]
@@ -509,22 +841,5 @@ mod tests {
         });
         let out = render_block(&block);
         assert!(out.contains("\\begin{lemma*}"));
-    }
-
-    #[test]
-    fn citation_block_renderiza_opciones_y_salto_final() {
-        let block = ContentBlock::Citation(CitationBlock {
-            id: "c1".to_string(),
-            citation_key: "lamport1978time".to_string(),
-            citation_type: CitationType::Parenthetical,
-            page: Some("558--565".to_string()),
-            prefix: Some("see".to_string()),
-            suffix: Some("sec. 2".to_string()),
-        });
-        let out = render_block(&block);
-        assert_eq!(
-            out,
-            "\\parencite[see][558--565, sec. 2]{lamport1978time}\n\n"
-        );
     }
 }

@@ -153,14 +153,9 @@ pub fn render_to_string(
                     in_backmatter = true;
                 }
                 match section.element_id.as_str() {
+                    // biblatex siempre usa \printbibliography, independientemente del backend
                     "references" => {
-                        let cmd = match model.latex_config.bibliography_backend {
-                            BibliographyBackend::Biber => "\\printbibliography[heading=bibintoc]",
-                            BibliographyBackend::Bibtex => {
-                                "\\bibliography{bibliografia/referencias}"
-                            }
-                        };
-                        out.push_str(&format!("\n{}\n", cmd));
+                        out.push_str("\n\\printbibliography[heading=bibintoc]\n");
                     }
                     _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
                 }

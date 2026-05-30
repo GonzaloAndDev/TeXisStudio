@@ -298,6 +298,7 @@ mod tests {
         ContentBlock::Paragraph(ParagraphBlock {
             id: "p1".into(),
             content: content.into(),
+            verbatim: false,
         })
     }
 
@@ -320,6 +321,7 @@ mod tests {
             source: None,
             label: label.into(),
             include_in_list: true,
+            raw_headers: false,
             headers: vec![],
             rows: vec![],
             table_style: TableStyle::Simple,

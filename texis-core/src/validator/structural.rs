@@ -354,6 +354,7 @@ mod tests {
             vec![ContentBlock::Paragraph(ParagraphBlock {
                 id: "p".into(),
                 content: "Texto de ejemplo.".into(),
+                verbatim: false,
             })]
         } else {
             vec![]

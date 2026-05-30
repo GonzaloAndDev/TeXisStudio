@@ -103,6 +103,7 @@ pub fn generic_thesis_model() -> ProjectModel {
                     content:
                         "Este trabajo presenta un análisis del 100% de las fuentes de agua en A&B."
                             .to_string(),
+                    verbatim: false,
                 })],
                 status: Default::default(),
                 notes: None,

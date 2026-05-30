@@ -293,8 +293,11 @@ pub enum ContentBlock {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParagraphBlock {
     pub id: String,
-    /// SIEMPRE pasa por latex_escape al generarse.
     pub content: String,
+    /// Cuando true, el contenido se pasa verbatim (sin latex_escape).
+    /// Usar para párrafos con math inline ($...$) o \ref{} intencionales.
+    #[serde(default)]
+    pub verbatim: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -340,6 +343,9 @@ pub struct TableBlock {
     pub source: Option<String>,
     pub label: String,
     pub include_in_list: bool,
+    /// Cuando true, los headers se pasan verbatim (permiten math: $\Delta V$).
+    #[serde(default)]
+    pub raw_headers: bool,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
     #[serde(default)]
@@ -407,6 +413,9 @@ pub struct GlossaryEntryBlock {
     pub id: String,
     pub term: String,
     pub definition: String,
+    /// Cuando true, la definición se pasa verbatim (permite math inline).
+    #[serde(default)]
+    pub verbatim: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
