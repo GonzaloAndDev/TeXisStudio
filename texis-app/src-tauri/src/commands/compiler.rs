@@ -212,7 +212,9 @@ pub fn cancel_compile(state: tauri::State<'_, CompileState>) {
 /// Elige el backend disponible: devuelve el nombre del binario a usar.
 fn resolve_backend(name: &str) -> Result<&'static str, String> {
     use std::process::Command;
-    let latexmk_ok = Command::new("latexmk").arg("--version").output().is_ok();
+    use texis_core::compiler::detector::resolve_latex_command;
+    let latexmk_cmd = resolve_latex_command("latexmk");
+    let latexmk_ok = Command::new(&latexmk_cmd).arg("--version").output().is_ok();
     let tectonic_ok = Command::new("tectonic").arg("--version").output().is_ok();
 
     match name {
@@ -267,8 +269,10 @@ fn run_compiler_streaming(
 ) -> Result<Value, String> {
     let compile_start = std::time::Instant::now();
 
-    // Construir el comando
-    let mut cmd = std::process::Command::new(backend);
+    // Construir el comando — resolver ruta completa para MacTeX/TeX Live fuera del PATH
+    use texis_core::compiler::detector::resolve_latex_command;
+    let backend_resolved = resolve_latex_command(backend);
+    let mut cmd = std::process::Command::new(&backend_resolved);
     cmd.current_dir(build_dir)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

@@ -259,6 +259,34 @@ fn render_geometry(model: &ProjectModel) -> String {
     format!("\\usepackage[{paper},margin={margin}cm]{{geometry}}\n")
 }
 
+/// Emite la configuración de fuente Cirílica para polyglossia russian.
+/// Sin esta configuración, el texto ruso sale en negrita o no se muestra
+/// porque la fuente principal (LM Roman) no tiene glifos Cirílicos.
+fn emit_cyrillic_font(pc: &crate::project::model::PreambleConfig, out: &mut String) {
+    let font = match &pc.cyrillic_font {
+        Some(f) if !f.is_empty() => f.as_str(),
+        // Fuentes de fallback por SO
+        _ => {
+            #[cfg(target_os = "macos")]
+            { "Arial Unicode MS" }
+            #[cfg(not(target_os = "macos"))]
+            { "CMU Serif" }
+        }
+    };
+    out.push_str(&format!(
+        "\\newfontfamily\\cyrillicfont[Script=Cyrillic]{{{}}}\n",
+        latex_escape(font)
+    ));
+    out.push_str(&format!(
+        "\\newfontfamily\\cyrillicfontsf[Script=Cyrillic]{{{}}}\n",
+        latex_escape(font)
+    ));
+    out.push_str(&format!(
+        "\\newfontfamily\\cyrillicfonttt[Script=Cyrillic]{{{}}}\n",
+        latex_escape(font)
+    ));
+}
+
 fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
     let pc = &model.latex_config.preamble_config;
@@ -331,6 +359,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 // Ruso también si se detectó cirílico
                 if scripts.cyrillic {
                     out.push_str("\\setotherlanguage{russian}\n");
+                    emit_cyrillic_font(pc, &mut out);
                 }
             }
             "fr" => {
@@ -360,7 +389,14 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                     out.push_str("\\usepackage{polyglossia}\n");
                     out.push_str("\\setmainlanguage{english}\n");
                     out.push_str("\\setotherlanguage{russian}\n");
+                    emit_cyrillic_font(pc, &mut out);
                 }
+            }
+            "ru" => {
+                out.push_str("\n% Idioma del documento\n");
+                out.push_str("\\usepackage{polyglossia}\n");
+                out.push_str("\\setmainlanguage{russian}\n");
+                emit_cyrillic_font(pc, &mut out);
             }
             _ => {}
         }

@@ -165,6 +165,12 @@ pub struct ExtraTheorem {
 /// Todo lo que no sea texto narrativo y que el generador no emite automáticamente.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PreambleConfig {
+    /// Fuente para texto en Cirílico (Ruso, Búlgaro, Serbio…).
+    /// Se emite como \newfontfamily\cyrillicfont[Script=Cyrillic]{font}.
+    /// Necesaria para que polyglossia ruso funcione correctamente con XeLaTeX.
+    /// macOS: "Arial Unicode MS" | multiplataforma: "CMU Serif"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cyrillic_font: Option<String>,
     /// Fuente CJK principal (chino simplificado / coreano).
     /// Si None y el documento contiene caracteres CJK, el generador usa "Heiti SC".
     /// macOS: "Heiti SC", "Songti SC", "STSong"

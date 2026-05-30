@@ -632,6 +632,7 @@ pub fn update_preamble_config(
     cjk_main_font: Option<String>,
     cjk_japanese_font: Option<String>,
     cjk_korean_font: Option<String>,
+    cyrillic_font: Option<String>,
     main_font: Option<String>,
     sans_font: Option<String>,
     mono_font: Option<String>,
@@ -652,6 +653,7 @@ pub fn update_preamble_config(
         .unwrap_or_default();
 
     model.latex_config.preamble_config = PreambleConfig {
+        cyrillic_font: cyrillic_font.filter(|s| !s.is_empty()),
         cjk_main_font: cjk_main_font.filter(|s| !s.is_empty()),
         cjk_japanese_font: cjk_japanese_font.filter(|s| !s.is_empty()),
         cjk_korean_font: cjk_korean_font.filter(|s| !s.is_empty()),

@@ -1,4 +1,5 @@
 use super::{CompilationBackend, CompilationOptions, CompilationResult};
+use crate::compiler::detector::resolve_latex_command;
 use crate::error::{CoreError, CoreResult};
 use std::path::Path;
 use std::process::Command;
@@ -28,7 +29,8 @@ impl CompilationBackend for LatexmkBackend {
     }
 
     fn is_available(&self) -> bool {
-        Command::new("latexmk").arg("--version").output().is_ok()
+        let cmd = resolve_latex_command("latexmk");
+        Command::new(&cmd).arg("--version").output().is_ok()
     }
 
     fn compile(
@@ -170,7 +172,8 @@ fn run_latexmk(
     options: &CompilationOptions,
     engine_flag: &str,
 ) -> CoreResult<CommandCapture> {
-    let mut cmd = Command::new("latexmk");
+    let latexmk_bin = resolve_latex_command("latexmk");
+    let mut cmd = Command::new(&latexmk_bin);
     cmd.current_dir(build_dir)
         .arg(engine_flag)
         .arg("-bibtex")
@@ -190,7 +193,8 @@ fn run_latexmk(
 }
 
 fn run_biber(build_dir: &Path) -> CoreResult<CommandCapture> {
-    let mut cmd = Command::new("biber");
+    let biber_bin = resolve_latex_command("biber");
+    let mut cmd = Command::new(&biber_bin);
     cmd.current_dir(build_dir).arg("main");
     run_and_capture(&mut cmd)
 }

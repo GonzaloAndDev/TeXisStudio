@@ -49,34 +49,35 @@ title_page_template:
     \thispagestyle{empty}
     \begin{titlepage}
       \centering
-      \vspace*{1.5cm}
+      \vspace*{1cm}
       {\scshape\Large {{ institution_name | latex_escape }}\par}
       {% if faculty is defined and faculty %}
-      \vspace{0.3cm}
+      \vspace{0.25cm}
       {\large {{ faculty | latex_escape }}\par}
       {% endif %}
       {% if department is defined and department %}
-      \vspace{0.2cm}
+      \vspace{0.15cm}
       {\normalsize {{ department | latex_escape }}\par}
       {% endif %}
-      \vspace{2cm}
+      \vspace{1.4cm}
       {\huge\bfseries {{ title | latex_escape }}\par}
-      \vspace{2cm}
+      \vspace{1.4cm}
       {\large {{ doc_kind_label }}\par}
-      \vspace{0.4cm}
+      \vspace{0.3cm}
       {\normalsize que para obtener el grado de\par}
       {\normalsize\bfseries {{ degree_label }}\par}
-      \vspace{1.8cm}
+      \vspace{1.2cm}
       {\normalsize Presenta:\par}
-      \vspace{0.4cm}
+      \vspace{0.3cm}
       {\large\bfseries {{ author | latex_escape }}\par}
-      \vspace{1.8cm}
+      \vspace{1.2cm}
       {% if advisors %}
       {\normalsize {{ advisor_label }}\par}
-      \vspace{0.3cm}
+      \vspace{0.25cm}
       {% for a in advisors %}
       {\normalsize {{ a | latex_escape }}\par}
       {% endfor %}
+      \vspace{0.5cm}
       {% endif %}
       \vfill
       {\normalsize {{ city | latex_escape }}, {{ year }}\par}
