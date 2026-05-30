@@ -629,7 +629,7 @@ pub enum FileState {
 //   ChemReaction                                 → mhchem
 //   Molecule                                     → chemfig
 //   Circuit                                      → circuitikz
-//   Feynman                                      → tikz-feynman
+//   Feynman                                      → tikz + TikZ libraries
 //   MusicFragment                                → musixtex (o fallback)
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

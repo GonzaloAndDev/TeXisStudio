@@ -88,8 +88,13 @@ jobs:
       - name: Format check
         run: cargo fmt --all -- --check
 
-      - name: Clippy (gate duro — sin deuda pendiente)
+      - name: Clippy (gate duro — workspace completo en Linux)
+        if: runner.os == 'Linux'
         run: cargo clippy --workspace -- -D warnings
+
+      - name: Clippy (gate duro — core/cli en macOS/Windows)
+        if: runner.os != 'Linux'
+        run: cargo clippy --package texis-core --package texis-cli -- -D warnings
 
   frontend:
     runs-on: ubuntu-latest
@@ -137,7 +142,7 @@ jobs:
 
       - name: Install Tectonic
         run: |
-          curl -L https://github.com/tectonic-typesetting/tectonic/releases/latest/download/tectonic-x86_64-unknown-linux-musl.tar.gz \
+          curl -fL https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.16.9/tectonic-0.16.9-x86_64-unknown-linux-gnu.tar.gz \
             -o tectonic.tar.gz
           tar xzf tectonic.tar.gz
           chmod +x tectonic

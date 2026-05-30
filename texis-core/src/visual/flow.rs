@@ -2,11 +2,13 @@
 
 use crate::project::model::{FlowDiagramConfig, FlowNode};
 use crate::template::escape::latex_escape;
+use std::collections::HashMap;
 
 pub fn render(c: &FlowDiagramConfig) -> String {
     let is_vertical = c.orientation != "horizontal";
-    let node_defs = render_nodes(&c.nodes, is_vertical);
-    let edge_defs = render_edges(c, &c.nodes);
+    let node_ids = tikz_node_ids(&c.nodes);
+    let node_defs = render_nodes(&c.nodes, &node_ids, is_vertical);
+    let edge_defs = render_edges(c, &c.nodes, &node_ids);
 
     format!(
         r#"\begin{{tikzpicture}}[
@@ -28,7 +30,15 @@ pub fn render(c: &FlowDiagramConfig) -> String {
     )
 }
 
-fn render_nodes(nodes: &[FlowNode], vertical: bool) -> String {
+fn tikz_node_ids(nodes: &[FlowNode]) -> HashMap<&str, String> {
+    nodes
+        .iter()
+        .enumerate()
+        .map(|(i, node)| (node.id.as_str(), format!("n{}", i)))
+        .collect()
+}
+
+fn render_nodes(nodes: &[FlowNode], ids: &HashMap<&str, String>, vertical: bool) -> String {
     let mut out = String::new();
     for (i, node) in nodes.iter().enumerate() {
         let style = match node.shape.as_str() {
@@ -40,14 +50,14 @@ fn render_nodes(nodes: &[FlowNode], vertical: bool) -> String {
         let position = if i == 0 {
             String::new()
         } else if vertical {
-            format!("[below of={}]", nodes[i - 1].id)
+            format!("[below of={}]", ids[nodes[i - 1].id.as_str()])
         } else {
-            format!("[right of={}]", nodes[i - 1].id)
+            format!("[right of={}]", ids[nodes[i - 1].id.as_str()])
         };
         out.push_str(&format!(
             "  \\node[{}] ({}) {} {{{}}};\n",
             style,
-            node.id,
+            ids[node.id.as_str()],
             position,
             latex_escape(&node.label)
         ));
@@ -55,15 +65,15 @@ fn render_nodes(nodes: &[FlowNode], vertical: bool) -> String {
     out
 }
 
-fn render_edges(c: &FlowDiagramConfig, nodes: &[FlowNode]) -> String {
+fn render_edges(c: &FlowDiagramConfig, nodes: &[FlowNode], ids: &HashMap<&str, String>) -> String {
     let mut out = String::new();
     // Auto-edges si no hay edges definidos (conectar en secuencia)
     if c.edges.is_empty() {
         for i in 1..nodes.len() {
             out.push_str(&format!(
                 "  \\draw[->] ({}) -- ({});\n",
-                nodes[i - 1].id,
-                nodes[i].id
+                ids[nodes[i - 1].id.as_str()],
+                ids[nodes[i].id.as_str()]
             ));
         }
         return out;
@@ -81,9 +91,23 @@ fn render_edges(c: &FlowDiagramConfig, nodes: &[FlowNode]) -> String {
             ),
             None => String::new(),
         };
+        let Some(from) = ids.get(edge.from.as_str()) else {
+            out.push_str(&format!(
+                "  % Edge omitido: nodo origen desconocido ({})\n",
+                latex_escape(&edge.from)
+            ));
+            continue;
+        };
+        let Some(to) = ids.get(edge.to.as_str()) else {
+            out.push_str(&format!(
+                "  % Edge omitido: nodo destino desconocido ({})\n",
+                latex_escape(&edge.to)
+            ));
+            continue;
+        };
         out.push_str(&format!(
-            "  \\draw[{}] ({}){} -- ({});\n",
-            style, edge.from, label_part, edge.to
+            "  \\draw[{}] ({}) --{} ({});\n",
+            style, from, label_part, to
         ));
     }
     out

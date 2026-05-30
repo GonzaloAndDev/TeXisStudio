@@ -77,17 +77,14 @@ pub fn required_package(config: &VisualConfig) -> &'static str {
         VisualConfig::ChemReaction(_) => "mhchem",
         VisualConfig::Molecule(_) => "chemfig",
         VisualConfig::Circuit(_) => "circuitikz",
-        VisualConfig::Feynman(_) => "tikz", // tikz-feynman usa tikz base
+        VisualConfig::Feynman(_) => "tikz",
         VisualConfig::MusicFragment(_) => "musixtex",
     }
 }
 
 /// Paquetes LaTeX adicionales (librerías TikZ, etc.)
-pub fn extra_packages(config: &VisualConfig) -> Vec<&'static str> {
-    match config {
-        VisualConfig::Feynman(_) => vec!["tikz-feynman"],
-        _ => vec![],
-    }
+pub fn extra_packages(_config: &VisualConfig) -> Vec<&'static str> {
+    vec![]
 }
 
 #[cfg(test)]
@@ -255,6 +252,58 @@ mod tests {
             component_values: Default::default(),
         });
         assert_eq!(required_package(&cir), "circuitikz");
+
+        let feynman = VisualConfig::Feynman(FeynmanConfig {
+            preset: "compton".to_string(),
+            particle_labels: Default::default(),
+            show_momentum: false,
+        });
+        assert_eq!(required_package(&feynman), "tikz");
+        assert!(
+            extra_packages(&feynman).is_empty(),
+            "Feynman usa TikZ nativo, no tikz-feynman"
+        );
+    }
+
+    #[test]
+    fn render_flow_sanitiza_ids_y_coloca_label_en_arista() {
+        let block = VisualBlock {
+            id: "flow1".to_string(),
+            caption: "Flujo".to_string(),
+            label: "fig:flow".to_string(),
+            include_in_list: true,
+            advanced_latex_override: None,
+            advanced_override_confirmed: false,
+            config: VisualConfig::FlowDiagram(FlowDiagramConfig {
+                nodes: vec![
+                    FlowNode {
+                        id: "inicio del usuario".to_string(),
+                        label: "Inicio".to_string(),
+                        shape: "rounded".to_string(),
+                        color: "blue".to_string(),
+                    },
+                    FlowNode {
+                        id: "decision: final?".to_string(),
+                        label: "Validar".to_string(),
+                        shape: "diamond".to_string(),
+                        color: "orange".to_string(),
+                    },
+                ],
+                edges: vec![FlowEdge {
+                    from: "inicio del usuario".to_string(),
+                    to: "decision: final?".to_string(),
+                    label: Some("sí".to_string()),
+                    style: "arrow".to_string(),
+                }],
+                orientation: "vertical".to_string(),
+            }),
+        };
+
+        let latex = render_visual(&block);
+        assert!(latex.contains("\\node[rounded] (n0)"));
+        assert!(latex.contains("\\node[diamond] (n1)"));
+        assert!(!latex.contains("(inicio del usuario)"));
+        assert!(latex.contains("\\draw[->] (n0) -- node[midway, right"));
     }
 
     #[test]
