@@ -324,20 +324,19 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                     format!("    {} \\\\\n", cells)
                 })
                 .collect();
-            // Tablas anchas (≥5 cols o con celdas verbatim) usan adjustbox para
-            // escalar automáticamente al ancho de texto sin desbordar el margen.
-            let wide = n >= 5 || t.raw_cells;
+            // Todas las tablas usan adjustbox: es inerte cuando el contenido ya
+            // cabe en el margen y escala automáticamente cuando desborda.
+            // No hay costo ni diferencia visual en tablas que entran normalmente.
             let tabular_body = format!(
                 "    \\begin{{tabular}}{{{}}}\n    \\toprule\n    {} \\\\\n    \\midrule\n{}    \\bottomrule\n    \\end{{tabular}}",
                 (0..n).map(|_| "l").collect::<Vec<_>>().join(" "),
                 headers,
                 rows,
             );
-            let inner = if wide {
-                format!("    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{}\n    \\end{{adjustbox}}", tabular_body)
-            } else {
+            let inner = format!(
+                "    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{}\n    \\end{{adjustbox}}",
                 tabular_body
-            };
+            );
             format!(
                 "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{}}}\n    \\label{{{}}}\n{}\n\\end{{table}}\n\n",
                 caption,
