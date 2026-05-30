@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
 use tauri::Manager;
+use texis_core::build_engine::preflight::{EnvContext, Platform, PreflightChecker};
 use texis_core::compiler::detector::LatexInstallation;
 use texis_core::profile::{ProfileLoader, ProfileRegistry};
+use texis_core::project::loader::ProjectLoader;
 
 /// Payload de actualización de perfil enviado desde el frontend.
 #[derive(Debug, Deserialize, Serialize)]
@@ -702,6 +704,92 @@ pub fn create_profile_lock(
 #[tauri::command]
 pub fn get_platform() -> &'static str {
     std::env::consts::OS
+}
+
+/// Abre un archivo o directorio con la aplicación predeterminada del sistema.
+/// En macOS: `open path`  |  Linux: `xdg-open path`  |  Windows: `start "" path`
+///
+/// Solo acepta rutas a archivos existentes para evitar ejecución arbitraria.
+#[tauri::command]
+pub fn open_in_system(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err(format!("El archivo no existe: {}", path));
+    }
+
+    let result = if cfg!(target_os = "macos") {
+        std::process::Command::new("open").arg(&path).spawn()
+    } else if cfg!(target_os = "windows") {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &path])
+            .spawn()
+    } else {
+        std::process::Command::new("xdg-open").arg(&path).spawn()
+    };
+
+    result.map(|_| ()).map_err(|e| format!("No se pudo abrir el archivo: {e}"))
+}
+
+/// Verifica las dependencias del entorno para un proyecto dado.
+/// Devuelve los issues encontrados en formato JSON para que la UI los muestre.
+///
+/// `project_path`: ruta al directorio del proyecto (contiene tesis.project.yaml)
+/// `backend`: "latexmk" | "tectonic" | "auto"
+#[tauri::command]
+pub fn check_toolchain(project_path: String, backend: String) -> Result<Value, String> {
+    let path = std::path::PathBuf::from(&project_path);
+    let yaml_path = path.join("tesis.project.yaml");
+
+    // Cargar modelo para saber qué features usa el proyecto
+    let loader = ProjectLoader;
+    let model = loader.load_from_file(&yaml_path).map_err(|e| e.to_string())?;
+
+    use texis_core::project::model::BibliographyBackend;
+    let needs_biber = matches!(model.latex_config.bibliography_backend, BibliographyBackend::Biber);
+
+    // Detectar si el proyecto tiene glosario o acrónimos en alguna sección
+    use texis_core::project::model::ContentBlock;
+    let needs_glossary = model.sections.iter().any(|s| {
+        s.blocks.iter().any(|b| {
+            matches!(b, ContentBlock::GlossaryEntry(_) | ContentBlock::AcronymEntry(_))
+        })
+    });
+
+    let ctx = EnvContext {
+        backend,
+        needs_biber,
+        needs_makeglossaries: needs_glossary,
+        platform: Platform::current(),
+    };
+
+    let report = PreflightChecker::check(&ctx);
+
+    let issues_json: Vec<Value> = report.issues.iter().map(|issue| {
+        serde_json::json!({
+            "id": issue.id,
+            "severity": match issue.severity {
+                texis_core::build_engine::preflight::IssueSeverity::Critical => "critical",
+                texis_core::build_engine::preflight::IssueSeverity::Warning  => "warning",
+                texis_core::build_engine::preflight::IssueSeverity::Info     => "info",
+            },
+            "component": format!("{:?}", issue.component),
+            "required_by": issue.required_by,
+            "why_it_matters": issue.why_it_matters,
+            "recommended_action": issue.recommended_action,
+            "instructions": {
+                "macos":   issue.instructions.macos,
+                "linux":   issue.instructions.linux,
+                "windows": issue.instructions.windows,
+            },
+            "can_retry": issue.can_retry,
+            "simple_alternative": issue.simple_alternative,
+        })
+    }).collect();
+
+    Ok(serde_json::json!({
+        "issues": issues_json,
+        "has_critical": report.has_critical,
+    }))
 }
 
 /// Detecta si LaTeX está instalado en el sistema.

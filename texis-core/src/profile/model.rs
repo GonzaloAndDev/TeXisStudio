@@ -87,6 +87,26 @@ pub struct PdfaRequirement {
     pub level: Option<String>,
 }
 
+/// Template MiniJinja para la portada del documento.
+///
+/// La cadena `template` puede usar las variables del contexto de portada:
+///   {{ institution_name }}, {{ faculty }}, {{ department }},
+///   {{ title }}, {{ author }}, {{ advisors }} (lista),
+///   {{ committee }} (lista de {name, role}),
+///   {{ city }}, {{ year }}, {{ degree_label }}, {{ doc_kind_label }}
+///
+/// Todos los valores de texto deben pasar por el filtro `| latex_escape`
+/// a menos que sean LaTeX intencional (usa `| raw` en ese caso).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct TitlePageTemplate {
+    /// Plantilla MiniJinja que produce el bloque LaTeX completo de la portada.
+    pub template: String,
+    /// Archivos de assets (logos, sellos) referenciados por la plantilla.
+    /// Rutas relativas al directorio del perfil, ej. ["assets/logo.png"].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assets: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Profile {
     #[serde(default)]
@@ -139,6 +159,10 @@ pub struct Profile {
     /// Requisitos de formato PDF (PDF/A, etc.). None = sin requisitos declarados.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pdf_requirements: Option<PdfRequirements>,
+    /// Plantilla MiniJinja para la portada institucional.
+    /// Si None, el generador usa una portada genérica centrada.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title_page_template: Option<TitlePageTemplate>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -199,6 +223,7 @@ impl Profile {
             max_abstract_words: None,
             sections: vec![],
             pdf_requirements: None,
+            title_page_template: None,
         }
     }
 }

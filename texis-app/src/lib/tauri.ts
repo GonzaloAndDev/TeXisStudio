@@ -7,6 +7,7 @@ import type {
   BibReference,
   CloudFolder,
   CompilationResult,
+  DependencyIssue,
   DoctorReport,
   ExportDeliveryResult,
   LatexInfo,
@@ -56,6 +57,8 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     { key: "vaswani2017attention",entry_type: "inproceedings", title: "Attention is All You Need",                      author: "Vaswani, Ashish et al.",                                  year: "2017", journal: "NeurIPS" },
     { key: "he2016deep",          entry_type: "inproceedings", title: "Deep Residual Learning for Image Recognition",   author: "He, Kaiming et al.",                                      year: "2016", journal: "CVPR" },
   ] as BibReference[],
+  check_toolchain: { issues: [] as DependencyIssue[], has_critical: false },
+  open_in_system: undefined,
   run_system_doctor: {
     checks: [],
     environment_ok: false,
@@ -221,6 +224,9 @@ export const api = {
   getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>
     call("get_platform"),
 
+  openInSystem: (path: string): Promise<void> =>
+    call("open_in_system", { path }),
+
   listProjectAssets: (projectPath: string): Promise<Array<{ name: string; path: string; ext: string }>> =>
     call("list_project_assets", { projectPath }),
 
@@ -242,6 +248,11 @@ export const api = {
 
   detectLatex: (): Promise<LatexInfo> =>
     call("detect_latex"),
+
+  checkToolchain: (projectPath: string, backend: string): Promise<{
+    issues: DependencyIssue[];
+    has_critical: boolean;
+  }> => call("check_toolchain", { projectPath, backend }),
 
   getCloudFolders: (): Promise<CloudFolder[]> =>
     call("get_cloud_folders"),

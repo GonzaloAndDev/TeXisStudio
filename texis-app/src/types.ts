@@ -292,6 +292,32 @@ export interface UserError {
   raw_log_line?: string;
 }
 
+export type DependencyIssueSeverity = "critical" | "warning" | "info";
+
+/** Instrucciones de instalación por plataforma. */
+export interface OsInstructions {
+  macos?: string;
+  linux?: string;
+  windows?: string;
+}
+
+/** Problema de dependencia detectado antes o durante la compilación. */
+export interface DependencyIssue {
+  id: string;
+  severity: DependencyIssueSeverity;
+  /** Nombre del componente afectado (ej. "Biber", "Makeglossaries"). */
+  component: string;
+  /** Feature del proyecto que requiere este componente. */
+  required_by: string;
+  /** Explicación en lenguaje humano del impacto. */
+  why_it_matters: string;
+  /** Acción recomendada en una oración. */
+  recommended_action: string;
+  instructions: OsInstructions;
+  can_retry: boolean;
+  simple_alternative?: string;
+}
+
 export interface CompilationResult {
   success: boolean;
   pdf_path?: string;
@@ -299,6 +325,10 @@ export interface CompilationResult {
   warnings: string[];
   log_preview: string;
   backend_used?: string;
+  /** Issues de dependencia detectados antes de compilar. */
+  dependency_issues?: DependencyIssue[];
+  /** true si la compilación no inició por issues críticos. */
+  preflight_failed?: boolean;
 }
 
 // ── Profiles ────────────────────────────────────────────────────

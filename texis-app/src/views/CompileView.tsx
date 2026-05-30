@@ -10,10 +10,10 @@ import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
 import { useAiStore } from "../stores/ai";
-import type { CompilationResult, ExportDeliveryResult, PdfPostflightResult, ValidationReport } from "../types";
+import type { CompilationResult, DependencyIssue, ExportDeliveryResult, PdfPostflightResult, ValidationReport } from "../types";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
-import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
+import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
 
 // ── Vista principal ───────────────────────────────────────────────
 
@@ -45,6 +45,8 @@ export default function CompileView() {
   const [pkgMissing, setPkgMissing]         = useState<Array<{ package_name: string; priority: string }>>([]);
   const [glossaryIssues, setGlossaryIssues] = useState<{ undefined_references: string[]; unused_count: number } | null>(null);
   const [glossarySummary, setGlossarySummary] = useState<{ entries: number; acronyms: number } | null>(null);
+  const [dependencyIssues, setDependencyIssues] = useState<DependencyIssue[]>([]);
+  const [platform, setPlatform] = useState<string>("linux");
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,19 @@ export default function CompileView() {
       setBackend(latexInfo.preferred_backend as Backend);
     }
   }, [latexInfo]);
+
+  // Detectar plataforma al montar
+  useEffect(() => {
+    api.getPlatform().then(p => setPlatform(p)).catch(() => {});
+  }, []);
+
+  // Verificar dependencias del entorno al cargar o cambiar backend
+  useEffect(() => {
+    if (!activeProjectPath) return;
+    api.checkToolchain(activeProjectPath, backend).then(report => {
+      setDependencyIssues(report.issues);
+    }).catch(() => {});
+  }, [activeProjectPath, backend]);
 
   // Analizar paquetes y glosario del proyecto al cargar
   useEffect(() => {
@@ -111,6 +126,10 @@ export default function CompileView() {
       const langConfig = getLatexConfig(lang);
       const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
       setResult(res);
+      // Actualizar dependency issues desde el resultado (incluye preflight)
+      if (res.dependency_issues && res.dependency_issues.length > 0) {
+        setDependencyIssues(res.dependency_issues);
+      }
       setCompileState(res.success ? "success" : "error");
       // Actualizar contexto de UI para el asistente de IA
       useAiStore.getState().setUiContext({
@@ -421,6 +440,13 @@ export default function CompileView() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Issues de dependencias del entorno */}
+            {dependencyIssues.length > 0 && !nothingInstalled && (
+              <div style={{ padding: "12px 16px 0" }}>
+                <DependencyIssuesPanel issues={dependencyIssues} platform={platform} />
               </div>
             )}
 

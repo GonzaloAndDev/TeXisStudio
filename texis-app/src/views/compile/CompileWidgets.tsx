@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { IconCheck, IconCheckCircle, IconErr, IconPlay, IconWarn, IconX } from "../../components/Icons";
 import { useAiStore } from "../../stores/ai";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import type { PdfaCheck, PdfPostflightResult, UserError, ValidationReport, ValidationIssue } from "../../types";
+import type { DependencyIssue, PdfaCheck, PdfPostflightResult, UserError, ValidationReport, ValidationIssue } from "../../types";
 
 export type Backend = "auto" | "latexmk" | "tectonic";
 export type PendingAction = "compile" | "export";
@@ -456,6 +456,180 @@ export function PostflightPanel({ result }: { result: PdfPostflightResult }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ── DependencyIssueCard ───────────────────────────────────────────────────────
+
+const SEV_COLORS = {
+  critical: "var(--build-err)",
+  warning:  "var(--build-warn)",
+  info:     "var(--accent)",
+};
+
+const SEV_LABELS = {
+  critical: "Bloqueante",
+  warning:  "Advertencia",
+  info:     "Sugerencia",
+};
+
+function OsStep({ label, content }: { label: string; content: string }) {
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>
+        {label}
+      </div>
+      <pre style={{
+        margin: 0, fontSize: 11, lineHeight: 1.5,
+        background: "var(--bg-sunken)", color: "var(--fg-code)",
+        padding: "8px 10px", borderRadius: "var(--r-sm)",
+        whiteSpace: "pre-wrap", wordBreak: "break-word",
+        fontFamily: "var(--font-mono)",
+      }}>
+        {content}
+      </pre>
+    </div>
+  );
+}
+
+export function DependencyIssueCard({ issue, platform }: {
+  issue: DependencyIssue;
+  platform?: "macos" | "windows" | "linux" | string;
+}) {
+  const [expanded, setExpanded] = useState(issue.severity === "critical");
+  const color = SEV_COLORS[issue.severity] ?? "var(--fg-muted)";
+  const label = SEV_LABELS[issue.severity] ?? issue.severity;
+
+  // Mostrar solo las instrucciones del SO actual
+  const platformInstructions = platform === "macos" ? issue.instructions.macos
+    : platform === "windows" ? issue.instructions.windows
+    : issue.instructions.linux;
+
+  return (
+    <div style={{
+      border: `1px solid color-mix(in srgb, ${color} 30%, var(--border-firm))`,
+      borderLeft: `4px solid ${color}`,
+      borderRadius: "var(--r-md)",
+      background: "var(--bg-panel)",
+      overflow: "hidden",
+      marginBottom: 8,
+    }}>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex", alignItems: "flex-start", gap: 10,
+          padding: "12px 14px", cursor: "pointer",
+        }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <div style={{
+          flexShrink: 0, marginTop: 1,
+          width: 8, height: 8, borderRadius: "50%",
+          background: color,
+        }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+              color, background: `color-mix(in srgb, ${color} 12%, transparent)`,
+              padding: "1px 6px", borderRadius: "var(--r-sm)", flexShrink: 0,
+            }}>
+              {label}
+            </span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+              {issue.required_by}
+            </span>
+          </div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", lineHeight: 1.5 }}>
+            {issue.why_it_matters}
+          </div>
+        </div>
+        <span style={{ fontSize: 14, color: "var(--fg-muted)", flexShrink: 0, userSelect: "none" }}>
+          {expanded ? "▲" : "▼"}
+        </span>
+      </div>
+
+      {/* Detalles expandidos */}
+      {expanded && (
+        <div style={{ padding: "0 14px 14px 32px", borderTop: "1px solid var(--border-subtle)" }}>
+          {/* Acción recomendada */}
+          <div style={{
+            marginTop: 10,
+            background: `color-mix(in srgb, ${color} 8%, var(--bg-surface))`,
+            border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
+            borderRadius: "var(--r-sm)", padding: "8px 10px",
+            fontSize: "var(--fs-sm)", color: "var(--fg-strong)",
+            display: "flex", gap: 8, alignItems: "flex-start",
+          }}>
+            <span style={{ flexShrink: 0, marginTop: 1 }}>→</span>
+            {issue.recommended_action}
+          </div>
+
+          {/* Instrucciones del SO actual */}
+          {platformInstructions && (
+            <OsStep
+              label={platform === "macos" ? "macOS" : platform === "windows" ? "Windows" : "Linux"}
+              content={platformInstructions}
+            />
+          )}
+
+          {/* Alternativa simple */}
+          {issue.simple_alternative && (
+            <div style={{
+              marginTop: 10,
+              padding: "8px 10px", borderRadius: "var(--r-sm)",
+              background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
+              fontSize: "var(--fs-sm)", color: "var(--accent-deep)",
+              display: "flex", gap: 8, alignItems: "flex-start",
+            }}>
+              <span style={{ flexShrink: 0, marginTop: 1 }}>💡</span>
+              <span><strong>Alternativa más simple:</strong> {issue.simple_alternative}</span>
+            </div>
+          )}
+
+          {issue.can_retry && (
+            <div style={{
+              marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)",
+            }}>
+              Después de instalar, vuelve a compilar.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Panel completo que agrupa todos los issues de dependencia. */
+export function DependencyIssuesPanel({ issues, platform }: {
+  issues: DependencyIssue[];
+  platform?: string;
+}) {
+  if (!issues || issues.length === 0) return null;
+
+  const critical = issues.filter(i => i.severity === "critical");
+  const rest = issues.filter(i => i.severity !== "critical");
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+        paddingBottom: 8, borderBottom: "1px solid var(--border-subtle)",
+      }}>
+        {critical.length > 0
+          ? <IconErr size={13} style={{ color: "var(--build-err)", flexShrink: 0 }} />
+          : <IconWarn size={13} style={{ color: "var(--build-warn)", flexShrink: 0 }} />
+        }
+        <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
+          {critical.length > 0
+            ? `${critical.length === 1 ? "Hay un problema" : `Hay ${critical.length} problemas`} que debes resolver antes de compilar`
+            : "Tu entorno tiene algunas advertencias"}
+        </span>
+      </div>
+      {[...critical, ...rest].map(issue => (
+        <DependencyIssueCard key={issue.id} issue={issue} platform={platform} />
+      ))}
     </div>
   );
 }

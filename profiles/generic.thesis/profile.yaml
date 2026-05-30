@@ -44,6 +44,44 @@ packages:
   - "setspace"
   - "hyperref"
 
+title_page_template:
+  template: |
+    \thispagestyle{empty}
+    \begin{titlepage}
+      \centering
+      \vspace*{1.5cm}
+      {\scshape\Large {{ institution_name | latex_escape }}\par}
+      {% if faculty is defined and faculty %}
+      \vspace{0.3cm}
+      {\large {{ faculty | latex_escape }}\par}
+      {% endif %}
+      {% if department is defined and department %}
+      \vspace{0.2cm}
+      {\normalsize {{ department | latex_escape }}\par}
+      {% endif %}
+      \vspace{2cm}
+      {\huge\bfseries {{ title | latex_escape }}\par}
+      \vspace{2cm}
+      {\large {{ doc_kind_label }}\par}
+      \vspace{0.4cm}
+      {\normalsize que para obtener el grado de\par}
+      {\normalsize\bfseries {{ degree_label }}\par}
+      \vspace{1.8cm}
+      {\normalsize Presenta:\par}
+      \vspace{0.4cm}
+      {\large\bfseries {{ author | latex_escape }}\par}
+      \vspace{1.8cm}
+      {% if advisors %}
+      {\normalsize {{ advisor_label }}\par}
+      \vspace{0.3cm}
+      {% for a in advisors %}
+      {\normalsize {{ a | latex_escape }}\par}
+      {% endfor %}
+      {% endif %}
+      \vfill
+      {\normalsize {{ city | latex_escape }}, {{ year }}\par}
+    \end{titlepage}
+
 sections:
   - id: "title_page"
     element_id: "title_page"

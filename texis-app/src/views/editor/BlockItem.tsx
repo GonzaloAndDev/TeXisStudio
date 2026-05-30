@@ -12,7 +12,8 @@ import {
 
 export function BlockItem({
   block, isEditing, onStartEdit, onUpdate, onDelete,
-  dragging, dragOver, availableCiteKeys, availableLabels, availableAssets,
+  dragging, dragOver, highlighted,
+  availableCiteKeys, availableLabels, availableAssets,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
 }: {
   block: ContentBlock;
@@ -22,6 +23,8 @@ export function BlockItem({
   onDelete: () => void;
   dragging?: boolean;
   dragOver?: boolean;
+  /** Se activa brevemente al saltar a este bloque desde la búsqueda. */
+  highlighted?: boolean;
   availableCiteKeys?: string[];
   availableLabels?: Array<{ key: string; kind: string; caption: string }>;
   availableAssets?: Array<{ name: string; path: string }>;
@@ -359,19 +362,28 @@ export function BlockItem({
   return (
     <div
       draggable
+      data-block-id={block.id}
       style={{
         position: "relative", margin: "4px -32px", padding: "6px 32px 6px 44px",
         borderRadius: 6,
-        background: isEditing ? "var(--accent-tint)" : hovered ? "var(--bg-hover)" : "transparent",
+        background: highlighted
+          ? "color-mix(in srgb, var(--accent) 12%, transparent)"
+          : isEditing
+          ? "var(--accent-tint)"
+          : hovered
+          ? "var(--bg-hover)"
+          : "transparent",
         border: dragOver
           ? "1px solid var(--accent)"
+          : highlighted
+          ? "1px solid var(--accent-soft)"
           : isEditing
           ? "1px solid var(--accent-soft)"
           : "1px solid transparent",
         opacity: dragging ? 0.35 : 1,
-        boxShadow: dragOver ? "0 -2px 0 var(--accent)" : "none",
+        boxShadow: dragOver ? "0 -2px 0 var(--accent)" : highlighted ? "0 0 0 2px var(--accent-soft)" : "none",
         cursor: isEditing ? "default" : "text",
-        transition: "opacity 0.12s",
+        transition: "background 0.3s, border 0.3s, box-shadow 0.3s, opacity 0.12s",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

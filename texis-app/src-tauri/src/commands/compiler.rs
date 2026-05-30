@@ -1,11 +1,18 @@
 use serde_json::Value;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use tauri::Manager;
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
-use texis_core::{compiler::error_translator, project::loader::ProjectLoader, LaTeXGenerator};
+use texis_core::{
+    build_engine::preflight::{EnvContext, Platform, PreflightChecker},
+    compiler::error_translator,
+    profile::loader::ProfileLoader,
+    project::{loader::ProjectLoader, model::BibliographyBackend},
+    LaTeXGenerator,
+};
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -73,12 +80,97 @@ pub async fn compile_project(
         LatexEngine::Xelatex => "-xelatex",
     };
 
+    // Cargar el template de portada del perfil activo (si existe)
+    let title_page_template: Option<String> = {
+        let profiles_root = {
+            if let Ok(res) = app.path().resource_dir() {
+                let p = res.join("profiles");
+                if p.exists() { p } else { dev_profiles_dir() }
+            } else {
+                dev_profiles_dir()
+            }
+        };
+        let profile_yaml = profiles_root
+            .join(&model.profile_id)
+            .join("profile.yaml");
+        if profile_yaml.exists() {
+            ProfileLoader
+                .load_from_file(&profile_yaml)
+                .ok()
+                .and_then(|p| p.title_page_template)
+                .map(|t| t.template)
+        } else {
+            None
+        }
+    };
+
     let latex_gen = LaTeXGenerator::new().map_err(err)?;
     latex_gen
-        .generate_with_lang(&model, &build_dir, lang_config.as_ref())
+        .generate_with_profile(
+            &model,
+            &build_dir,
+            lang_config.as_ref(),
+            title_page_template.as_deref(),
+        )
         .map_err(err)?;
 
-    // ── Paso 2: seleccionar backend ───────────────────────────────
+    // ── Paso 2: preflight — verificar entorno antes de compilar ──
+    use texis_core::project::model::ContentBlock;
+    let needs_biber = matches!(model.latex_config.bibliography_backend, BibliographyBackend::Biber);
+    let needs_glossary = model.sections.iter().any(|s| {
+        s.blocks.iter().any(|b| matches!(b, ContentBlock::GlossaryEntry(_) | ContentBlock::AcronymEntry(_)))
+    });
+    let preflight_ctx = EnvContext {
+        backend: backend_name.clone(),
+        needs_biber,
+        needs_makeglossaries: needs_glossary,
+        platform: Platform::current(),
+    };
+    let preflight_report = PreflightChecker::check(&preflight_ctx);
+    let preflight_issues_json: Vec<Value> = preflight_report.issues.iter().map(|issue| {
+        serde_json::json!({
+            "id": issue.id,
+            "severity": match issue.severity {
+                texis_core::build_engine::preflight::IssueSeverity::Critical => "critical",
+                texis_core::build_engine::preflight::IssueSeverity::Warning  => "warning",
+                texis_core::build_engine::preflight::IssueSeverity::Info     => "info",
+            },
+            "why_it_matters": issue.why_it_matters,
+            "recommended_action": issue.recommended_action,
+            "instructions": {
+                "macos":   issue.instructions.macos,
+                "linux":   issue.instructions.linux,
+                "windows": issue.instructions.windows,
+            },
+            "can_retry": issue.can_retry,
+            "simple_alternative": issue.simple_alternative,
+        })
+    }).collect();
+
+    // Si hay issues críticos, emitirlos y abortar la compilación
+    if preflight_report.has_critical {
+        let payload = serde_json::json!({
+            "success": false,
+            "pdf_path": null,
+            "user_errors": [],
+            "warnings": [],
+            "log_preview": "",
+            "backend_used": &backend_name,
+            "dependency_issues": preflight_issues_json,
+            "preflight_failed": true,
+        });
+        let _ = app.emit("compile://done", &payload);
+        return Ok(payload);
+    }
+
+    // Emitir warnings de preflight aunque no sean críticos
+    if !preflight_report.issues.is_empty() {
+        let _ = app.emit("compile://preflight", serde_json::json!({
+            "issues": &preflight_issues_json
+        }));
+    }
+
+    // ── Paso 3: seleccionar backend ───────────────────────────────
     let resolved_backend = resolve_backend(&backend_name)?;
     let _ = app.emit("compile://log", format!("→ Iniciando {resolved_backend}…"));
 
@@ -94,7 +186,19 @@ pub async fn compile_project(
         run_compiler_streaming(&app2, &build_dir2, &backend2, &engine_flag2, draft, cancel)
     });
 
-    task.await.map_err(|e| format!("Error interno: {e}"))?
+    let result = task.await.map_err(|e| format!("Error interno: {e}"))?;
+
+    // Inyectar dependency_issues de preflight al payload final
+    result.map(|mut payload| {
+        if let Some(map) = payload.as_object_mut() {
+            map.insert(
+                "dependency_issues".to_string(),
+                serde_json::to_value(&preflight_issues_json).unwrap_or(serde_json::json!([])),
+            );
+            map.insert("preflight_failed".to_string(), serde_json::json!(false));
+        }
+        payload
+    })
 }
 
 /// Cancela la compilación en curso.
@@ -325,6 +429,8 @@ fn run_compiler_streaming(
         "warnings": Vec::<String>::new(),
         "log_preview": &log[..log.len().min(8000)],
         "backend_used": backend,
+        "dependency_issues": Vec::<Value>::new(),
+        "preflight_failed": false,
     });
 
     // Imprimir resumen de compilación en terminal
@@ -352,4 +458,12 @@ fn run_compiler_streaming(
     let _ = app.emit("compile://done", &payload);
 
     Ok(payload)
+}
+
+fn dev_profiles_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("profiles"))
+        .unwrap_or_else(|| PathBuf::from("profiles"))
 }

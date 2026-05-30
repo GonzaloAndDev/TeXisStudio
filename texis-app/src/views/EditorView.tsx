@@ -80,6 +80,42 @@ function countWords(blocks: ContentBlock[]): number {
     .reduce((acc, b) => acc + (b.type === "paragraph" ? b.content.split(/\s+/).filter(Boolean).length : 0), 0);
 }
 
+/**
+ * Calcula la ruta del .tex generado para una sección dentro de build/.
+ * Espeja la lógica de texis-core/src/generator/labels.rs.
+ */
+function sectionTexPath(
+  section: ProjectSection,
+  allSections: ProjectSection[],
+  projectPath: string,
+): string | null {
+  const INLINE_ELEMENTS = new Set([
+    "table_of_contents", "list_of_figures", "list_of_tables",
+    "list_of_algorithms", "list_of_listings", "references",
+  ]);
+  if (INLINE_ELEMENTS.has(section.element_id)) return null;
+
+  const buildDir = `${projectPath}/build`;
+
+  switch (section.placement) {
+    case "front_matter":
+      return `${buildDir}/preliminares/${section.id}.tex`;
+    case "body": {
+      const bodyIdx = allSections
+        .filter(s => s.enabled && s.placement === "body")
+        .findIndex(s => s.id === section.id);
+      const n = String(bodyIdx + 1).padStart(2, "0");
+      return `${buildDir}/capitulos/${n}_${section.id}.tex`;
+    }
+    case "back_matter":
+      return `${buildDir}/backmatter/${section.id}.tex`;
+    case "appendix":
+      return `${buildDir}/anexos/${section.id}.tex`;
+    default:
+      return null;
+  }
+}
+
 // ── EditorView principal ──────────────────────────────────────────
 
 type SaveStatus = "saved" | "saving" | "unsaved" | "error";
@@ -141,6 +177,26 @@ export default function EditorView() {
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
   const aiPanel = useAiStore();
+
+  // Navegación a bloque específico (desde búsqueda en CommandPalette)
+  const [jumpTargetBlockId, setJumpTargetBlockId] = useState<string | null>(null);
+
+  // Scroll y highlight cuando jumpTargetBlockId cambia
+  useEffect(() => {
+    if (!jumpTargetBlockId) return;
+    // Pequeño delay para asegurar que el bloque ya está renderizado
+    // (puede haberse cambiado de sección justo antes)
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-block-id="${jumpTargetBlockId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      // Quitar el highlight después de 2 segundos
+      const clearTimer = setTimeout(() => setJumpTargetBlockId(null), 2000);
+      return () => clearTimeout(clearTimer);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [jumpTargetBlockId]);
 
   // Selección de texto real para el panel de IA
   // Se actualiza cada vez que el usuario selecciona texto en el editor
@@ -721,8 +777,23 @@ export default function EditorView() {
           >
             {activeSection ? (
               <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", marginBottom: 4 }}>
-                  {userMode === "advanced" ? activeSection.element_id : "Sección activa"}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", flex: 1 }}>
+                    {userMode === "advanced" ? activeSection.element_id : "Sección activa"}
+                  </div>
+                  {activeProjectPath && userMode === "advanced" && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: 10, padding: "2px 8px", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}
+                      title="Abrir el archivo .tex generado en el editor externo. Nota: los cambios se sobreescriben al compilar."
+                      onClick={() => {
+                        const texPath = sectionTexPath(activeSection, activeProject.sections, activeProjectPath);
+                        if (texPath) api.openInSystem(texPath).catch(() => {});
+                      }}
+                    >
+                      .tex ↗
+                    </button>
+                  )}
                 </div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--fg-strong)", margin: "4px 0 16px", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
                   {activeSection.title ?? activeSection.element_id}
@@ -768,6 +839,7 @@ export default function EditorView() {
                         key={block.id}
                         block={block}
                         isEditing={editingId === block.id}
+                        highlighted={jumpTargetBlockId === block.id}
                         onStartEdit={() => setEditingId(block.id)}
                         onUpdate={(updates) => updateBlock(block.id, updates as Record<string, unknown>)}
                         onDelete={() => deleteBlock(block.id)}
@@ -974,6 +1046,10 @@ export default function EditorView() {
           userMode={userMode}
           onInsertBlock={(type) => addBlock(type)}
           onJumpSection={(id) => { setActiveSectionId(id); }}
+          onJumpToBlock={(sectionId, blockId) => {
+            setActiveSectionId(sectionId);
+            setJumpTargetBlockId(blockId);
+          }}
           onClose={() => setPaletteOpen(false)}
         />
       )}

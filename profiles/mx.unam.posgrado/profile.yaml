@@ -52,6 +52,51 @@ packages:
   - "hyperref"
   - "cleveref"
 
+title_page_template:
+  template: |
+    \thispagestyle{empty}
+    \begin{titlepage}
+      \centering
+      \vspace*{0.8cm}
+      {\scshape\large {{ institution_name | latex_escape }}\par}
+      \vspace{0.2cm}
+      {\normalsize\scshape {{ faculty | latex_escape }}\par}
+      \vspace{0.8cm}
+      \rule{\textwidth}{0.4pt}
+      \vspace{0.8cm}
+      {\huge\bfseries {{ title | latex_escape }}\par}
+      \vspace{0.8cm}
+      \rule{\textwidth}{0.4pt}
+      \vspace{1cm}
+      {\large\itshape {{ doc_kind_label }}\par}
+      \vspace{0.3cm}
+      {\normalsize que para optar por el grado de\par}
+      \vspace{0.3cm}
+      {\large\bfseries {{ degree_label }}\par}
+      \vspace{1.5cm}
+      {\normalsize P\,R\,E\,S\,E\,N\,T\,A:\par}
+      \vspace{0.5cm}
+      {\large\bfseries {{ author | latex_escape }}\par}
+      \vspace{1.5cm}
+      {% if advisors %}
+      {\normalsize T\,U\,T\,O\,R\, P\,R\,I\,N\,C\,I\,P\,A\,L:\par}
+      \vspace{0.3cm}
+      {% for a in advisors %}
+      {\normalsize {{ a | latex_escape }}\par}
+      {% endfor %}
+      {% endif %}
+      {% if committee %}
+      \vspace{0.8cm}
+      {\normalsize C\,O\,M\,I\,T\,É\, T\,U\,T\,O\,R\,I\,A\,L:\par}
+      \vspace{0.3cm}
+      {% for m in committee %}
+      {\small {{ m.name | latex_escape }}{% if m.role is defined and m.role %} --- {\itshape {{ m.role | latex_escape }}}{% endif %}\par}
+      {% endfor %}
+      {% endif %}
+      \vfill
+      {\normalsize {{ city | latex_escape }}, {{ year }}\par}
+    \end{titlepage}
+
 sections:
   - id: "portada"
     element_id: "title_page"

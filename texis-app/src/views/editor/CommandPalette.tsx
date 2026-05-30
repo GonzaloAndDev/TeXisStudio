@@ -21,17 +21,93 @@ export const PALETTE_BLOCK_ITEMS = [
   { type: "acronym_entry" as ContentBlock["type"],  label: "Acrónimo",     icon: "Ab", hint: "Lista de abreviaturas" },
 ];
 
+// ── Utilidades de búsqueda de contenido ──────────────────────────
+
+function blockSearchText(block: ContentBlock): string {
+  switch (block.type) {
+    case "paragraph":      return block.content ?? "";
+    case "heading":        return block.content ?? "";
+    case "figure":         return [block.caption, block.file].filter(Boolean).join(" ");
+    case "table":          return [block.caption, ...(block.headers ?? []), ...(block.rows ?? []).flat()].join(" ");
+    case "citation":       return block.citation_key ?? "";
+    case "equation":       return block.latex_content ?? "";
+    case "raw_latex":      return block.content ?? "";
+    case "glossary_entry": return [block.term, block.definition].filter(Boolean).join(" ");
+    case "acronym_entry":  return [block.acronym, block.full_form].filter(Boolean).join(" ");
+    case "code":           return [block.caption, block.content].filter(Boolean).join(" ");
+    case "algorithm":      return [block.caption, block.body].filter(Boolean).join(" ");
+    case "theorem":        return [block.title, block.content].filter(Boolean).join(" ");
+    case "list":           return (block.items ?? []).join(" ");
+    default:               return "";
+  }
+}
+
+function blockIcon(type: ContentBlock["type"]): string {
+  return PALETTE_BLOCK_ITEMS.find(b => b.type === type)?.icon ?? "¶";
+}
+
+interface Excerpt { pre: string; match: string; post: string }
+
+function makeExcerpt(text: string, matchIdx: number, matchLen: number): Excerpt {
+  const radius = 45;
+  const start = Math.max(0, matchIdx - radius);
+  const end   = Math.min(text.length, matchIdx + matchLen + radius);
+  return {
+    pre:   (start > 0 ? "…" : "") + text.slice(start, matchIdx),
+    match: text.slice(matchIdx, matchIdx + matchLen),
+    post:  text.slice(matchIdx + matchLen, end) + (end < text.length ? "…" : ""),
+  };
+}
+
+interface ContentMatch {
+  kind: "content";
+  sectionId: string;
+  sectionTitle: string;
+  blockId: string;
+  blockType: ContentBlock["type"];
+  icon: string;
+  excerpt: Excerpt;
+}
+
+function searchBlockContent(sections: ProjectSection[], q: string): ContentMatch[] {
+  if (q.length < 2) return [];
+  const results: ContentMatch[] = [];
+  for (const section of sections) {
+    if (!section.enabled) continue;
+    for (const block of section.blocks ?? []) {
+      const text = blockSearchText(block);
+      const idx = text.toLowerCase().indexOf(q);
+      if (idx === -1) continue;
+      results.push({
+        kind: "content",
+        sectionId: section.id,
+        sectionTitle: section.title ?? section.id,
+        blockId: block.id,
+        blockType: block.type,
+        icon: blockIcon(block.type),
+        excerpt: makeExcerpt(text, idx, q.length),
+      });
+      if (results.length >= 12) return results; // evitar resultados excesivos
+    }
+  }
+  return results;
+}
+
+// ── Componente ────────────────────────────────────────────────────
+
 export function CommandPalette({
   sections,
   userMode,
   onInsertBlock,
   onJumpSection,
+  onJumpToBlock,
   onClose,
 }: {
   sections: ProjectSection[];
   userMode: "basic" | "advanced";
   onInsertBlock: (type: ContentBlock["type"]) => void;
   onJumpSection: (id: string) => void;
+  onJumpToBlock: (sectionId: string, blockId: string) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -40,22 +116,35 @@ export function CommandPalette({
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
   const allowedBlockTypes = userMode === "basic"
     ? new Set<ContentBlock["type"]>(["paragraph", "heading", "list", "citation", "figure", "table", "equation"])
     : null;
 
+  // Bloques (insertar) — se muestran solo si no hay query o la query coincide
   const blockItems = PALETTE_BLOCK_ITEMS.filter(
     (b) => !q || b.label.toLowerCase().includes(q) || b.hint.toLowerCase().includes(q)
   ).filter((b) => !allowedBlockTypes || allowedBlockTypes.has(b.type));
 
+  // Secciones (saltar a) — coincidencia por título
   const sectionItems = sections
     .filter((s) => s.enabled && (!q || (s.title ?? s.id).toLowerCase().includes(q)))
     .map((s) => ({ id: s.id, label: s.title ?? s.id, placement: s.placement }));
 
-  const allItems: { kind: "block" | "section"; label: string }[] = [
-    ...blockItems.map((b) => ({ kind: "block" as const, ...b })),
-    ...sectionItems.map((s) => ({ kind: "section" as const, ...s, type: undefined as never, icon: "§", hint: s.placement })),
+  // Contenido (búsqueda dentro de bloques) — solo cuando hay query >= 2 chars
+  const contentMatches: ContentMatch[] = q.length >= 2 ? searchBlockContent(sections, q) : [];
+
+  // Lista unificada para navegación por teclado
+  type AnyItem =
+    | { kind: "block"; type: ContentBlock["type"]; label: string; icon: string; hint: string }
+    | { kind: "section"; id: string; label: string; placement: string }
+    | ContentMatch;
+
+  const allItems: AnyItem[] = [
+    // Cuando hay búsqueda de contenido, no mostramos los tipos de bloque
+    ...(contentMatches.length > 0 || q.length >= 2 ? [] : blockItems.map(b => ({ kind: "block" as const, ...b }))),
+    ...sectionItems.map(s => ({ kind: "section" as const, ...s })),
+    ...contentMatches,
   ];
 
   const total = allItems.length;
@@ -63,8 +152,9 @@ export function CommandPalette({
   function confirm(idx: number) {
     const item = allItems[idx];
     if (!item) return;
-    if (item.kind === "block") onInsertBlock((item as unknown as typeof blockItems[0]).type);
-    else onJumpSection((item as unknown as typeof sectionItems[0]).id);
+    if (item.kind === "block")    { onInsertBlock(item.type); }
+    else if (item.kind === "section") { onJumpSection(item.id); }
+    else if (item.kind === "content") { onJumpToBlock(item.sectionId, item.blockId); }
     onClose();
   }
 
@@ -79,7 +169,7 @@ export function CommandPalette({
     >
       <div
         style={{
-          width: 520, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
+          width: 560, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
           border: "1px solid var(--border-firm)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
           overflow: "hidden",
@@ -93,7 +183,7 @@ export function CommandPalette({
             ref={inputRef}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
-            placeholder={userMode === "basic" ? "Agregar contenido o ir a una sección…" : "Insertar bloque o ir a sección…"}
+            placeholder="Buscar en la tesis, ir a sección, o insertar…"
             style={{
               flex: 1, border: "none", outline: "none", background: "transparent",
               fontSize: "var(--fs-md)", color: "var(--fg-strong)",
@@ -109,19 +199,67 @@ export function CommandPalette({
         </div>
 
         {/* Resultados */}
-        <div style={{ maxHeight: 340, overflow: "auto" }} className="scroll">
-          {blockItems.length > 0 && (
+        <div style={{ maxHeight: 380, overflow: "auto" }} className="scroll">
+
+          {/* Insertar bloque (solo cuando no hay búsqueda o la query coincide con un tipo) */}
+          {allItems.some(i => i.kind === "block") && (
             <>
-              <div style={{ padding: "6px 16px 4px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
-                {userMode === "basic" ? "Agregar contenido" : "Insertar bloque"}
-              </div>
-              {blockItems.map((b, i) => {
-                const globalIdx = i;
+              <SectionHeader label={userMode === "basic" ? "Agregar contenido" : "Insertar bloque"} hasBorder={false} />
+              {allItems.filter(i => i.kind === "block").map((item) => {
+                const b = item as { kind: "block"; type: ContentBlock["type"]; icon: string; label: string; hint: string };
+                const globalIdx = allItems.indexOf(item);
+                return (
+                  <PaletteRow
+                    key={b.type}
+                    icon={b.icon}
+                    label={b.label}
+                    hint={b.hint}
+                    selected={cursor === globalIdx}
+                    onHover={() => setCursor(globalIdx)}
+                    onClick={() => confirm(globalIdx)}
+                  />
+                );
+              })}
+            </>
+          )}
+
+          {/* Ir a sección */}
+          {sectionItems.length > 0 && (
+            <>
+              <SectionHeader label="Ir a sección" hasBorder={allItems.some(i => i.kind === "block")} />
+              {allItems.filter(i => i.kind === "section").map((item) => {
+                const s = item as { kind: "section"; id: string; label: string; placement: string };
+                const globalIdx = allItems.indexOf(item);
+                const placementLabel = { front_matter: "preámbulo", body: "cuerpo", back_matter: "final", appendix: "anexo" }[s.placement] ?? s.placement;
+                return (
+                  <PaletteRow
+                    key={s.id}
+                    icon="§"
+                    label={s.label}
+                    hint={placementLabel}
+                    selected={cursor === globalIdx}
+                    onHover={() => setCursor(globalIdx)}
+                    onClick={() => confirm(globalIdx)}
+                  />
+                );
+              })}
+            </>
+          )}
+
+          {/* Resultados de contenido */}
+          {contentMatches.length > 0 && (
+            <>
+              <SectionHeader
+                label={`Encontrado en ${new Set(contentMatches.map(m => m.sectionId)).size === 1 ? contentMatches[0].sectionTitle : `${new Set(contentMatches.map(m => m.sectionId)).size} secciones`}`}
+                hasBorder={sectionItems.length > 0 || allItems.some(i => i.kind === "block")}
+              />
+              {contentMatches.map((match) => {
+                const globalIdx = allItems.indexOf(match);
                 return (
                   <div
-                    key={b.type}
+                    key={`${match.sectionId}-${match.blockId}`}
                     style={{
-                      display: "flex", alignItems: "center", gap: 12,
+                      display: "flex", alignItems: "flex-start", gap: 12,
                       padding: "8px 16px", cursor: "pointer",
                       background: cursor === globalIdx ? "var(--bg-selected)" : "transparent",
                     }}
@@ -129,20 +267,32 @@ export function CommandPalette({
                     onClick={() => confirm(globalIdx)}
                   >
                     <div style={{
-                      width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0,
+                      width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0, marginTop: 2,
                       background: cursor === globalIdx ? "var(--accent)" : "var(--ink-100)",
                       color: cursor === globalIdx ? "white" : "var(--fg-muted)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 13, fontWeight: 600,
                     }}>
-                      {b.icon}
+                      {match.icon}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{b.label}</div>
-                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{b.hint}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 2 }}>
+                        {match.sectionTitle}
+                      </div>
+                      <div style={{
+                        fontSize: "var(--fs-sm)", color: "var(--fg-default)",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        lineHeight: 1.4,
+                      }}>
+                        {match.excerpt.pre}
+                        <mark style={{ background: "var(--accent-tint)", color: "var(--accent-deep)", borderRadius: 2, padding: "0 2px", fontWeight: 600 }}>
+                          {match.excerpt.match}
+                        </mark>
+                        {match.excerpt.post}
+                      </div>
                     </div>
                     {cursor === globalIdx && (
-                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
+                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0, marginTop: 6 }}>↵</span>
                     )}
                   </div>
                 );
@@ -150,54 +300,87 @@ export function CommandPalette({
             </>
           )}
 
-          {sectionItems.length > 0 && (
-            <>
-              <div style={{ padding: "6px 16px 4px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", borderTop: blockItems.length > 0 ? "1px solid var(--border-subtle)" : "none", marginTop: blockItems.length > 0 ? 4 : 0 }}>
-                Ir a sección
-              </div>
-              {sectionItems.map((s, i) => {
-                const globalIdx = blockItems.length + i;
-                return (
-                  <div
-                    key={s.id}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "8px 16px", cursor: "pointer",
-                      background: cursor === globalIdx ? "var(--bg-selected)" : "transparent",
-                    }}
-                    onMouseEnter={() => setCursor(globalIdx)}
-                    onClick={() => confirm(globalIdx)}
-                  >
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0,
-                      background: cursor === globalIdx ? "var(--accent)" : "var(--ink-100)",
-                      color: cursor === globalIdx ? "white" : "var(--fg-muted)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 14,
-                    }}>
-                      §
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{s.label}</div>
-                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{s.placement}</div>
-                    </div>
-                    {cursor === globalIdx && (
-                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {total === 0 && (
+          {/* Sin resultados */}
+          {total === 0 && q.length > 0 && (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
               Sin resultados para «{query}»
             </div>
           )}
+
+          {/* Estado inicial: mostrar hint de búsqueda */}
+          {total === 0 && q.length === 0 && (
+            <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
+              Escribe para buscar en el contenido de tu tesis,<br />ir a una sección, o insertar un bloque.
+            </div>
+          )}
         </div>
+
+        {/* Footer hint */}
+        {q.length >= 2 && contentMatches.length === 0 && sectionItems.length === 0 && (
+          <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+            Buscando en todo el texto de la tesis…
+          </div>
+        )}
+        {contentMatches.length > 0 && (
+          <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "flex", gap: 12 }}>
+            <span>↑↓ navegar</span>
+            <span>↵ ir al bloque</span>
+            <span>Esc cancelar</span>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+// ── Sub-componentes ───────────────────────────────────────────────
+
+function SectionHeader({ label, hasBorder }: { label: string; hasBorder: boolean }) {
+  return (
+    <div style={{
+      padding: "6px 16px 4px",
+      fontSize: 10, fontWeight: 600, textTransform: "uppercase",
+      letterSpacing: "0.08em", color: "var(--fg-faint)",
+      borderTop: hasBorder ? "1px solid var(--border-subtle)" : "none",
+      marginTop: hasBorder ? 4 : 0,
+    }}>
+      {label}
+    </div>
+  );
+}
+
+function PaletteRow({
+  icon, label, hint, selected, onHover, onClick,
+}: {
+  icon: string; label: string; hint: string;
+  selected: boolean; onHover: () => void; onClick: () => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "8px 16px", cursor: "pointer",
+        background: selected ? "var(--bg-selected)" : "transparent",
+      }}
+      onMouseEnter={onHover}
+      onClick={onClick}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0,
+        background: selected ? "var(--accent)" : "var(--ink-100)",
+        color: selected ? "white" : "var(--fg-muted)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 13, fontWeight: 600,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{label}</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{hint}</div>
+      </div>
+      {selected && (
+        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
+      )}
+    </div>
+  );
+}

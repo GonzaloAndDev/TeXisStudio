@@ -44,9 +44,32 @@ impl LaTeXGenerator {
         build_dir: &Path,
         lang_config: Option<&Value>,
     ) -> CoreResult<()> {
+        self.generate_full(model, build_dir, lang_config, None)
+    }
+
+    /// Genera con lang_config Y con template de portada del perfil.
+    /// `title_page_template`: plantilla MiniJinja del campo `title_page_template.template`
+    /// del perfil activo. Si None usa la portada genérica.
+    pub fn generate_with_profile(
+        &self,
+        model: &ProjectModel,
+        build_dir: &Path,
+        lang_config: Option<&Value>,
+        title_page_template: Option<&str>,
+    ) -> CoreResult<()> {
+        self.generate_full(model, build_dir, lang_config, title_page_template)
+    }
+
+    fn generate_full(
+        &self,
+        model: &ProjectModel,
+        build_dir: &Path,
+        lang_config: Option<&Value>,
+        title_page_template: Option<&str>,
+    ) -> CoreResult<()> {
         project::create_structure(build_dir)?;
         main_tex::generate(model, build_dir, &self.engine, lang_config)?;
-        sections::generate_all(model, build_dir, &self.engine)?;
+        sections::generate_all(model, build_dir, &self.engine, title_page_template)?;
         Ok(())
     }
 
