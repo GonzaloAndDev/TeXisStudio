@@ -7,6 +7,7 @@ import {
   AcronymEntryEditor, CodeBlockEditor, AlgorithmBlockEditor, TheoremBlockEditor,
   THEOREM_KINDS,
 } from "./BlockEditors";
+import { VisualBlockEditor } from "./VisualBlockEditor";
 
 // ── BlockItem: combina preview + edición ──────────────────────────
 
@@ -193,6 +194,13 @@ export function BlockItem({
             onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
           />
         );
+      case "visual":
+        return (
+          <VisualBlockEditor
+            block={block}
+            onChange={(updates) => onUpdate({ ...block, ...updates } as Partial<ContentBlock>)}
+          />
+        );
       default:
         return <div style={{ color: "var(--fg-faint)" }}>Bloque no editable</div>;
     }
@@ -350,6 +358,38 @@ export function BlockItem({
             </div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.6, color: "var(--fg-default)", fontStyle: "italic" }}>
               {block.content || <span style={{ opacity: 0.4, fontStyle: "normal" }}>contenido vacío…</span>}
+            </div>
+          </div>
+        );
+      }
+      case "visual": {
+        const vk = block.config.kind;
+        const kindLabels: Record<string, string> = {
+          venn_euler: "Diagrama de Venn", flow_diagram: "Diagrama de flujo",
+          timeline: "Línea de tiempo", chem_reaction: "Reacción química",
+          molecule: "Molécula", circuit: "Circuito eléctrico",
+          feynman: "Diagrama de Feynman", bio_pathway: "Vía biológica",
+          music_fragment: "Partitura",
+        };
+        const kindIcons: Record<string, string> = {
+          venn_euler:"⬤⬤", flow_diagram:"→", timeline:"──", chem_reaction:"⇌",
+          molecule:"⬡", circuit:"⚡", feynman:"∿", bio_pathway:"⟳", music_fragment:"♩",
+        };
+        return (
+          <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "8px 0" }}>
+            <span style={{ fontSize: 28, flexShrink: 0 }}>{kindIcons[vk] ?? "📊"}</span>
+            <div>
+              <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
+                {kindLabels[vk] ?? vk}
+              </div>
+              {block.caption && (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
+                  {block.caption}
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 2, fontFamily: "var(--font-mono)" }}>
+                Clic para editar • se genera al compilar
+              </div>
             </div>
           </div>
         );

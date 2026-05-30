@@ -447,6 +447,10 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             )
         }
 
+        ContentBlock::Visual(v) => {
+            crate::visual::render_visual(v)
+        }
+
         ContentBlock::Theorem(t) => {
             let base_env = match t.kind {
                 TheoremKind::Theorem => "theorem",

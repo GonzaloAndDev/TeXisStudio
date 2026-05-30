@@ -158,7 +158,104 @@ export type ContentBlock =
   | AcronymEntryBlock
   | CodeBlock
   | AlgorithmBlock
-  | TheoremBlock;
+  | TheoremBlock
+  | VisualBlock;
+
+// ── Visual Blocks ────────────────────────────────────────────────
+
+export type VisualKind =
+  | "venn_euler"
+  | "flow_diagram"
+  | "timeline"
+  | "chem_reaction"
+  | "molecule"
+  | "circuit"
+  | "feynman"
+  | "bio_pathway"
+  | "music_fragment";
+
+export interface VisualBlock {
+  type: "visual";
+  id: string;
+  caption: string;
+  label: string;
+  include_in_list: boolean;
+  advanced_latex_override?: string;
+  advanced_override_confirmed?: boolean;
+  config: VisualConfig;
+}
+
+export type VisualConfig =
+  | { kind: "venn_euler";     sets: VennSet[]; intersections: Record<string,string>; style?: string }
+  | { kind: "flow_diagram";   nodes: FlowNode[]; edges: FlowEdge[]; orientation?: string }
+  | { kind: "timeline";       events: TimelineEvent[]; orientation?: string; accent_color?: string }
+  | { kind: "chem_reaction";  equation: string; catalyst?: string; conditions?: string; reaction_type?: string; display_mode?: boolean }
+  | { kind: "molecule";       preset?: string; chemfig_formula?: string; scale?: number }
+  | { kind: "circuit";        preset: string; component_values?: Record<string,string> }
+  | { kind: "feynman";        preset: string; particle_labels?: Record<string,string>; show_momentum?: boolean }
+  | { kind: "bio_pathway";    preset: string; custom_labels?: Record<string,string>; show_cofactors?: boolean }
+  | { kind: "music_fragment"; abc_notation: string; instrument?: string; try_musixtex?: boolean };
+
+export interface VennSet {
+  label: string;
+  color: string;
+}
+
+export interface FlowNode {
+  id: string;
+  label: string;
+  shape?: string;    // "rect" | "diamond" | "circle" | "rounded"
+  color?: string;
+}
+
+export interface FlowEdge {
+  from: string;
+  to: string;
+  label?: string;
+  style?: string;    // "arrow" | "dashed" | "double"
+}
+
+export interface TimelineEvent {
+  date: string;
+  title: string;
+  description?: string;
+}
+
+// Catálogos de presets para el editor
+export const VISUAL_PRESETS = {
+  molecule: [
+    { id: "benzene",  name: "Benceno (C₆H₆)" },
+    { id: "water",    name: "Agua (H₂O)" },
+    { id: "co2",      name: "Dióxido de carbono (CO₂)" },
+    { id: "ethanol",  name: "Etanol (C₂H₅OH)" },
+    { id: "glucose",  name: "Glucosa (C₆H₁₂O₆)" },
+    { id: "aspirin",  name: "Aspirina (C₉H₈O₄)" },
+    { id: "nacl",     name: "Cloruro de sodio (NaCl)" },
+    { id: "methane",  name: "Metano (CH₄)" },
+  ],
+  circuit: [
+    { id: "rc_series",          name: "Circuito RC en serie" },
+    { id: "rlc_parallel",       name: "Circuito RLC en paralelo" },
+    { id: "voltage_divider",    name: "Divisor de voltaje" },
+    { id: "inverting_opamp",    name: "Amplificador operacional inversor" },
+    { id: "full_wave_rectifier",name: "Rectificador de onda completa" },
+  ],
+  feynman: [
+    { id: "vertex_qed",       name: "Vértice QED (e⁻ + γ)" },
+    { id: "compton",          name: "Dispersión Compton" },
+    { id: "muon_decay",       name: "Desintegración del muón" },
+    { id: "pair_production",  name: "Producción de par (γ → e⁺e⁻)" },
+    { id: "bhabha",           name: "Dispersión Bhabha (e⁺e⁻ → e⁺e⁻)" },
+    { id: "higgs_production", name: "Producción de Higgs (gg → H)" },
+  ],
+  bio_pathway: [
+    { id: "krebs_cycle",        name: "Ciclo de Krebs" },
+    { id: "glycolysis",         name: "Glucólisis" },
+    { id: "photosynthesis",     name: "Fotosíntesis (ciclo de Calvin)" },
+    { id: "electron_transport", name: "Cadena de transporte de electrones" },
+    { id: "beta_oxidation",     name: "Beta-oxidación de ácidos grasos" },
+  ],
+} as const;
 
 // ── Project Model ───────────────────────────────────────────────
 

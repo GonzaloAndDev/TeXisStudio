@@ -434,6 +434,43 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
 
     out.push_str("\\usepackage[hidelinks]{hyperref}\n");
 
+    // ── Paquetes requeridos por VisualBlocks ─────────────────────────────────
+    // Auto-detectados del contenido — el usuario no necesita declararlos.
+    {
+        use crate::project::model::ContentBlock;
+        use crate::visual::{required_package, extra_packages};
+        let mut vis_pkgs: std::collections::HashSet<&str> = std::collections::HashSet::new();
+        for section in &model.sections {
+            for block in &section.blocks {
+                if let ContentBlock::Visual(v) = block {
+                    vis_pkgs.insert(required_package(&v.config));
+                    for ep in extra_packages(&v.config) {
+                        vis_pkgs.insert(ep);
+                    }
+                }
+            }
+        }
+        if !vis_pkgs.is_empty() {
+            out.push_str("\n% Paquetes para elementos visuales (auto-detectados)\n");
+            // Orden determinista
+            let mut sorted: Vec<&&str> = vis_pkgs.iter().collect();
+            sorted.sort();
+            for pkg in sorted {
+                // No duplicar paquetes ya cargados en packages_required
+                let already = model.latex_config.packages_required.iter().any(|p| p == *pkg)
+                    || model.latex_config.packages_with_options.iter().any(|p| p.name == *pkg);
+                if !already {
+                    out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
+                }
+            }
+            // TikZ libraries necesarias para ciertos tipos
+            let needs_tikz_libs = vis_pkgs.contains("tikz");
+            if needs_tikz_libs {
+                out.push_str("\\usetikzlibrary{shapes.geometric,calc,decorations.markings,decorations.pathmorphing,arrows.meta,positioning}\n");
+            }
+        }
+    }
+
     // ── Paquetes de posgrado (base) ───────────────────────────────────────────
     out.push_str("\n% Paquetes de posgrado\n");
     out.push_str("\\usepackage{listings}\n");

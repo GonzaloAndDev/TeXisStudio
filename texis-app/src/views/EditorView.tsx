@@ -27,6 +27,8 @@ import { CitationPickerModal } from "./editor/CitationPickerModal";
 import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
+import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
+import type { VisualKind } from "../types";
 // ── Utilidades ────────────────────────────────────────────────────
 
 const PLACEMENT_KEYS: Record<string, string> = {
@@ -180,6 +182,9 @@ export default function EditorView() {
 
   // Navegación a bloque específico (desde búsqueda en CommandPalette)
   const [jumpTargetBlockId, setJumpTargetBlockId] = useState<string | null>(null);
+
+  // Selector de tipo de Visual Block — se abre al insertar un bloque visual
+  const [visualSelectorOpen, setVisualSelectorOpen] = useState<string | null>(null);
 
   // Scroll y highlight cuando jumpTargetBlockId cambia
   useEffect(() => {
@@ -375,6 +380,18 @@ export default function EditorView() {
       case "code":           block = { type, id, language: "Python", content: "", show_line_numbers: true }; break;
       case "algorithm":      block = { type, id, caption: "", body: "" }; break;
       case "theorem":        block = { type, id, kind: "theorem", content: "", numbered: true }; break;
+      case "visual": {
+        // El selector de tipo visual se abre después — por defecto Venn
+        block = {
+          type, id,
+          caption: "",
+          label: `fig:${id.slice(0, 6)}`,
+          include_in_list: true,
+          config: { kind: "venn_euler", sets: [{ label: "Conjunto A", color: "red" }, { label: "Conjunto B", color: "blue" }, { label: "Conjunto C", color: "green" }], intersections: {} },
+        };
+        setVisualSelectorOpen(id); // abrimos el selector de tipo
+        break;
+      }
       default: return;
     }
     setLocalBlocks((prev) => {
@@ -576,12 +593,14 @@ export default function EditorView() {
         ["figure", <IconImage size={12} />, "Agregar figura", "Imagen con caption y número automático"],
         ["table", <IconTable size={12} />, "Agregar tabla", "Tabla con filas, columnas y caption"],
         ["equation", <IconSigma size={12} />, "Agregar ecuación", "Ecuación numerada en LaTeX (amsmath)"],
+        ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, "Agregar diagrama", "Venn, flujo, moléculas, circuitos, Feynman y más — sin LaTeX"],
       ]
     : [
         ["paragraph", <IconText size={12} />, "Párrafo", "Párrafo de texto"],
         ["heading", <IconHeading size={12} />, "Título", "Sección / Subsección"],
         ["list", <IconList size={12} />, "Lista", "Itemize / Enumerate"],
         ["equation", <IconSigma size={12} />, "Ecuación", "equation / equation* (amsmath)"],
+        ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, "Diagrama", "Venn, flujo, química, circuitos, Feynman, biología, música — sin LaTeX"],
         ["figure", <IconImage size={12} />, "Figura"],
         ["table", <IconTable size={12} />, "Tabla"],
         ["raw_latex", <IconCode size={12} />, "LaTeX", "Bloque LaTeX directo (requiere confirmación)"],
@@ -1057,6 +1076,38 @@ export default function EditorView() {
           }}
           onClose={() => setPaletteOpen(false)}
         />
+      )}
+
+      {/* Modal: selector de tipo de Visual Block */}
+      {visualSelectorOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 950, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setVisualSelectorOpen(null)}
+        >
+          <div
+            style={{ width: 580, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)", border: "1px solid var(--border-firm)", boxShadow: "0 20px 60px rgba(0,0,0,0.4)", padding: 24, maxHeight: "85vh", overflow: "auto" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 16 }}>
+              ¿Qué tipo de diagrama quieres insertar?
+            </div>
+            <VisualKindSelector onSelect={(kind: VisualKind) => {
+              const blockId = visualSelectorOpen;
+              setLocalBlocks(prev => {
+                const next = prev.map(b => {
+                  if (b.id === blockId && b.type === "visual") {
+                    return { ...b, config: defaultConfig(kind) };
+                  }
+                  return b;
+                });
+                scheduleAutoSave(next);
+                return next;
+              });
+              setVisualSelectorOpen(null);
+              setEditingId(blockId);
+            }} />
+          </div>
+        </div>
       )}
 
       {/* Picker de citas (Ctrl+[) */}

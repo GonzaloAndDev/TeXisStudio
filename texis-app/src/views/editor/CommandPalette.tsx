@@ -19,6 +19,16 @@ export const PALETTE_BLOCK_ITEMS = [
   { type: "theorem"       as ContentBlock["type"],  label: "Teorema",      icon: "∀",  hint: "Teorema / Lema / Definición" },
   { type: "glossary_entry"as ContentBlock["type"],  label: "Glosario",     icon: "Gl", hint: "Entrada de glosario" },
   { type: "acronym_entry" as ContentBlock["type"],  label: "Acrónimo",     icon: "Ab", hint: "Lista de abreviaturas" },
+  // ── Visuales ──
+  { type: "visual"        as ContentBlock["type"],  label: "Venn/Euler",   icon: "⬤⬤", hint: "Diagrama de conjuntos" },
+  { type: "visual"        as ContentBlock["type"],  label: "Flujo",        icon: "→",  hint: "Diagrama de proceso" },
+  { type: "visual"        as ContentBlock["type"],  label: "Timeline",     icon: "──", hint: "Línea de tiempo" },
+  { type: "visual"        as ContentBlock["type"],  label: "Reacción",     icon: "⇌",  hint: "Reacción química (mhchem)" },
+  { type: "visual"        as ContentBlock["type"],  label: "Molécula",     icon: "⬡",  hint: "Estructura química (chemfig)" },
+  { type: "visual"        as ContentBlock["type"],  label: "Circuito",     icon: "⚡", hint: "Circuito eléctrico" },
+  { type: "visual"        as ContentBlock["type"],  label: "Feynman",      icon: "∿",  hint: "Diagrama de Feynman" },
+  { type: "visual"        as ContentBlock["type"],  label: "Vía biológica",icon: "⟳",  hint: "Krebs, glucólisis, etc." },
+  { type: "visual"        as ContentBlock["type"],  label: "Partitura",    icon: "♩",  hint: "Fragmento musical (ABC)" },
 ];
 
 // ── Utilidades de búsqueda de contenido ──────────────────────────

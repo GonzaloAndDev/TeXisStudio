@@ -378,6 +378,10 @@ pub enum ContentBlock {
     Code(CodeBlock),
     Algorithm(AlgorithmBlock),
     Theorem(TheoremBlock),
+    // ── Bloques visuales nativos ───────────────────────────────
+    /// Diagrama visual generado automáticamente. El usuario configura
+    /// mediante formulario; TeXisStudio genera el LaTeX correcto.
+    Visual(VisualBlock),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -612,4 +616,265 @@ pub enum FieldValue {
 pub enum FileState {
     Auto,   // Gestionado por la app, se regenera automáticamente
     Manual, // Editado manualmente, la app no lo sobreescribe
+}
+
+// ── Visual Blocks ─────────────────────────────────────────────────
+//
+// Un VisualBlock representa un diagrama académico que el usuario edita
+// mediante formulario en la app. TeXisStudio genera el LaTeX completo.
+// El usuario nunca necesita escribir TikZ, chemfig, mhchem, etc.
+//
+// Paquetes auto-detectados por tipo:
+//   VennEuler, FlowDiagram, Timeline, BioPathway → tikz
+//   ChemReaction                                 → mhchem
+//   Molecule                                     → chemfig
+//   Circuit                                      → circuitikz
+//   Feynman                                      → tikz-feynman
+//   MusicFragment                                → musixtex (o fallback)
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VisualBlock {
+    pub id: String,
+    pub caption: String,
+    pub label: String,
+    #[serde(default = "default_true")]
+    pub include_in_list: bool,
+    /// Override de LaTeX avanzado. Si presente, sustituye al generado automáticamente.
+    /// Solo visible en modo advanced. Requiere user_confirmed=true.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub advanced_latex_override: Option<String>,
+    #[serde(default)]
+    pub advanced_override_confirmed: bool,
+    pub config: VisualConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum VisualConfig {
+    VennEuler(VennEulerConfig),
+    FlowDiagram(FlowDiagramConfig),
+    Timeline(TimelineConfig),
+    ChemReaction(ChemReactionConfig),
+    Molecule(MoleculeConfig),
+    Circuit(CircuitConfig),
+    Feynman(FeynmanConfig),
+    BioPathway(BioPathwayConfig),
+    MusicFragment(MusicFragmentConfig),
+}
+
+// ── Venn / Euler ──────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VennEulerConfig {
+    pub sets: Vec<VennSet>,
+    /// Etiquetas para intersecciones pares. Clave: "01", "02", "12", "012" (índices).
+    #[serde(default)]
+    pub intersections: std::collections::HashMap<String, String>,
+    /// Estilo visual: "circles" (Venn clásico) o "ellipses" (Euler)
+    #[serde(default = "default_venn_style")]
+    pub style: String,
+}
+
+fn default_venn_style() -> String { "circles".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VennSet {
+    pub label: String,
+    /// Color CSS/LaTeX: "red", "blue", "green", "#4A90E2", etc.
+    #[serde(default = "default_set_color")]
+    pub color: String,
+}
+
+fn default_set_color() -> String { "blue".to_string() }
+
+// ── Flow Diagram ──────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowDiagramConfig {
+    pub nodes: Vec<FlowNode>,
+    pub edges: Vec<FlowEdge>,
+    #[serde(default = "default_flow_orientation")]
+    pub orientation: String, // "vertical" | "horizontal"
+}
+
+fn default_flow_orientation() -> String { "vertical".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowNode {
+    pub id: String,
+    pub label: String,
+    #[serde(default = "default_node_shape")]
+    pub shape: String, // "rect" | "diamond" | "circle" | "rounded"
+    #[serde(default = "default_set_color")]
+    pub color: String,
+}
+
+fn default_node_shape() -> String { "rect".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowEdge {
+    pub from: String,
+    pub to: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default = "default_arrow_style")]
+    pub style: String, // "arrow" | "dashed" | "double"
+}
+
+fn default_arrow_style() -> String { "arrow".to_string() }
+
+// ── Timeline ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimelineConfig {
+    pub events: Vec<TimelineEvent>,
+    #[serde(default = "default_timeline_orientation")]
+    pub orientation: String, // "horizontal" | "vertical"
+    #[serde(default = "default_set_color")]
+    pub accent_color: String,
+}
+
+fn default_timeline_orientation() -> String { "horizontal".to_string() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimelineEvent {
+    pub date: String,
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+// ── Chemical Reaction (mhchem) ────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChemReactionConfig {
+    /// Ecuación en notación mhchem: "H2 + O2 -> H2O", "N2 + 3H2 <=> 2NH3"
+    pub equation: String,
+    /// Catalizador o condición de la flecha: "Fe", "Δ", "hν"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalyst: Option<String>,
+    /// Temperatura u otras condiciones
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub conditions: Option<String>,
+    #[serde(default = "default_reaction_type")]
+    pub reaction_type: String, // "forward" | "equilibrium" | "resonance"
+    /// Si true, muestra como bloque equation; si false, inline
+    #[serde(default = "default_true")]
+    pub display_mode: bool,
+}
+
+fn default_reaction_type() -> String { "forward".to_string() }
+
+// ── Molecule (chemfig) ────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoleculeConfig {
+    /// Preset de molécula conocida: "benzene", "water", "aspirin", "glucose", etc.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
+    /// Fórmula chemfig manual (override del preset)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chemfig_formula: Option<String>,
+    /// Escala del diagrama
+    #[serde(default = "default_mol_scale")]
+    pub scale: f32,
+}
+
+fn default_mol_scale() -> f32 { 1.0 }
+
+/// Presets disponibles de moléculas con sus fórmulas chemfig.
+pub const MOLECULE_PRESETS: &[(&str, &str, &str)] = &[
+    // (id, nombre, fórmula chemfig)
+    ("benzene",  "Benceno",     "*6(-=-=-=)"),
+    ("water",    "Agua",        "H-O-H"),
+    ("co2",      "CO₂",         "O=C=O"),
+    ("ethanol",  "Etanol",      "H_3C-CH_2-OH"),
+    ("glucose",  "Glucosa",     "HO-[2]CH_2-[6](-[8]OH)-[2](-[8]OH)-[6](-[8]OH)-[2](-[8]OH)-[6]=O"),
+    ("aspirin",  "Aspirina",    "*6(=-(-[2]OH)=(-[6](-[7]CH_3)=[8]O)-=-)"),
+    ("nacl",     "Cloruro de sodio", "Na^{+}-Cl^{-}"),
+    ("methane",  "Metano",      "H-C(-[2]H)(-[6]H)-H"),
+];
+
+// ── Circuit (circuitikz) ──────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CircuitConfig {
+    /// Preset de circuito: "rc_series", "rlc_parallel", "voltage_divider",
+    /// "inverting_opamp", "full_wave_rectifier"
+    pub preset: String,
+    /// Valores de componentes: { "R": "1kΩ", "C": "10μF", "V": "5V" }
+    #[serde(default)]
+    pub component_values: std::collections::HashMap<String, String>,
+}
+
+/// Presets de circuitos disponibles.
+pub const CIRCUIT_PRESETS: &[(&str, &str)] = &[
+    ("rc_series",          "Circuito RC en serie"),
+    ("rlc_parallel",       "Circuito RLC en paralelo"),
+    ("voltage_divider",    "Divisor de voltaje resistivo"),
+    ("inverting_opamp",    "Amplificador operacional inversor"),
+    ("full_wave_rectifier","Rectificador de onda completa"),
+];
+
+// ── Feynman Diagram (tikz-feynman) ────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FeynmanConfig {
+    /// Preset de diagrama: "vertex_qed", "compton", "muon_decay",
+    /// "pair_production", "bhabha", "higgs_production"
+    pub preset: String,
+    /// Etiquetas personalizadas para partículas (override del preset)
+    #[serde(default)]
+    pub particle_labels: std::collections::HashMap<String, String>,
+    /// Si true, muestra etiquetas de momento
+    #[serde(default)]
+    pub show_momentum: bool,
+}
+
+pub const FEYNMAN_PRESETS: &[(&str, &str)] = &[
+    ("vertex_qed",       "Vértice QED (e⁻ + γ)"),
+    ("compton",          "Dispersión Compton"),
+    ("muon_decay",       "Desintegración del muón (μ⁻ → e⁻ νμ ν̄e)"),
+    ("pair_production",  "Producción de par (γ → e⁺ e⁻)"),
+    ("bhabha",           "Dispersión Bhabha (e⁺e⁻ → e⁺e⁻)"),
+    ("higgs_production", "Producción de Higgs vía fusión de gluones"),
+];
+
+// ── Bio Pathway (TikZ presets) ────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BioPathwayConfig {
+    /// Preset de vía: "krebs_cycle", "glycolysis", "photosynthesis",
+    /// "electron_transport", "beta_oxidation"
+    pub preset: String,
+    /// Etiquetas personalizadas para metabolitos (override parcial)
+    #[serde(default)]
+    pub custom_labels: std::collections::HashMap<String, String>,
+    /// Si true, muestra cofactores y ATP/NADH
+    #[serde(default = "default_true")]
+    pub show_cofactors: bool,
+}
+
+pub const BIO_PATHWAY_PRESETS: &[(&str, &str)] = &[
+    ("krebs_cycle",          "Ciclo de Krebs (ácido cítrico)"),
+    ("glycolysis",           "Glucólisis (Embden-Meyerhof)"),
+    ("photosynthesis",       "Fotosíntesis (ciclo de Calvin)"),
+    ("electron_transport",   "Cadena de transporte de electrones"),
+    ("beta_oxidation",       "Beta-oxidación de ácidos grasos"),
+];
+
+// ── Music Fragment (MusiXTeX / ABC) ──────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MusicFragmentConfig {
+    /// Notación ABC del fragmento musical.
+    /// Ej: "X:1\nT:Escala Do\nM:4/4\nK:C\nCDEFGABC'|"
+    pub abc_notation: String,
+    /// Instrumento (solo para metadatos/caption)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instrument: Option<String>,
+    /// Si true, intenta generar con MusiXTeX; si false, sólo muestra warning
+    /// y el usuario debe importar como figura externa.
+    #[serde(default = "default_true")]
+    pub try_musixtex: bool,
 }

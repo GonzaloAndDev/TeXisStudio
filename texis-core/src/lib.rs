@@ -24,6 +24,7 @@ pub mod template;
 pub mod template_engine;
 pub mod texis_project;
 pub mod validator;
+pub mod visual;
 
 pub use compiler::{CompilationBackend, CompilationOptions, CompilationResult};
 pub use element::model::Element;
