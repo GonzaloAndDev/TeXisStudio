@@ -21,6 +21,7 @@ pub fn validate(model: &ProjectModel) -> ValidationReport {
     check_figures(model, &text_corpus, &mut issues);
     check_tables(model, &text_corpus, &mut issues);
     check_equations(model, &text_corpus, &mut issues);
+    check_gls_undefined(model, &text_corpus, &mut issues);
 
     ValidationReport::new(issues)
 }
@@ -206,6 +207,71 @@ fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validati
                     });
                 }
             }
+        }
+    }
+}
+
+// ── Glosario ─────────────────────────────────────────────────────────────────
+
+/// Detecta referencias \gls{key} / \acrshort{key} en el corpus que no corresponden
+/// a ningún GlossaryEntryBlock o AcronymEntryBlock definido en el modelo.
+/// Esto previene errores de compilación crípticos ("undefined control sequence").
+fn check_gls_undefined(model: &ProjectModel, corpus: &str, issues: &mut Vec<ValidationIssue>) {
+    use crate::glossary::GlossaryParser;
+
+    let defined_keys: HashSet<String> = model
+        .sections
+        .iter()
+        .flat_map(|s| s.blocks.iter())
+        .filter_map(|b| match b {
+            ContentBlock::GlossaryEntry(g) => Some(g.id.clone()),
+            ContentBlock::AcronymEntry(a) => Some(a.id.clone()),
+            _ => None,
+        })
+        .collect();
+
+    if defined_keys.is_empty() {
+        // Si no hay entradas definidas, solo reportar si hay referencias
+        let refs = GlossaryParser::new().collect_references(&[corpus]);
+        if !refs.is_empty() {
+            for key in &refs {
+                issues.push(ValidationIssue {
+                    severity: IssueSeverity::Error,
+                    code: "E_GLS_NO_ENTRIES".to_string(),
+                    message: format!(
+                        "Se usa \\gls{{{}}} pero no hay ningún término de glosario definido en el proyecto.",
+                        key
+                    ),
+                    suggestion: Some(
+                        "Agrega bloques de tipo GlossaryEntry o AcronymEntry en una sección de glosario, o elimina las referencias \\gls{} del texto.".to_string(),
+                    ),
+                    section_id: None,
+                    automated: Some(true),
+                    ..Default::default()
+                });
+            }
+        }
+        return;
+    }
+
+    let referenced = GlossaryParser::new().collect_references(&[corpus]);
+    for key in &referenced {
+        if !defined_keys.contains(key) {
+            issues.push(ValidationIssue {
+                severity: IssueSeverity::Error,
+                code: "E_GLS_UNDEFINED".to_string(),
+                message: format!(
+                    "Término de glosario '{}' referenciado con \\gls{{{}}} pero no está definido en el proyecto.",
+                    key, key
+                ),
+                suggestion: Some(format!(
+                    "Agrega un bloque GlossaryEntry o AcronymEntry con id: '{}' en la sección de glosario.",
+                    key
+                )),
+                section_id: None,
+                automated: Some(true),
+                ..Default::default()
+            });
         }
     }
 }
@@ -434,5 +500,67 @@ mod tests {
         let model = bare_model(vec![section("intro", vec![figure("", "Sin etiqueta")])]);
         let report = validate(&model);
         assert!(!report.issues.iter().any(|i| i.code == "W_FIGURE_NOT_CITED"));
+    }
+
+    // ── Tests de glosario ─────────────────────────────────────────────────────
+
+    fn gls_paragraph(key: &str) -> ContentBlock {
+        ContentBlock::Paragraph(ParagraphBlock {
+            id: "p-gls".into(),
+            content: format!("El término \\gls{{{}}} es relevante.", key),
+            verbatim: true,
+        })
+    }
+
+    fn glossary_entry_block(id: &str) -> ContentBlock {
+        use crate::project::model::GlossaryEntryBlock;
+        ContentBlock::GlossaryEntry(GlossaryEntryBlock {
+            id: id.into(),
+            term: id.into(),
+            definition: "Definición de prueba.".into(),
+            verbatim: false,
+        })
+    }
+
+    #[test]
+    fn gls_con_entrada_definida_no_produce_error() {
+        let model = bare_model(vec![section(
+            "intro",
+            vec![
+                gls_paragraph("ontologia"),
+                glossary_entry_block("ontologia"),
+            ],
+        )]);
+        let report = validate(&model);
+        assert!(
+            !report.issues.iter().any(|i| i.code == "E_GLS_UNDEFINED"),
+            "no debe producir error si la clave está definida"
+        );
+    }
+
+    #[test]
+    fn gls_sin_entrada_definida_produce_error() {
+        let model = bare_model(vec![section(
+            "intro",
+            vec![gls_paragraph("termino_indefinido")],
+        )]);
+        let report = validate(&model);
+        assert!(
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "E_GLS_UNDEFINED" || i.code == "E_GLS_NO_ENTRIES"),
+            "debe producir error si la clave no está definida"
+        );
+    }
+
+    #[test]
+    fn texto_sin_gls_no_produce_error() {
+        let model = bare_model(vec![section(
+            "intro",
+            vec![paragraph("Texto sin referencias de glosario.")],
+        )]);
+        let report = validate(&model);
+        assert!(!report.issues.iter().any(|i| i.code.starts_with("E_GLS")));
     }
 }
