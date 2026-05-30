@@ -1,7 +1,8 @@
 use anyhow::Result;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use texis_core::{
     compiler::{latexmk::LatexmkBackend, CompilationBackend, CompilationOptions},
+    profile::loader::ProfileLoader,
     project::{loader::ProjectLoader, model::LatexEngine},
     LaTeXGenerator,
 };
@@ -19,11 +20,31 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
         LatexEngine::Xelatex => "xelatex",
     };
 
+    // Cargar template de portada del perfil si existe en el directorio de perfiles
+    // Busca en: <workspace>/profiles/<profile_id>/profile.yaml
+    let title_page_template: Option<String> = {
+        // CARGO_MANIFEST_DIR es texis-cli/ → parent es la raíz del workspace
+        let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .map(|root| root.join("profiles"))
+            .unwrap_or_else(|| PathBuf::from("profiles"));
+        let profile_yaml = workspace.join(&model.profile_id).join("profile.yaml");
+        if profile_yaml.exists() {
+            ProfileLoader
+                .load_from_file(&profile_yaml)
+                .ok()
+                .and_then(|p| p.title_page_template)
+                .map(|t| t.template)
+        } else {
+            None
+        }
+    };
+
     // Generar archivos LaTeX
     // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
     let latex_gen = LaTeXGenerator::new()?;
     println!("Generando archivos LaTeX...");
-    latex_gen.generate(&model, &build_dir)?;
+    latex_gen.generate_with_profile(&model, &build_dir, None, title_page_template.as_deref())?;
 
     // Compilar
     let bibliography_backend = match model.latex_config.bibliography_backend {

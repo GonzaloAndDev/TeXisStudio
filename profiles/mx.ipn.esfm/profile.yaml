@@ -59,6 +59,75 @@ packages:
   - "setspace"
   - "hyperref"
   - "cleveref"
+  - "tikz"
+  - "xcolor"
+
+title_page_template:
+  template: |
+    \thispagestyle{empty}
+    \definecolor{ipnguinda}{RGB}{103,0,51}
+    \definecolor{ipnverde}{RGB}{0,104,55}
+    \definecolor{ipngris}{RGB}{88,88,91}
+    \begin{titlepage}
+    % ── Banda superior guinda ─────────────────────────────────────
+    \begin{tikzpicture}[remember picture, overlay]
+      \fill[ipnguinda] (current page.north west) rectangle
+        ([yshift=-2.4cm]current page.north east);
+      \fill[ipnverde]  ([yshift=-2.4cm]current page.north west) rectangle
+        ([yshift=-2.75cm]current page.north east);
+      \fill[ipnguinda] (current page.south west) rectangle
+        ([yshift=1.8cm]current page.south east);
+      \fill[ipnverde]  ([yshift=1.8cm]current page.south west) rectangle
+        ([yshift=2.15cm]current page.south east);
+      % Emblema IPN esquematizado (círculo + letras)
+      \node[draw=white, line width=1.5pt, circle, minimum size=1.4cm,
+            fill=ipnguinda!50!black, text=white, font=\bfseries\normalsize]
+        at ([xshift=2.2cm, yshift=-1.2cm]current page.north west) {IPN};
+    \end{tikzpicture}
+    \vspace*{2.6cm}
+    \begin{center}
+      {\color{ipnguinda}\large\bfseries\scshape Instituto Politécnico Nacional\par}
+      \vspace{0.25cm}
+      {\color{ipngris}\normalsize Escuela Superior de Física y Matemáticas\par}
+      \vspace{0.15cm}
+      {\color{ipngris}\small Departamento de Física\par}
+      \vspace{1.8cm}
+      % Línea decorativa
+      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}%
+      {\color{ipnguinda}\rule{0.1\textwidth}{2pt}}%
+      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}
+      \vspace{0.5cm}
+      \begin{minipage}{0.88\textwidth}
+        \centering
+        {\Large\bfseries\color{ipnguinda} {{ title | latex_escape }}\par}
+      \end{minipage}
+      \vspace{0.5cm}
+      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}%
+      {\color{ipnguinda}\rule{0.1\textwidth}{2pt}}%
+      {\color{ipnverde}\rule{0.45\textwidth}{0.8pt}}
+      \vspace{1.4cm}
+      {\normalsize\color{ipngris} {{ doc_kind_label }}\par}
+      \vspace{0.2cm}
+      {\small que para obtener el grado de\par}
+      \vspace{0.2cm}
+      {\normalsize\bfseries\color{ipnguinda} {{ degree_label }}\par}
+      \vspace{1.2cm}
+      {\small P\;R\;E\;S\;E\;N\;T\;A:\par}
+      \vspace{0.4cm}
+      {\large\bfseries {{ author | latex_escape }}\par}
+      \vspace{1.2cm}
+      {% if advisors %}
+      {\small {{ advisor_label }}\par}
+      \vspace{0.3cm}
+      {% for a in advisors %}
+      {\normalsize {{ a | latex_escape }}\par}
+      {% endfor %}
+      \vspace{0.8cm}
+      {% endif %}
+      \vfill
+      {\small\color{ipngris} {{ city | latex_escape }},~{{ year }}\par}
+    \end{center}
+    \end{titlepage}
 
 sections:
   - id: "portada"
