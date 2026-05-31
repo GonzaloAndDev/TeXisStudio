@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -11,9 +11,6 @@ import {
   IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
-import { SpellPanel } from "../components/SpellPanel";
-import { GrammarPanel } from "../components/GrammarPanel";
-import { AiAssistantPanel } from "../components/AiAssistantPanel";
 import { useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
@@ -21,17 +18,18 @@ import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import type { BibReference, LatexTypography, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
-import { CitationPickerModal } from "./editor/CitationPickerModal";
-
-
 import { BlockItem } from "./editor/BlockItem";
-import { CommandPalette } from "./editor/CommandPalette";
-import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
 import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
 import type { ContentBlock, PluginFigureBlock, VisualKind } from "../types";
-import { FigurePickerModal } from "../components/FigurePickerModal";
-import { FigureEditModal } from "../components/FigureEditModal";
-import { deletePluginFigureAssets } from "../services/figure-plugin-service";
+
+const AiAssistantPanel = lazy(() => import("../components/AiAssistantPanel").then((m) => ({ default: m.AiAssistantPanel })));
+const CitationPickerModal = lazy(() => import("./editor/CitationPickerModal").then((m) => ({ default: m.CitationPickerModal })));
+const CommandPalette = lazy(() => import("./editor/CommandPalette").then((m) => ({ default: m.CommandPalette })));
+const DocumentOptionsPanel = lazy(() => import("./editor/DocumentOptionsPanel").then((m) => ({ default: m.DocumentOptionsPanel })));
+const FigureEditModal = lazy(() => import("../components/FigureEditModal").then((m) => ({ default: m.FigureEditModal })));
+const FigurePickerModal = lazy(() => import("../components/FigurePickerModal").then((m) => ({ default: m.FigurePickerModal })));
+const GrammarPanel = lazy(() => import("../components/GrammarPanel").then((m) => ({ default: m.GrammarPanel })));
+const SpellPanel = lazy(() => import("../components/SpellPanel").then((m) => ({ default: m.SpellPanel })));
 // ── Utilidades ────────────────────────────────────────────────────
 
 const PLACEMENT_KEYS: Record<string, string> = {
@@ -83,6 +81,24 @@ function countWords(blocks: ContentBlock[]): number {
   return blocks
     .filter((b) => b.type === "paragraph")
     .reduce((acc, b) => acc + (b.type === "paragraph" ? b.content.split(/\s+/).filter(Boolean).length : 0), 0);
+}
+
+function LazyPanelFallback() {
+  return (
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 940,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "rgba(0,0,0,0.24)",
+      color: "var(--fg-muted)",
+      fontSize: "var(--fs-sm)",
+    }}>
+      Cargando herramienta...
+    </div>
+  );
 }
 
 /**
@@ -419,7 +435,9 @@ export default function EditorView() {
     if (activeProjectPath) {
       const block = localBlocks.find((b) => b.id === id);
       if (block?.type === "plugin_figure") {
-        deletePluginFigureAssets(block, activeProjectPath);
+        import("../services/figure-plugin-service")
+          .then((m) => m.deletePluginFigureAssets(block, activeProjectPath))
+          .catch(() => {});
       }
     }
     setLocalBlocks((prev) => {
@@ -1034,15 +1052,16 @@ export default function EditorView() {
 
       {/* Panel de asistente IA */}
       {aiPanel.isPanelOpen && (
-        <AiAssistantPanel
-          currentSelection={aiSelection?.text}
-          aiSelection={aiSelection}
-          currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
-          currentFileContent={localBlocks
-            .filter((b) => b.type === "paragraph" || b.type === "heading")
-            .map((b) => ("content" in b ? b.content : ""))
-            .join("\n\n")}
-          onApplyReplacement={(original, replacement) => {
+        <Suspense fallback={<LazyPanelFallback />}>
+          <AiAssistantPanel
+            currentSelection={aiSelection?.text}
+            aiSelection={aiSelection}
+            currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
+            currentFileContent={localBlocks
+              .filter((b) => b.type === "paragraph" || b.type === "heading")
+              .map((b) => ("content" in b ? b.content : ""))
+              .join("\n\n")}
+            onApplyReplacement={(original, replacement) => {
             // Reemplazar SOLO usando la selección y posición exactas capturadas por el editor.
             // Si no hay selección ordinaria identificable, no aplicar nada.
             setLocalBlocks((prev) => {
@@ -1077,8 +1096,8 @@ export default function EditorView() {
               setAiSelection(null);
               return next;
             });
-          }}
-          onInsertAtCursor={(content) => {
+            }}
+            onInsertAtCursor={(content) => {
             // Insertar después del bloque activo (editingId) o del último bloque de la sección
             const newBlock: ContentBlock = {
               type: "raw_latex",
@@ -1103,30 +1122,33 @@ export default function EditorView() {
               scheduleAutoSave(next);
               return next;
             });
-          }}
-          onUndoLastChange={() => {
-            if (!lastAiUndoBlocks) return;
-            setLocalBlocks(lastAiUndoBlocks);
-            scheduleAutoSave(lastAiUndoBlocks);
-            setLastAiUndoBlocks(null);
-            setAiSelection(null);
-          }}
-        />
+            }}
+            onUndoLastChange={() => {
+              if (!lastAiUndoBlocks) return;
+              setLocalBlocks(lastAiUndoBlocks);
+              scheduleAutoSave(lastAiUndoBlocks);
+              setLastAiUndoBlocks(null);
+              setAiSelection(null);
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Paleta de comandos (Ctrl+K) */}
       {paletteOpen && (
-        <CommandPalette
-          sections={activeProject.sections}
-          userMode={userMode}
-          onInsertBlock={(type) => addBlock(type)}
-          onJumpSection={(id) => { setActiveSectionId(id); }}
-          onJumpToBlock={(sectionId, blockId) => {
-            setActiveSectionId(sectionId);
-            setJumpTargetBlockId(blockId);
-          }}
-          onClose={() => setPaletteOpen(false)}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <CommandPalette
+            sections={activeProject.sections}
+            userMode={userMode}
+            onInsertBlock={(type) => addBlock(type)}
+            onJumpSection={(id) => { setActiveSectionId(id); }}
+            onJumpToBlock={(sectionId, blockId) => {
+              setActiveSectionId(sectionId);
+              setJumpTargetBlockId(blockId);
+            }}
+            onClose={() => setPaletteOpen(false)}
+          />
+        </Suspense>
       )}
 
       {/* Modal: selector de tipo de Visual Block */}
@@ -1163,32 +1185,38 @@ export default function EditorView() {
 
       {/* Picker de citas (Ctrl+[) */}
       {citPickerOpen && (
-        <CitationPickerModal
-          refs={bibRefs}
-          onInsert={(ref) => insertCitation(ref, "parenthetical")}
-          onClose={() => setCitPickerOpen(false)}
-          projectPath={activeProjectPath}
-          onBibUpdated={reloadBibRefs}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <CitationPickerModal
+            refs={bibRefs}
+            onInsert={(ref) => insertCitation(ref, "parenthetical")}
+            onClose={() => setCitPickerOpen(false)}
+            projectPath={activeProjectPath}
+            onBibUpdated={reloadBibRefs}
+          />
+        </Suspense>
       )}
 
       {/* Modal de figura generada por plugin */}
       {figurePickerOpen && activeProjectPath && (
-        <FigurePickerModal
-          projectPath={activeProjectPath}
-          onInsert={insertPluginFigure}
-          onClose={() => setFigurePickerOpen(false)}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <FigurePickerModal
+            projectPath={activeProjectPath}
+            onInsert={insertPluginFigure}
+            onClose={() => setFigurePickerOpen(false)}
+          />
+        </Suspense>
       )}
 
       {/* Modal de edición de figura de plugin existente */}
       {editingPluginFigureBlock && activeProjectPath && (
-        <FigureEditModal
-          block={editingPluginFigureBlock}
-          projectPath={activeProjectPath}
-          onUpdate={handlePluginFigureUpdated}
-          onClose={() => setEditingPluginFigureId(null)}
-        />
+        <Suspense fallback={<LazyPanelFallback />}>
+          <FigureEditModal
+            block={editingPluginFigureBlock}
+            projectPath={activeProjectPath}
+            onUpdate={handlePluginFigureUpdated}
+            onClose={() => setEditingPluginFigureId(null)}
+          />
+        </Suspense>
       )}
 
       {/* ── Panel de versiones (snapshots) ───────────────────────── */}
