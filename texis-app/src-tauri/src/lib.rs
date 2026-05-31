@@ -78,6 +78,11 @@ pub fn run() {
             // AI assistant
             commands::ai::ai_send_message,
             commands::ai::ai_get_action_modes,
+            // Plugin figures
+            commands::figure_plugin::save_plugin_figure,
+            commands::figure_plugin::load_figure_source,
+            commands::figure_plugin::delete_plugin_figure,
+            commands::figure_plugin::list_plugin_figures,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar TeXisStudio");

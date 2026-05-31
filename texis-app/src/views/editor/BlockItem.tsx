@@ -201,6 +201,37 @@ export function BlockItem({
             onChange={(updates) => onUpdate({ ...block, ...updates } as Partial<ContentBlock>)}
           />
         );
+      case "plugin_figure":
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+              Figura generada por plugin <span style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{block.pluginId}</span>. Para modificarla usa el botón "Editar figura" en la vista previa.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>Título</label>
+                <input
+                  value={block.caption}
+                  onChange={(e) => onUpdate({ caption: e.target.value } as Partial<ContentBlock>)}
+                  style={{ width: "100%", padding: "5px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>Etiqueta (\\ref)</label>
+                <input
+                  value={block.label}
+                  onChange={(e) => onUpdate({ label: e.target.value } as Partial<ContentBlock>)}
+                  style={{ width: "100%", padding: "5px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", fontFamily: "var(--font-mono)", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+            {block.warnings.length > 0 && (
+              <div style={{ fontSize: 11, color: "var(--build-warn)", padding: "6px 10px", background: "var(--build-warn-tint, #ffcc0015)", borderRadius: "var(--r-xs)" }}>
+                {block.warnings[0]}
+              </div>
+            )}
+          </div>
+        );
       default:
         return <div style={{ color: "var(--fg-faint)" }}>Bloque no editable</div>;
     }
@@ -390,6 +421,41 @@ export function BlockItem({
               <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 2, fontFamily: "var(--font-mono)" }}>
                 Clic para editar • se genera al compilar
               </div>
+            </div>
+          </div>
+        );
+      }
+      case "plugin_figure": {
+        const categoryIcons: Record<string, string> = {
+          mathematics: "∑", physics: "⚡", chemistry: "⚗",
+          "biology-medicine": "🧬", "engineering-cs": "⚙",
+          "humanities-social": "📚", "arts-visual": "🎨", "import-external": "↑",
+        };
+        return (
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0" }}>
+            <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--accent-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+              {categoryIcons[block.pluginId.split("-")[0]] ?? "📊"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>
+                {block.caption || block.pluginId}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)", marginBottom: 3 }}>
+                {block.label} · {block.figureId}
+              </div>
+              {block.requiredPackages.length > 0 && (
+                <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>
+                  Paquetes: {block.requiredPackages.join(", ")}
+                </div>
+              )}
+              {block.warnings.length > 0 && (
+                <div style={{ fontSize: 10, color: "var(--build-warn)", marginTop: 4 }}>
+                  ⚠ {block.warnings[0]}
+                </div>
+              )}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", flexShrink: 0, paddingTop: 2 }}>
+              Clic para editar
             </div>
           </div>
         );

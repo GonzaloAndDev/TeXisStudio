@@ -16,7 +16,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@texisstudio/plugins": ["../../TeXisStudio-Plugins/visual-plugins/index.ts"],
+      "@texisstudio/plugins/*": ["../../TeXisStudio-Plugins/visual-plugins/*"]
     }
   },
   "include": ["src"],

@@ -28,7 +28,8 @@ import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
 import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
-import type { VisualKind } from "../types";
+import type { PluginFigureBlock, VisualKind } from "../types";
+import { FigurePickerModal } from "../components/FigurePickerModal";
 // ── Utilidades ────────────────────────────────────────────────────
 
 const PLACEMENT_KEYS: Record<string, string> = {
@@ -185,6 +186,9 @@ export default function EditorView() {
 
   // Selector de tipo de Visual Block — se abre al insertar un bloque visual
   const [visualSelectorOpen, setVisualSelectorOpen] = useState<string | null>(null);
+
+  // Modal de inserción de figura por plugin
+  const [figurePickerOpen, setFigurePickerOpen] = useState(false);
 
   // Scroll y highlight cuando jumpTargetBlockId cambia
   useEffect(() => {
@@ -409,6 +413,17 @@ export default function EditorView() {
       return next;
     });
     setEditingId(null);
+  }, [scheduleAutoSave]);
+
+  // Insertar figura generada por plugin
+  const insertPluginFigure = useCallback((block: PluginFigureBlock) => {
+    setLocalBlocks((prev) => {
+      const next = [...prev, block];
+      scheduleAutoSave(next);
+      return next;
+    });
+    setEditingId(block.id);
+    setFigurePickerOpen(false);
   }, [scheduleAutoSave]);
 
   // Insertar cita bibliográfica desde el picker
@@ -729,6 +744,16 @@ export default function EditorView() {
               style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
             >
               <IconMore size={12} /><span>Cita</span>
+            </button>
+
+            {/* Insertar figura generada por plugin */}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setFigurePickerOpen(true)}
+              title="Insertar figura generada — 38 tipos de diagramas sin necesidad de LaTeX"
+              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+            >
+              <span style={{ fontSize: 12 }}>📊</span><span>Figura+</span>
             </button>
 
             <div style={{ flex: 1 }} />
@@ -1118,6 +1143,15 @@ export default function EditorView() {
           onClose={() => setCitPickerOpen(false)}
           projectPath={activeProjectPath}
           onBibUpdated={reloadBibRefs}
+        />
+      )}
+
+      {/* Modal de figura generada por plugin */}
+      {figurePickerOpen && activeProjectPath && (
+        <FigurePickerModal
+          projectPath={activeProjectPath}
+          onInsert={insertPluginFigure}
+          onClose={() => setFigurePickerOpen(false)}
         />
       )}
 

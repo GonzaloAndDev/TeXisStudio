@@ -7,6 +7,7 @@ pub mod build;
 pub mod compiler;
 pub mod datacite;
 pub mod doi;
+pub mod figure_plugin;
 pub mod glossary;
 pub mod openalex;
 pub mod package;
