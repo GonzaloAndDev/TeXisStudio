@@ -172,22 +172,43 @@ texis-app/                   Tauri app
 
 ## Development / Desarrollo
 
-```bash
-# Requirements / Requisitos: Rust stable, Node.js 20+, MiKTeX or TeX Live
-cargo install tauri-cli@^2
+### Comandos definitivos
 
-cd texis-app && npm install
-cargo tauri dev          # development / desarrollo (hot-reload)
-cargo tauri build        # production build / build de producción
+Usa estos comandos desde la raiz del repo `TeXisStudio`.
+
+| Necesidad | Comando | Resultado |
+|---|---|---|
+| Correr la app para desarrollar | `node scripts/texis.mjs dev` | Abre TeXisStudio en modo Tauri dev con hot reload. No genera instalador. |
+| Verificar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript + Vite. Rapido; sirve para revisar UI. No genera app nativa ni instalador. |
+| Generar build/instalador del SO actual | `node scripts/texis.mjs build` | Detecta Windows/macOS/Linux y ejecuta el script nativo correspondiente. Genera instaladores/paquetes. |
+| Probar core Rust | `cargo test -p texis-core` | Ejecuta tests de generacion LaTeX, compilacion, bibliografia, snapshots y modelos. |
+
+### VS Code
+
+`Ctrl+Shift+B` ejecuta la tarea default **TeXisStudio: Run app**. Es equivalente a:
+
+```bash
+node scripts/texis.mjs dev
 ```
 
-```bash
-# Rust integration tests (349+)
-cargo test -p texis-core
+Por tanto, `Ctrl+Shift+B` es para correr y probar la app, no para generar instalador.
 
-# Includes: LaTeX generation, real compilation, bibliography,
-# YAML serialisation, PluginFigureBlock E2E, snapshots
-```
+Para generar instalador desde VS Code usa:
+
+1. `Terminal > Run Task...`
+2. `TeXisStudio: Build current OS`
+
+### Salidas por sistema operativo
+
+`node scripts/texis.mjs build` genera artefactos segun el equipo donde se ejecute:
+
+| Sistema | Script usado | Salida esperada |
+|---|---|---|
+| Windows | `scripts/build-windows.ps1` | MSI, NSIS `.exe` y ZIP portable en `target/release/bundle/` |
+| macOS | `scripts/build-mac.sh` | DMG/app universal en `target/universal-apple-darwin/release/bundle/` |
+| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/` |
+
+Requisitos generales: Rust stable, Node.js 20+, MiKTeX o TeX Live para compilar documentos LaTeX. En Windows se requiere WebView2; el instalador lo maneja via Tauri. En macOS se requieren Xcode Command Line Tools. En Linux el script intenta instalar dependencias WebKit/GTK con el gestor de paquetes disponible.
 
 ---
 
