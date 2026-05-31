@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Component, Suspense, lazy, useEffect, type ReactNode } from "react";
 import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
@@ -13,6 +13,41 @@ const ProgressView = lazy(() => import("./views/ProgressView"));
 const SetupLatexView = lazy(() => import("./views/SetupLatexView"));
 const SettingsView = lazy(() => import("./views/SettingsView"));
 const WizardView = lazy(() => import("./views/WizardView"));
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Error de interfaz:", error);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-app)", color: "var(--fg-default)", padding: 24 }}>
+        <div style={{ width: "min(620px, 100%)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: 20, boxShadow: "var(--shadow-soft)" }}>
+          <h1 style={{ margin: "0 0 8px", fontSize: "var(--fs-xl)", fontFamily: "var(--font-display)", fontWeight: 500 }}>
+            La vista no pudo cargarse
+          </h1>
+          <p style={{ margin: "0 0 14px", color: "var(--fg-muted)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
+            TeXisStudio mantuvo tus archivos intactos. Vuelve al inicio e intenta abrir el proyecto otra vez.
+          </p>
+          <pre style={{ maxHeight: 160, overflow: "auto", whiteSpace: "pre-wrap", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", padding: 12, color: "var(--build-err)", fontSize: "var(--fs-xs)" }}>
+            {this.state.error.message}
+          </pre>
+          <button className="btn btn-accent btn-sm" onClick={() => { window.location.href = "/"; }}>
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
 
 // Proyecto demo para previsualizar el editor en dev-browser sin Tauri
 const DEMO_PROJECT: ProjectModel = {
@@ -168,6 +203,7 @@ export default function App() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AppErrorBoundary>
         <Suspense
           fallback={
             <div style={{
@@ -195,6 +231,7 @@ export default function App() {
             <Route path="*" element={<HomeView />} />
           </Routes>
         </Suspense>
+        </AppErrorBoundary>
       </BrowserRouter>
     </div>
   );

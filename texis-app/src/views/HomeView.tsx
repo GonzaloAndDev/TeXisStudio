@@ -181,6 +181,8 @@ export default function HomeView() {
   const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [latexLoading, setLatexLoading] = useState(true);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importTexPath, setImportTexPath] = useState("");
   const [importOutputPath, setImportOutputPath] = useState("");
@@ -189,7 +191,10 @@ export default function HomeView() {
   const [homeError, setHomeError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.detectLatex().then(setLatexInfo).catch(() => {});
+    api.detectLatex()
+      .then(setLatexInfo)
+      .catch(() => {})
+      .finally(() => setLatexLoading(false));
 
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
@@ -198,20 +203,26 @@ export default function HomeView() {
           setProjects(p);
           setRecentProjects(p);
         }).catch(() => setProjects([]))
-      ).catch(() => setProjects([]));
+          .finally(() => setProjectsLoading(false))
+      ).catch(() => {
+        setProjects([]);
+        setProjectsLoading(false);
+      });
     } else {
       setProjects(MOCK_PROJECTS);
       setRecentProjects(MOCK_PROJECTS);
+      setProjectsLoading(false);
     }
   }, [setLatexInfo, setRecentProjects]);
 
-  async function handleOpen(projectPath: string) {
+  async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (!isTauriEnv) { navigate("/demo"); return; }
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
-      navigate(`/project/${encodeURIComponent(projectPath)}`);
+      const encodedPath = encodeURIComponent(projectPath);
+      navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
       setHomeError("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
@@ -290,13 +301,7 @@ export default function HomeView() {
     return { text: backends.join(" · ") || "LaTeX listo", dot: "var(--build-ok)" };
   })();
 
-  const latestProject = projects[0];
-  const latestProjectRoute = latestProject
-    ? `/project/${encodeURIComponent(latestProject.path)}`
-    : "/new";
-  const latestCompileRoute = latestProject
-    ? `/project/${encodeURIComponent(latestProject.path)}/compile`
-    : "/new";
+  const latestProject = projectsLoading ? undefined : projects[0];
 
   const workMoments = [
     {
@@ -315,7 +320,7 @@ export default function HomeView() {
       label: "Escribir",
       hint: latestProject ? "Vuelve a tu proyecto más reciente." : "Abre un proyecto para empezar a redactar.",
       icon: <IconBook size={13} />,
-      onClick: () => navigate(latestProjectRoute),
+      onClick: () => latestProject ? handleOpen(latestProject.path) : navigate("/new"),
     },
     {
       label: "Revisar",
@@ -327,7 +332,7 @@ export default function HomeView() {
       label: "Entregar",
       hint: latestProject ? "Compila, verifica el PDF y exporta tu entrega." : "Compila tu proyecto cuando ya tengas contenido.",
       icon: <IconUpload size={13} />,
-      onClick: () => navigate(latestCompileRoute),
+      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : navigate("/new"),
     },
   ];
 

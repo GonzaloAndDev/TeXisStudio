@@ -49,9 +49,13 @@ function countWords(blocks: ContentBlock[]): number {
   }, 0);
 }
 
+function sectionBlocks(section: ProjectModel["sections"][number]): ContentBlock[] {
+  return Array.isArray(section.blocks) ? section.blocks : [];
+}
+
 function hasCitationEvidence(project: ProjectModel): boolean {
   return project.sections.some((section) =>
-    section.blocks.some((block) =>
+    sectionBlocks(section).some((block) =>
       block.type === "citation" ||
       (block.type === "raw_latex" && /\\(?:cite|parencite|textcite|autocite|footcite)\w*\{[^}]+}/.test(block.content))
     )
@@ -89,12 +93,12 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
   ];
 
   const bodySections = project.sections.filter((section) => section.enabled && section.placement === "body");
-  const draftedBodySections = bodySections.filter((section) => section.blocks.length > 0);
+  const draftedBodySections = bodySections.filter((section) => sectionBlocks(section).length > 0);
   const reviewedSections = bodySections.filter((section) => {
     const status = section.status ?? "draft";
     return status === "revised" || status === "approved";
   });
-  const totalWords = bodySections.reduce((sum, section) => sum + countWords(section.blocks), 0);
+  const totalWords = bodySections.reduce((sum, section) => sum + countWords(sectionBlocks(section)), 0);
 
   const writingChecks = [
     { ok: bodySections.length > 0, label: "Activa al menos una seccion de contenido" },
@@ -106,14 +110,14 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
   const hasReferencesSection = project.sections.some((section) => section.enabled && section.element_id === "references");
   const hasAbstractContent = project.sections.some((section) =>
     (section.element_id === "abstract" || section.element_id === "abstract_es") &&
-    section.blocks.length > 0 &&
-    section.blocks.some((block) => blockText(block).trim().length > 20)
+    sectionBlocks(section).length > 0 &&
+    sectionBlocks(section).some((block) => blockText(block).trim().length > 20)
   );
   const requiredBodySections = bodySections.filter((section) => section.required ?? false);
   const allRequiredHaveContent = requiredBodySections.length === 0 ||
-    requiredBodySections.every((section) => section.blocks.length > 0);
+    requiredBodySections.every((section) => sectionBlocks(section).length > 0);
   const hasUnconfirmedRawLatex = project.sections.some((section) =>
-    section.blocks.some((block) => block.type === "raw_latex" && !block.user_confirmed)
+    sectionBlocks(section).some((block) => block.type === "raw_latex" && !block.user_confirmed)
   );
   const hasCommitteeWhenAdvanced =
     project.metadata.academic_level === "doctorado" || project.metadata.academic_level === "posdoctorado"
@@ -135,10 +139,10 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
       return status === "revised" || status === "approved";
     });
   const hasRawLatex = project.sections.some((section) =>
-    section.blocks.some((block) => block.type === "raw_latex")
+    sectionBlocks(section).some((block) => block.type === "raw_latex")
   );
   const hasPluginWarnings = project.sections.some((section) =>
-    section.blocks.some((block) => block.type === "plugin_figure" && block.warnings.length > 0)
+    sectionBlocks(section).some((block) => block.type === "plugin_figure" && block.warnings.length > 0)
   );
   const usesGenericProfile = project.profile_id.startsWith("generic.");
   const usesInstitutionalOrCustomProfile = !usesGenericProfile || project.profile_id.startsWith("custom.");

@@ -1,5 +1,21 @@
 import { create } from "zustand";
-import type { ContentBlock, LatexInfo, ProjectModel, RecentProject, SectionStatus } from "../types";
+import type { ContentBlock, LatexInfo, ProjectModel, ProjectSection, RecentProject, SectionStatus } from "../types";
+
+function normalizeSection(section: ProjectSection): ProjectSection {
+  return {
+    ...section,
+    blocks: Array.isArray(section.blocks) ? section.blocks : [],
+    fields: section.fields ?? {},
+    children: Array.isArray(section.children) ? section.children.map(normalizeSection) : [],
+  };
+}
+
+function normalizeProject(model: ProjectModel): ProjectModel {
+  return {
+    ...model,
+    sections: Array.isArray(model.sections) ? model.sections.map(normalizeSection) : [],
+  };
+}
 
 interface ProjectStore {
   // Proyectos recientes
@@ -35,12 +51,15 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   activeProject: null,
   activeProjectPath: null,
   openProject: (model, path) =>
-    set({
-      activeProject: model,
+    set(() => {
+      const normalized = normalizeProject(model);
+      return {
+      activeProject: normalized,
       activeProjectPath: path,
-      activeSectionId: model.sections.find(
+      activeSectionId: normalized.sections.find(
         (s) => s.placement === "body" && s.enabled
       )?.id ?? null,
+      };
     }),
   closeProject: () =>
     set({ activeProject: null, activeProjectPath: null, activeSectionId: null }),

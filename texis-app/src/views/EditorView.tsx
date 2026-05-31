@@ -154,6 +154,8 @@ export default function EditorView() {
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const [routeLoadError, setRouteLoadError] = useState<string | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drag & drop state
@@ -244,6 +246,30 @@ export default function EditorView() {
     end: number;
   } | null>(null);
   const [lastAiUndoBlocks, setLastAiUndoBlocks] = useState<ContentBlock[] | null>(null);
+
+  useEffect(() => {
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv || activeProject || activeProjectPath || !encodedPath || encodedPath === "demo") return;
+
+    let cancelled = false;
+    const projectPath = decodeURIComponent(encodedPath);
+    setRouteLoading(true);
+    setRouteLoadError(null);
+    api.getProject(projectPath)
+      .then((model) => {
+        if (!cancelled) useProjectStore.getState().openProject(model, projectPath);
+      })
+      .catch((e) => {
+        if (!cancelled) setRouteLoadError(String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setRouteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProject, activeProjectPath, encodedPath]);
 
   const captureSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -626,10 +652,24 @@ export default function EditorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [activeSectionId, localBlocks, doSave, paletteOpen, citPickerOpen]);
 
+  if (routeLoading) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid var(--border-soft)", borderTopColor: "var(--accent)" }} />
+        <p>Cargando proyecto...</p>
+      </div>
+    );
+  }
+
   if (!activeProject || !activeProjectPath) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
-        <p>Proyecto no cargado.</p>
+        <p>{routeLoadError ? "No se pudo cargar el proyecto." : "Proyecto no cargado."}</p>
+        {routeLoadError && (
+          <div style={{ maxWidth: 560, color: "var(--build-err)", fontSize: "var(--fs-sm)", textAlign: "center", lineHeight: 1.5 }}>
+            {routeLoadError}
+          </div>
+        )}
         <button className="btn" onClick={() => navigate("/")}>← Inicio</button>
       </div>
     );
@@ -642,7 +682,7 @@ export default function EditorView() {
 
   const bodyWordCount = activeProject.sections
     .filter((s) => s.placement === "body")
-    .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks), 0);
+    .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks ?? []), 0);
 
   const projectName = activeProject.metadata.title;
   const toolbarItems: [ContentBlock["type"], React.ReactNode, string, string?][] = userMode === "basic"
@@ -753,7 +793,7 @@ export default function EditorView() {
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title ?? s.element_id}</span>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
-                        {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
+                        {(s.id === activeSectionId ? localBlocks.length : s.blocks?.length ?? 0) || ""}
                       </span>
                     </div>
                   );
