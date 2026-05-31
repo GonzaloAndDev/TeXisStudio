@@ -29,6 +29,16 @@ import type {
 // re-export convenience
 export type { ProfileInfo };
 
+type DialogFilter = { name: string; extensions: string[] };
+
+type ImportTexResult = {
+  project_path: string;
+  name: string;
+  profile_id: string;
+  imported_from: string;
+  sections_count: number;
+};
+
 const isTauri = () =>
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -116,6 +126,14 @@ export const api = {
     outputPath: string
   ): Promise<{ project_path: string; name: string; profile_id: string }> =>
     call("create_project", { name, profileId, outputPath }),
+
+  importTexProject: (
+    texPath: string,
+    outputPath: string,
+    projectName?: string,
+    profileId?: string,
+  ): Promise<ImportTexResult> =>
+    call("import_tex_project", { texPath, outputPath, projectName, profileId }),
 
   getProject: (projectPath: string): Promise<ProjectModel> =>
     call("get_project", { projectPath }),
@@ -309,6 +327,19 @@ export const api = {
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
       const result = await open({ directory: true, multiple: false });
+      if (Array.isArray(result)) return result[0] ?? null;
+      return result ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /** Abre el dialogo nativo de seleccion de archivo. Retorna null si el usuario cancela. */
+  pickFile: async (filters?: DialogFilter[]): Promise<string | null> => {
+    if (!isTauri()) return null;
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const result = await open({ multiple: false, filters });
       if (Array.isArray(result)) return result[0] ?? null;
       return result ?? null;
     } catch {

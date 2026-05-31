@@ -73,6 +73,129 @@ pub fn create_project(
     }))
 }
 
+/// Importa un archivo .tex existente como un proyecto TeXisStudio editable.
+///
+/// La importacion conserva el contenido LaTeX como bloque confirmado para no
+/// perder fidelidad. El usuario puede migrarlo despues a bloques visuales.
+#[tauri::command]
+pub fn import_tex_project(
+    app: tauri::AppHandle,
+    tex_path: String,
+    output_path: String,
+    project_name: Option<String>,
+    profile_id: Option<String>,
+) -> Result<Value, String> {
+    use texis_core::project::model::{ContentBlock, RawLatexBlock, SectionPlacement};
+
+    let tex_path = PathBuf::from(&tex_path);
+    if !tex_path.is_file() {
+        return Err("Selecciona un archivo .tex valido.".to_string());
+    }
+    if tex_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("tex"))
+        != Some(true)
+    {
+        return Err("El archivo seleccionado debe tener extension .tex.".to_string());
+    }
+
+    let raw = std::fs::read_to_string(&tex_path).map_err(err)?;
+    let imported_body = extract_document_body(&raw).trim().to_string();
+    if imported_body.is_empty() {
+        return Err("El archivo .tex no contiene contenido importable.".to_string());
+    }
+
+    let fallback_name = tex_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("tesis-importada")
+        .to_string();
+    let name = project_name
+        .map(|n| n.trim().to_string())
+        .filter(|n| !n.is_empty())
+        .unwrap_or(fallback_name);
+    validate_safe_name(&name)?;
+    let title = latex_title(&raw).unwrap_or_else(|| name.clone());
+
+    let profile_id = profile_id.unwrap_or_else(|| "generic.thesis".to_string());
+    validate_profile_id(&profile_id)?;
+
+    let output = PathBuf::from(&output_path);
+    let project_dir = output.join(&name);
+    if project_dir.exists() {
+        return Err(format!(
+            "El directorio '{}' ya existe.",
+            project_dir.display()
+        ));
+    }
+
+    let prof_dir = profiles_dir_for_app(&app);
+    let mut registry = ProfileRegistry::new();
+    registry.load_from_dir(&prof_dir).map_err(err)?;
+    let profile = registry
+        .get(&profile_id)
+        .ok_or_else(|| {
+            format!(
+                "Perfil '{}' no encontrado en {}.",
+                profile_id,
+                prof_dir.display()
+            )
+        })?
+        .clone();
+
+    std::fs::create_dir_all(project_dir.join("content").join("sections")).map_err(err)?;
+    std::fs::create_dir_all(project_dir.join("content").join("bibliography")).map_err(err)?;
+    std::fs::create_dir_all(project_dir.join("content").join("figures")).map_err(err)?;
+    std::fs::create_dir_all(project_dir.join("imports")).map_err(err)?;
+    std::fs::copy(&tex_path, project_dir.join("imports").join("source.tex")).map_err(err)?;
+
+    let mut model = build_model_from_profile(&name, &profile);
+    model.metadata.title = title;
+    model.updated_at = now_iso8601();
+
+    if let Some(section) = model
+        .sections
+        .iter_mut()
+        .find(|s| matches!(s.placement, SectionPlacement::Body))
+    {
+        section.id = "imported_tex".to_string();
+        section.element_id = "imported_tex".to_string();
+        section.title = None;
+        section.enabled = true;
+        section.blocks = vec![ContentBlock::RawLatex(RawLatexBlock {
+            id: "imported-tex-source".to_string(),
+            content: imported_body,
+            user_confirmed: true,
+        })];
+        section.notes = Some(
+            "Contenido importado desde source.tex. Conviene migrarlo gradualmente a bloques TeXisStudio."
+                .to_string(),
+        );
+    } else {
+        return Err(
+            "El perfil seleccionado no tiene una seccion de cuerpo para importar.".to_string(),
+        );
+    }
+
+    let saver = ProjectSaver;
+    saver
+        .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
+        .map_err(err)?;
+
+    let build_dir = project_dir.join("build");
+    let latex_gen = LaTeXGenerator::new().map_err(err)?;
+    latex_gen.generate(&model, &build_dir).map_err(err)?;
+
+    Ok(serde_json::json!({
+        "project_path": project_dir.to_string_lossy(),
+        "name": name,
+        "profile_id": profile_id,
+        "imported_from": tex_path.to_string_lossy(),
+        "sections_count": model.sections.len(),
+    }))
+}
+
 /// Carga un proyecto desde su archivo .yaml.
 #[tauri::command]
 pub fn get_project(project_path: String) -> Result<Value, String> {
@@ -923,6 +1046,50 @@ fn now_iso8601() -> String {
     chrono::Utc::now().to_rfc3339()
 }
 
+fn extract_document_body(raw: &str) -> &str {
+    let begin = "\\begin{document}";
+    let end = "\\end{document}";
+    let Some(start) = raw.find(begin) else {
+        return raw;
+    };
+    let body_start = start + begin.len();
+    let body = &raw[body_start..];
+    if let Some(stop) = body.find(end) {
+        &body[..stop]
+    } else {
+        body
+    }
+}
+
+fn latex_title(raw: &str) -> Option<String> {
+    let marker = "\\title{";
+    let start = raw.find(marker)? + marker.len();
+    let mut depth = 1usize;
+    let mut end = start;
+    for (offset, ch) in raw[start..].char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    end = start + offset;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    if depth != 0 {
+        return None;
+    }
+    let title = raw[start..end]
+        .replace(['\n', '\r', '\t'], " ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    (!title.is_empty()).then_some(title)
+}
+
 /// Valida que un nombre de proyecto sea seguro para usarse como carpeta.
 /// Rechaza: vacío, demasiado largo, separadores de ruta, `..`,
 /// caracteres inválidos en Windows y nombres reservados del sistema.
@@ -974,6 +1141,25 @@ fn validate_safe_name(name: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests_validation {
     use super::*;
+
+    #[test]
+    fn extract_document_body_uses_document_environment() {
+        let raw = "\\documentclass{book}\n\\begin{document}\nHola\n\\end{document}\n% tail";
+        assert_eq!(extract_document_body(raw).trim(), "Hola");
+    }
+
+    #[test]
+    fn extract_document_body_accepts_fragment_without_environment() {
+        assert_eq!(extract_document_body("Texto suelto"), "Texto suelto");
+    }
+
+    #[test]
+    fn latex_title_reads_balanced_title() {
+        assert_eq!(
+            latex_title("\\title{Analisis de {sistemas} complejos}"),
+            Some("Analisis de {sistemas} complejos".to_string())
+        );
+    }
 
     // ── validate_profile_id ───────────────────────────────────────
     #[test]

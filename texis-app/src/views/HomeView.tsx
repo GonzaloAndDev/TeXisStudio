@@ -207,6 +207,47 @@ export default function HomeView() {
       navigate(`/project/${encodeURIComponent(projectPath)}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
+      window.alert("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
+    }
+  }
+
+  async function handleOpenFolder() {
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv) { navigate("/demo"); return; }
+    const projectPath = await api.pickFolder();
+    if (!projectPath) return;
+    await handleOpen(projectPath);
+  }
+
+  async function handleImportTex() {
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv) { navigate("/demo"); return; }
+
+    try {
+      const texPath = await api.pickFile([{ name: "LaTeX", extensions: ["tex"] }]);
+      if (!texPath) return;
+
+      const outputPath = await api.pickFolder();
+      if (!outputPath) return;
+
+      const fileName = texPath.split(/[\\/]/).pop() ?? "tesis-importada.tex";
+      const defaultName = fileName.replace(/\.tex$/i, "") || "tesis-importada";
+      const projectName = window.prompt("Nombre del proyecto importado", defaultName);
+      if (projectName === null) return;
+
+      const imported = await api.importTexProject(
+        texPath,
+        outputPath,
+        projectName.trim() || defaultName,
+        "generic.thesis",
+      );
+      const model = await api.getProject(imported.project_path);
+      useProjectStore.getState().openProject(model, imported.project_path);
+      navigate(`/project/${encodeURIComponent(imported.project_path)}`);
+    } catch (e) {
+      console.error("Error importando .tex:", e);
+      const message = e instanceof Error ? e.message : String(e);
+      window.alert(`No pude importar el archivo .tex: ${message}`);
     }
   }
 
@@ -335,10 +376,10 @@ export default function HomeView() {
               <button className="btn btn-accent" onClick={() => navigate("/new")}>
                 <IconPlus size={13} /> {t("home.new_project")}
               </button>
-              <button className="btn">
+              <button className="btn" onClick={handleImportTex}>
                 <IconUpload size={13} /> {t("home.import_tex")}
               </button>
-              <button className="btn btn-ghost">{t("home.open_folder")}</button>
+              <button className="btn btn-ghost" onClick={handleOpenFolder}>{t("home.open_folder")}</button>
             </div>
             <div style={S.journeyGrid}>
               {workMoments.map(({ label, hint, icon, onClick }) => (

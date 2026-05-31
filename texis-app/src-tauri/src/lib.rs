@@ -8,6 +8,7 @@ pub fn run() {
         .manage(commands::compiler::CompileState::new())
         .invoke_handler(tauri::generate_handler![
             commands::project::create_project,
+            commands::project::import_tex_project,
             commands::project::get_project,
             commands::project::list_recent_projects,
             commands::project::save_section,
