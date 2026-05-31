@@ -469,39 +469,47 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
         out.push_str("\\makeglossaries\n");
     }
 
-    // ── Paquetes requeridos por VisualBlocks ─────────────────────────────────
+    // ── Paquetes requeridos por VisualBlocks y PluginFigureBlocks ────────────
     // Auto-detectados del contenido — el usuario no necesita declararlos.
     {
         use crate::project::model::ContentBlock;
         use crate::visual::{extra_packages, required_package};
-        let mut vis_pkgs: std::collections::HashSet<&str> = std::collections::HashSet::new();
+        let mut vis_pkgs: std::collections::HashSet<String> = std::collections::HashSet::new();
         for section in &model.sections {
             for block in &section.blocks {
-                if let ContentBlock::Visual(v) = block {
-                    vis_pkgs.insert(required_package(&v.config));
-                    for ep in extra_packages(&v.config) {
-                        vis_pkgs.insert(ep);
+                match block {
+                    ContentBlock::Visual(v) => {
+                        vis_pkgs.insert(required_package(&v.config).to_string());
+                        for ep in extra_packages(&v.config) {
+                            vis_pkgs.insert(ep.to_string());
+                        }
                     }
+                    ContentBlock::PluginFigure(pf) => {
+                        for pkg in &pf.required_packages {
+                            vis_pkgs.insert(pkg.clone());
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
         if !vis_pkgs.is_empty() {
             out.push_str("\n% Paquetes para elementos visuales (auto-detectados)\n");
             // Orden determinista
-            let mut sorted: Vec<&&str> = vis_pkgs.iter().collect();
+            let mut sorted: Vec<&String> = vis_pkgs.iter().collect();
             sorted.sort();
-            for pkg in sorted {
+            for pkg in &sorted {
                 // No duplicar paquetes ya cargados en packages_required
                 let already = model
                     .latex_config
                     .packages_required
                     .iter()
-                    .any(|p| p == *pkg)
+                    .any(|p| p == pkg.as_str())
                     || model
                         .latex_config
                         .packages_with_options
                         .iter()
-                        .any(|p| p.name == *pkg);
+                        .any(|p| &p.name == pkg.as_str());
                 if !already {
                     out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
                 }

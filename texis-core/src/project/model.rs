@@ -382,6 +382,10 @@ pub enum ContentBlock {
     /// Diagrama visual generado automáticamente. El usuario configura
     /// mediante formulario; TeXisStudio genera el LaTeX correcto.
     Visual(VisualBlock),
+    /// Figura generada por un plugin del catálogo TeXisStudio-Plugins.
+    /// El campo `latex_block` contiene el LaTeX completo listo para insertar.
+    /// Los `required_packages` se registran automáticamente en el preámbulo.
+    PluginFigure(PluginFigureBlock),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -599,6 +603,26 @@ pub struct RawLatexBlock {
     pub id: String,
     pub content: String,
     pub user_confirmed: bool,
+}
+
+/// Figura generada por un plugin del catálogo TeXisStudio-Plugins.
+/// Los campos usan camelCase en JSON para compatibilidad con el frontend TypeScript.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginFigureBlock {
+    pub id: String,
+    pub figure_id: String,
+    pub plugin_id: String,
+    /// LaTeX completo del bloque, incluyendo \begin{figure}...\end{figure}.
+    /// Este campo es la fuente de verdad para la compilación a PDF.
+    pub latex_block: String,
+    pub caption: String,
+    pub label: String,
+    pub required_packages: Vec<String>,
+    /// JSON serializado del documento del engine, para re-edición futura.
+    pub source_json: String,
+    #[serde(default)]
+    pub warnings: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

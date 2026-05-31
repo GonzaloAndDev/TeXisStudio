@@ -455,6 +455,12 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Visual(v) => crate::visual::render_visual(v),
 
+        ContentBlock::PluginFigure(pf) => {
+            // El latex_block ya contiene el entorno figure completo generado por el plugin.
+            // Se inserta verbatim — los paquetes necesarios se detectan en main_tex.rs.
+            format!("{}\n\n", pf.latex_block)
+        }
+
         ContentBlock::Theorem(t) => {
             let base_env = match t.kind {
                 TheoremKind::Theorem => "theorem",
