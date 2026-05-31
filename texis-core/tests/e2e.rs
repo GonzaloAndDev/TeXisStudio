@@ -430,3 +430,160 @@ fn e2e_drift_report_sin_manuales_genera_todo() {
         "main.tex debe estar en generated"
     );
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Tests de PluginFigureBlock — pipeline completo sin LaTeX instalado
+// ══════════════════════════════════════════════════════════════════════════════
+
+fn model_with_plugin_figure(packages: Vec<String>) -> ProjectModel {
+    let mut m = fixtures::generic_thesis_model();
+    let intro = m.sections.iter_mut().find(|s| s.id == "introduction").unwrap();
+
+    intro.blocks.push(ContentBlock::PluginFigure(PluginFigureBlock {
+        id: "pf-test-01".to_string(),
+        figure_id: "fig_0042".to_string(),
+        plugin_id: "bar-charts".to_string(),
+        latex_block: concat!(
+            "% texisstudio-figure-id: fig_0042\n",
+            "\\begin{figure}[htbp]\n",
+            "    \\centering\n",
+            "    \\input{texisstudio-assets/figures/fig_0042/output.tex}\n",
+            "    \\caption{Distribución de resultados.}\n",
+            "    \\label{fig:bar-results}\n",
+            "\\end{figure}\n",
+            "% /texisstudio-figure-id",
+        ).to_string(),
+        caption: "Distribución de resultados.".to_string(),
+        label: "fig:bar-results".to_string(),
+        required_packages: packages,
+        source_json: r#"{"engineId":"pgfplots-engine","version":"1.0.0"}"#.to_string(),
+        warnings: vec![],
+    }));
+    m
+}
+
+#[test]
+fn plugin_figure_latex_block_aparece_en_capitulo() {
+    let model = model_with_plugin_figure(vec!["pgfplots".to_string(), "tikz".to_string()]);
+    let gen = LaTeXGenerator::new().unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    gen.generate(&model, dir.path()).unwrap();
+
+    let chapter = fs::read_to_string(dir.path().join("capitulos/01_introduction.tex")).unwrap();
+
+    assert!(
+        chapter.contains("texisstudio-figure-id: fig_0042"),
+        "el marcador de figura de plugin debe aparecer en el capítulo"
+    );
+    assert!(
+        chapter.contains("\\input{texisstudio-assets/figures/fig_0042/output.tex}"),
+        "el \\input del plugin debe aparecer en el capítulo"
+    );
+    assert!(
+        chapter.contains("\\caption{Distribución de resultados.}"),
+        "la caption del plugin debe aparecer en el capítulo"
+    );
+    assert!(
+        chapter.contains("\\label{fig:bar-results}"),
+        "la label del plugin debe aparecer en el capítulo"
+    );
+}
+
+#[test]
+fn plugin_figure_paquetes_aparecen_en_preamble() {
+    let model = model_with_plugin_figure(vec!["pgfplots".to_string(), "tikz".to_string()]);
+    let gen = LaTeXGenerator::new().unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    gen.generate(&model, dir.path()).unwrap();
+
+    // Los paquetes visuales se emiten en configuracion/paquetes.tex, no en main.tex
+    let paquetes = fs::read_to_string(dir.path().join("configuracion/paquetes.tex")).unwrap();
+
+    assert!(
+        paquetes.contains("\\usepackage{pgfplots}"),
+        "pgfplots debe inyectarse en paquetes.tex cuando lo requiere el plugin — contenido:\n{paquetes}"
+    );
+    assert!(
+        paquetes.contains("\\usepackage{tikz}"),
+        "tikz debe inyectarse en paquetes.tex cuando lo requiere el plugin"
+    );
+}
+
+#[test]
+fn plugin_figure_sin_paquetes_no_rompe_generacion() {
+    let model = model_with_plugin_figure(vec![]);
+    let gen = LaTeXGenerator::new().unwrap();
+    let dir = tempfile::tempdir().unwrap();
+
+    // No debe fallar aunque el plugin no declare paquetes
+    gen.generate(&model, dir.path()).unwrap();
+
+    let chapter = fs::read_to_string(dir.path().join("capitulos/01_introduction.tex")).unwrap();
+    assert!(chapter.contains("fig_0042"), "el bloque debe aparecer aunque no haya paquetes");
+}
+
+#[test]
+fn plugin_figure_serde_round_trip() {
+    // Serializar → deserializar → comparar: garantiza que el YAML del proyecto
+    // preserva el bloque correctamente entre saves y loads.
+    let original = PluginFigureBlock {
+        id: "rt-01".to_string(),
+        figure_id: "fig_0099".to_string(),
+        plugin_id: "scatter-regression".to_string(),
+        latex_block: "\\begin{figure}[htbp]\\end{figure}".to_string(),
+        caption: "Regresión lineal.".to_string(),
+        label: "fig:regression".to_string(),
+        required_packages: vec!["pgfplots".to_string()],
+        source_json: r#"{"pluginId":"scatter-regression"}"#.to_string(),
+        warnings: vec!["Some warning".to_string()],
+    };
+
+    let block = ContentBlock::PluginFigure(original.clone());
+
+    // YAML round-trip (formato de persistencia del proyecto)
+    let yaml = serde_yaml::to_string(&block).expect("serialización YAML debe funcionar");
+    assert!(yaml.contains("plugin_figure"), "type tag debe ser plugin_figure");
+    assert!(yaml.contains("fig_0099"), "figureId debe preservarse");
+
+    let recovered: ContentBlock = serde_yaml::from_str(&yaml).expect("deserialización YAML debe funcionar");
+
+    if let ContentBlock::PluginFigure(pf) = recovered {
+        assert_eq!(pf.figure_id, original.figure_id);
+        assert_eq!(pf.plugin_id, original.plugin_id);
+        assert_eq!(pf.caption, original.caption);
+        assert_eq!(pf.label, original.label);
+        assert_eq!(pf.latex_block, original.latex_block);
+        assert_eq!(pf.required_packages, original.required_packages);
+        assert_eq!(pf.source_json, original.source_json);
+        assert_eq!(pf.warnings, original.warnings);
+    } else {
+        panic!("el bloque recuperado debe ser PluginFigure");
+    }
+}
+
+#[test]
+fn plugin_figure_json_camel_case_round_trip() {
+    // El frontend envía JSON con camelCase — verificar compatibilidad.
+    let json = r#"{
+        "type": "plugin_figure",
+        "id": "pf-json-01",
+        "figureId": "fig_1234",
+        "pluginId": "kaplan-meier",
+        "latexBlock": "% block content",
+        "caption": "Curva de supervivencia.",
+        "label": "fig:km",
+        "requiredPackages": ["pgfplots","tikz"],
+        "sourceJson": "{}",
+        "warnings": []
+    }"#;
+
+    let block: ContentBlock = serde_json::from_str(json).expect("JSON camelCase debe deserializar");
+
+    if let ContentBlock::PluginFigure(pf) = block {
+        assert_eq!(pf.figure_id, "fig_1234");
+        assert_eq!(pf.plugin_id, "kaplan-meier");
+        assert_eq!(pf.required_packages, vec!["pgfplots", "tikz"]);
+    } else {
+        panic!("debe deserializar como PluginFigure");
+    }
+}
