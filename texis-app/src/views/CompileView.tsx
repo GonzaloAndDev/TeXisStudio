@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
+import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { ReadinessOverview } from "../components/ReadinessOverview";
 import { IconBuild, IconChevronL, IconCheckCircle, IconErr, IconFile, IconMore, IconPlay, IconRefresh, IconX } from "../components/Icons";
@@ -38,6 +39,7 @@ export default function CompileView() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [postflightError, setPostflightError] = useState<string | null>(null);
   const [showTechnicalLog, setShowTechnicalLog] = useState(userMode === "advanced");
+  const [readinessAction, setReadinessAction] = useState<PendingAction | null>(null);
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
@@ -178,6 +180,10 @@ export default function CompileView() {
   async function handleCompile() {
     if (!activeProjectPath) return;
     // Solo el borrador se salta el checklist; la compilación final lo requiere
+    if (!draft && readiness?.deliveryBlocked) {
+      setReadinessAction("compile");
+      return;
+    }
     if (!draft) {
       const ok = await runDeliveryCheck("compile");
       if (!ok) return;
@@ -221,6 +227,10 @@ export default function CompileView() {
 
   async function handleExportDelivery() {
     if (!activeProjectPath) return;
+    if (exportMode === "final" && readiness?.deliveryBlocked) {
+      setReadinessAction("export");
+      return;
+    }
     if (exportMode !== "draft") {
       const ok = await runDeliveryCheck("export");
       if (!ok) return;
@@ -273,6 +283,59 @@ export default function CompileView() {
 
   return (
     <>
+      {readinessAction && readiness && (
+        <AppDialog
+          title={readinessAction === "compile" ? "Proyecto pendiente para version formal" : "Entrega final bloqueada"}
+          subtitle={readinessAction === "compile"
+            ? "Compila como borrador o revisa estos puntos antes de tratar esta salida como formal."
+            : "Para exportar en modo final, completa primero los controles de entrega y calidad."}
+          width={580}
+          onClose={() => setReadinessAction(null)}
+          footer={
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setReadinessAction(null)}>
+                Volver a revisar
+              </button>
+              {readinessAction === "compile" && (
+                <button
+                  className="btn btn-accent btn-sm"
+                  onClick={() => {
+                    setReadinessAction(null);
+                    setDraft(true);
+                    doCompile();
+                  }}
+                >
+                  Compilar como borrador
+                </button>
+              )}
+            </>
+          }
+        >
+          <div style={{ display: "grid", gap: 12 }}>
+            {[
+              ["Entrega", readiness.deliveryPending],
+              ["Calidad final", readiness.qualityPending],
+            ].map(([label, items]) => (
+              <div key={label as string} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
+                <div style={{ padding: "8px 10px", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {label as string}
+                </div>
+                {(items as string[]).length === 0 ? (
+                  <div style={{ padding: "9px 10px", fontSize: "var(--fs-sm)", color: "var(--build-ok)" }}>
+                    Completo
+                  </div>
+                ) : (
+                  (items as string[]).map((item) => (
+                    <div key={item} style={{ padding: "9px 10px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.5 }}>
+                      {item}
+                    </div>
+                  ))
+                )}
+              </div>
+            ))}
+          </div>
+        </AppDialog>
+      )}
       {checkReport && checkAction && (
         <DeliveryCheckModal
           report={checkReport}

@@ -29,6 +29,15 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
   const degreeTags = (profile.tags ?? []).filter((t) => DEGREE_TAGS.has(t));
   const otherTags  = (profile.tags ?? []).filter((t) => !DEGREE_TAGS.has(t) && t !== "tesis" && t !== "tesina");
   const statusInfo = statusMeaning(profile.status);
+  const certificationChecks = [
+    { ok: profile.status === "verified", label: "Estado verificado" },
+    { ok: (profile.verification?.source_urls?.length ?? 0) > 0, label: "Fuente institucional registrada" },
+    { ok: !!profile.verification?.ci_evidence, label: "Evidencia CI o PDF muestra" },
+    { ok: !!profile.verification?.verified_at || !!profile.verification?.reviewed_at, label: "Fecha de revision trazable" },
+  ];
+  const certificationScore = Math.round(
+    (certificationChecks.filter((item) => item.ok).length / certificationChecks.length) * 100
+  );
 
   const sectionsByPlacement = (profile.sections ?? []).reduce<Record<string, ProfileSectionInfo[]>>(
     (acc, s) => { const k = s.placement; if (!acc[k]) acc[k] = []; acc[k].push(s); return acc; }, {}
@@ -91,6 +100,23 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
           </div>
 
           {/* Evidencia de verificación */}
+          <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-faint)" }}>
+                Confianza profesional
+              </span>
+              <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: certificationScore >= 75 ? "var(--build-ok)" : "var(--build-warn)" }}>
+                {certificationScore}%
+              </span>
+            </div>
+            {certificationChecks.map((item) => (
+              <div key={item.label} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: "var(--fs-xs)", color: item.ok ? "var(--fg-muted)" : "var(--build-warn)", lineHeight: 1.6 }}>
+                <span style={{ color: item.ok ? "var(--build-ok)" : "var(--build-warn)", fontWeight: 700 }}>{item.ok ? "OK" : "!"}</span>
+                {item.label}
+              </div>
+            ))}
+          </div>
+
           {profile.verification && (
             <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
               {profile.verification.verified_at && (

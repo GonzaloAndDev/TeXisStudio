@@ -7,14 +7,12 @@ export function ReadinessOverview({
   readiness: ProjectReadiness;
   showPending?: boolean;
 }) {
-  const rows: Array<{
-    label: string;
-    value: number;
-    pending?: string;
-  }> = [
-    { label: "Configuración", value: readiness.setupCompletion, pending: readiness.setupPending[0] },
+  const rows: Array<{ label: string; value: number; pending?: string }> = [
+    { label: "Proyecto", value: readiness.overallCompletion, pending: readiness.deliveryBlocked ? "Hay pendientes para entrega final" : undefined },
+    { label: "Configuracion", value: readiness.setupCompletion, pending: readiness.setupPending[0] },
     { label: "Escritura", value: readiness.writingCompletion, pending: readiness.writingPending[0] },
     { label: "Entrega", value: readiness.deliveryReadiness, pending: readiness.deliveryPending[0] },
+    { label: "Calidad final", value: readiness.qualityCompletion, pending: readiness.qualityPending[0] },
   ];
 
   return (
@@ -38,7 +36,7 @@ export function ReadinessOverview({
               style={{
                 height: "100%",
                 width: `${value}%`,
-                background: value >= 80 ? "var(--build-ok)" : value >= 50 ? "var(--build-warn)" : "var(--accent)",
+                background: value >= 90 ? "var(--build-ok)" : value >= 60 ? "var(--build-warn)" : "var(--accent)",
               }}
             />
           </div>

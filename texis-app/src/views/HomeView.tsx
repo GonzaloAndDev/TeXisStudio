@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
+import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconFile,
@@ -180,6 +181,12 @@ export default function HomeView() {
   const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
   const [projects, setProjects] = useState<RecentProject[]>([]);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importTexPath, setImportTexPath] = useState("");
+  const [importOutputPath, setImportOutputPath] = useState("");
+  const [importProjectName, setImportProjectName] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const [homeError, setHomeError] = useState<string | null>(null);
 
   useEffect(() => {
     api.detectLatex().then(setLatexInfo).catch(() => {});
@@ -207,7 +214,7 @@ export default function HomeView() {
       navigate(`/project/${encodeURIComponent(projectPath)}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
-      window.alert("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
+      setHomeError("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
     }
   }
 
@@ -219,35 +226,45 @@ export default function HomeView() {
     await handleOpen(projectPath);
   }
 
-  async function handleImportTex() {
+  async function pickImportTexFile() {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (!isTauriEnv) { navigate("/demo"); return; }
+    const texPath = await api.pickFile([{ name: "LaTeX", extensions: ["tex"] }]);
+    if (!texPath) return;
+    setImportTexPath(texPath);
+    const fileName = texPath.split(/[\\/]/).pop() ?? "tesis-importada.tex";
+    const defaultName = fileName.replace(/\.tex$/i, "") || "tesis-importada";
+    if (!importProjectName.trim()) setImportProjectName(defaultName);
+  }
 
+  async function pickImportOutputFolder() {
+    const isTauriEnv = "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv) { navigate("/demo"); return; }
+    const outputPath = await api.pickFolder();
+    if (outputPath) setImportOutputPath(outputPath);
+  }
+
+  async function handleImportTex() {
+    if (!importTexPath || !importOutputPath || !importProjectName.trim()) return;
+    setImportBusy(true);
+    setHomeError(null);
     try {
-      const texPath = await api.pickFile([{ name: "LaTeX", extensions: ["tex"] }]);
-      if (!texPath) return;
-
-      const outputPath = await api.pickFolder();
-      if (!outputPath) return;
-
-      const fileName = texPath.split(/[\\/]/).pop() ?? "tesis-importada.tex";
-      const defaultName = fileName.replace(/\.tex$/i, "") || "tesis-importada";
-      const projectName = window.prompt("Nombre del proyecto importado", defaultName);
-      if (projectName === null) return;
-
       const imported = await api.importTexProject(
-        texPath,
-        outputPath,
-        projectName.trim() || defaultName,
+        importTexPath,
+        importOutputPath,
+        importProjectName.trim(),
         "generic.thesis",
       );
       const model = await api.getProject(imported.project_path);
       useProjectStore.getState().openProject(model, imported.project_path);
+      setImportDialogOpen(false);
       navigate(`/project/${encodeURIComponent(imported.project_path)}`);
     } catch (e) {
       console.error("Error importando .tex:", e);
       const message = e instanceof Error ? e.message : String(e);
-      window.alert(`No pude importar el archivo .tex: ${message}`);
+      setHomeError(`No pude importar el archivo .tex: ${message}`);
+    } finally {
+      setImportBusy(false);
     }
   }
 
@@ -316,6 +333,90 @@ export default function HomeView() {
 
   return (
     <>
+      {homeError && (
+        <AppDialog
+          title="No se pudo completar la accion"
+          subtitle="TeXisStudio no modifico tu proyecto. Revisa el detalle y vuelve a intentarlo."
+          onClose={() => setHomeError(null)}
+          footer={<button className="btn btn-accent btn-sm" onClick={() => setHomeError(null)}>Entendido</button>}
+        >
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
+            {homeError}
+          </div>
+        </AppDialog>
+      )}
+      {importDialogOpen && (
+        <AppDialog
+          title="Importar archivo TeX"
+          subtitle="Crea un proyecto TeXisStudio conservando el contenido LaTeX original para que puedas migrarlo gradualmente al editor visual."
+          width={560}
+          onClose={() => !importBusy && setImportDialogOpen(false)}
+          footer={
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setImportDialogOpen(false)} disabled={importBusy}>
+                Cancelar
+              </button>
+              <button
+                className="btn btn-accent btn-sm"
+                onClick={handleImportTex}
+                disabled={importBusy || !importTexPath || !importOutputPath || !importProjectName.trim()}
+              >
+                {importBusy ? "Importando..." : "Crear proyecto importado"}
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
+                Archivo .tex
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={importTexPath}
+                  readOnly
+                  placeholder="Selecciona el archivo principal .tex"
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
+                />
+                <button className="btn btn-sm" onClick={pickImportTexFile} disabled={importBusy}>
+                  Elegir
+                </button>
+              </div>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
+                Carpeta destino
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={importOutputPath}
+                  readOnly
+                  placeholder="Selecciona donde crear la carpeta del proyecto"
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
+                />
+                <button className="btn btn-sm" onClick={pickImportOutputFolder} disabled={importBusy}>
+                  Elegir
+                </button>
+              </div>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
+                Nombre del proyecto
+              </label>
+              <input
+                value={importProjectName}
+                onChange={(e) => setImportProjectName(e.target.value)}
+                placeholder="tesis-importada"
+                disabled={importBusy}
+                style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
+              />
+              <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                El original se guardara en <span style={{ fontFamily: "var(--font-mono)" }}>imports/source.tex</span> y el contenido entrara como LaTeX confirmado para no perder fidelidad.
+              </div>
+            </div>
+          </div>
+        </AppDialog>
+      )}
       <TxAppbar
         left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v1.0.0</span></>}
         center={null}
@@ -376,7 +477,13 @@ export default function HomeView() {
               <button className="btn btn-accent" onClick={() => navigate("/new")}>
                 <IconPlus size={13} /> {t("home.new_project")}
               </button>
-              <button className="btn" onClick={handleImportTex}>
+              <button
+                className="btn"
+                onClick={() => {
+                  setHomeError(null);
+                  setImportDialogOpen(true);
+                }}
+              >
                 <IconUpload size={13} /> {t("home.import_tex")}
               </button>
               <button className="btn btn-ghost" onClick={handleOpenFolder}>{t("home.open_folder")}</button>
