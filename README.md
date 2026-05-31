@@ -9,6 +9,28 @@
 
 ---
 
+## Uso diario / Daily use
+
+Ejecuta estos comandos desde la raiz del repo `TeXisStudio`.
+
+| Quiero... | Comando | Resultado |
+|---|---|---|
+| Correr la app | `node scripts/texis.mjs run` | Abre TeXisStudio en modo desarrollo con hot reload. No genera instalador. |
+| Generar instalador/paquete | `node scripts/texis.mjs installer` | Genera los artefactos del sistema operativo actual. |
+| Verificar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript + Vite sin compilar app nativa. |
+
+Alias utiles:
+
+- Para correr la app: `dev`, `start`, `app`.
+- Para generar instalador/paquete: `build`, `compiler`, `package`, `dist`.
+
+VS Code:
+
+- `Ctrl+Shift+B` debe usarse para **correr la app**.
+- Para instalador: `Terminal > Run Task... > TeXisStudio: Generar instalador (SO actual)`.
+
+---
+
 ## ES — ¿Qué es?
 
 TeXisStudio es una aplicación de escritorio que genera tesis y tesinas académicas de calidad tipográfica institucional (MIT, Oxford, ETH Zürich) usando LaTeX como motor de renderizado. El usuario trabaja con formularios, editores visuales y asistentes — nunca escribe LaTeX directamente.
@@ -174,7 +196,7 @@ texis-app/                   Tauri app
 
 ### Comandos definitivos
 
-Usa estos comandos desde la raiz del repo `TeXisStudio`.
+La tabla de uso diario esta al inicio del README. Resumen tecnico:
 
 | Necesidad | Comando | Resultado |
 |---|---|---|
