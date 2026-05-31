@@ -308,6 +308,74 @@ function describePackKind(kind?: VocabPackEntry["pack_kind"]): string {
   }
 }
 
+const VOCAB_AREA_OPTIONS = [
+  { id: "", label: "Usar el área del proyecto" },
+  { id: "medicine", label: "Medicina y salud" },
+  { id: "chemistry", label: "Química" },
+  { id: "biology", label: "Biología" },
+  { id: "engineering", label: "Ingeniería" },
+  { id: "mathematics", label: "Matemáticas" },
+  { id: "physics", label: "Física" },
+  { id: "economics", label: "Economía" },
+  { id: "social_sciences", label: "Ciencias sociales" },
+  { id: "humanities", label: "Humanidades" },
+  { id: "arts", label: "Artes y diseño" },
+] as const;
+
+const VOCAB_AREA_ALIASES: Record<string, string[]> = {
+  medicine: ["medicina", "medico", "médico", "salud", "clinica", "clínica", "enfermeria", "enfermería", "odontologia", "odontología", "farmacia", "biomedicina", "biomedical"],
+  chemistry: ["quimica", "química", "bioquimica", "bioquímica", "farmaceutica", "farmacéutica", "chemistry"],
+  biology: ["biologia", "biología", "biotech", "biotecnologia", "biotecnología", "genetica", "genética", "ecologia", "ecología"],
+  engineering: ["ingenieria", "ingeniería", "engineering", "civil", "mecanica", "mecánica", "electrica", "eléctrica", "electronica", "electrónica", "computacion", "computación", "software", "robotica", "robótica"],
+  mathematics: ["matematica", "matemática", "matematicas", "matemáticas", "math", "estadistica", "estadística", "calculo", "cálculo", "algebra", "álgebra"],
+  physics: ["fisica", "física", "physics", "mecanica", "mecánica", "optica", "óptica", "termodinamica", "termodinámica"],
+  economics: ["economia", "economía", "finanzas", "contaduria", "contaduría", "negocios", "administracion", "administración"],
+  social_sciences: ["sociologia", "sociología", "psicologia", "psicología", "educacion", "educación", "derecho", "politica", "política", "antropologia", "antropología"],
+  humanities: ["historia", "literatura", "filosofia", "filosofía", "linguistica", "lingüística", "humanidades"],
+  arts: ["arte", "artes", "diseño", "diseno", "arquitectura", "musica", "música"],
+};
+
+const VOCAB_RELATED_AREAS: Record<string, string[]> = {
+  medicine: ["chemistry", "biology"],
+  chemistry: ["biology", "medicine"],
+  biology: ["chemistry", "medicine"],
+  engineering: ["mathematics", "physics"],
+  mathematics: ["engineering", "physics"],
+  physics: ["mathematics", "engineering"],
+  economics: ["mathematics", "social_sciences"],
+  social_sciences: ["humanities", "economics"],
+  humanities: ["social_sciences", "arts"],
+  arts: ["humanities"],
+};
+
+function detectVocabularyArea(value: string): string | null {
+  const norm = normalize(value);
+  if (!norm) return null;
+  for (const [area, aliases] of Object.entries(VOCAB_AREA_ALIASES)) {
+    if (aliases.some((alias) => {
+      const aliasNorm = normalize(alias);
+      return norm.includes(aliasNorm) || aliasNorm.includes(norm);
+    })) {
+      return area;
+    }
+  }
+  return null;
+}
+
+function packVocabularyArea(pack: VocabPackEntry): string | null {
+  return detectVocabularyArea([
+    pack.discipline ?? "",
+    pack.subject ?? "",
+    pack.program_name ?? "",
+    pack.name,
+    pack.description,
+  ].join(" "));
+}
+
+function vocabularyAreaLabel(area: string): string {
+  return VOCAB_AREA_OPTIONS.find((option) => option.id === area)?.label ?? area;
+}
+
 function recommendVocabularyPacks(
   packs: VocabPackEntry[],
   language: string,
@@ -317,16 +385,33 @@ function recommendVocabularyPacks(
 ) {
   const langNorm = normalize(language);
   const levelNorm = normalize(academicLevel);
-  const disciplineNorm = normalize(discipline);
+  const targetArea = detectVocabularyArea([discipline, programName].join(" "));
   const programNorm = normalize(programName);
 
   return packs
     .map((pack) => {
       let score = 0;
-      if (normalize(pack.base_language_hint ?? "") === langNorm) score += 4;
-      if ((pack.pack_kind ?? "discipline") === "general") score += 1;
-      if ((pack.pack_kind ?? "discipline") === "academic") score += 2;
-      if (disciplineNorm && normalize(pack.discipline ?? "").includes(disciplineNorm)) score += 4;
+      const packKind = pack.pack_kind ?? "discipline";
+      const packLang = normalize(pack.base_language_hint ?? "");
+      const packArea = packVocabularyArea(pack);
+
+      if (packLang && packLang !== langNorm) return { pack, score: -1 };
+      score += packLang === langNorm ? 4 : 1;
+
+      if (packKind === "general") score += 2;
+      if (packKind === "academic") score += 3;
+
+      if (["discipline", "subject", "program"].includes(packKind)) {
+        if (!targetArea) return { pack, score: -1 };
+        if (packArea === targetArea) {
+          score += packKind === "program" ? 8 : 7;
+        } else if (packArea && (VOCAB_RELATED_AREAS[targetArea] ?? []).includes(packArea)) {
+          score += 2;
+        } else {
+          return { pack, score: -1 };
+        }
+      }
+
       if (programNorm && normalize(pack.program_name ?? "").includes(programNorm)) score += 5;
       if (levelNorm && (pack.target_levels ?? []).some((level) => normalize(level) === levelNorm)) score += 2;
       return { pack, score };
@@ -905,6 +990,8 @@ function StepReview({
 function StepLanguageSupport({
   documentLanguage,
   onDocumentLanguage,
+  vocabularyArea,
+  onVocabularyArea,
   availableLanguages,
   recommendedPacks,
   selectedVocabIds,
@@ -912,6 +999,8 @@ function StepLanguageSupport({
 }: {
   documentLanguage: string;
   onDocumentLanguage: (lang: string) => void;
+  vocabularyArea: string;
+  onVocabularyArea: (area: string) => void;
   availableLanguages: LangPackEntry[];
   recommendedPacks: VocabPackEntry[];
   selectedVocabIds: string[];
@@ -966,8 +1055,32 @@ function StepLanguageSupport({
       </div>
 
       <div style={{ marginTop: 24, maxWidth: 820, padding: "16px 18px", borderRadius: "var(--r-lg)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
-        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 8 }}>
-          Pila sugerida para {documentLanguage.toUpperCase()}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 4 }}>
+              Pila sugerida para {documentLanguage.toUpperCase()}
+            </div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+              Área usada: {vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : "la del proyecto"}
+            </div>
+          </div>
+          <select
+            value={vocabularyArea}
+            onChange={(e) => onVocabularyArea(e.target.value)}
+            style={{
+              minWidth: 220,
+              padding: "7px 30px 7px 10px",
+              borderRadius: "var(--r-md)",
+              border: "1px solid var(--border-firm)",
+              background: "var(--bg-app)",
+              color: "var(--fg-strong)",
+              fontSize: "var(--fs-sm)",
+            }}
+          >
+            {VOCAB_AREA_OPTIONS.map((option) => (
+              <option key={option.id || "project"} value={option.id}>{option.label}</option>
+            ))}
+          </select>
         </div>
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 12 }}>
           Lo recomendable es combinar un diccionario general del idioma con vocabularios académicos y, si aplica, uno específico de tu área o programa.
@@ -1064,6 +1177,7 @@ export default function WizardView() {
     program_name: "",
   });
   const [documentLanguage, setDocumentLanguage] = useState(savedSpellLang ?? savedUiLang ?? "es");
+  const [vocabularyArea, setVocabularyArea] = useState("");
   const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
@@ -1112,10 +1226,10 @@ export default function WizardView() {
         officialPacks,
         documentLanguage,
         form.academic_level ?? "licenciatura",
-        form.discipline ?? "",
+        vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : form.discipline ?? "",
         form.program_name ?? "",
       ),
-    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks],
+    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks, vocabularyArea],
   );
 
   const recommendedVocabPacks = useMemo(
@@ -1340,6 +1454,8 @@ export default function WizardView() {
             <StepLanguageSupport
               documentLanguage={documentLanguage}
               onDocumentLanguage={setDocumentLanguage}
+              vocabularyArea={vocabularyArea}
+              onVocabularyArea={setVocabularyArea}
               availableLanguages={availableLanguages}
               recommendedPacks={recommendedVocabPacks}
               selectedVocabIds={selectedVocabIds}
