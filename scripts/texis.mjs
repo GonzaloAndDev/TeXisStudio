@@ -29,12 +29,18 @@ let activeTimer = null;
 
 function run(cmd, cmdArgs, options = {}) {
   return new Promise((resolveRun, reject) => {
+    const tapOutput = typeof options.onOutputLine === "function";
     const child = spawn(cmd, cmdArgs, {
       cwd: options.cwd ?? root,
-      stdio: "inherit",
+      stdio: tapOutput ? ["inherit", "pipe", "pipe"] : "inherit",
       shell: options.shell ?? false,
-      env: process.env,
+      env: options.env ?? process.env,
     });
+
+    if (tapOutput) {
+      pipeAndTap(child.stdout, process.stdout, options.onOutputLine);
+      pipeAndTap(child.stderr, process.stderr, options.onOutputLine);
+    }
 
     child.on("error", reject);
     child.on("exit", (code) => {
@@ -48,9 +54,16 @@ function run(cmd, cmdArgs, options = {}) {
 }
 
 async function dev() {
+  startDevTimer();
   printDevContext();
   await ensureNodeModules();
-  await runNpm(["run", "tauri", "dev"], appDir);
+  await runNpm(["run", "tauri", "dev"], appDir, {
+    onOutputLine: (line) => {
+      if (activeTimer?.label === "dev" && /Finished `dev` profile .* target\(s\) in /.test(line)) {
+        finishDevReadyTimer();
+      }
+    },
+  });
 }
 
 async function build() {
@@ -94,19 +107,16 @@ async function ensureNodeModules() {
   await runNpm(["ci"], appDir);
 }
 
-function runNpm(npmArgs, cwd) {
+function runNpm(npmArgs, cwd, options = {}) {
+  const env = { ...process.env, PWD: cwd };
   if (process.platform === "win32") {
-    const psCwd = cwd.replaceAll("'", "''");
-    const commandLine = `$ErrorActionPreference='Stop'; Set-Location -LiteralPath '${psCwd}'; & npm.cmd ${npmArgs.join(" ")}`;
-    return run("powershell.exe", [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      commandLine,
-    ]);
+    return run(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `npm.cmd ${npmArgs.join(" ")}`], {
+      cwd,
+      env,
+      ...options,
+    });
   }
-  return run("npm", npmArgs, { cwd });
+  return run("npm", npmArgs, { cwd, env, ...options });
 }
 
 function help() {
@@ -157,6 +167,50 @@ function finishTimer(label) {
   activeTimer = null;
 }
 
+function startDevTimer() {
+  activeTimer = {
+    label: "dev",
+    startedAt: new Date(),
+    startedMs: Date.now(),
+  };
+}
+
+function finishDevReadyTimer() {
+  const finishedAt = new Date();
+  const startedMs = activeTimer?.startedMs ?? Date.now();
+  const elapsedMs = Date.now() - startedMs;
+
+  console.log("");
+  console.log("========================================");
+  console.log("  TeXisStudio dev listo");
+  console.log("========================================");
+  console.log(`  Fin compilacion : ${formatDate(finishedAt)}`);
+  console.log(`  Tiempo dev      : ${formatDuration(elapsedMs)}`);
+  console.log("  Estado          : app abierta; el servidor sigue activo");
+  console.log("");
+
+  activeTimer = null;
+}
+
+function pipeAndTap(source, target, onLine) {
+  let pending = "";
+  source.on("data", (chunk) => {
+    const text = chunk.toString();
+    target.write(chunk);
+    pending += text;
+    const lines = pending.split(/\r?\n/);
+    pending = lines.pop() ?? "";
+    for (const line of lines) {
+      onLine(line);
+    }
+  });
+  source.on("end", () => {
+    if (pending) {
+      onLine(pending);
+    }
+  });
+}
+
 function printBuildContext() {
   console.log(`  SO      : ${process.platform} ${process.arch}`);
   console.log(`  Root    : ${root}`);
@@ -177,6 +231,7 @@ function printDevContext() {
   console.log("========================================");
   console.log("  TeXisStudio dev");
   console.log("========================================");
+  console.log(`  Inicio : ${formatDate(activeTimer?.startedAt ?? new Date())}`);
   console.log(`  Root    : ${root}`);
   console.log(`  App     : ${appDir}`);
   console.log(`  Node    : ${process.version}`);
