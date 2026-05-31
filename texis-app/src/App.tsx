@@ -15,7 +15,7 @@ const SettingsView = lazy(() => import("./views/SettingsView"));
 const WizardView = lazy(() => import("./views/WizardView"));
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null };
+  state: { error: Error | null } = { error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };

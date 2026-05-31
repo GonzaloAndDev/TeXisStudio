@@ -54,11 +54,11 @@ export const useProjectStore = create<ProjectStore>((set) => ({
     set(() => {
       const normalized = normalizeProject(model);
       return {
-      activeProject: normalized,
-      activeProjectPath: path,
-      activeSectionId: normalized.sections.find(
-        (s) => s.placement === "body" && s.enabled
-      )?.id ?? null,
+        activeProject: normalized,
+        activeProjectPath: path,
+        activeSectionId: normalized.sections.find(
+          (s) => s.placement === "body" && s.enabled
+        )?.id ?? null,
       };
     }),
   closeProject: () =>

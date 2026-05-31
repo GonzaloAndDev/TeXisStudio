@@ -175,6 +175,59 @@ function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
   );
 }
 
+function SkeletonLine({ width = "100%", height = 12 }: { width?: string; height?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width,
+        height,
+        borderRadius: 999,
+        background: "linear-gradient(90deg, var(--bg-panel), var(--border-subtle), var(--bg-panel))",
+        backgroundSize: "220% 100%",
+        animation: "tx-pulse 1.2s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function HomeLoadingSkeleton() {
+  return (
+    <>
+      <style>{`@keyframes tx-pulse { 0% { background-position: 220% 0; } 100% { background-position: -220% 0; } }`}</style>
+      <div style={S.journeyGrid}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 16px", minHeight: 88, display: "flex", flexDirection: "column", gap: 12 }}>
+            <SkeletonLine width="52%" height={14} />
+            <SkeletonLine width="88%" />
+            <SkeletonLine width="64%" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function RecentProjectsSkeleton() {
+  return (
+    <div style={S.grid}>
+      {Array.from({ length: 2 }).map((_, index) => (
+        <div key={index} style={{ ...S.card, cursor: "default" }}>
+          <SkeletonLine width="45%" height={16} />
+          <div style={S.cardMeta}>
+            <SkeletonLine width="82px" height={20} />
+            <SkeletonLine width="140px" height={12} />
+          </div>
+          <div style={S.cardFooter}>
+            <SkeletonLine width="56px" height={11} />
+            <SkeletonLine width="80px" height={11} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -285,6 +338,7 @@ export default function HomeView() {
   }
 
   const latexStatus = (() => {
+    if (latexLoading) return { text: "Detectando LaTeX...", dot: "var(--build-warn)" };
     if (!latexInfo?.is_usable) return { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
     const backends = latexInfo.available_backends ?? [];
     const hasTectonic = latexInfo.has_tectonic;
@@ -493,38 +547,42 @@ export default function HomeView() {
               </button>
               <button className="btn btn-ghost" onClick={handleOpenFolder}>{t("home.open_folder")}</button>
             </div>
-            <div style={S.journeyGrid}>
-              {workMoments.map(({ label, hint, icon, onClick }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={onClick}
-                  style={{
-                    textAlign: "left",
-                    background: "var(--bg-panel)",
-                    border: "1px solid var(--border-soft)",
-                    borderRadius: "var(--r-lg)",
-                    padding: "14px 16px",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
-                    {icon}
-                    {label}
-                  </div>
-                  <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                    {hint}
-                  </div>
-                </button>
-              ))}
-            </div>
+            {projectsLoading || latexLoading ? (
+              <HomeLoadingSkeleton />
+            ) : (
+              <div style={S.journeyGrid}>
+                {workMoments.map(({ label, hint, icon, onClick }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={onClick}
+                    style={{
+                      textAlign: "left",
+                      background: "var(--bg-panel)",
+                      border: "1px solid var(--border-soft)",
+                      borderRadius: "var(--r-lg)",
+                      padding: "14px 16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
+                      {icon}
+                      {label}
+                    </div>
+                    <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                      {hint}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {latexInfo && !latexInfo.is_usable && <LatexSetupBanner info={latexInfo} />}
-          {latestProject && latexInfo?.is_usable && (
+          {!latexLoading && latexInfo && !latexInfo.is_usable && <LatexSetupBanner info={latexInfo} />}
+          {!projectsLoading && !latexLoading && latestProject && latexInfo?.is_usable && (
             <NextStepBanner project={latestProject} onClick={() => handleOpen(latestProject.path)} />
           )}
 
@@ -536,6 +594,9 @@ export default function HomeView() {
             </span>
           </div>
 
+          {projectsLoading ? (
+            <RecentProjectsSkeleton />
+          ) : (
           <div style={S.grid}>
             {projects.map((p, i) => (
               <div
@@ -590,6 +651,7 @@ export default function HomeView() {
               </div>
             )}
           </div>
+          )}
         </main>
       </div>
 
