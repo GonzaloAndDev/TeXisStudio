@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { PLUGIN_REGISTRY } from "@texisstudio/plugins";
+import { PLUGIN_REGISTRY, buildLatexInputBlock } from "@texisstudio/plugins";
 import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory } from "@texisstudio/plugins";
 import type { PluginFigureBlock } from "../types";
 
@@ -106,6 +106,59 @@ export async function createPluginFigure(
     sourceJson,
     warnings: result.warnings,
   };
+}
+
+/** Returns display metadata for a single plugin — used by the edit modal. */
+export function getPluginInfo(pluginId: string): PluginInfo | undefined {
+  const plugin = getInstances().get(pluginId);
+  if (!plugin) return undefined;
+  return {
+    pluginId: plugin.pluginId,
+    displayName: plugin.displayName,
+    description: plugin.description,
+    category: plugin.category,
+    qualityLevel: plugin.qualityLevel,
+    requiredPackages: plugin.requiredPackages,
+    scopeWarning: plugin.scopeWarning,
+  };
+}
+
+/** Updates caption/label without re-running the engine.
+ *  Rebuilds the latexBlock from the stored source path, then saves metadata. */
+export async function updatePluginFigureMeta(
+  block: PluginFigureBlock,
+  caption: string,
+  label: string,
+  projectPath: string,
+): Promise<PluginFigureBlock> {
+  const texPath = `texisstudio-assets/figures/${block.figureId}/output.tex`;
+  const newLatexBlock = buildLatexInputBlock({ figureId: block.figureId, inputPath: texPath, caption, label });
+
+  await invoke("save_plugin_figure", {
+    projectPath,
+    figureId: block.figureId,
+    latexTex: newLatexBlock,
+    sourceJson: block.sourceJson,
+    requiredPackages: block.requiredPackages,
+    pluginId: block.pluginId,
+    caption,
+    label,
+    warnings: block.warnings,
+  });
+
+  return { ...block, caption, label, latexBlock: newLatexBlock };
+}
+
+/** Deletes all disk assets for a plugin figure. Called before removing a block. */
+export async function deletePluginFigureAssets(
+  block: PluginFigureBlock,
+  projectPath: string,
+): Promise<void> {
+  try {
+    await invoke("delete_plugin_figure", { projectPath, figureId: block.figureId });
+  } catch {
+    // Non-fatal: assets might already be gone, block still gets removed from section
+  }
 }
 
 /** Re-edits a figure by loading its source from disk and calling editWithSource. */

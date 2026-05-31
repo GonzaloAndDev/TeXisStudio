@@ -16,6 +16,7 @@ export function BlockItem({
   dragging, dragOver, highlighted,
   availableCiteKeys, availableLabels, availableAssets,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  onEditPluginFigure,
 }: {
   block: ContentBlock;
   isEditing: boolean;
@@ -34,6 +35,8 @@ export function BlockItem({
   onDragOver?: (e: React.DragEvent) => void;
   onDragLeave?: () => void;
   onDrop?: () => void;
+  /** Abre el modal de edición para un PluginFigureBlock. */
+  onEditPluginFigure?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -426,37 +429,37 @@ export function BlockItem({
         );
       }
       case "plugin_figure": {
-        const categoryIcons: Record<string, string> = {
-          mathematics: "∑", physics: "⚡", chemistry: "⚗",
-          "biology-medicine": "🧬", "engineering-cs": "⚙",
-          "humanities-social": "📚", "arts-visual": "🎨", "import-external": "↑",
-        };
         return (
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0" }}>
             <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--accent-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-              {categoryIcons[block.pluginId.split("-")[0]] ?? "📊"}
+              📊
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>
                 {block.caption || block.pluginId}
               </div>
               <div style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)", marginBottom: 3 }}>
-                {block.label} · {block.figureId}
+                {block.label} · <span style={{ color: "var(--fg-faint)" }}>{block.figureId}</span>
               </div>
               {block.requiredPackages.length > 0 && (
-                <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>
+                <div style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 3 }}>
                   Paquetes: {block.requiredPackages.join(", ")}
                 </div>
               )}
               {block.warnings.length > 0 && (
-                <div style={{ fontSize: 10, color: "var(--build-warn)", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "var(--build-warn)" }}>
                   ⚠ {block.warnings[0]}
                 </div>
               )}
             </div>
-            <div style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", flexShrink: 0, paddingTop: 2 }}>
-              Clic para editar
-            </div>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => { e.stopPropagation(); onEditPluginFigure?.(); }}
+              title="Editar título, etiqueta o regenerar la figura"
+              style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
+            >
+              Editar figura
+            </button>
           </div>
         );
       }

@@ -19,7 +19,7 @@ import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, ContentBlock, LatexTypography, ProjectSection, SectionStatus } from "../types";
+import type { BibReference, LatexTypography, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
 import { CitationPickerModal } from "./editor/CitationPickerModal";
 
@@ -28,8 +28,10 @@ import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
 import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
-import type { PluginFigureBlock, VisualKind } from "../types";
+import type { ContentBlock, PluginFigureBlock, VisualKind } from "../types";
 import { FigurePickerModal } from "../components/FigurePickerModal";
+import { FigureEditModal } from "../components/FigureEditModal";
+import { deletePluginFigureAssets } from "../services/figure-plugin-service";
 // ── Utilidades ────────────────────────────────────────────────────
 
 const PLACEMENT_KEYS: Record<string, string> = {
@@ -189,6 +191,12 @@ export default function EditorView() {
 
   // Modal de inserción de figura por plugin
   const [figurePickerOpen, setFigurePickerOpen] = useState(false);
+
+  // Modal de edición de figura de plugin existente
+  const [editingPluginFigureId, setEditingPluginFigureId] = useState<string | null>(null);
+  const editingPluginFigureBlock = editingPluginFigureId
+    ? (localBlocks.find((b) => b.id === editingPluginFigureId && b.type === "plugin_figure") as PluginFigureBlock | undefined)
+    : undefined;
 
   // Scroll y highlight cuando jumpTargetBlockId cambia
   useEffect(() => {
@@ -407,12 +415,29 @@ export default function EditorView() {
   }, [scheduleAutoSave]);
 
   const deleteBlock = useCallback((id: string) => {
+    // Clean up disk assets if it's a plugin figure
+    if (activeProjectPath) {
+      const block = localBlocks.find((b) => b.id === id);
+      if (block?.type === "plugin_figure") {
+        deletePluginFigureAssets(block, activeProjectPath);
+      }
+    }
     setLocalBlocks((prev) => {
       const next = prev.filter((b) => b.id !== id);
       scheduleAutoSave(next);
       return next;
     });
     setEditingId(null);
+  }, [scheduleAutoSave, activeProjectPath, localBlocks]);
+
+  // Callback del FigureEditModal — aplica la figura actualizada al bloque
+  const handlePluginFigureUpdated = useCallback((updated: PluginFigureBlock) => {
+    setLocalBlocks((prev) => {
+      const next = prev.map((b) => b.id === updated.id ? updated : b);
+      scheduleAutoSave(next);
+      return next;
+    });
+    setEditingPluginFigureId(null);
   }, [scheduleAutoSave]);
 
   // Insertar figura generada por plugin
@@ -902,6 +927,7 @@ export default function EditorView() {
                         onDragOver={() => { if (dragId && dragId !== block.id) setDropId(block.id); }}
                         onDragLeave={() => setDropId((prev) => prev === block.id ? null : prev)}
                         onDrop={() => handleDrop(block.id)}
+                        onEditPluginFigure={block.type === "plugin_figure" ? () => setEditingPluginFigureId(block.id) : undefined}
                       />
                     ))}
                     {/* Zona de click al final para agregar párrafo */}
@@ -1152,6 +1178,16 @@ export default function EditorView() {
           projectPath={activeProjectPath}
           onInsert={insertPluginFigure}
           onClose={() => setFigurePickerOpen(false)}
+        />
+      )}
+
+      {/* Modal de edición de figura de plugin existente */}
+      {editingPluginFigureBlock && activeProjectPath && (
+        <FigureEditModal
+          block={editingPluginFigureBlock}
+          projectPath={activeProjectPath}
+          onUpdate={handlePluginFigureUpdated}
+          onClose={() => setEditingPluginFigureId(null)}
         />
       )}
 
