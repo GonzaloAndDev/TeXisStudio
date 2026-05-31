@@ -20,6 +20,14 @@ fn figure_dir(project_path: &str, figure_id: &str) -> PathBuf {
         .join(figure_id)
 }
 
+fn project_root(project_path: &str) -> Result<PathBuf, String> {
+    let root = PathBuf::from(project_path);
+    if !root.is_dir() || !root.join("tesis.project.yaml").is_file() {
+        return Err("Ruta de proyecto invalida: no contiene tesis.project.yaml.".to_string());
+    }
+    Ok(root)
+}
+
 /// Persists a plugin figure to disk:
 ///   <project>/texisstudio-assets/figures/<figureId>/source.json
 ///   <project>/texisstudio-assets/figures/<figureId>/output.tex
@@ -41,6 +49,8 @@ pub fn save_plugin_figure(
     if !safe_figure_id(&figure_id) {
         return Err(format!("figureId inválido: '{figure_id}'"));
     }
+
+    project_root(&project_path)?;
 
     let dir = figure_dir(&project_path, &figure_id);
     std::fs::create_dir_all(&dir).map_err(err)?;
@@ -77,6 +87,8 @@ pub fn load_figure_source(
         return Err(format!("figureId inválido: '{figure_id}'"));
     }
 
+    project_root(&project_path)?;
+
     let dir = figure_dir(&project_path, &figure_id);
     let source_path = dir.join("source.json");
     let manifest_path = dir.join("manifest.json");
@@ -109,6 +121,8 @@ pub fn delete_plugin_figure(
         return Err(format!("figureId inválido: '{figure_id}'"));
     }
 
+    project_root(&project_path)?;
+
     let dir = figure_dir(&project_path, &figure_id);
     if dir.exists() {
         std::fs::remove_dir_all(&dir).map_err(err)?;
@@ -119,7 +133,8 @@ pub fn delete_plugin_figure(
 /// Lists all plugin figures saved in the project (for diagnostics / asset panel).
 #[tauri::command]
 pub fn list_plugin_figures(project_path: String) -> Result<Value, String> {
-    let figures_dir = PathBuf::from(&project_path)
+    let root = project_root(&project_path)?;
+    let figures_dir = root
         .join("texisstudio-assets")
         .join("figures");
 

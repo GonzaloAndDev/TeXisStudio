@@ -257,8 +257,19 @@ impl Default for EventBus {
 /// Suscribe a un subconjunto de eventos usando pattern matching.
 /// Uso:
 /// ```rust
+/// use texis_core::{subscribe_to, events::{EventBus, ProjectEvent}};
+/// use std::path::PathBuf;
+/// use uuid::Uuid;
+///
+/// let mut bus = EventBus::new();
 /// subscribe_to!(bus, |event| {
-///     ProjectEvent::AssetImported { id, path } => { ... }
+///     ProjectEvent::AssetImported { id, path } => {
+///         assert_eq!(path, &PathBuf::from("figure.png"));
+///     }
+/// });
+/// bus.emit(&ProjectEvent::AssetImported {
+///     id: Uuid::new_v4(),
+///     path: PathBuf::from("figure.png"),
 /// });
 /// ```
 #[macro_export]
