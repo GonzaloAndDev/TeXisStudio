@@ -11,6 +11,19 @@ const appDir = join(root, "texis-app");
 
 const command = process.argv[2] ?? "help";
 const args = process.argv.slice(3);
+const normalizedCommand = {
+  run: "dev",
+  start: "dev",
+  app: "dev",
+  installer: "build",
+  installers: "build",
+  compile: "build",
+  compiler: "build",
+  package: "build",
+  dist: "build",
+  check: "frontend-build",
+  frontend: "frontend-build",
+}[command] ?? command;
 
 let activeTimer = null;
 
@@ -101,7 +114,9 @@ function help() {
 TeXisStudio helper
 
 Usage:
+  node scripts/texis.mjs run             Run the Tauri app in development mode
   node scripts/texis.mjs dev             Run the Tauri app in development mode
+  node scripts/texis.mjs installer       Build installer/package for this OS
   node scripts/texis.mjs build           Detect OS and run the native build
   node scripts/texis.mjs frontend-build  Type-check and build the React frontend
 
@@ -198,11 +213,11 @@ function formatDuration(ms) {
 }
 
 try {
-  if (command === "dev") {
+  if (normalizedCommand === "dev") {
     await dev();
-  } else if (command === "build") {
+  } else if (normalizedCommand === "build") {
     await build();
-  } else if (command === "frontend-build") {
+  } else if (normalizedCommand === "frontend-build") {
     await frontendBuild();
   } else {
     help();

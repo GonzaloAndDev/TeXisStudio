@@ -178,17 +178,19 @@ Usa estos comandos desde la raiz del repo `TeXisStudio`.
 
 | Necesidad | Comando | Resultado |
 |---|---|---|
-| Correr la app para desarrollar | `node scripts/texis.mjs dev` | Abre TeXisStudio en modo Tauri dev con hot reload. No genera instalador. |
+| Correr la app para desarrollar | `node scripts/texis.mjs run` | Abre TeXisStudio en modo Tauri dev con hot reload. No genera instalador. |
 | Verificar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript + Vite. Rapido; sirve para revisar UI. No genera app nativa ni instalador. |
-| Generar build/instalador del SO actual | `node scripts/texis.mjs build` | Detecta Windows/macOS/Linux y ejecuta el script nativo correspondiente. Genera instaladores/paquetes. |
+| Generar build/instalador del SO actual | `node scripts/texis.mjs installer` | Detecta Windows/macOS/Linux y ejecuta el script nativo correspondiente. Genera instaladores/paquetes. |
 | Probar core Rust | `cargo test -p texis-core` | Ejecuta tests de generacion LaTeX, compilacion, bibliografia, snapshots y modelos. |
+
+Alias utiles: `dev`, `start` y `app` hacen lo mismo que `run`; `build`, `compiler`, `package` y `dist` hacen lo mismo que `installer`.
 
 ### VS Code
 
 `Ctrl+Shift+B` ejecuta la tarea default **TeXisStudio: Run app**. Es equivalente a:
 
 ```bash
-node scripts/texis.mjs dev
+node scripts/texis.mjs run
 ```
 
 Por tanto, `Ctrl+Shift+B` es para correr y probar la app, no para generar instalador.

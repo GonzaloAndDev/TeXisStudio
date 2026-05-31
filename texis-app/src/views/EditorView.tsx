@@ -40,8 +40,10 @@ const PLACEMENT_KEYS: Record<string, string> = {
   appendix: "editor.placement_appendix",
 };
 
-function usePlacementGroup(sections: ProjectSection[]) {
-  const { t } = useTranslation();
+function buildPlacementGroup(
+  sections: ProjectSection[],
+  t: ReturnType<typeof useTranslation>["t"],
+) {
   const groups: Record<string, ProjectSection[]> = {};
   for (const s of sections) {
     const key = PLACEMENT_KEYS[s.placement];
@@ -633,7 +635,7 @@ export default function EditorView() {
     );
   }
 
-  const groups = usePlacementGroup(activeProject.sections);
+  const groups = buildPlacementGroup(activeProject.sections, t);
   const activeSection = activeProject.sections.find((s) => s.id === activeSectionId)
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
