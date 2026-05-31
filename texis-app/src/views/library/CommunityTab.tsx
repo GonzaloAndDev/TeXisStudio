@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { IconBuilding, IconDownload, IconMap, IconRefresh, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { ProfileInfo } from "../../types";
@@ -54,6 +54,21 @@ const DISCIPLINE_LABEL: Record<string, string> = {
   health_sciences: "Ciencias de la salud",
   computing: "Computación",
   natural_sciences: "Ciencias naturales",
+};
+
+const filterSelectStyle: CSSProperties = {
+  width: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
+  padding: "7px 34px 7px 10px",
+  borderRadius: "var(--r-md)",
+  border: "1px solid var(--border-firm)",
+  background: "var(--bg-panel)",
+  color: "var(--fg-strong)",
+  fontSize: "var(--fs-sm)",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
 };
 
 
@@ -361,43 +376,43 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
 
         {/* Structured filters */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 18 }}>
-          <select value={institutionFilter} onChange={(e) => { setInstitutionFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={institutionFilter} onChange={(e) => { setInstitutionFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todas las instituciones</option>
             {availableInstitutions.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Institución no indicada" : value}</option>
             ))}
           </select>
-          <select value={programFilter} onChange={(e) => { setProgramFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={programFilter} onChange={(e) => { setProgramFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todos los programas</option>
             {availablePrograms.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Programa no indicado" : value}</option>
             ))}
           </select>
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todos los estados</option>
             {availableStatuses.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Estado no indicado" : value}</option>
             ))}
           </select>
-          <select value={styleFilter} onChange={(e) => { setStyleFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={styleFilter} onChange={(e) => { setStyleFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todos los estilos</option>
             {availableStyles.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Estilo no indicado" : value}</option>
             ))}
           </select>
-          <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todos los grados</option>
             {availableLevels.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Grado no indicado" : (ACADEMIC_LEVEL_LABEL[value] ?? value)}</option>
             ))}
           </select>
-          <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todas las áreas</option>
             {availableDisciplines.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Área no indicada" : (DISCIPLINE_LABEL[value] ?? value)}</option>
             ))}
           </select>
-          <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+          <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
             <option value="all">Todos los alcances</option>
             {availableScopes.map((value) => (
               <option key={value} value={value}>{value === "unspecified" ? "Alcance no indicado" : (PROFILE_SCOPE_LABEL[value] ?? value)}</option>

@@ -23,6 +23,7 @@ async function resolveDocumentsPath(): Promise<string> {
 }
 
 type StepState = "done" | "active" | "todo";
+type WizardErrors = Partial<Record<"title" | "full_name" | "institution" | "advisors" | "outputPath", string>>;
 
 const BUILTIN_PROFILES: ProfileInfo[] = [
   {
@@ -445,10 +446,10 @@ function StepTipo({
 // ── Helpers ──────────────────────────────────────────────────────
 
 function InputField({
-  label, value, onChange, placeholder, mono = false,
+  label, value, onChange, placeholder, mono = false, error,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; mono?: boolean;
+  placeholder?: string; mono?: boolean; error?: string;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -456,24 +457,26 @@ function InputField({
       <input
         style={{
           padding: "8px 12px", borderRadius: "var(--r-md)",
-          border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+          border: `1px solid ${error ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-panel)",
           fontSize: "var(--fs-base)", color: "var(--fg-strong)",
           outline: "none", fontFamily: mono ? "var(--font-mono)" : undefined,
         }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-invalid={!!error}
       />
+      {error && <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{error}</span>}
     </div>
   );
 }
 
 /** Lista dinámica de strings con botón + para agregar y × para eliminar */
 function DynamicList({
-  label, sublabel, items, onChange, placeholder,
+  label, sublabel, items, onChange, placeholder, error,
 }: {
   label: string; sublabel?: string;
-  items: string[]; onChange: (items: string[]) => void; placeholder?: string;
+  items: string[]; onChange: (items: string[]) => void; placeholder?: string; error?: string;
 }) {
   const addItem = () => onChange([...items, ""]);
   const setItem = (i: number, v: string) => {
@@ -513,12 +516,13 @@ function DynamicList({
           <input
             style={{
               flex: 1, padding: "7px 12px", borderRadius: "var(--r-md)",
-              border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
+              border: `1px solid ${error ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-panel)",
               fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
             }}
             value={item}
             onChange={(e) => setItem(i, e.target.value)}
             placeholder={placeholder ?? ""}
+            aria-invalid={!!error}
           />
           <button
             type="button"
@@ -536,6 +540,7 @@ function DynamicList({
           </button>
         </div>
       ))}
+      {error && <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{error}</span>}
     </div>
   );
 }
@@ -548,6 +553,7 @@ function StepDatos({
   onAdvisors,
   coAuthors,
   onCoAuthors,
+  errors = {},
 }: {
   form: Record<string, string>;
   onChange: (key: string, val: string) => void;
@@ -555,6 +561,7 @@ function StepDatos({
   onAdvisors: (v: string[]) => void;
   coAuthors: string[];
   onCoAuthors: (v: string[]) => void;
+  errors?: WizardErrors;
 }) {
   const { userMode } = useSettingsStore();
   const [showOptional, setShowOptional] = useState(userMode === "advanced");
@@ -573,18 +580,19 @@ function StepDatos({
         Lo esencial
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 20 }}>
-        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" />
-        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" />
-        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UAM…" />
+        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" error={errors.title} />
+        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" error={errors.full_name} />
+        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UAM…" error={errors.institution} />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>Nivel académico</label>
           <select
             value={form.academic_level ?? "licenciatura"}
             onChange={(e) => onChange("academic_level", e.target.value)}
             style={{
-              padding: "8px 12px", borderRadius: "var(--r-md)",
+              padding: "8px 34px 8px 12px", borderRadius: "var(--r-md)",
               border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
               fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
+              width: "100%", boxSizing: "border-box",
             }}
           >
             {ACADEMIC_LEVEL_OPTIONS.map((option) => (
@@ -602,6 +610,7 @@ function StepDatos({
           items={advisors}
           onChange={onAdvisors}
           placeholder="Dra. Ana Torres"
+          error={errors.advisors}
         />
       </div>
 
@@ -1017,6 +1026,8 @@ export default function WizardView() {
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<WizardErrors>({});
   const [profiles, setProfiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
@@ -1069,6 +1080,34 @@ export default function WizardView() {
     if (picked) setOutputPath(picked);
   }
 
+  function validateStep(currentStep: number): boolean {
+    const errors: WizardErrors = {};
+
+    if (currentStep === 1) {
+      if (!form.title.trim()) errors.title = "Escribe el título que irá en portada.";
+      if (!form.full_name.trim()) errors.full_name = "Escribe el nombre completo del autor.";
+      if (!form.institution.trim()) errors.institution = "Indica la universidad o institución.";
+      if (!advisors.some((advisor) => advisor.trim())) {
+        errors.advisors = "Agrega al menos un asesor o director de tesis.";
+      }
+    }
+
+    if (currentStep === steps.length - 1 && !outputPath.trim()) {
+      errors.outputPath = "Selecciona la carpeta donde se creará el proyecto.";
+    }
+
+    setFieldErrors(errors);
+    const hasErrors = Object.keys(errors).length > 0;
+    setValidationError(hasErrors ? "Completa los datos marcados antes de continuar." : null);
+    return !hasErrors;
+  }
+
+  function goNext() {
+    if (!validateStep(step)) return;
+    setValidationError(null);
+    setStep((s) => s + 1);
+  }
+
   const steps = [
     { name: "Tipo de trabajo", hint: docType ? docType : "Tesina · Tesis · Posgrado" },
     { name: "Contexto académico", hint: form.institution || "Institución, grado y comité" },
@@ -1079,6 +1118,7 @@ export default function WizardView() {
 
   async function handleCreate() {
     setCreateError(null);
+    if (!validateStep(1) || !validateStep(steps.length - 1)) return;
     if (!form.title.trim()) {
       setCreateError("Escribe un título para el proyecto antes de continuar.");
       return;
@@ -1191,11 +1231,20 @@ export default function WizardView() {
           {step === 1 && (
             <StepDatos
               form={form}
-              onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+              onChange={(k, v) => {
+                setForm((f) => ({ ...f, [k]: v }));
+                setFieldErrors((prev) => ({ ...prev, [k]: undefined }));
+                setValidationError(null);
+              }}
               advisors={advisors}
-              onAdvisors={setAdvisors}
+              onAdvisors={(next) => {
+                setAdvisors(next);
+                setFieldErrors((prev) => ({ ...prev, advisors: undefined }));
+                setValidationError(null);
+              }}
               coAuthors={coAuthors}
               onCoAuthors={setCoAuthors}
+              errors={fieldErrors}
             />
           )}
           {step === 2 && (
@@ -1242,14 +1291,19 @@ export default function WizardView() {
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
                     value={outputPath}
-                    onChange={(e) => setOutputPath(e.target.value)}
+                    onChange={(e) => {
+                      setOutputPath(e.target.value);
+                      setFieldErrors((prev) => ({ ...prev, outputPath: undefined }));
+                      setValidationError(null);
+                    }}
                     placeholder="/ruta/a/documentos"
                     style={{
                       flex: 1, padding: "7px 10px", borderRadius: "var(--r-md)",
-                      border: "1px solid var(--border-firm)", background: "var(--bg-app)",
+                      border: `1px solid ${fieldErrors.outputPath ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-app)",
                       fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
                       fontFamily: "var(--font-mono)",
                     }}
+                    aria-invalid={!!fieldErrors.outputPath}
                   />
                   <button
                     type="button"
@@ -1266,6 +1320,11 @@ export default function WizardView() {
                   <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || "mi-tesis"}/</code>{" "}
                   dentro de esta ruta.
                 </div>
+                {fieldErrors.outputPath && (
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", marginTop: 6 }}>
+                    {fieldErrors.outputPath}
+                  </div>
+                )}
               </div>
 
               {/* Sugerencia de nube — si hay carpetas detectadas */}
@@ -1289,7 +1348,11 @@ export default function WizardView() {
                       <button
                         key={cf.path}
                         type="button"
-                        onClick={() => setOutputPath(cf.path)}
+                        onClick={() => {
+                          setOutputPath(cf.path);
+                          setFieldErrors((prev) => ({ ...prev, outputPath: undefined }));
+                          setValidationError(null);
+                        }}
                         style={{
                           textAlign: "left", padding: "8px 12px",
                           borderRadius: "var(--r-md)",
@@ -1338,6 +1401,24 @@ export default function WizardView() {
             </div>
           )}
 
+          {validationError && (
+            <div
+              role="alert"
+              style={{
+                maxWidth: 820,
+                marginTop: 18,
+                padding: "10px 14px",
+                borderRadius: "var(--r-md)",
+                background: "var(--build-err-tint, #ffeded)",
+                border: "1px solid var(--build-err)",
+                color: "var(--build-err)",
+                fontSize: "var(--fs-sm)",
+              }}
+            >
+              {validationError}
+            </div>
+          )}
+
           <div style={S.footer}>
             {step > 0 ? (
               <button className="btn" onClick={() => setStep((s) => s - 1)}>
@@ -1351,7 +1432,7 @@ export default function WizardView() {
                 {profileId} · v0.1
               </span>
               {step < steps.length - 1 ? (
-                <button className="btn btn-accent" onClick={() => setStep((s) => s + 1)}>
+                <button className="btn btn-accent" onClick={goNext}>
                   Continuar <IconChevronR size={13} />
                 </button>
               ) : (
