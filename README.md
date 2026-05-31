@@ -210,6 +210,35 @@ Para generar instalador desde VS Code usa:
 
 Requisitos generales: Rust stable, Node.js 20+, MiKTeX o TeX Live para compilar documentos LaTeX. En Windows se requiere WebView2; el instalador lo maneja via Tauri. En macOS se requieren Xcode Command Line Tools. En Linux el script intenta instalar dependencias WebKit/GTK con el gestor de paquetes disponible.
 
+### Distribucion para usuarios finales
+
+Para un usuario no tecnico, la distribucion recomendada es entregar un instalador por sistema operativo y pedir solo una suite LaTeX aparte:
+
+| Usuario final | Artefacto recomendado | Nota |
+|---|---|---|
+| Windows | NSIS `.exe` | Opcion mas familiar: descargar, doble clic, instalar. |
+| Windows avanzado/portable | ZIP portable | Util para pruebas o equipos sin instalacion formal. |
+| macOS | `.dmg` | Instalacion tipo arrastrar a Applications. Sin firma Apple puede mostrar advertencia. |
+| Debian/Ubuntu | `.deb` | Instalacion nativa con el gestor del sistema. |
+| Fedora/RHEL | `.rpm` | Instalacion nativa con el gestor del sistema. |
+| Linux general | AppImage | Opcion portable cuando no se quiere paquete por distro. |
+
+No se espera que una sola maquina local genere profesionalmente todos los instaladores. La regla operativa es:
+
+- En local: `node scripts/texis.mjs build` genera el instalador del SO actual.
+- Para publicar todos los SO soportados: usar GitHub Actions con `.github/workflows/release.yml`.
+
+Publicacion completa desde GitHub:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Al subir un tag `v*`, GitHub Actions compila en runners Windows, Linux y macOS, y publica una GitHub Release con MSI, NSIS `.exe`, ZIP portable, `.deb`, `.rpm`, AppImage y DMG.
+
+Para probar el pipeline sin publicar release, ejecuta manualmente el workflow **Build & Release** desde la pestaña **Actions** de GitHub. Eso genera artefactos descargables del workflow, pero no crea release publica si no hay tag.
+
 ---
 
 ## How the repos fit together / Cómo encajan los repos
