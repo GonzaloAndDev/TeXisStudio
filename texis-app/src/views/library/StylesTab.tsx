@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { IconCheck, IconEdit, IconLayers, IconPlus, IconRefresh, IconSearch, IconTrash, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import { TYPE_LABEL, CitationStyle, BUILTIN_STYLES, loadStyles, saveStyles } from "./constants";
@@ -37,6 +38,7 @@ export function StylesTab() {
   const [search, setSearch]           = useState("");
   const [preview, setPreview]         = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ kind: "reset" } | { kind: "delete"; style: CitationStyle } | null>(null);
 
   // New/edit form state
   const emptyForm = { id: "", name: "", full_name: "", type: "author_date" as const, biblatex_style: "", in_text_format: "", bibliography_title: "References", description: "", disciplines: "" };
@@ -114,10 +116,10 @@ export function StylesTab() {
   }
 
   function resetToDefaults() {
-    if (!window.confirm("¿Restaurar el orden y estilos predeterminados? Se perderán los estilos personalizados.")) return;
     saveStyles(BUILTIN_STYLES);
     setStyles(BUILTIN_STYLES);
     setSelected(null);
+    setConfirmAction(null);
   }
 
   const filtered = styles.filter((s) =>
@@ -130,6 +132,24 @@ export function StylesTab() {
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.kind === "reset" ? "Restaurar estilos" : "Eliminar estilo"}
+          message={confirmAction.kind === "reset"
+            ? "Se restaurara el orden predeterminado y se eliminaran los estilos personalizados."
+            : `Se eliminara el estilo personalizado "${confirmAction.style.name}".`}
+          confirmLabel={confirmAction.kind === "reset" ? "Restaurar" : "Eliminar"}
+          destructive
+          onClose={() => setConfirmAction(null)}
+          onConfirm={() => {
+            if (confirmAction.kind === "reset") resetToDefaults();
+            else {
+              deleteCustom(confirmAction.style);
+              setConfirmAction(null);
+            }
+          }}
+        />
+      )}
       {/* Main list */}
       <div style={{ flex: 1, overflow: "auto", padding: "32px 40px" }} className="scroll">
         {/* Header */}
@@ -141,7 +161,7 @@ export function StylesTab() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button className="btn btn-ghost btn-sm" onClick={resetToDefaults} title="Restaurar predeterminados" style={{ fontSize: 11 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConfirmAction({ kind: "reset" })} title="Restaurar predeterminados" style={{ fontSize: 11 }}>
               <IconRefresh size={12} /> Restaurar
             </button>
             <button className="btn btn-accent btn-sm" onClick={openAdd}>
@@ -202,7 +222,7 @@ export function StylesTab() {
                   {!style.builtin && (
                     <>
                       <button onClick={(e) => { e.stopPropagation(); openEdit(style); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-muted)", padding: "2px 4px" }} title="Editar"><IconEdit size={12} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); deleteCustom(style); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--build-err)", padding: "2px 4px" }} title="Eliminar"><IconTrash size={12} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setConfirmAction({ kind: "delete", style }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--build-err)", padding: "2px 4px" }} title="Eliminar"><IconTrash size={12} /></button>
                     </>
                   )}
                 </div>
@@ -331,7 +351,7 @@ export function StylesTab() {
             {!selected.builtin && (
               <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8 }}>
                 <button className="btn" style={{ flex: 1 }} onClick={() => openEdit(selected)}><IconEdit size={13} /> Editar</button>
-                <button className="btn btn-ghost" style={{ padding: "6px 10px", color: "var(--build-err)" }} onClick={() => deleteCustom(selected)} title="Eliminar estilo"><IconTrash size={13} /></button>
+                <button className="btn btn-ghost" style={{ padding: "6px 10px", color: "var(--build-err)" }} onClick={() => setConfirmAction({ kind: "delete", style: selected })} title="Eliminar estilo"><IconTrash size={13} /></button>
               </div>
             )}
           </>

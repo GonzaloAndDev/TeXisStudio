@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
 import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
@@ -165,6 +166,7 @@ export default function EditorView() {
   const [snapshots, setSnapshots] = useState<{ filename: string; timestamp: string; label: string }[]>([]);
   const [newSnapLabel, setNewSnapLabel] = useState("");
   const [snapBusy, setSnapBusy] = useState(false);
+  const [snapshotConfirm, setSnapshotConfirm] = useState<{ action: "restore" | "delete"; filename: string } | null>(null);
 
   // Navigation guard — bloquear si hay cambios sin guardar
   const isUnsaved = saveStatus === "unsaved" || saveStatus === "error";
@@ -344,18 +346,15 @@ export default function EditorView() {
     }
   }, [activeProjectPath, newSnapLabel, loadSnapshots]);
 
-  const handleRestoreSnapshot = useCallback(async (filename: string) => {
+  const restoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm(
-      "¿Restaurar esta versión? El estado actual se guardará automáticamente como un snapshot de respaldo antes de restaurar."
-    );
-    if (!ok) return;
     setSnapBusy(true);
     try {
       await api.restoreSnapshot(activeProjectPath, filename);
       // Recargar el proyecto desde disco
       const model = await api.getProject(activeProjectPath);
       useProjectStore.getState().openProject(model, activeProjectPath);
+      setSnapshotConfirm(null);
       setSnapshotsOpen(false);
     } catch (e) {
       console.error("Error restaurando snapshot:", e);
@@ -364,15 +363,17 @@ export default function EditorView() {
     }
   }, [activeProjectPath]);
 
-  const handleDeleteSnapshot = useCallback(async (filename: string) => {
+  const deleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm("¿Eliminar este snapshot? Esta acción no se puede deshacer.");
-    if (!ok) return;
+    setSnapBusy(true);
     try {
       await api.deleteSnapshot(activeProjectPath, filename);
       await loadSnapshots();
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
+    } finally {
+      setSnapBusy(false);
+      setSnapshotConfirm(null);
     }
   }, [activeProjectPath, loadSnapshots]);
 
@@ -1220,6 +1221,23 @@ export default function EditorView() {
       )}
 
       {/* ── Panel de versiones (snapshots) ───────────────────────── */}
+      {snapshotConfirm && (
+        <ConfirmDialog
+          title={snapshotConfirm.action === "restore" ? "Restaurar version" : "Eliminar version"}
+          message={snapshotConfirm.action === "restore"
+            ? "El estado actual se guardara automaticamente como respaldo antes de restaurar esta version."
+            : "Esta version guardada se eliminara de forma permanente."}
+          confirmLabel={snapshotConfirm.action === "restore" ? "Restaurar version" : "Eliminar version"}
+          destructive={snapshotConfirm.action === "delete"}
+          busy={snapBusy}
+          onClose={() => setSnapshotConfirm(null)}
+          onConfirm={() => {
+            if (snapshotConfirm.action === "restore") restoreSnapshot(snapshotConfirm.filename);
+            else deleteSnapshot(snapshotConfirm.filename);
+          }}
+        />
+      )}
+
       {snapshotsOpen && (
         <div
           style={{
@@ -1306,7 +1324,7 @@ export default function EditorView() {
                     <button
                       className="btn btn-ghost btn-sm"
                       disabled={snapBusy}
-                      onClick={() => handleRestoreSnapshot(snap.filename)}
+                      onClick={() => setSnapshotConfirm({ action: "restore", filename: snap.filename })}
                       title="Restaurar esta versión"
                       style={{ fontSize: "var(--fs-xs)", flexShrink: 0 }}
                     >
@@ -1315,7 +1333,7 @@ export default function EditorView() {
                     <button
                       className="btn btn-ghost btn-icon"
                       disabled={snapBusy}
-                      onClick={() => handleDeleteSnapshot(snap.filename)}
+                      onClick={() => setSnapshotConfirm({ action: "delete", filename: snap.filename })}
                       title="Eliminar versión"
                       style={{ padding: 4, opacity: 0.55, flexShrink: 0 }}
                     >
