@@ -823,7 +823,7 @@ function StepReview({
   coAuthors,
   outputPath,
   documentLanguage,
-  suggestedVocab,
+  selectedVocab,
 }: {
   docType: string;
   form: Record<string, string>;
@@ -832,7 +832,7 @@ function StepReview({
   coAuthors: string[];
   outputPath: string;
   documentLanguage: string;
-  suggestedVocab: VocabPackEntry[];
+  selectedVocab: VocabPackEntry[];
 }) {
   const summaryRows = [
     ["Trabajo", docType],
@@ -889,11 +889,11 @@ function StepReview({
         </div>
         <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-            Apoyos lingüísticos sugeridos
+            Apoyos lingüísticos seleccionados
           </div>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-            {suggestedVocab.length > 0
-              ? suggestedVocab.map((pack) => pack.name).join(", ")
+            {selectedVocab.length > 0
+              ? selectedVocab.map((pack) => pack.name).join(", ")
               : "Podrás activar vocabularios académicos o disciplinares después desde Configuración."}
           </div>
         </div>
@@ -907,11 +907,15 @@ function StepLanguageSupport({
   onDocumentLanguage,
   availableLanguages,
   recommendedPacks,
+  selectedVocabIds,
+  onToggleVocab,
 }: {
   documentLanguage: string;
   onDocumentLanguage: (lang: string) => void;
   availableLanguages: LangPackEntry[];
   recommendedPacks: VocabPackEntry[];
+  selectedVocabIds: string[];
+  onToggleVocab: (id: string) => void;
 }) {
   const quickChoices = [
     { id: "es", name: "Español", note: "Bundled por defecto" },
@@ -970,25 +974,58 @@ function StepLanguageSupport({
         </div>
         {recommendedPacks.length > 0 ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            {recommendedPacks.map((pack) => (
-              <div
-                key={pack.id}
-                style={{
-                  padding: "12px 14px",
-                  borderRadius: "var(--r-md)",
-                  background: "var(--bg-app)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{pack.name}</span>
-                  <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
-                </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                  {pack.description}
-                </div>
-              </div>
-            ))}
+            {recommendedPacks.map((pack) => {
+              const selected = selectedVocabIds.includes(pack.id);
+              return (
+                <button
+                  key={pack.id}
+                  type="button"
+                  onClick={() => onToggleVocab(pack.id)}
+                  aria-pressed={selected}
+                  style={{
+                    textAlign: "left",
+                    padding: "12px 14px",
+                    borderRadius: "var(--r-md)",
+                    background: selected ? "var(--accent-tint)" : "var(--bg-app)",
+                    border: `1px solid ${selected ? "var(--accent)" : "var(--border-subtle)"}`,
+                    boxShadow: selected ? "0 0 0 3px var(--accent-soft)" : "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{pack.name}</span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 999,
+                        border: `1px solid ${selected ? "var(--accent)" : "var(--border-firm)"}`,
+                        background: selected ? "var(--accent)" : "var(--bg-panel)",
+                        color: selected ? "white" : "transparent",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 13,
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 7 }}>
+                    <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
+                    <span style={{ fontSize: "var(--fs-xs)", color: selected ? "var(--accent-deep)" : "var(--fg-faint)" }}>
+                      {selected ? "Se activará al crear" : "Click para activar"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                    {pack.description}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
@@ -1005,7 +1042,12 @@ export default function WizardView() {
   const [searchParams] = useSearchParams();
   const { lang: savedUiLang, spellLang: savedSpellLang, setLang, setSpellLang } = useSettingsStore();
   const { catalog, loadCatalog } = useLangPacksStore();
-  const { officialPacks, loadOfficialCatalog } = useVocabPacksStore();
+  const {
+    officialPacks,
+    loadOfficialCatalog,
+    install: installVocabPack,
+    isInstalled: isVocabInstalled,
+  } = useVocabPacksStore();
   const [step, setStep] = useState(0);
   const [docType, setDocType] = useState("tesis");
   const [profileId, setProfileId] = useState(
@@ -1022,6 +1064,7 @@ export default function WizardView() {
     program_name: "",
   });
   const [documentLanguage, setDocumentLanguage] = useState(savedSpellLang ?? savedUiLang ?? "es");
+  const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
@@ -1074,6 +1117,30 @@ export default function WizardView() {
       ),
     [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks],
   );
+
+  const recommendedVocabPacks = useMemo(
+    () => suggestedVocab.map((entry) => entry.pack),
+    [suggestedVocab],
+  );
+
+  const selectedVocabPacks = useMemo(
+    () => recommendedVocabPacks.filter((pack) => selectedVocabIds.includes(pack.id)),
+    [recommendedVocabPacks, selectedVocabIds],
+  );
+
+  useEffect(() => {
+    const visibleIds = new Set(recommendedVocabPacks.map((pack) => pack.id));
+    setSelectedVocabIds((prev) => {
+      const next = prev.filter((id) => visibleIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [recommendedVocabPacks]);
+
+  function toggleVocabPack(id: string) {
+    setSelectedVocabIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  }
 
   async function handlePickFolder() {
     const picked = await api.pickFolder();
@@ -1129,6 +1196,16 @@ export default function WizardView() {
     }
     setCreating(true);
     try {
+      for (const pack of selectedVocabPacks) {
+        if (!isVocabInstalled(pack.id)) {
+          try {
+            await installVocabPack(pack);
+          } catch (e) {
+            throw new Error(`No se pudo activar "${pack.name}". Revisa tu conexión o desmárcalo para crear el proyecto sin ese apoyo. Detalle: ${e}`);
+          }
+        }
+      }
+
       const result = await api.createProject(form.title, profileId, outputPath);
       // Cargar modelo y enriquecer con datos del wizard
       const model = await api.getProject(result.project_path);
@@ -1264,7 +1341,9 @@ export default function WizardView() {
               documentLanguage={documentLanguage}
               onDocumentLanguage={setDocumentLanguage}
               availableLanguages={availableLanguages}
-              recommendedPacks={suggestedVocab.map((entry) => entry.pack)}
+              recommendedPacks={recommendedVocabPacks}
+              selectedVocabIds={selectedVocabIds}
+              onToggleVocab={toggleVocabPack}
             />
           )}
           {step === 4 && (
@@ -1276,7 +1355,7 @@ export default function WizardView() {
               coAuthors={coAuthors}
               outputPath={outputPath}
               documentLanguage={documentLanguage}
-              suggestedVocab={suggestedVocab.map((entry) => entry.pack)}
+              selectedVocab={selectedVocabPacks}
             />
           )}
 
