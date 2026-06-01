@@ -99,7 +99,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
-            libfuse2
+            libfuse2 \
+            rpm
 
       - name: Rust stable
         uses: dtolnay/rust-toolchain@stable

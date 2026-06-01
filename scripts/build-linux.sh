@@ -5,8 +5,8 @@
 # Uso:
 #   bash scripts/build-linux.sh
 #
-# Requisitos: Rust stable, Node.js 18+
-# Las dependencias del sistema se instalan automáticamente.
+# Requisitos: Rust stable, Node.js 20+
+# Las dependencias Tauri del sistema se instalan automáticamente.
 
 set -euo pipefail
 
@@ -17,6 +17,44 @@ VERSION="1.0.0"
 echo ""
 echo "  TeXisStudio — Build Linux v$VERSION"
 echo "  ====================================="
+
+missing=()
+
+require_command() {
+    if ! command -v "$1" &>/dev/null; then
+        missing+=("$1")
+    fi
+}
+
+version_major() {
+    "$1" --version 2>/dev/null | grep -Eo '[0-9]+' | head -1
+}
+
+require_command node
+require_command npm
+require_command cargo
+require_command rustc
+
+if ((${#missing[@]})); then
+    echo ""
+    echo "  ERROR: faltan herramientas base: ${missing[*]}"
+    echo ""
+    echo "  En Debian/Ubuntu prepara el equipo con:"
+    echo "    bash scripts/setup-debian.sh"
+    echo ""
+    echo "  O instala manualmente Node.js 20+ y Rust stable:"
+    echo "    https://nodejs.org/"
+    echo "    https://rustup.rs/"
+    exit 1
+fi
+
+NODE_MAJOR="$(version_major node)"
+if [[ -z "$NODE_MAJOR" || "$NODE_MAJOR" -lt 20 ]]; then
+    echo ""
+    echo "  ERROR: Node.js 20+ es requerido. Detectado: $(node --version)"
+    echo "  Instala Node.js 20 LTS y vuelve a ejecutar este script."
+    exit 1
+fi
 
 # ── [1/3] Dependencias del sistema ───────────────────────────────────────────
 echo ""
@@ -31,7 +69,8 @@ if command -v apt-get &>/dev/null; then
         libayatana-appindicator3-dev \
         librsvg2-dev \
         patchelf \
-        libfuse2
+        libfuse2 \
+        rpm
 
 elif command -v dnf &>/dev/null; then
     echo "  → Detectado: Fedora / RHEL"
@@ -41,7 +80,8 @@ elif command -v dnf &>/dev/null; then
         libappindicator-gtk3-devel \
         librsvg2-devel \
         patchelf \
-        fuse-libs
+        fuse-libs \
+        rpm-build
 
 elif command -v pacman &>/dev/null; then
     echo "  → Detectado: Arch Linux"

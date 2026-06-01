@@ -13,6 +13,12 @@
 
 Ejecuta estos comandos desde la raiz del repo `TeXisStudio`.
 
+Requisitos base:
+
+- Node.js 20+
+- Rust stable (`cargo` y `rustc`)
+- En Debian/Ubuntu, primero ejecuta `bash scripts/setup-debian.sh` para instalar dependencias Tauri/WebKit/GTK del sistema y verificar Node/Rust.
+
 | Quiero... | Comando | Resultado |
 |---|---|---|
 | Correr la app | `node scripts/texis.mjs run` | Abre TeXisStudio en modo desarrollo con hot reload. No genera instalador. |
@@ -27,7 +33,7 @@ Alias utiles:
 VS Code:
 
 - `Ctrl+Shift+B` debe usarse para **correr la app**.
-- Para instalador: `Terminal > Run Task... > TeXisStudio: Generar instalador (SO actual)`.
+- Para instalador: `Terminal > Run Task... > TeXisStudio: Build current OS`.
 
 ---
 
@@ -233,6 +239,14 @@ Para generar instalador desde VS Code usa:
 | Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/` |
 
 Requisitos generales: Rust stable, Node.js 20+, MiKTeX o TeX Live para compilar documentos LaTeX. En Windows se requiere WebView2; el instalador lo maneja via Tauri. En macOS se requieren Xcode Command Line Tools. En Linux el script intenta instalar dependencias WebKit/GTK con el gestor de paquetes disponible.
+
+En Debian/Ubuntu, si el comando falla con `node: command not found`, `cargo: command not found` o dependencias WebKit/GTK faltantes, prepara el sistema con:
+
+```bash
+bash scripts/setup-debian.sh
+```
+
+Despues instala Node.js 20+ y Rust stable si el setup los reporta como faltantes; esos dos no se instalan automaticamente porque las versiones de `apt` pueden ser antiguas para Tauri.
 
 ### Distribucion para usuarios finales
 
