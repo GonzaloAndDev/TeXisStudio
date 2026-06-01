@@ -3,12 +3,12 @@
   "configurations": [
     {
       "name": "TeXisStudio: Dev",
-      "type": "node",
+      "type": "node-terminal",
       "request": "launch",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
+      "command": "bash ${workspaceFolder}/scripts/bootstrap.sh run",
+      "windows": {
+        "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder}\\scripts\\bootstrap-windows.ps1 -Run"
+      },
       "presentation": {
         "group": "texis",
         "order": 1
@@ -16,12 +16,12 @@
     },
     {
       "name": "TeXisStudio: Build",
-      "type": "node",
+      "type": "node-terminal",
       "request": "launch",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "build"],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
+      "command": "bash ${workspaceFolder}/scripts/bootstrap.sh installer",
+      "windows": {
+        "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder}\\scripts\\bootstrap-windows.ps1 -Installer"
+      },
       "presentation": {
         "group": "texis",
         "order": 2
@@ -29,12 +29,12 @@
     },
     {
       "name": "TeXisStudio: Frontend only",
-      "type": "node",
+      "type": "node-terminal",
       "request": "launch",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**"],
+      "command": "bash ${workspaceFolder}/scripts/bootstrap.sh frontend-build",
+      "windows": {
+        "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder}\\scripts\\bootstrap-windows.ps1 -FrontendBuild"
+      },
       "presentation": {
         "group": "texis",
         "order": 3

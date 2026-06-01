@@ -38,6 +38,7 @@ Aliases:
 
 VS Code:
 
+- Recommended: open `TeXisStudio.code-workspace`, not a parent folder. The workspace pins the TeXisStudio tasks and disables unrelated auto-detected build tasks.
 - `Ctrl+Shift+B` runs **TeXisStudio: Run app**. It uses the bootstrap task, so the first run can install or verify dependencies; later runs skip work that is already done.
 - To build an installer, use `Terminal > Run Task... > TeXisStudio: Build current OS`.
 
@@ -173,6 +174,7 @@ Alias:
 
 VS Code:
 
+- Recomendado: abre `TeXisStudio.code-workspace`, no una carpeta padre. El workspace fija las tareas de TeXisStudio y desactiva tareas detectadas automáticamente que no corresponden.
 - `Ctrl+Shift+B` ejecuta **TeXisStudio: Run app**. Usa bootstrap, así que la primera ejecución puede instalar o verificar dependencias; las siguientes omiten lo que ya esté listo.
 - Para generar instalador usa `Terminal > Run Task... > TeXisStudio: Build current OS`.
 

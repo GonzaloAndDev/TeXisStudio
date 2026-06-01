@@ -1,3 +1,10 @@
 {
-  "java.autobuild.enabled": false
+  "java.autobuild.enabled": false,
+  "task.autoDetect": "off",
+  "npm.autoDetect": "off",
+  "typescript.tsc.autoDetect": "off",
+  "gulp.autoDetect": "off",
+  "grunt.autoDetect": "off",
+  "jake.autoDetect": "off",
+  "cmake.configureOnOpen": false
 }

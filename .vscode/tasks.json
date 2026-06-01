@@ -16,6 +16,7 @@
           "-Run"
         ]
       },
+      "options": { "cwd": "${workspaceFolder}" },
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": [],
       "presentation": {
@@ -39,6 +40,7 @@
           "-Installer"
         ]
       },
+      "options": { "cwd": "${workspaceFolder}" },
       "group": "build",
       "problemMatcher": [],
       "presentation": {
@@ -62,6 +64,7 @@
           "-FrontendBuild"
         ]
       },
+      "options": { "cwd": "${workspaceFolder}" },
       "group": "test",
       "problemMatcher": [],
       "presentation": {
