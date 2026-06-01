@@ -53,10 +53,10 @@ export default function SettingsView() {
   const { section: sectionParam } = useParams<{ section?: string }>();
   const { t } = useTranslation();
   const {
-    lang, userMode, spellLang,
+    lang, userMode, uiScale, spellLang,
     autocorrectEnabled, grammarAutoCheck, grammarEnabled,
     customDictionary, userName, userInstitution, userEmail, projectDir,
-    setLang, setUserMode, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
+    setLang, setUserMode, setUiScale, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
     addToCustomDictionary, removeFromCustomDictionary,
     setUserName, setUserInstitution, setUserEmail, setProjectDir,
   } = useSettingsStore();
@@ -707,6 +707,30 @@ export default function SettingsView() {
                   {userMode === "basic"
                     ? "Mostramos primero lo importante para escribir, revisar y entregar. Los detalles técnicos quedan ocultos hasta que los necesites."
                     : "Mostramos controles técnicos, detalles de compilación y opciones finas para usuarios que quieren ver el stack completo."}
+                </div>
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
+                  Tamaño de interfaz
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+                  {([
+                    ["normal", "Normal"],
+                    ["large", "Grande"],
+                    ["xlarge", "Muy grande"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      className={`btn ${uiScale === value ? "btn-accent" : "btn-ghost"}`}
+                      onClick={() => setUiScale(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                  Aumenta la letra de la app sin cambiar el tamaño tipográfico del PDF. Los controles crecen un poco para evitar textos cortados.
                 </div>
               </Card>
 

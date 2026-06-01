@@ -9,6 +9,11 @@ if (savedTheme) {
   document.documentElement.dataset.theme = savedTheme;
 }
 
+const savedUiScale = localStorage.getItem("tx-ui-scale");
+if (savedUiScale === "\"large\"" || savedUiScale === "\"xlarge\"") {
+  document.documentElement.dataset.uiScale = JSON.parse(savedUiScale);
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

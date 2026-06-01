@@ -3,6 +3,7 @@ import { create } from "zustand";
 interface SettingsState {
   lang: string;
   userMode: "basic" | "advanced";
+  uiScale: "normal" | "large" | "xlarge";
   spellLang: string | null;
   autocorrectEnabled: boolean;
   grammarAutoCheck: boolean;
@@ -15,6 +16,7 @@ interface SettingsState {
 
   setLang: (lang: string) => void;
   setUserMode: (mode: "basic" | "advanced") => void;
+  setUiScale: (scale: "normal" | "large" | "xlarge") => void;
   setSpellLang: (lang: string | null) => void;
   setAutocorrect: (v: boolean) => void;
   setGrammarAutoCheck: (v: boolean) => void;
@@ -43,6 +45,7 @@ function save<T>(key: string, v: T): void {
 export const useSettingsStore = create<SettingsState>((set) => ({
   lang: load("tx-lang", "es"),
   userMode: load("tx-user-mode", "basic"),
+  uiScale: load("tx-ui-scale", "normal"),
   spellLang: load("tx-spell-lang", "es"),
   autocorrectEnabled: load("tx-autocorrect", true),
   grammarAutoCheck: load("tx-grammar-auto", false),
@@ -60,6 +63,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setUserMode: (userMode) => {
     save("tx-user-mode", userMode);
     set({ userMode });
+  },
+  setUiScale: (uiScale) => {
+    save("tx-ui-scale", uiScale);
+    document.documentElement.dataset.uiScale = uiScale;
+    set({ uiScale });
   },
   setSpellLang: (spellLang) => {
     save("tx-spell-lang", spellLang);
