@@ -7,6 +7,8 @@
 
 import { create } from "zustand";
 
+export const AI_ASSISTANT_ENABLED = false;
+
 export type AiProvider = "openai" | "claude" | "gemini";
 export type AiAccessMode = "web_free" | "account" | "api_key";
 export type AiReasoningLevel = "fast" | "balanced" | "deep";

@@ -12,7 +12,7 @@ import {
   IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
-import { useAiStore } from "../stores/ai";
+import { AI_ASSISTANT_ENABLED, useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
@@ -889,14 +889,16 @@ export default function EditorView() {
             >
               LT
             </button>
-            <button
-              className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
-              onClick={() => aiPanel.togglePanel()}
-              title="Asistente IA"
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
-            >
-              ✦ IA
-            </button>
+            {AI_ASSISTANT_ENABLED && (
+              <button
+                className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
+                onClick={() => aiPanel.togglePanel()}
+                title="Asistente IA"
+                style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              >
+                ✦ IA
+              </button>
+            )}
 
             <div style={{ display: "none" }} />
 
@@ -1135,7 +1137,7 @@ export default function EditorView() {
       )}
 
       {/* Panel de asistente IA */}
-      {aiPanel.isPanelOpen && (
+      {AI_ASSISTANT_ENABLED && aiPanel.isPanelOpen && (
         <Suspense fallback={<LazyPanelFallback />}>
           <AiAssistantPanel
             currentSelection={aiSelection?.text}

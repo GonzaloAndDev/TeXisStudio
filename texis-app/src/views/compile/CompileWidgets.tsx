@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { IconCheck, IconCheckCircle, IconErr, IconPlay, IconWarn, IconX } from "../../components/Icons";
-import { useAiStore } from "../../stores/ai";
+import { AI_ASSISTANT_ENABLED, useAiStore } from "../../stores/ai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import type { DependencyIssue, PdfaCheck, PdfPostflightResult, UserError, ValidationReport, ValidationIssue } from "../../types";
 
@@ -104,6 +104,10 @@ export function AiErrorHelper({
   log: string;
 }) {
   const aiPanel = useAiStore();
+
+  if (!AI_ASSISTANT_ENABLED) {
+    return null;
+  }
 
   return (
     <div
@@ -633,4 +637,3 @@ export function DependencyIssuesPanel({ issues, platform }: {
     </div>
   );
 }
-

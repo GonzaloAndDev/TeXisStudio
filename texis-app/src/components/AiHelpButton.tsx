@@ -13,7 +13,7 @@
  *   />
  */
 
-import { useAiStore } from "../stores/ai";
+import { AI_ASSISTANT_ENABLED, useAiStore } from "../stores/ai";
 import type { AiActionMode } from "../stores/ai";
 
 interface AiHelpButtonProps {
@@ -37,6 +37,10 @@ export function AiHelpButton({
   variant = "ghost",
 }: AiHelpButtonProps) {
   const store = useAiStore();
+
+  if (!AI_ASSISTANT_ENABLED) {
+    return null;
+  }
 
   function handleClick() {
     store.setUiContext({ activePanel: panel });
