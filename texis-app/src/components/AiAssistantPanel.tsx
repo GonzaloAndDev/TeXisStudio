@@ -189,6 +189,8 @@ export function AiAssistantPanel({
   onApplyReplacement,
   onInsertAtCursor,
   onUndoLastChange,
+  wide = false,
+  onToggleWide,
 }: {
   currentSelection?: string;
   aiSelection?: { text: string; blockId: string; start: number; end: number } | null;
@@ -199,6 +201,8 @@ export function AiAssistantPanel({
   onApplyReplacement?: (original: string, replacement: string) => void;
   onInsertAtCursor?: (content: string) => void;
   onUndoLastChange?: () => void;
+  wide?: boolean;
+  onToggleWide?: () => void;
 }) {
   const store = useAiStore();
   const { userMode } = useSettingsStore();
@@ -357,10 +361,10 @@ export function AiAssistantPanel({
 
   return (
     <div style={{
-      width: 340, minWidth: 280, display: "flex", flexDirection: "column",
+      display: "flex", flexDirection: "column",
       borderLeft: "1px solid var(--border-soft)", background: "var(--bg-base)",
-      height: "100%", position: "relative", fontSize: "var(--fs-sm)",
-    }}>
+      height: "100%", minHeight: 0, position: "relative", fontSize: "var(--fs-sm)",
+    }} className={`editor-ai-panel${wide ? " editor-ai-panel-wide" : ""}`}>
       {/* Preview dialog */}
       {store.pendingAction && (
         <ActionPreviewDialog
@@ -379,13 +383,26 @@ export function AiAssistantPanel({
         <span style={{ fontWeight: 600, color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}>
           Asistente IA
         </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {onToggleWide && (
+          <button
+            className="btn btn-ghost"
+            onClick={onToggleWide}
+            title={wide ? "Reducir panel" : "Ampliar panel"}
+            style={{ padding: "2px 6px", fontSize: 11 }}
+          >
+            {wide ? "↔" : "⟷"}
+          </button>
+        )}
         <button
           className="btn btn-ghost"
           onClick={store.togglePanel}
+          title="Minimizar panel"
           style={{ padding: "2px 6px", fontSize: 11 }}
         >
           <IconX />
         </button>
+        </div>
       </div>
 
       {/* Principio de responsabilidad — visible siempre */}

@@ -74,6 +74,7 @@ export function EditorMetaPanel({
   onSave,
   onCompile,
   diagnosticsPanel,
+  onCollapse,
 }: {
   project: ProjectModel;
   wordCount: number;
@@ -84,13 +85,25 @@ export function EditorMetaPanel({
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
   diagnosticsPanel?: React.ReactNode;
+  onCollapse?: () => void;
 }) {
   const readiness = deriveProjectReadiness(project);
 
   return (
-    <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll">
-      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-        {userMode === "basic" ? "Guía del proyecto" : "Proyecto"}
+    <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll editor-meta-panel">
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <span>{userMode === "basic" ? "Guía del proyecto" : "Proyecto"}</span>
+        {onCollapse && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon"
+            onClick={onCollapse}
+            title="Minimizar panel"
+            style={{ padding: 3, width: 22, height: 22, color: "var(--fg-faint)" }}
+          >
+            ›
+          </button>
+        )}
       </div>
 
       {userMode === "basic" && (

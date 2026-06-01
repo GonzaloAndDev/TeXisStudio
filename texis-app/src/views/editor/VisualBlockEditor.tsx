@@ -108,14 +108,43 @@ export function VisualBlockEditor({
 
 // ── Selector de tipo de diagrama ──────────────────────────────────
 
-export function VisualKindSelector({ onSelect }: { onSelect: (kind: VisualKind) => void }) {
+export function VisualKindSelector({
+  onSelect,
+  onExplorePluginFigures,
+}: {
+  onSelect: (kind: VisualKind) => void;
+  onExplorePluginFigures?: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filteredKinds = VISUAL_KINDS.filter(({ label, desc }) => {
+    const q = query.trim().toLowerCase();
+    return !q || label.toLowerCase().includes(q) || desc.toLowerCase().includes(q);
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
         Tipo de elemento visual
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-        {VISUAL_KINDS.map(({ kind, icon, label, desc }) => (
+      <input
+        autoFocus
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Buscar: flujo, química, circuito..."
+        style={{
+          width: "100%",
+          padding: "7px 10px",
+          borderRadius: "var(--r-sm)",
+          border: "1px solid var(--border-firm)",
+          background: "var(--bg-panel)",
+          color: "var(--fg-default)",
+          fontSize: "var(--fs-sm)",
+          outline: "none",
+          marginBottom: 4,
+        }}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+        {filteredKinds.map(({ kind, icon, label, desc }) => (
           <button key={kind} onClick={() => onSelect(kind)}
             style={{
               padding: "10px 12px", borderRadius: "var(--r-md)",
@@ -132,6 +161,16 @@ export function VisualKindSelector({ onSelect }: { onSelect: (kind: VisualKind) 
           </button>
         ))}
       </div>
+      {onExplorePluginFigures && (
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={onExplorePluginFigures}
+          style={{ justifyContent: "center", marginTop: 6, fontSize: "var(--fs-sm)" }}
+        >
+          Explorar catálogo completo de figuras generadas
+        </button>
+      )}
     </div>
   );
 }

@@ -204,6 +204,9 @@ export default function EditorView() {
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
   const aiPanel = useAiStore();
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [metaPanelCollapsed, setMetaPanelCollapsed] = useState(false);
+  const [aiPanelWide, setAiPanelWide] = useState(false);
 
   // Navegación a bloque específico (desde búsqueda en CommandPalette)
   const [jumpTargetBlockId, setJumpTargetBlockId] = useState<string | null>(null);
@@ -765,14 +768,37 @@ export default function EditorView() {
         }
       />
 
-      <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0 }}>
+      <div className="editor-shell">
+      <div className={`editor-grid${leftPanelCollapsed ? " editor-grid-left-collapsed" : ""}${metaPanelCollapsed ? " editor-grid-meta-collapsed" : ""}`}>
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
+        {leftPanelCollapsed ? (
+          <div className="editor-panel-rail">
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => setLeftPanelCollapsed(false)}
+              title="Mostrar ruta del documento"
+              style={{ width: 28, height: 28, padding: 4 }}
+            >
+              ›
+            </button>
+            <div className="editor-rail-label">Ruta</div>
+          </div>
+        ) : (
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {userMode === "basic" ? "Ruta del documento" : "Secciones"}
-            <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
+              <button
+                className="btn btn-ghost btn-icon"
+                onClick={() => setLeftPanelCollapsed(true)}
+                title="Minimizar ruta"
+                style={{ padding: 4 }}
+              >
+                ‹
+              </button>
+            </div>
           </div>
           <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
             {Object.entries(groups).map(([groupLabel, secs]) => (
@@ -802,11 +828,12 @@ export default function EditorView() {
             ))}
           </div>
         </div>
+        )}
 
         {/* ── Canvas editor ──────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }} className="editor-workspace">
           {/* Toolbar */}
-          <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
+          <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }} className="editor-toolbar">
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
@@ -905,13 +932,13 @@ export default function EditorView() {
           {/* Paper canvas */}
           <div
             style={{ flex: 1, overflow: "auto", padding: "32px 0", background: "var(--bg-app)" }}
-            className="scroll"
+            className="scroll editor-canvas"
             onClick={(e) => { if (e.target === e.currentTarget) setEditingId(null); }}
             onMouseUp={captureSelection}
             onKeyUp={captureSelection}
           >
             {activeSection ? (
-              <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
+              <div className="editor-paper">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", flex: 1 }}>
                     {userMode === "advanced" ? activeSection.element_id : "Sección activa"}
@@ -1012,17 +1039,32 @@ export default function EditorView() {
         </div>
 
         {/* ── Panel derecho: metadata + diagnósticos ─────────────── */}
-        <EditorMetaPanel
-          project={activeProject}
-          wordCount={bodyWordCount}
-          blockCount={localBlocks.length}
-          maxWords={profileMaxWords}
-          activeSection={activeSection}
-          userMode={userMode}
-          onSave={saveMetadata}
-          onCompile={() => navigate(`/project/${encodedPath}/compile`)}
-          diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
-        />
+        {metaPanelCollapsed ? (
+          <div className="editor-panel-rail editor-panel-rail-right">
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => setMetaPanelCollapsed(false)}
+              title="Mostrar guía del proyecto"
+              style={{ width: 28, height: 28, padding: 4 }}
+            >
+              ‹
+            </button>
+            <div className="editor-rail-label">Guía</div>
+          </div>
+        ) : (
+          <EditorMetaPanel
+            project={activeProject}
+            wordCount={bodyWordCount}
+            blockCount={localBlocks.length}
+            maxWords={profileMaxWords}
+            activeSection={activeSection}
+            userMode={userMode}
+            onSave={saveMetadata}
+            onCompile={() => navigate(`/project/${encodedPath}/compile`)}
+            diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
+            onCollapse={() => setMetaPanelCollapsed(true)}
+          />
+        )}
       </div>
 
       {/* Paneles de revisión ortográfica / gramatical */}
@@ -1091,7 +1133,6 @@ export default function EditorView() {
           onClose={() => setGrammarPanelOpen(false)}
         />
       )}
-      </div>
 
       {/* Panel de asistente IA */}
       {aiPanel.isPanelOpen && (
@@ -1173,9 +1214,12 @@ export default function EditorView() {
               setLastAiUndoBlocks(null);
               setAiSelection(null);
             }}
+            wide={aiPanelWide}
+            onToggleWide={() => setAiPanelWide((wide) => !wide)}
           />
         </Suspense>
       )}
+      </div>
 
       {/* Paleta de comandos (Ctrl+K) */}
       {paletteOpen && (
@@ -1221,7 +1265,10 @@ export default function EditorView() {
               });
               setVisualSelectorOpen(null);
               setEditingId(blockId);
-            }} />
+            }} onExplorePluginFigures={activeProjectPath ? () => {
+              setVisualSelectorOpen(null);
+              setFigurePickerOpen(true);
+            } : undefined} />
           </div>
         </div>
       )}
