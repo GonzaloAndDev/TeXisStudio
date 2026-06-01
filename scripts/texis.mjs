@@ -16,8 +16,6 @@ const normalizedCommand = {
   start: "dev",
   app: "dev",
   installer: "build",
-  installers: "build",
-  compile: "build",
   compiler: "build",
   package: "build",
   dist: "build",
@@ -129,6 +127,11 @@ Usage:
   node scripts/texis.mjs installer       Build installer/package for this OS
   node scripts/texis.mjs build           Detect OS and run the native build
   node scripts/texis.mjs frontend-build  Type-check and build the React frontend
+
+Aliases:
+  run:       dev, start, app
+  installer: build, compiler, package, dist
+  frontend:  check, frontend
 
 Build targets:
   Windows -> scripts/build-windows.ps1

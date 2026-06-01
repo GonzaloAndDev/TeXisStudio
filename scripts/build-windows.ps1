@@ -19,10 +19,41 @@ $ErrorActionPreference = "Stop"
 $root    = Split-Path -Parent $PSScriptRoot
 $appDir  = Join-Path $root "texis-app"
 $version = "1.0.0"
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+function Format-Duration {
+    param([TimeSpan]$Duration)
+
+    if ($Duration.TotalHours -ge 1) {
+        return "{0} h {1} min {2} s" -f [int]$Duration.TotalHours, $Duration.Minutes, $Duration.Seconds
+    }
+    if ($Duration.TotalMinutes -ge 1) {
+        return "{0} min {1} s" -f [int]$Duration.TotalMinutes, $Duration.Seconds
+    }
+    return "{0} s" -f [int]$Duration.TotalSeconds
+}
 
 Write-Host ""
 Write-Host "  TeXisStudio - Build Windows v$version" -ForegroundColor Cyan
 Write-Host "  ======================================" -ForegroundColor Cyan
+
+function Assert-Command {
+    param([string]$Name)
+    if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
+        throw "Missing required command: $Name"
+    }
+}
+
+Assert-Command "node"
+Assert-Command "npm.cmd"
+Assert-Command "cargo"
+Assert-Command "rustc"
+
+$nodeVersion = (& node --version).Trim()
+$nodeMajor = [int]($nodeVersion.TrimStart("v").Split(".")[0])
+if ($nodeMajor -lt 20) {
+    throw "Node.js 20+ is required. Detected: $nodeVersion"
+}
 
 Write-Host ""
 Set-Location $appDir
@@ -35,18 +66,13 @@ if ($CleanInstall -or -not (Test-Path (Join-Path $appDir "node_modules"))) {
 }
 
 Write-Host ""
-Write-Host "  [2/4] Building frontend..." -ForegroundColor Yellow
-& npm.cmd run build
-if ($LASTEXITCODE -ne 0) { exit 1 }
-
-Write-Host ""
-Write-Host "  [3/4] Building MSI + NSIS..." -ForegroundColor Yellow
-& npm.cmd run tauri build -- --config src-tauri\tauri.prebuilt.conf.json
+Write-Host "  [2/3] Building MSI + NSIS..." -ForegroundColor Yellow
+& npm.cmd run tauri build
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 if (-not $SkipPortable) {
     Write-Host ""
-    Write-Host "  [4/4] Creating portable ZIP..." -ForegroundColor Yellow
+    Write-Host "  [3/3] Creating portable ZIP..." -ForegroundColor Yellow
 
     $bundleDir   = Join-Path $root "target\release\bundle"
     $tmpDir      = Join-Path $bundleDir "_portable_tmp"
@@ -72,7 +98,7 @@ if (-not $SkipPortable) {
     }
 } else {
     Write-Host ""
-    Write-Host "  [4/4] Portable ZIP skipped." -ForegroundColor Yellow
+    Write-Host "  [3/3] Portable ZIP skipped." -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -85,4 +111,9 @@ if (Test-Path $bundleDir) {
 } else {
     Write-Host "     No bundle directory found: $bundleDir" -ForegroundColor Yellow
 }
+$stopwatch.Stop()
+$finishedAt = Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"
+Write-Host ""
+Write-Host "  Finished : $finishedAt" -ForegroundColor Green
+Write-Host "  Duration : $(Format-Duration $stopwatch.Elapsed)" -ForegroundColor Green
 Write-Host ""
