@@ -4,16 +4,15 @@
     {
       "label": "TeXisStudio: Run app",
       "type": "shell",
-      "command": "bash",
-      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "run"],
+      "command": "./run",
+      "args": [],
       "windows": {
         "command": "powershell",
         "args": [
           "-ExecutionPolicy",
           "Bypass",
           "-File",
-          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
-          "-Run"
+          "${workspaceFolder}\\run.ps1"
         ]
       },
       "options": { "cwd": "${workspaceFolder}" },
@@ -28,16 +27,15 @@
     {
       "label": "TeXisStudio: Build current OS",
       "type": "shell",
-      "command": "bash",
-      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "installer"],
+      "command": "./build",
+      "args": [],
       "windows": {
         "command": "powershell",
         "args": [
           "-ExecutionPolicy",
           "Bypass",
           "-File",
-          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
-          "-Installer"
+          "${workspaceFolder}\\build.ps1"
         ]
       },
       "options": { "cwd": "${workspaceFolder}" },
@@ -52,16 +50,15 @@
     {
       "label": "TeXisStudio: Frontend only",
       "type": "shell",
-      "command": "bash",
-      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "frontend-build"],
+      "command": "./check",
+      "args": [],
       "windows": {
         "command": "powershell",
         "args": [
           "-ExecutionPolicy",
           "Bypass",
           "-File",
-          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
-          "-FrontendBuild"
+          "${workspaceFolder}\\check.ps1"
         ]
       },
       "options": { "cwd": "${workspaceFolder}" },

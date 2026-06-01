@@ -16,18 +16,18 @@ Run commands from the repository root, `TeXisStudio`.
 
 First time on a machine, or after missing dependency errors:
 
-| System | Prepare only | Prepare and run app | Prepare and build installer |
+| System | Run app | Build installer | Check frontend |
 |---|---|---|---|
-| Linux/macOS | `bash scripts/bootstrap.sh` | `bash scripts/bootstrap.sh run` | `bash scripts/bootstrap.sh installer` |
-| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer` |
+| Linux/macOS | `./run` | `./build` | `./check` |
+| Windows | `.\run.ps1` | `.\build.ps1` | `.\check.ps1` |
 
 After the machine is prepared:
 
 | Need | Command | Result |
 |---|---|---|
-| Run the app | `node scripts/texis.mjs run` | Opens TeXisStudio in Tauri dev mode with hot reload. It does not create an installer. |
-| Build installer/package | `node scripts/texis.mjs installer` | Builds artifacts for the current operating system. |
-| Check frontend only | `node scripts/texis.mjs frontend-build` | Runs TypeScript and Vite without compiling the native app. |
+| Run the app | `./run` or `.\run.ps1` | Opens TeXisStudio in Tauri dev mode with hot reload. It does not create an installer. |
+| Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current operating system. |
+| Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript and Vite without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | Runs core tests for LaTeX generation, compilation, bibliography, snapshots, and models. |
 
 Aliases:
@@ -152,18 +152,18 @@ Ejecuta los comandos desde la raíz del repositorio, `TeXisStudio`.
 
 Primera vez en una máquina, o después de errores por dependencias faltantes:
 
-| Sistema | Preparar solamente | Preparar y correr la app | Preparar y generar instalador |
+| Sistema | Correr app | Generar instalador | Revisar frontend |
 |---|---|---|---|
-| Linux/macOS | `bash scripts/bootstrap.sh` | `bash scripts/bootstrap.sh run` | `bash scripts/bootstrap.sh installer` |
-| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer` |
+| Linux/macOS | `./run` | `./build` | `./check` |
+| Windows | `.\run.ps1` | `.\build.ps1` | `.\check.ps1` |
 
 Después de preparar la máquina:
 
 | Necesidad | Comando | Resultado |
 |---|---|---|
-| Correr la app | `node scripts/texis.mjs run` | Abre TeXisStudio en modo Tauri dev con hot reload. No crea instalador. |
-| Generar instalador/paquete | `node scripts/texis.mjs installer` | Genera artefactos para el sistema operativo actual. |
-| Revisar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
+| Correr la app | `./run` o `.\run.ps1` | Abre TeXisStudio en modo Tauri dev con hot reload. No crea instalador. |
+| Generar instalador/paquete | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
+| Revisar solo frontend | `./check` o `.\check.ps1` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
 | Probar core Rust | `cargo test -p texis-core` | Ejecuta pruebas del core de generación LaTeX, compilación, bibliografía, snapshots y modelos. |
 
 Alias:
