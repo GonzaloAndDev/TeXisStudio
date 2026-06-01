@@ -290,6 +290,18 @@ body {
   scrollbar-width: thin;
 }
 
+.editor-toolbar .btn {
+  flex-shrink: 0;
+}
+
+.editor-toolbar .btn span {
+  display: block;
+  max-width: 72px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.05;
+}
+
 .editor-ai-panel {
   width: clamp(280px, 24vw, 340px);
   flex: 0 0 clamp(280px, 24vw, 340px);
@@ -320,7 +332,7 @@ body {
   }
 
   .editor-toolbar .btn span {
-    max-width: 54px;
+    max-width: 66px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
