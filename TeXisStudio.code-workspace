@@ -11,6 +11,14 @@
     {
       "name": "TeXisStudio-Profiles",
       "path": "../TeXisStudio-Profiles"
+    },
+    {
+      "name": "Lenguas",
+      "path": "../Lenguas"
+    },
+    {
+      "name": "TeXisStudio-Plugins",
+      "path": "../TeXisStudio-Plugins"
     }
   ],
   "settings": {
