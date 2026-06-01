@@ -8,6 +8,8 @@
 import { create } from "zustand";
 
 export type AiProvider = "openai" | "claude" | "gemini";
+export type AiAccessMode = "web_free" | "account" | "api_key";
+export type AiReasoningLevel = "fast" | "balanced" | "deep";
 
 export type AiActionMode =
   // Chat / consulta — solo responde, no toca el documento
@@ -90,6 +92,13 @@ interface ProviderState {
   model: string;
 }
 
+interface AiProviderSettings {
+  accessMode: AiAccessMode;
+  reasoningLevel: AiReasoningLevel;
+  webSearch: boolean;
+  imageGeneration: boolean;
+}
+
 interface AiStore {
   // Proveedor activo en la UI
   activeProvider: AiProvider;
@@ -97,6 +106,11 @@ interface AiStore {
 
   // Estado por proveedor (historial independiente)
   providers: Record<AiProvider, ProviderState>;
+  settings: Record<AiProvider, AiProviderSettings>;
+  setAccessMode: (provider: AiProvider, mode: AiAccessMode) => void;
+  setReasoningLevel: (provider: AiProvider, level: AiReasoningLevel) => void;
+  setWebSearch: (provider: AiProvider, enabled: boolean) => void;
+  setImageGeneration: (provider: AiProvider, enabled: boolean) => void;
 
   // API keys en memoria de sesión (NUNCA persisten)
   apiKeys: Record<AiProvider, string>;
@@ -159,6 +173,23 @@ export const useAiStore = create<AiStore>((set, get) => ({
     claude: { history: [], model: DEFAULT_MODELS.claude },
     gemini: { history: [], model: DEFAULT_MODELS.gemini },
   },
+  settings: {
+    openai: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+    claude: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+    gemini: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+  },
+
+  setAccessMode: (provider, accessMode) =>
+    set((s) => ({ settings: { ...s.settings, [provider]: { ...s.settings[provider], accessMode } } })),
+
+  setReasoningLevel: (provider, reasoningLevel) =>
+    set((s) => ({ settings: { ...s.settings, [provider]: { ...s.settings[provider], reasoningLevel } } })),
+
+  setWebSearch: (provider, webSearch) =>
+    set((s) => ({ settings: { ...s.settings, [provider]: { ...s.settings[provider], webSearch } } })),
+
+  setImageGeneration: (provider, imageGeneration) =>
+    set((s) => ({ settings: { ...s.settings, [provider]: { ...s.settings[provider], imageGeneration } } })),
 
   // API keys NUNCA se persisten — solo en memoria de sesión
   apiKeys: { openai: "", claude: "", gemini: "" },

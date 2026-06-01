@@ -6,7 +6,14 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
+import {
+  useAiStore,
+  type AiAccessMode,
+  type AiActionMode,
+  type AiContextScope,
+  type AiProvider,
+  type AiReasoningLevel,
+} from "../stores/ai";
 import { useSettingsStore } from "../stores/settings";
 import { sendAiMessage, buildErrorMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
@@ -39,10 +46,10 @@ function IconX() {
 
 // ── Configuración de proveedores ──────────────────────────────────────────────
 
-const PROVIDERS: { id: AiProvider; name: string; color: string }[] = [
-  { id: "openai", name: "OpenAI", color: "#10a37f" },
-  { id: "claude", name: "Claude", color: "#d97706" },
-  { id: "gemini", name: "Gemini", color: "#4f46e5" },
+const PROVIDERS: { id: AiProvider; name: string; color: string; webUrl: string; keyUrl: string }[] = [
+  { id: "openai", name: "OpenAI", color: "#10a37f", webUrl: "https://chatgpt.com/", keyUrl: "https://platform.openai.com/api-keys" },
+  { id: "claude", name: "Claude", color: "#d97706", webUrl: "https://claude.ai/", keyUrl: "https://console.anthropic.com/settings/keys" },
+  { id: "gemini", name: "Gemini", color: "#4f46e5", webUrl: "https://gemini.google.com/", keyUrl: "https://aistudio.google.com/app/apikey" },
 ];
 
 type ActionGroup = { group: string; modes: { id: AiActionMode; label: string; needsSelection?: boolean }[] };
@@ -107,6 +114,38 @@ const CONTEXT_SCOPES: { id: AiContextScope; label: string }[] = [
   { id: "diagnostics", label: "Diagnósticos" },
   { id: "build_log", label: "Log de build" },
 ];
+
+const ACCESS_MODES: { id: AiAccessMode; label: string; desc: string }[] = [
+  { id: "web_free", label: "Gratis web", desc: "Abre el agente gratuito del proveedor en tu navegador." },
+  { id: "account", label: "Iniciar sesión", desc: "Requiere OAuth/backend de TeXisStudio; preparado, no activo aún." },
+  { id: "api_key", label: "API key", desc: "Modo integrado disponible hoy usando tu propia clave." },
+];
+
+const REASONING_LEVELS: { id: AiReasoningLevel; label: string }[] = [
+  { id: "fast", label: "Rápido" },
+  { id: "balanced", label: "Balanceado" },
+  { id: "deep", label: "Profundo" },
+];
+
+const MODEL_OPTIONS: Record<AiProvider, string[]> = {
+  openai: ["gpt-4o-mini", "gpt-4o", "o4-mini"],
+  claude: ["claude-sonnet-4-6", "claude-opus-4-1", "claude-haiku-3-5"],
+  gemini: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+};
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+function emptyStateForMode(mode: AiAccessMode, providerName: string): string {
+  if (mode === "web_free") {
+    return `Abre ${providerName} gratis en tu navegador. Para usarlo dentro de TeXisStudio necesitas API key o inicio de sesión integrado.`;
+  }
+  if (mode === "account") {
+    return "El inicio de sesión integrado está reservado para cuando exista el backend OAuth de TeXisStudio.";
+  }
+  return `Configura tu API key de ${providerName} para empezar.`;
+}
 
 // ── Preview de acción propuesta ───────────────────────────────────────────────
 
@@ -208,6 +247,8 @@ export function AiAssistantPanel({
   const { userMode } = useSettingsStore();
   const [input, setInput] = useState("");
   const [keyVisible, setKeyVisible] = useState(false);
+  const [pastedContext, setPastedContext] = useState("");
+  const [localFiles, setLocalFiles] = useState<Array<{ name: string; text: string }>>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
 
@@ -221,8 +262,24 @@ export function AiAssistantPanel({
   const providerInfo = PROVIDERS.find((p) => p.id === provider)!;
   const history = store.currentHistory();
   const apiKey = store.apiKeys[provider];
+  const providerSettings = store.settings[provider];
   const model = store.currentModel();
-  const isConfigured = apiKey.trim().length > 0;
+  const isConfigured = providerSettings.accessMode === "api_key" && apiKey.trim().length > 0;
+  const attachedContext = [
+    pastedContext.trim() ? `## Contexto pegado\n${pastedContext.trim()}` : "",
+    ...localFiles.map((f) => `## Archivo local: ${f.name}\n${f.text.slice(0, 6000)}`),
+  ].filter(Boolean).join("\n\n");
+  const tokenEstimate = estimateTokens([
+    input,
+    currentSelection ?? "",
+    providerSettings.webSearch ? "web_search" : "",
+    providerSettings.imageGeneration ? "image_generation" : "",
+    attachedContext,
+  ].join("\n\n"));
+  const promptPackage = [
+    input.trim(),
+    attachedContext ? `Contexto adicional:\n${attachedContext}` : "",
+  ].filter(Boolean).join("\n\n---\n\n");
 
   useEffect(() => {
     if (store.draftInput) {
@@ -233,6 +290,26 @@ export function AiAssistantPanel({
 
   async function handleSend() {
     if (!input.trim() || store.isLoading) return;
+
+    if (providerSettings.accessMode !== "api_key") {
+      store.addMessage(provider, {
+        role: "assistant",
+        content: providerSettings.accessMode === "web_free"
+          ? `Para usar el modo gratuito, abre ${providerInfo.name} en el navegador. La integración dentro de TeXisStudio requiere API key o un backend de inicio de sesión.`
+          : "El inicio de sesión integrado requiere un backend OAuth de TeXisStudio. Esta pantalla ya reserva el flujo, pero todavía no autentica cuentas.",
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (!isConfigured) {
+      store.addMessage(provider, {
+        role: "assistant",
+        content: "Configura una API key para usar el modo integrado dentro de TeXisStudio.",
+        timestamp: Date.now(),
+      });
+      return;
+    }
 
     const selectedMode = ACTION_GROUPS
       .flatMap((group) => group.modes)
@@ -247,6 +324,16 @@ export function AiAssistantPanel({
     }
 
     let userMessage = input.trim();
+    const requestedTools: string[] = [];
+    if (providerSettings.webSearch) requestedTools.push("búsqueda web");
+    if (providerSettings.imageGeneration) requestedTools.push("generación de imagen");
+    if (requestedTools.length > 0) {
+      userMessage = `[Preferencias solicitadas: ${requestedTools.join(", ")}. Si esta integración no puede ejecutar esas herramientas directamente, explica qué falta y ofrece una alternativa segura.]\n\n${userMessage}`;
+    }
+    userMessage = `[Nivel de pensamiento: ${providerSettings.reasoningLevel}]\n\n${userMessage}`;
+    if (attachedContext) {
+      userMessage += `\n\n---\nContexto adicional elegido por el usuario:\n${attachedContext}`;
+    }
 
     // Para AppHelp, inyectar contexto de UI al inicio del mensaje
     // para que la IA sepa dónde está el usuario sin que él tenga que explicarlo.
@@ -359,6 +446,17 @@ export function AiAssistantPanel({
     store.setPendingAction(null);
   }
 
+  async function handleLocalFiles(files: FileList | null) {
+    if (!files?.length) return;
+
+    const readableFiles = Array.from(files).slice(0, 8);
+    const loaded = await Promise.all(readableFiles.map(async (file) => ({
+      name: file.name,
+      text: (await file.text()).slice(0, 12000),
+    })));
+    setLocalFiles((current) => [...current, ...loaded]);
+  }
+
   return (
     <div style={{
       display: "flex", flexDirection: "column",
@@ -439,8 +537,91 @@ export function AiAssistantPanel({
         ))}
       </div>
 
-      {/* API Key — si no está configurado */}
-      {!isConfigured && (
+      {/* Modo de acceso */}
+      <div style={{
+        padding: "8px 10px",
+        borderBottom: "1px solid var(--border-subtle)",
+        display: "grid",
+        gap: 7,
+      }}>
+        <div style={{ fontSize: 10, color: "var(--fg-faint)", textTransform: "uppercase" }}>
+          Modo de acceso
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
+          {ACCESS_MODES.map((mode) => {
+            const active = providerSettings.accessMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => store.setAccessMode(provider, mode.id)}
+                title={mode.desc}
+                style={{
+                  minHeight: 32,
+                  padding: "5px 6px",
+                  borderRadius: "var(--r-sm)",
+                  border: "1px solid",
+                  borderColor: active ? providerInfo.color : "var(--border-soft)",
+                  background: active ? "var(--accent-tint)" : "var(--bg-panel)",
+                  color: active ? "var(--accent-deep)" : "var(--fg-muted)",
+                  cursor: "pointer",
+                  fontSize: 10,
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {mode.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {providerSettings.accessMode === "web_free" && (
+        <div style={{
+          margin: 10, padding: 10, borderRadius: "var(--r-md)",
+          background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+          display: "grid", gap: 8,
+        }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+            Usa la versión gratuita de {providerInfo.name} en su sitio. TeXisStudio no puede leer tu sesión del navegador ni enviar archivos automáticamente en este modo.
+          </div>
+          <button
+            type="button"
+            className="btn btn-accent"
+            onClick={() => window.open(providerInfo.webUrl, "_blank", "noopener,noreferrer")}
+            style={{ justifySelf: "start", fontSize: 11, padding: "5px 9px" }}
+          >
+            Abrir {providerInfo.name}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={!promptPackage}
+            onClick={() => navigator.clipboard?.writeText(promptPackage)}
+            style={{ justifySelf: "start", fontSize: 11, padding: "5px 9px" }}
+          >
+            Copiar prompt para pegar
+          </button>
+        </div>
+      )}
+
+      {providerSettings.accessMode === "account" && (
+        <div style={{
+          margin: 10, padding: 10, borderRadius: "var(--r-md)",
+          background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+          display: "grid", gap: 7,
+        }}>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+            Preparado para inicio de sesión con cuenta, pero falta el backend OAuth de TeXisStudio. Cuando exista, aquí se conectarán ChatGPT, Claude o Gemini sin pegar claves.
+          </div>
+          <button type="button" className="btn btn-ghost" disabled style={{ justifySelf: "start", fontSize: 11, padding: "5px 9px" }}>
+            Inicio de sesión no disponible aún
+          </button>
+        </div>
+      )}
+
+      {/* API Key — modo integrado */}
+      {providerSettings.accessMode === "api_key" && !isConfigured && (
         <div style={{
           margin: 10, padding: 10, borderRadius: "var(--r-md)",
           background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
@@ -470,43 +651,100 @@ export function AiAssistantPanel({
           </div>
           <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 5 }}>
             La clave no se guarda en disco. Solo dura esta sesión.
+            {" "}
+            <button
+              type="button"
+              onClick={() => window.open(providerInfo.keyUrl, "_blank", "noopener,noreferrer")}
+              style={{ border: "none", background: "transparent", color: "var(--accent-deep)", padding: 0, cursor: "pointer", fontSize: 10 }}
+            >
+              Crear clave
+            </button>
           </div>
         </div>
       )}
 
-      {/* Si está configurado: modelo + limpiar */}
-      {isConfigured && (
+      {/* Si está configurado: modelo + herramientas */}
+      {providerSettings.accessMode === "api_key" && isConfigured && (
         <div style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "6px 10px", borderBottom: "1px solid var(--border-subtle)",
+          display: "grid", gap: 8,
+          padding: "8px 10px", borderBottom: "1px solid var(--border-subtle)",
         }}>
-          <input
-            type="text"
-            value={model}
-            onChange={(e) => store.setModel(provider, e.target.value)}
-            style={{
-              flex: 1, fontSize: 11, padding: "3px 7px",
-              borderRadius: "var(--r-sm)", border: "1px solid var(--border-soft)",
-              background: "var(--bg-panel)", color: "var(--fg-muted)",
-            }}
-            title="Modelo"
-          />
-          <button
-            className="btn btn-ghost"
-            onClick={() => store.clearHistory(provider)}
-            title="Limpiar historial"
-            style={{ padding: "3px 6px" }}
-          >
-            <IconTrash />
-          </button>
-          <button
-            className="btn btn-ghost"
-            onClick={() => store.setApiKey(provider, "")}
-            style={{ fontSize: 10, padding: "3px 6px" }}
-            title="Cambiar clave"
-          >
-            Clave
-          </button>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6, alignItems: "center" }}>
+            <select
+              value={model}
+              onChange={(e) => store.setModel(provider, e.target.value)}
+              style={{
+                minWidth: 0, fontSize: 11, padding: "4px 7px",
+                borderRadius: "var(--r-sm)", border: "1px solid var(--border-soft)",
+                background: "var(--bg-panel)", color: "var(--fg-muted)",
+              }}
+              title="Motor / modelo"
+            >
+              {MODEL_OPTIONS[provider].map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+            <button
+              className="btn btn-ghost"
+              onClick={() => store.clearHistory(provider)}
+              title="Limpiar historial"
+              style={{ padding: "4px 6px" }}
+            >
+              <IconTrash />
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => store.setApiKey(provider, "")}
+              style={{ fontSize: 10, padding: "4px 6px" }}
+              title="Cambiar clave"
+            >
+              Clave
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
+            {REASONING_LEVELS.map((level) => {
+              const active = providerSettings.reasoningLevel === level.id;
+              return (
+                <button
+                  key={level.id}
+                  type="button"
+                  onClick={() => store.setReasoningLevel(provider, level.id)}
+                  style={{
+                    fontSize: 10, padding: "3px 7px", borderRadius: 999, cursor: "pointer",
+                    border: "1px solid",
+                    borderColor: active ? "var(--accent)" : "var(--border-soft)",
+                    background: active ? "var(--accent-tint)" : "transparent",
+                    color: active ? "var(--accent-deep)" : "var(--fg-muted)",
+                  }}
+                >
+                  {level.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "grid", gap: 5 }}>
+            <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: "var(--fg-muted)" }}>
+              <input
+                type="checkbox"
+                checked={providerSettings.webSearch}
+                onChange={(e) => store.setWebSearch(provider, e.target.checked)}
+              />
+              Búsqueda web solicitada
+            </label>
+            <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: "var(--fg-muted)" }}>
+              <input
+                type="checkbox"
+                checked={providerSettings.imageGeneration}
+                onChange={(e) => store.setImageGeneration(provider, e.target.checked)}
+              />
+              Crear imagen solicitado
+            </label>
+            <div style={{ fontSize: 10, color: "var(--fg-faint)", lineHeight: 1.4 }}>
+              Estas herramientas se envían como preferencia al modelo; aún no ejecutan búsqueda ni generación nativa desde TeXisStudio.
+            </div>
+          </div>
         </div>
       )}
 
@@ -577,6 +815,55 @@ export function AiAssistantPanel({
             );
           })}
         </div>
+
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ cursor: "pointer", fontSize: 10, color: "var(--fg-muted)" }}>
+            Archivos y texto pegado
+          </summary>
+          <div style={{ display: "grid", gap: 7, marginTop: 7 }}>
+            <textarea
+              value={pastedContext}
+              onChange={(e) => setPastedContext(e.target.value)}
+              placeholder="Pega aquí instrucciones, fragmentos o contexto extra"
+              style={{
+                resize: "vertical", minHeight: 52, maxHeight: 130,
+                fontSize: 11, padding: "7px 8px", lineHeight: 1.4,
+                borderRadius: "var(--r-sm)", border: "1px solid var(--border-soft)",
+                background: "var(--bg-panel)", color: "var(--fg-default)",
+                fontFamily: "inherit",
+              }}
+            />
+            <input
+              type="file"
+              multiple
+              accept=".txt,.tex,.bib,.md,.csv,.json,.yaml,.yml,.log"
+              onChange={(e) => {
+                handleLocalFiles(e.currentTarget.files);
+                e.currentTarget.value = "";
+              }}
+              style={{ fontSize: 10, color: "var(--fg-muted)" }}
+            />
+            {localFiles.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {localFiles.map((file, index) => (
+                  <button
+                    key={`${file.name}-${index}`}
+                    type="button"
+                    onClick={() => setLocalFiles((files) => files.filter((_, i) => i !== index))}
+                    title="Quitar archivo"
+                    style={{
+                      fontSize: 10, padding: "3px 7px", borderRadius: 999,
+                      border: "1px solid var(--border-soft)", background: "var(--bg-panel)",
+                      color: "var(--fg-muted)", cursor: "pointer",
+                    }}
+                  >
+                    {file.name} ×
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
       </div>
 
       {/* Banner de cambio automático (AutoWithNotification) */}
@@ -631,7 +918,7 @@ export function AiAssistantPanel({
           }}>
             {isConfigured
               ? "Escribe una pregunta o selecciona un modo de asistencia."
-              : `Configura tu API key de ${providerInfo.name} para empezar.`}
+              : emptyStateForMode(providerSettings.accessMode, providerInfo.name)}
           </div>
         )}
         {history.map((msg, i) => (
@@ -666,7 +953,19 @@ export function AiAssistantPanel({
 
       {/* Input */}
       <div style={{
-        padding: "8px 10px", borderTop: "1px solid var(--border-subtle)",
+        padding: "5px 10px 0",
+        borderTop: "1px solid var(--border-subtle)",
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 8,
+        fontSize: 10,
+        color: tokenEstimate > 8000 ? "var(--build-warn)" : "var(--fg-faint)",
+      }}>
+        <span>{tokenEstimate.toLocaleString()} tokens aprox.</span>
+        {localFiles.length > 0 && <span>{localFiles.length} archivo(s)</span>}
+      </div>
+      <div style={{
+        padding: "6px 10px 8px",
         display: "flex", gap: 6, alignItems: "flex-end",
       }}>
         <textarea
@@ -679,8 +978,14 @@ export function AiAssistantPanel({
               handleSend();
             }
           }}
-          disabled={!isConfigured || store.isLoading}
-          placeholder={isConfigured ? "Escribe tu mensaje… (Enter para enviar)" : "Configura tu API key primero"}
+          disabled={store.isLoading}
+          placeholder={
+            isConfigured
+              ? "Escribe tu mensaje… (Enter para enviar)"
+              : providerSettings.accessMode === "web_free"
+                ? "Prepara un prompt para copiarlo al agente web"
+                : "Elige API key para usar el chat integrado"
+          }
           style={{
             flex: 1, resize: "none", minHeight: 38, maxHeight: 120,
             fontSize: "var(--fs-sm)", padding: "8px 10px", lineHeight: 1.4,
