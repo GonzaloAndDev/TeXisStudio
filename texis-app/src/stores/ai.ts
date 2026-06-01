@@ -174,9 +174,9 @@ export const useAiStore = create<AiStore>((set, get) => ({
     gemini: { history: [], model: DEFAULT_MODELS.gemini },
   },
   settings: {
-    openai: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
-    claude: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
-    gemini: { accessMode: "web_free", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+    openai: { accessMode: "account", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+    claude: { accessMode: "account", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
+    gemini: { accessMode: "account", reasoningLevel: "balanced", webSearch: false, imageGeneration: false },
   },
 
   setAccessMode: (provider, accessMode) =>

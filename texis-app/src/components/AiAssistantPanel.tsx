@@ -116,9 +116,9 @@ const CONTEXT_SCOPES: { id: AiContextScope; label: string }[] = [
 ];
 
 const ACCESS_MODES: { id: AiAccessMode; label: string; desc: string }[] = [
-  { id: "web_free", label: "Gratis web", desc: "Abre el agente gratuito del proveedor en tu navegador." },
-  { id: "account", label: "Iniciar sesión", desc: "Requiere OAuth/backend de TeXisStudio; preparado, no activo aún." },
-  { id: "api_key", label: "API key", desc: "Modo integrado disponible hoy usando tu propia clave." },
+  { id: "account", label: "Iniciar sesión", desc: "Abre tu cuenta del proveedor en el navegador." },
+  { id: "web_free", label: "Sin sesión", desc: "Abre el proveedor sin conectar una cuenta en TeXisStudio." },
+  { id: "api_key", label: "Avanzado", desc: "Modo integrado con una clave de API propia." },
 ];
 
 const REASONING_LEVELS: { id: AiReasoningLevel; label: string }[] = [
@@ -139,10 +139,10 @@ function estimateTokens(text: string): number {
 
 function emptyStateForMode(mode: AiAccessMode, providerName: string): string {
   if (mode === "web_free") {
-    return `Abre ${providerName} gratis en tu navegador. Para usarlo dentro de TeXisStudio necesitas API key o inicio de sesión integrado.`;
+    return `Escribe aquí y TeXisStudio preparará el prompt para abrirlo en ${providerName}.`;
   }
   if (mode === "account") {
-    return "El inicio de sesión integrado está reservado para cuando exista el backend OAuth de TeXisStudio.";
+    return `Inicia sesión en ${providerName} desde el navegador y pega ahí el prompt preparado.`;
   }
   return `Configura tu API key de ${providerName} para empezar.`;
 }
@@ -292,13 +292,26 @@ export function AiAssistantPanel({
     if (!input.trim() || store.isLoading) return;
 
     if (providerSettings.accessMode !== "api_key") {
+      let copied = false;
+      if (promptPackage && navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(promptPackage);
+          copied = true;
+        } catch {
+          copied = false;
+        }
+      }
+      window.open(providerInfo.webUrl, "_blank", "noopener,noreferrer");
+      store.addMessage(provider, { role: "user", content: input.trim(), timestamp: Date.now() });
       store.addMessage(provider, {
         role: "assistant",
-        content: providerSettings.accessMode === "web_free"
-          ? `Para usar el modo gratuito, abre ${providerInfo.name} en el navegador. La integración dentro de TeXisStudio requiere API key o un backend de inicio de sesión.`
-          : "El inicio de sesión integrado requiere un backend OAuth de TeXisStudio. Esta pantalla ya reserva el flujo, pero todavía no autentica cuentas.",
+        content: copied
+          ? `Copié tu prompt y abrí ${providerInfo.name}. Pégalo en el chat del navegador para continuar.`
+          : `Abrí ${providerInfo.name}. Copia tu mensaje manualmente porque el portapapeles no estuvo disponible.`,
         timestamp: Date.now(),
       });
+      setInput("");
+      store.setDraftInput("");
       return;
     }
 
@@ -537,7 +550,7 @@ export function AiAssistantPanel({
         ))}
       </div>
 
-      {/* Modo de acceso */}
+      {/* Conexión */}
       <div style={{
         padding: "8px 10px",
         borderBottom: "1px solid var(--border-subtle)",
@@ -545,7 +558,7 @@ export function AiAssistantPanel({
         gap: 7,
       }}>
         <div style={{ fontSize: 10, color: "var(--fg-faint)", textTransform: "uppercase" }}>
-          Modo de acceso
+          Conexión
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
           {ACCESS_MODES.map((mode) => {
@@ -583,7 +596,7 @@ export function AiAssistantPanel({
           display: "grid", gap: 8,
         }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-            Usa la versión gratuita de {providerInfo.name} en su sitio. TeXisStudio no puede leer tu sesión del navegador ni enviar archivos automáticamente en este modo.
+            TeXisStudio preparará tu prompt y abrirá {providerInfo.name}. La respuesta se genera en el navegador.
           </div>
           <button
             type="button"
@@ -612,10 +625,15 @@ export function AiAssistantPanel({
           display: "grid", gap: 7,
         }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-            Preparado para inicio de sesión con cuenta, pero falta el backend OAuth de TeXisStudio. Cuando exista, aquí se conectarán ChatGPT, Claude o Gemini sin pegar claves.
+            Inicia sesión en {providerInfo.name} desde el navegador. TeXisStudio copiará el prompt y abrirá tu cuenta para que lo pegues ahí.
           </div>
-          <button type="button" className="btn btn-ghost" disabled style={{ justifySelf: "start", fontSize: 11, padding: "5px 9px" }}>
-            Inicio de sesión no disponible aún
+          <button
+            type="button"
+            className="btn btn-accent"
+            onClick={() => window.open(providerInfo.webUrl, "_blank", "noopener,noreferrer")}
+            style={{ justifySelf: "start", fontSize: 11, padding: "5px 9px" }}
+          >
+            Abrir / iniciar sesión
           </button>
         </div>
       )}
@@ -984,7 +1002,9 @@ export function AiAssistantPanel({
               ? "Escribe tu mensaje… (Enter para enviar)"
               : providerSettings.accessMode === "web_free"
                 ? "Prepara un prompt para copiarlo al agente web"
-                : "Elige API key para usar el chat integrado"
+                : providerSettings.accessMode === "account"
+                  ? "Escribe y se abrirá tu cuenta del proveedor"
+                  : "Configura el modo avanzado para usar chat integrado"
           }
           style={{
             flex: 1, resize: "none", minHeight: 38, maxHeight: 120,
@@ -998,7 +1018,7 @@ export function AiAssistantPanel({
         <button
           className="btn btn-accent"
           onClick={handleSend}
-          disabled={!isConfigured || !input.trim() || store.isLoading}
+          disabled={!input.trim() || store.isLoading || (providerSettings.accessMode === "api_key" && !isConfigured)}
           style={{ padding: "8px 10px", flexShrink: 0 }}
         >
           <IconSend />
