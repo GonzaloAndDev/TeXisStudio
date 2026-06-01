@@ -833,14 +833,13 @@ export default function EditorView() {
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }} className="editor-workspace">
           {/* Toolbar */}
-          <div style={{ height: 48, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "3px 14px", display: "flex", alignItems: "center", gap: 4, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }} className="editor-toolbar">
+          <div style={{ height: 68, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "5px 14px 9px", display: "flex", alignItems: "center", gap: 6, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }} className="editor-toolbar">
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm editor-tool-button"
                 onClick={() => addBlock(type)}
                 title={tooltip ?? label}
-                style={{ flexDirection: "column", gap: 3, padding: "6px 9px", minWidth: 66, minHeight: 40, height: 42, fontSize: 10, lineHeight: 1.05, justifyContent: "center" }}
               >
                 {icon}<span>{label}</span>
               </button>
@@ -851,20 +850,18 @@ export default function EditorView() {
 
             {/* Picker de citas */}
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setCitPickerOpen(true)}
               title="Insertar cita bibliográfica (Ctrl+[)"
-              style={{ flexDirection: "column", gap: 3, padding: "6px 9px", minWidth: 58, minHeight: 40, height: 42, fontSize: 10, lineHeight: 1.05, justifyContent: "center" }}
             >
               <IconMore size={12} /><span>Cita</span>
             </button>
 
             {/* Insertar figura generada por plugin */}
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setFigurePickerOpen(true)}
               title="Insertar figura generada — 38 tipos de diagramas sin necesidad de LaTeX"
-              style={{ flexDirection: "column", gap: 3, padding: "6px 9px", minWidth: 66, minHeight: 40, height: 42, fontSize: 10, lineHeight: 1.05, justifyContent: "center" }}
             >
               <span style={{ fontSize: 12 }}>📊</span><span>Figura+</span>
             </button>
