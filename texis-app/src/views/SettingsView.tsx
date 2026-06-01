@@ -51,32 +51,7 @@ const SHORTCUT_ROWS: Array<[string, string]> = [
 export default function SettingsView() {
   const navigate = useNavigate();
   const { section: sectionParam } = useParams<{ section?: string }>();
-  const { t, i18n: activeI18n } = useTranslation();
-  const textSettingsCopy = activeI18n.language?.startsWith("en")
-    ? {
-        modeTitle: "Usage mode",
-        basicMode: "Basic mode",
-        advancedMode: "Advanced options",
-        basicHint: "The writing, review, and delivery tools are shown first. Technical details stay hidden until you need them.",
-        advancedHint: "Technical controls, compilation details, and fine-grained options are shown for users who want to see the full stack.",
-        uiScaleTitle: "Interface size",
-        normal: "Normal",
-        large: "Large",
-        xlarge: "Very large",
-        uiScaleHint: "Increases the app text without changing the PDF typography. Controls grow a little to avoid clipped text.",
-      }
-    : {
-        modeTitle: "Modo de uso",
-        basicMode: "Modo básico",
-        advancedMode: "Opciones avanzadas",
-        basicHint: "Mostramos primero lo importante para escribir, revisar y entregar. Los detalles técnicos quedan ocultos hasta que los necesites.",
-        advancedHint: "Mostramos controles técnicos, detalles de compilación y opciones finas para usuarios que quieren ver el stack completo.",
-        uiScaleTitle: "Tamaño de interfaz",
-        normal: "Normal",
-        large: "Grande",
-        xlarge: "Muy grande",
-        uiScaleHint: "Aumenta la letra de la app sin cambiar el tamaño tipográfico del PDF. Los controles crecen un poco para evitar textos cortados.",
-      };
+  const { t } = useTranslation();
   const {
     lang, userMode, uiScale, spellLang,
     autocorrectEnabled, grammarAutoCheck, grammarEnabled,
@@ -712,38 +687,38 @@ export default function SettingsView() {
 
               <Card style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
-                  {textSettingsCopy.modeTitle}
+                  {t("settings.text_mode_title")}
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
                   <button
                     className={`btn ${userMode === "basic" ? "btn-accent" : "btn-ghost"}`}
                     onClick={() => setUserMode("basic")}
                   >
-                    {textSettingsCopy.basicMode}
+                    {t("settings.text_mode_basic")}
                   </button>
                   <button
                     className={`btn ${userMode === "advanced" ? "btn-accent" : "btn-ghost"}`}
                     onClick={() => setUserMode("advanced")}
                   >
-                    {textSettingsCopy.advancedMode}
+                    {t("settings.text_mode_advanced")}
                   </button>
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
                   {userMode === "basic"
-                    ? textSettingsCopy.basicHint
-                    : textSettingsCopy.advancedHint}
+                    ? t("settings.text_mode_basic_hint")
+                    : t("settings.text_mode_advanced_hint")}
                 </div>
               </Card>
 
               <Card style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
-                  {textSettingsCopy.uiScaleTitle}
+                  {t("settings.ui_scale_title")}
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
                   {([
-                    ["normal", textSettingsCopy.normal],
-                    ["large", textSettingsCopy.large],
-                    ["xlarge", textSettingsCopy.xlarge],
+                    ["normal", t("settings.ui_scale_normal")],
+                    ["large", t("settings.ui_scale_large")],
+                    ["xlarge", t("settings.ui_scale_xlarge")],
                   ] as const).map(([value, label]) => (
                     <button
                       key={value}
@@ -755,7 +730,7 @@ export default function SettingsView() {
                   ))}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-                  {textSettingsCopy.uiScaleHint}
+                  {t("settings.ui_scale_hint")}
                 </div>
               </Card>
 

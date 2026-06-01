@@ -11,85 +11,6 @@ export interface DocumentOptions {
   preamble: PreambleConfig;
 }
 
-const documentOptionsCopy = {
-  es: {
-    title: "Opciones del documento",
-    typography: "Tipografía",
-    fontSize: "Tamaño de fuente",
-    paperSize: "Tamaño de papel",
-    letter: "Carta",
-    lineSpacing: "Interlineado",
-    single: "Simple",
-    double: "Doble",
-    margins: "Márgenes",
-    cjkFonts: "Fuentes CJK",
-    cjkDetected: "Detectamos texto en chino o japonés en tu documento. xeCJK se activó automáticamente con",
-    cjkChange: "Puedes cambiar la fuente aquí.",
-    cjkMainFont: "Fuente principal (chino/coreano)",
-    exactSystemName: "nombre exacto del sistema",
-    japaneseFont: "Fuente japonesa",
-    japaneseHint: "opcional, override para japonés",
-    koreanFont: "Fuente coreana",
-    documentFonts: "Fuentes del documento",
-    mainFont: "Fuente principal",
-    profileOverride: "override sobre el perfil",
-    sansFont: "Fuente sans-serif",
-    monoFont: "Fuente monoespaciada",
-    example: "ej.",
-    mathOperators: "Operadores matemáticos",
-    mathHint: "Genera",
-    inPreamble: "en el preámbulo.",
-    add: "+ Añadir",
-    extraTheorems: "Entornos de teoremas adicionales",
-    hypothesis: "Hipótesis",
-    extraPreamble: "Preámbulo adicional",
-    latexWarning: "Este campo acepta LaTeX arbitrario. Un error aquí puede impedir que el documento compile.",
-    latexPlaceholder: "% ej:\n\\hypersetup{colorlinks=true, linkcolor=blue}\n\\newcommand{\\R}{\\mathbb{R}}",
-    footer: "Los cambios se aplican al compilar el siguiente PDF.",
-    advancedHint: " Activa el modo avanzado para ver fuentes, operadores y preámbulo extra.",
-    cancel: "Cancelar",
-    apply: "Aplicar",
-  },
-  en: {
-    title: "Document options",
-    typography: "Typography",
-    fontSize: "Font size",
-    paperSize: "Paper size",
-    letter: "Letter",
-    lineSpacing: "Line spacing",
-    single: "Single",
-    double: "Double",
-    margins: "Margins",
-    cjkFonts: "CJK fonts",
-    cjkDetected: "Chinese or Japanese text was detected in your document. xeCJK was enabled automatically with",
-    cjkChange: "You can change the font here.",
-    cjkMainFont: "Main font (Chinese/Korean)",
-    exactSystemName: "exact system name",
-    japaneseFont: "Japanese font",
-    japaneseHint: "optional override for Japanese",
-    koreanFont: "Korean font",
-    documentFonts: "Document fonts",
-    mainFont: "Main font",
-    profileOverride: "override from the profile",
-    sansFont: "Sans-serif font",
-    monoFont: "Monospace font",
-    example: "e.g.",
-    mathOperators: "Math operators",
-    mathHint: "Generates",
-    inPreamble: "in the preamble.",
-    add: "+ Add",
-    extraTheorems: "Additional theorem environments",
-    hypothesis: "Hypothesis",
-    extraPreamble: "Additional preamble",
-    latexWarning: "This field accepts arbitrary LaTeX. An error here can prevent the document from compiling.",
-    latexPlaceholder: "% e.g.:\n\\hypersetup{colorlinks=true, linkcolor=blue}\n\\newcommand{\\R}{\\mathbb{R}}",
-    footer: "Changes apply the next time you compile the PDF.",
-    advancedHint: " Enable advanced mode to see fonts, operators, and extra preamble settings.",
-    cancel: "Cancel",
-    apply: "Apply",
-  },
-};
-
 // ── Componentes pequeños ──────────────────────────────────────────
 
 function SectionTitle({ label }: { label: string }) {
@@ -168,9 +89,8 @@ export function DocumentOptionsPanel({
   onClose: () => void;
 }) {
   const { userMode } = useSettingsStore();
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const isAdvanced = userMode === "advanced";
-  const copy = i18n.language?.startsWith("en") ? documentOptionsCopy.en : documentOptionsCopy.es;
 
   const [typo, setTypo] = useState<LatexTypography>({ ...typography });
   const [pc, setPc]     = useState<PreambleConfig>({ ...preamble });
@@ -235,7 +155,7 @@ export function DocumentOptionsPanel({
           display: "flex", alignItems: "center", flexShrink: 0,
         }}>
           <span style={{ flex: 1, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
-            {copy.title}
+            {t("document_options.title")}
           </span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}>
             <IconX size={13} />
@@ -247,24 +167,24 @@ export function DocumentOptionsPanel({
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
             {/* ── Tipografía ── */}
-            <SectionTitle label={copy.typography} />
+            <SectionTitle label={t("document_options.typography")} />
 
-            <OptionRow label={copy.fontSize}>
+            <OptionRow label={t("document_options.font_size")}>
               {[["10pt","10"], ["11pt","11"], ["12pt","12 (rec.)"]] .map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.font_size} label={l}
                   onClick={() => updateTypo({ font_size: typo.font_size === v ? undefined : v })} />
               ))}
             </OptionRow>
 
-            <OptionRow label={copy.paperSize}>
-              {[["a4paper","A4"], ["letterpaper", copy.letter]].map(([v, l]) => (
+            <OptionRow label={t("document_options.paper_size")}>
+              {[["a4paper","A4"], ["letterpaper", t("document_options.letter")]].map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.paper_size} label={l}
                   onClick={() => updateTypo({ paper_size: typo.paper_size === v ? undefined : v })} />
               ))}
             </OptionRow>
 
-            <OptionRow label={copy.lineSpacing}>
-              {[["single", copy.single],["onehalf","1.5 (rec.)"],["double", copy.double]].map(([v, l]) => (
+            <OptionRow label={t("document_options.line_spacing")}>
+              {[["single", t("document_options.single")],["onehalf","1.5 (rec.)"],["double", t("document_options.double")]].map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.line_spacing} label={l}
                   onClick={() => updateTypo({ line_spacing: typo.line_spacing === v ? undefined : v })} />
               ))}
@@ -272,7 +192,7 @@ export function DocumentOptionsPanel({
 
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontWeight: 600 }}>
-                {copy.margins} - {typo.margin_cm ?? 2.5} cm
+                {t("document_options.margins")} - {typo.margin_cm ?? 2.5} cm
               </label>
               <input type="range" min={1.5} max={4.0} step={0.25}
                 value={typo.margin_cm ?? 2.5}
@@ -287,7 +207,7 @@ export function DocumentOptionsPanel({
             {/* ── Fuentes CJK ── */}
             {showCjkSection && (
               <>
-                <SectionTitle label={copy.cjkFonts} />
+                <SectionTitle label={t("document_options.cjk_fonts")} />
                 {hasCjkContent && (
                   <div style={{
                     padding: "8px 12px", borderRadius: "var(--r-sm)",
@@ -297,19 +217,19 @@ export function DocumentOptionsPanel({
                   }}>
                     <span style={{ flexShrink: 0 }}>✓</span>
                     <span>
-                      {copy.cjkDetected} <strong>{pc.cjk_main_font || "Heiti SC"}</strong>.
-                      {" "}{copy.cjkChange}
+                      {t("document_options.cjk_detected")} <strong>{pc.cjk_main_font || "Heiti SC"}</strong>.
+                      {" "}{t("document_options.cjk_change")}
                     </span>
                   </div>
                 )}
-                <OptionRow label={copy.cjkMainFont} hint={copy.exactSystemName}>
+                <OptionRow label={t("document_options.cjk_main_font")} hint={t("document_options.exact_system_name")}>
                   <TextInput
                     value={pc.cjk_main_font ?? ""}
                     onChange={(v) => updatePc({ cjk_main_font: v || undefined })}
                     placeholder="Heiti SC"
                   />
                 </OptionRow>
-                <OptionRow label={copy.japaneseFont} hint={copy.japaneseHint}>
+                <OptionRow label={t("document_options.japanese_font")} hint={t("document_options.japanese_hint")}>
                   <TextInput
                     value={pc.cjk_japanese_font ?? ""}
                     onChange={(v) => updatePc({ cjk_japanese_font: v || undefined })}
@@ -317,7 +237,7 @@ export function DocumentOptionsPanel({
                   />
                 </OptionRow>
                 {isAdvanced && (
-                  <OptionRow label={copy.koreanFont}>
+                  <OptionRow label={t("document_options.korean_font")}>
                     <TextInput
                       value={pc.cjk_korean_font ?? ""}
                       onChange={(v) => updatePc({ cjk_korean_font: v || undefined })}
@@ -331,18 +251,18 @@ export function DocumentOptionsPanel({
             {/* ── Fuentes del documento (solo avanzado) ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={copy.documentFonts} />
-                <OptionRow label={copy.mainFont} hint={copy.profileOverride}>
+                <SectionTitle label={t("document_options.document_fonts")} />
+                <OptionRow label={t("document_options.main_font")} hint={t("document_options.profile_override")}>
                   <TextInput value={pc.main_font ?? ""} onChange={(v) => updatePc({ main_font: v || undefined })}
-                    placeholder={`${copy.example} Times New Roman`} />
+                    placeholder={`${t("document_options.example")} Times New Roman`} />
                 </OptionRow>
-                <OptionRow label={copy.sansFont}>
+                <OptionRow label={t("document_options.sans_font")}>
                   <TextInput value={pc.sans_font ?? ""} onChange={(v) => updatePc({ sans_font: v || undefined })}
-                    placeholder={`${copy.example} Helvetica Neue`} />
+                    placeholder={`${t("document_options.example")} Helvetica Neue`} />
                 </OptionRow>
-                <OptionRow label={copy.monoFont}>
+                <OptionRow label={t("document_options.mono_font")}>
                   <TextInput value={pc.mono_font ?? ""} onChange={(v) => updatePc({ mono_font: v || undefined })}
-                    placeholder={`${copy.example} Fira Code`} />
+                    placeholder={`${t("document_options.example")} Fira Code`} />
                 </OptionRow>
               </>
             )}
@@ -350,11 +270,11 @@ export function DocumentOptionsPanel({
             {/* ── Operadores matemáticos ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={copy.mathOperators} />
+                <SectionTitle label={t("document_options.math_operators")} />
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.5, marginTop: -8 }}>
-                  {copy.mathHint} <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-sunken)", padding: "1px 4px", borderRadius: 3 }}>
+                  {t("document_options.math_hint")} <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-sunken)", padding: "1px 4px", borderRadius: 3 }}>
                     \DeclareMathOperator{`{\\cmd}{text}`}
-                  </code> {copy.inPreamble}
+                  </code> {t("document_options.in_preamble")}
                 </div>
                 {(pc.math_operators ?? []).map((op, i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -373,7 +293,7 @@ export function DocumentOptionsPanel({
                   <TextInput value={newOp.text} onChange={(v) => setNewOp(o => ({ ...o, text: v }))}
                     placeholder="rank" mono />
                   <button className="btn btn-ghost btn-sm" onClick={addOp}
-                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{copy.add}</button>
+                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{t("common.add")}</button>
                 </div>
               </>
             )}
@@ -381,7 +301,7 @@ export function DocumentOptionsPanel({
             {/* ── Teoremas adicionales ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={copy.extraTheorems} />
+                <SectionTitle label={t("document_options.extra_theorems")} />
                 {(pc.extra_theorems ?? []).map((t, i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <code style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-strong)",
@@ -397,9 +317,9 @@ export function DocumentOptionsPanel({
                   <TextInput value={newThm.id} onChange={(v) => setNewThm(t => ({ ...t, id: v }))}
                     placeholder="hypothesis" mono />
                   <TextInput value={newThm.label} onChange={(v) => setNewThm(t => ({ ...t, label: v }))}
-                    placeholder={copy.hypothesis} />
+                    placeholder={t("document_options.hypothesis")} />
                   <button className="btn btn-ghost btn-sm" onClick={addThm}
-                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{copy.add}</button>
+                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{t("common.add")}</button>
                 </div>
               </>
             )}
@@ -407,19 +327,19 @@ export function DocumentOptionsPanel({
             {/* ── Preámbulo extra (solo avanzado) ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={copy.extraPreamble} />
+                <SectionTitle label={t("document_options.extra_preamble")} />
                 <div style={{
                   padding: "8px 10px", borderRadius: "var(--r-sm)",
                   background: "color-mix(in srgb, var(--build-warn) 10%, transparent)",
                   border: "1px solid color-mix(in srgb, var(--build-warn) 30%, transparent)",
                   fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5,
                 }}>
-                  ⚠ {copy.latexWarning}
+                  ⚠ {t("document_options.latex_warning")}
                 </div>
                 <textarea
                   value={pc.extra ?? ""}
                   onChange={(e) => updatePc({ extra: e.target.value || undefined })}
-                  placeholder={copy.latexPlaceholder}
+                  placeholder={t("document_options.latex_placeholder")}
                   rows={5}
                   style={{
                     width: "100%", padding: "8px 10px", borderRadius: "var(--r-sm)",
@@ -436,15 +356,15 @@ export function DocumentOptionsPanel({
         {/* Footer */}
         <div style={{ padding: "10px 14px 10px", borderTop: "1px solid var(--border-subtle)", flexShrink: 0 }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 10, lineHeight: 1.5 }}>
-            {copy.footer}
+            {t("document_options.footer")}
             {!isAdvanced && (
-              <span style={{ color: "var(--accent-deep)" }}>{copy.advancedHint}</span>
+              <span style={{ color: "var(--accent-deep)" }}>{t("document_options.advanced_hint")}</span>
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <button className="btn btn-ghost" onClick={onClose}>{copy.cancel}</button>
+            <button className="btn btn-ghost" onClick={onClose}>{t("common.cancel")}</button>
             <button className="btn btn-accent" disabled={saving} onClick={handleSave}>
-              <IconCheck size={12} /> {copy.apply}
+              <IconCheck size={12} /> {t("common.apply")}
             </button>
           </div>
         </div>
