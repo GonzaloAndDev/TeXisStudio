@@ -1,5 +1,11 @@
 import { Component, Suspense, lazy, useEffect, type ReactNode } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+  useNavigate,
+} from "react-router-dom";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
 
@@ -198,12 +204,36 @@ function DemoLoader() {
   return null;
 }
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <>
+      <Route path="/" element={<HomeView />} />
+      <Route path="/new" element={<WizardView />} />
+      <Route path="/demo" element={<DemoLoader />} />
+      <Route path="/project/:id" element={<EditorView />} />
+      <Route path="/project/:id/compile" element={<CompileView />} />
+      <Route path="/project/:id/progress" element={<ProgressView />} />
+      <Route path="/library" element={<LibraryView />} />
+      <Route path="/new-profile" element={<ProfileWizardView />} />
+      <Route path="/new-profile/:id" element={<ProfileWizardView />} />
+      <Route path="/about" element={<AboutView />} />
+      <Route path="/setup-latex" element={<SetupLatexView />} />
+      <Route path="/settings" element={<SettingsView />} />
+      <Route path="/settings/:section" element={<SettingsView />} />
+      <Route path="*" element={<HomeView />} />
+    </>,
+  ),
+  {
+    future: {
+      v7_relativeSplatPath: true,
+    },
+  },
+);
 
 export default function App() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AppErrorBoundary>
+      <AppErrorBoundary>
         <Suspense
           fallback={
             <div style={{
@@ -214,25 +244,9 @@ export default function App() {
             </div>
           }
         >
-          <Routes>
-            <Route path="/" element={<HomeView />} />
-            <Route path="/new" element={<WizardView />} />
-            <Route path="/demo" element={<DemoLoader />} />
-            <Route path="/project/:id" element={<EditorView />} />
-            <Route path="/project/:id/compile" element={<CompileView />} />
-            <Route path="/project/:id/progress" element={<ProgressView />} />
-            <Route path="/library" element={<LibraryView />} />
-            <Route path="/new-profile" element={<ProfileWizardView />} />
-            <Route path="/new-profile/:id" element={<ProfileWizardView />} />
-            <Route path="/about" element={<AboutView />} />
-            <Route path="/setup-latex" element={<SetupLatexView />} />
-            <Route path="/settings" element={<SettingsView />} />
-            <Route path="/settings/:section" element={<SettingsView />} />
-            <Route path="*" element={<HomeView />} />
-          </Routes>
+          <RouterProvider router={router} future={{ v7_startTransition: true }} />
         </Suspense>
-        </AppErrorBoundary>
-      </BrowserRouter>
+      </AppErrorBoundary>
     </div>
   );
 }
