@@ -17,7 +17,27 @@ Requisitos base:
 
 - Node.js 20+
 - Rust stable (`cargo` y `rustc`)
-- En Debian/Ubuntu, primero ejecuta `bash scripts/setup-debian.sh` para instalar dependencias Tauri/WebKit/GTK del sistema y verificar Node/Rust.
+
+Preparacion automatica:
+
+| Sistema | Comando |
+|---|---|
+| Linux/macOS | `bash scripts/bootstrap.sh` |
+| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` |
+
+Tambien puedes preparar y ejecutar en un solo paso:
+
+```bash
+bash scripts/bootstrap.sh run
+bash scripts/bootstrap.sh installer
+```
+
+En Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run
+powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer
+```
 
 | Quiero... | Comando | Resultado |
 |---|---|---|
@@ -240,13 +260,17 @@ Para generar instalador desde VS Code usa:
 
 Requisitos generales: Rust stable, Node.js 20+, MiKTeX o TeX Live para compilar documentos LaTeX. En Windows se requiere WebView2; el instalador lo maneja via Tauri. En macOS se requieren Xcode Command Line Tools. En Linux el script intenta instalar dependencias WebKit/GTK con el gestor de paquetes disponible.
 
-En Debian/Ubuntu, si el comando falla con `node: command not found`, `cargo: command not found` o dependencias WebKit/GTK faltantes, prepara el sistema con:
+En Linux/macOS, si el comando falla con `node: command not found`, `cargo: command not found` o dependencias WebKit/GTK faltantes, prepara el sistema con:
 
 ```bash
-bash scripts/setup-debian.sh
+bash scripts/bootstrap.sh
 ```
 
-Despues instala Node.js 20+ y Rust stable si el setup los reporta como faltantes; esos dos no se instalan automaticamente porque las versiones de `apt` pueden ser antiguas para Tauri.
+En Windows usa:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1
+```
 
 ### Distribucion para usuarios finales
 

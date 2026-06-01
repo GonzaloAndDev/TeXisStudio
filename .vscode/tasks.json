@@ -4,8 +4,18 @@
     {
       "label": "TeXisStudio: Run app",
       "type": "shell",
-      "command": "node",
-      "args": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "run"],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
+          "-Run"
+        ]
+      },
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": [],
       "presentation": {
@@ -17,8 +27,18 @@
     {
       "label": "TeXisStudio: Build current OS",
       "type": "shell",
-      "command": "node",
-      "args": ["${workspaceFolder}/scripts/texis.mjs", "build"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "installer"],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
+          "-Installer"
+        ]
+      },
       "group": "build",
       "problemMatcher": [],
       "presentation": {
@@ -30,8 +50,18 @@
     {
       "label": "TeXisStudio: Frontend only",
       "type": "shell",
-      "command": "node",
-      "args": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/bootstrap.sh", "frontend-build"],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "${workspaceFolder}\\scripts\\bootstrap-windows.ps1",
+          "-FrontendBuild"
+        ]
+      },
       "group": "test",
       "problemMatcher": [],
       "presentation": {
