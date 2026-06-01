@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -143,11 +143,152 @@ function sectionTexPath(
 // ── EditorView principal ──────────────────────────────────────────
 
 type SaveStatus = "saved" | "saving" | "unsaved" | "error";
+type ToolbarItem = [ContentBlock["type"], ReactNode, string, string?];
+
+const editorCopy = {
+  es: {
+    sectionFallback: "Sección",
+    versionsTitle: "Versiones guardadas del proyecto",
+    versions: "Versiones",
+    progressTitle: "Ver progreso y generar reporte de revisión",
+    progress: "Progreso",
+    documentOptions: "Opciones del documento",
+    showRoute: "Mostrar ruta del documento",
+    route: "Ruta",
+    documentRoute: "Ruta del documento",
+    sections: "Secciones",
+    minimizeRoute: "Minimizar ruta",
+    citationPicker: "Insertar cita bibliográfica (Ctrl+[)",
+    figurePlus: "Insertar figura generada - 38 tipos de diagramas sin necesidad de LaTeX",
+    aiAssistant: "Asistente IA",
+    commandPalette: "Paleta de comandos (Ctrl+K)",
+    commands: "Comandos",
+    retry: "Reintentar",
+    loadingProject: "Cargando proyecto...",
+    citationShort: "Cita",
+    figurePlusShort: "Figura+",
+    startWritingBasic: "Empieza a escribir aquí.",
+    startWritingAdvanced: "Sección vacía.",
+    startWritingBasicHint: "Haz clic para agregar tu primer párrafo. Después podrás sumar citas, figuras o tablas.",
+    startWritingAdvancedHint: "Clic aquí para agregar un párrafo, o usa la barra de herramientas arriba.",
+    newParagraph: "Nuevo párrafo",
+    selectSection: "Selecciona una sección en el árbol",
+    showProjectGuide: "Mostrar guía del proyecto",
+    guide: "Guía",
+    restoreVersionTitle: "Restaurar version",
+    deleteVersionTitle: "Eliminar version",
+    restoreVersionMessage: "El estado actual se guardara automaticamente como respaldo antes de restaurar esta version.",
+    deleteVersionMessage: "Esta version guardada se eliminara de forma permanente.",
+    savedVersions: "Versiones guardadas",
+    saveCurrentVersion: "Guardar versión actual",
+    versionNamePlaceholder: "Nombre de la versión...",
+    save: "Guardar",
+    noSavedVersions: "No hay versiones guardadas.",
+    createOneHint: "Usa el campo de arriba para crear una.",
+    restoreThisVersion: "Restaurar esta versión",
+    restore: "Restaurar",
+    deleteVersion: "Eliminar versión",
+    toolbarBasic: [
+      ["paragraph", <IconText size={12} />, "Agregar texto", "Escribe un párrafo de contenido"],
+      ["heading", <IconHeading size={12} />, "Agregar título", "Sección, subsección o apartado"],
+      ["list", <IconList size={12} />, "Agregar lista", "Lista con viñetas o numerada"],
+      ["citation", <IconMore size={12} />, "Agregar cita", "Cita bibliográfica de tu lista de referencias"],
+      ["figure", <IconImage size={12} />, "Agregar figura", "Imagen con caption y número automático"],
+      ["table", <IconTable size={12} />, "Agregar tabla", "Tabla con filas, columnas y caption"],
+      ["equation", <IconSigma size={12} />, "Agregar ecuación", "Ecuación numerada en LaTeX (amsmath)"],
+      ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, "Agregar diagrama", "Venn, flujo, moléculas, circuitos, Feynman y más - sin LaTeX"],
+    ] as ToolbarItem[],
+    toolbarAdvanced: [
+      ["paragraph", <IconText size={12} />, "Párrafo", "Párrafo de texto"],
+      ["heading", <IconHeading size={12} />, "Título", "Sección / Subsección"],
+      ["list", <IconList size={12} />, "Lista", "Itemize / Enumerate"],
+      ["equation", <IconSigma size={12} />, "Ecuación", "equation / equation* (amsmath)"],
+      ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, "Diagrama", "Venn, flujo, química, circuitos, Feynman, biología, música - sin LaTeX"],
+      ["figure", <IconImage size={12} />, "Figura"],
+      ["table", <IconTable size={12} />, "Tabla"],
+      ["raw_latex", <IconCode size={12} />, "LaTeX", "Bloque LaTeX directo (requiere confirmación)"],
+      ["code", <IconCode size={12} />, "Código", "lstlisting - código fuente con resaltado"],
+      ["algorithm", <IconAlgorithm size={12} />, "Algoritmo", "algpseudocode - pseudocódigo numerado"],
+      ["theorem", <IconTheorem size={12} />, "Teorema", "amsthm - Teorema / Proposición / Lema"],
+      ["glossary_entry", <IconGlossaryEntry size={12} />, "Glosario", "Término con definición en la sección de glosario"],
+      ["acronym_entry", <IconAcronym size={12} />, "Acrónimo", "Acrónimo con forma completa en el glosario"],
+    ] as ToolbarItem[],
+  },
+  en: {
+    sectionFallback: "Section",
+    versionsTitle: "Saved project versions",
+    versions: "Versions",
+    progressTitle: "View progress and generate a review report",
+    progress: "Progress",
+    documentOptions: "Document options",
+    showRoute: "Show document outline",
+    route: "Outline",
+    documentRoute: "Document outline",
+    sections: "Sections",
+    minimizeRoute: "Minimize outline",
+    citationPicker: "Insert bibliography citation (Ctrl+[)",
+    figurePlus: "Insert generated figure - 38 diagram types without writing LaTeX",
+    aiAssistant: "AI assistant",
+    commandPalette: "Command palette (Ctrl+K)",
+    commands: "Commands",
+    retry: "Retry",
+    loadingProject: "Loading project...",
+    citationShort: "Citation",
+    figurePlusShort: "Figure+",
+    startWritingBasic: "Start writing here.",
+    startWritingAdvanced: "Empty section.",
+    startWritingBasicHint: "Click to add your first paragraph. You can add citations, figures, or tables later.",
+    startWritingAdvancedHint: "Click here to add a paragraph, or use the toolbar above.",
+    newParagraph: "New paragraph",
+    selectSection: "Select a section in the outline",
+    showProjectGuide: "Show project guide",
+    guide: "Guide",
+    restoreVersionTitle: "Restore version",
+    deleteVersionTitle: "Delete version",
+    restoreVersionMessage: "The current state will be saved automatically as a backup before restoring this version.",
+    deleteVersionMessage: "This saved version will be permanently deleted.",
+    savedVersions: "Saved versions",
+    saveCurrentVersion: "Save current version",
+    versionNamePlaceholder: "Version name...",
+    save: "Save",
+    noSavedVersions: "No saved versions.",
+    createOneHint: "Use the field above to create one.",
+    restoreThisVersion: "Restore this version",
+    restore: "Restore",
+    deleteVersion: "Delete version",
+    toolbarBasic: [
+      ["paragraph", <IconText size={12} />, "Add text", "Write a content paragraph"],
+      ["heading", <IconHeading size={12} />, "Add heading", "Section, subsection, or heading"],
+      ["list", <IconList size={12} />, "Add list", "Bulleted or numbered list"],
+      ["citation", <IconMore size={12} />, "Add citation", "Bibliography citation from your references"],
+      ["figure", <IconImage size={12} />, "Add figure", "Image with caption and automatic number"],
+      ["table", <IconTable size={12} />, "Add table", "Table with rows, columns, and caption"],
+      ["equation", <IconSigma size={12} />, "Add equation", "Numbered LaTeX equation (amsmath)"],
+      ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, "Add diagram", "Venn, flow, molecules, circuits, Feynman, and more - no LaTeX"],
+    ] as ToolbarItem[],
+    toolbarAdvanced: [
+      ["paragraph", <IconText size={12} />, "Paragraph", "Text paragraph"],
+      ["heading", <IconHeading size={12} />, "Heading", "Section / Subsection"],
+      ["list", <IconList size={12} />, "List", "Itemize / Enumerate"],
+      ["equation", <IconSigma size={12} />, "Equation", "equation / equation* (amsmath)"],
+      ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, "Diagram", "Venn, flow, chemistry, circuits, Feynman, biology, music - no LaTeX"],
+      ["figure", <IconImage size={12} />, "Figure"],
+      ["table", <IconTable size={12} />, "Table"],
+      ["raw_latex", <IconCode size={12} />, "LaTeX", "Raw LaTeX block (requires confirmation)"],
+      ["code", <IconCode size={12} />, "Code", "lstlisting - highlighted source code"],
+      ["algorithm", <IconAlgorithm size={12} />, "Algorithm", "algpseudocode - numbered pseudocode"],
+      ["theorem", <IconTheorem size={12} />, "Theorem", "amsthm - Theorem / Proposition / Lemma"],
+      ["glossary_entry", <IconGlossaryEntry size={12} />, "Glossary", "Term with definition in the glossary section"],
+      ["acronym_entry", <IconAcronym size={12} />, "Acronym", "Acronym with full form in the glossary"],
+    ] as ToolbarItem[],
+  },
+};
 
 export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const copy = i18n.language?.startsWith("en") ? editorCopy.en : editorCopy.es;
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
 
@@ -659,7 +800,7 @@ export default function EditorView() {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
         <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid var(--border-soft)", borderTopColor: "var(--accent)" }} />
-        <p>Cargando proyecto...</p>
+        <p>{copy.loadingProject}</p>
       </div>
     );
   }
@@ -688,32 +829,7 @@ export default function EditorView() {
     .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks ?? []), 0);
 
   const projectName = activeProject.metadata.title;
-  const toolbarItems: [ContentBlock["type"], React.ReactNode, string, string?][] = userMode === "basic"
-    ? [
-        ["paragraph", <IconText size={12} />, "Agregar texto", "Escribe un párrafo de contenido"],
-        ["heading", <IconHeading size={12} />, "Agregar título", "Sección, subsección o apartado"],
-        ["list", <IconList size={12} />, "Agregar lista", "Lista con viñetas o numerada"],
-        ["citation", <IconMore size={12} />, "Agregar cita", "Cita bibliográfica de tu lista de referencias"],
-        ["figure", <IconImage size={12} />, "Agregar figura", "Imagen con caption y número automático"],
-        ["table", <IconTable size={12} />, "Agregar tabla", "Tabla con filas, columnas y caption"],
-        ["equation", <IconSigma size={12} />, "Agregar ecuación", "Ecuación numerada en LaTeX (amsmath)"],
-        ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, "Agregar diagrama", "Venn, flujo, moléculas, circuitos, Feynman y más — sin LaTeX"],
-      ]
-    : [
-        ["paragraph", <IconText size={12} />, "Párrafo", "Párrafo de texto"],
-        ["heading", <IconHeading size={12} />, "Título", "Sección / Subsección"],
-        ["list", <IconList size={12} />, "Lista", "Itemize / Enumerate"],
-        ["equation", <IconSigma size={12} />, "Ecuación", "equation / equation* (amsmath)"],
-        ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, "Diagrama", "Venn, flujo, química, circuitos, Feynman, biología, música — sin LaTeX"],
-        ["figure", <IconImage size={12} />, "Figura"],
-        ["table", <IconTable size={12} />, "Tabla"],
-        ["raw_latex", <IconCode size={12} />, "LaTeX", "Bloque LaTeX directo (requiere confirmación)"],
-        ["code", <IconCode size={12} />, "Código", "lstlisting — código fuente con resaltado"],
-        ["algorithm", <IconAlgorithm size={12} />, "Algoritmo", "algpseudocode — pseudocódigo numerado"],
-        ["theorem", <IconTheorem size={12} />, "Teorema", "amsthm — Teorema / Proposición / Lema"],
-        ["glossary_entry", <IconGlossaryEntry size={12} />, "Glosario", "Término con definición en la sección de glosario"],
-        ["acronym_entry", <IconAcronym size={12} />, "Acrónimo", "Acrónimo con forma completa en el glosario"],
-      ];
+  const toolbarItems = userMode === "basic" ? copy.toolbarBasic : copy.toolbarAdvanced;
 
   const saveLabel =
     saveStatus === "saving"  ? t("editor.saving") :
@@ -729,7 +845,7 @@ export default function EditorView() {
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><TxBreadcrumb parts={[projectName, activeSection?.title ?? "Sección"]} /></>}
+        left={<><TxLogo /><TxBreadcrumb parts={[projectName, activeSection?.title ?? copy.sectionFallback]} /></>}
         center={null}
         right={
           <>
@@ -737,12 +853,12 @@ export default function EditorView() {
             <button
               className={`btn btn-ghost btn-sm${snapshotsOpen ? " btn-active" : ""}`}
               onClick={() => setSnapshotsOpen((o) => !o)}
-              title="Versiones guardadas del proyecto"
+              title={copy.versionsTitle}
             >
-              <IconRefresh size={13} /> Versiones
+              <IconRefresh size={13} /> {copy.versions}
             </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title="Ver progreso y generar reporte de revisión">
-              Progreso
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title={copy.progressTitle}>
+              {copy.progress}
             </button>
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
               <IconBuild size={13} /> {t("editor.compile")}
@@ -750,7 +866,7 @@ export default function EditorView() {
             {userMode === "advanced" && (
               <button
                 className={`btn btn-ghost btn-icon${docOptionsOpen ? " btn-active" : ""}`}
-                title="Opciones del documento"
+                title={copy.documentOptions}
                 onClick={() => setDocOptionsOpen(true)}
               >
                 <IconSettings size={14} />
@@ -777,23 +893,23 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-icon"
               onClick={() => setLeftPanelCollapsed(false)}
-              title="Mostrar ruta del documento"
+              title={copy.showRoute}
               style={{ width: 28, height: 28, padding: 4 }}
             >
               ›
             </button>
-            <div className="editor-rail-label">Ruta</div>
+            <div className="editor-rail-label">{copy.route}</div>
           </div>
         ) : (
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {userMode === "basic" ? "Ruta del documento" : "Secciones"}
+            {userMode === "basic" ? copy.documentRoute : copy.sections}
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
               <button
                 className="btn btn-ghost btn-icon"
                 onClick={() => setLeftPanelCollapsed(true)}
-                title="Minimizar ruta"
+                title={copy.minimizeRoute}
                 style={{ padding: 4 }}
               >
                 ‹
@@ -852,18 +968,18 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setCitPickerOpen(true)}
-              title="Insertar cita bibliográfica (Ctrl+[)"
+              title={copy.citationPicker}
             >
-              <IconMore size={12} /><span>Cita</span>
+              <IconMore size={12} /><span>{copy.citationShort}</span>
             </button>
 
             {/* Insertar figura generada por plugin */}
             <button
               className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setFigurePickerOpen(true)}
-              title="Insertar figura generada — 38 tipos de diagramas sin necesidad de LaTeX"
+              title={copy.figurePlus}
             >
-              <span style={{ fontSize: 12 }}>📊</span><span>Figura+</span>
+              <span style={{ fontSize: 12 }}>📊</span><span>{copy.figurePlusShort}</span>
             </button>
 
             <div style={{ flex: 1 }} />
@@ -890,7 +1006,7 @@ export default function EditorView() {
               <button
                 className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
                 onClick={() => aiPanel.togglePanel()}
-                title="Asistente IA"
+                title={copy.aiAssistant}
                 style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
               >
                 ✦ IA
@@ -903,11 +1019,11 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setPaletteOpen(true)}
-              title="Paleta de comandos (Ctrl+K)"
+              title={copy.commandPalette}
               style={{ fontSize: "var(--fs-xs)", gap: 5, padding: "4px 10px" }}
             >
               <IconSearch size={11} />
-              <span>Comandos</span>
+              <span>{copy.commands}</span>
               <span className="kbd" style={{ fontSize: 9 }}>⌘K</span>
             </button>
 
@@ -922,7 +1038,7 @@ export default function EditorView() {
                   style={{ fontSize: "var(--fs-xs)", padding: "1px 6px", marginLeft: 4 }}
                   onClick={() => activeProjectPath && doSave(localBlocks, activeSectionId ?? "")}
                 >
-                  Reintentar
+                  {copy.retry}
                 </button>
               )}
             </div>
@@ -986,11 +1102,11 @@ export default function EditorView() {
                     style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", cursor: "text" }}
                     onClick={() => addBlock("paragraph")}
                   >
-                    <p style={{ margin: 0 }}>{userMode === "basic" ? "Empieza a escribir aquí." : "Sección vacía."}</p>
+                    <p style={{ margin: 0 }}>{userMode === "basic" ? copy.startWritingBasic : copy.startWritingAdvanced}</p>
                     <p style={{ fontSize: "var(--fs-sm)", marginTop: 8, color: "var(--fg-faint)" }}>
                       {userMode === "basic"
-                        ? "Haz clic para agregar tu primer párrafo. Después podrás sumar citas, figuras o tablas."
-                        : "Clic aquí para agregar un párrafo, o usa la barra de herramientas arriba."}
+                        ? copy.startWritingBasicHint
+                        : copy.startWritingAdvancedHint}
                     </p>
                   </div>
                 ) : (
@@ -1024,14 +1140,14 @@ export default function EditorView() {
                       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                       onClick={() => addBlock("paragraph")}
                     >
-                      <IconPlus size={12} style={{ marginRight: 6 }} /> Nuevo párrafo
+                      <IconPlus size={12} style={{ marginRight: 6 }} /> {copy.newParagraph}
                     </div>
                   </>
                 )}
               </div>
             ) : (
               <div style={{ textAlign: "center", color: "var(--fg-faint)", marginTop: 80 }}>
-                Selecciona una sección en el árbol
+                {copy.selectSection}
               </div>
             )}
           </div>
@@ -1043,12 +1159,12 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-icon"
               onClick={() => setMetaPanelCollapsed(false)}
-              title="Mostrar guía del proyecto"
+              title={copy.showProjectGuide}
               style={{ width: 28, height: 28, padding: 4 }}
             >
               ‹
             </button>
-            <div className="editor-rail-label">Guía</div>
+            <div className="editor-rail-label">{copy.guide}</div>
           </div>
         ) : (
           <EditorMetaPanel
@@ -1311,11 +1427,11 @@ export default function EditorView() {
       {/* ── Panel de versiones (snapshots) ───────────────────────── */}
       {snapshotConfirm && (
         <ConfirmDialog
-          title={snapshotConfirm.action === "restore" ? "Restaurar version" : "Eliminar version"}
+          title={snapshotConfirm.action === "restore" ? copy.restoreVersionTitle : copy.deleteVersionTitle}
           message={snapshotConfirm.action === "restore"
-            ? "El estado actual se guardara automaticamente como respaldo antes de restaurar esta version."
-            : "Esta version guardada se eliminara de forma permanente."}
-          confirmLabel={snapshotConfirm.action === "restore" ? "Restaurar version" : "Eliminar version"}
+            ? copy.restoreVersionMessage
+            : copy.deleteVersionMessage}
+          confirmLabel={snapshotConfirm.action === "restore" ? copy.restoreVersionTitle : copy.deleteVersionTitle}
           destructive={snapshotConfirm.action === "delete"}
           busy={snapBusy}
           onClose={() => setSnapshotConfirm(null)}
@@ -1349,7 +1465,7 @@ export default function EditorView() {
               display: "flex", alignItems: "center", gap: 8,
             }}>
               <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)", flex: 1 }}>
-                Versiones guardadas
+                {copy.savedVersions}
               </span>
               <button className="btn btn-ghost btn-icon" onClick={() => setSnapshotsOpen(false)}>
                 <IconX size={13} />
@@ -1359,13 +1475,13 @@ export default function EditorView() {
             {/* Crear nuevo snapshot */}
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6 }}>
-                Guardar versión actual
+                {copy.saveCurrentVersion}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <input
                   value={newSnapLabel}
                   onChange={(e) => setNewSnapLabel(e.target.value)}
-                  placeholder="Nombre de la versión…"
+                  placeholder={copy.versionNamePlaceholder}
                   disabled={snapBusy}
                   onKeyDown={(e) => { if (e.key === "Enter" && newSnapLabel.trim()) handleCreateSnapshot(); }}
                   style={{
@@ -1379,7 +1495,7 @@ export default function EditorView() {
                   disabled={!newSnapLabel.trim() || snapBusy}
                   onClick={handleCreateSnapshot}
                 >
-                  <IconPlus size={11} /> Guardar
+                  <IconPlus size={11} /> {copy.save}
                 </button>
               </div>
             </div>
@@ -1388,9 +1504,9 @@ export default function EditorView() {
             <div style={{ flex: 1, overflow: "auto", padding: "4px 0" }} className="scroll">
               {snapshots.length === 0 ? (
                 <div style={{ padding: "36px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
-                  No hay versiones guardadas.
+                  {copy.noSavedVersions}
                   <br />
-                  <span style={{ fontSize: "var(--fs-xs)" }}>Usa el campo de arriba para crear una.</span>
+                  <span style={{ fontSize: "var(--fs-xs)" }}>{copy.createOneHint}</span>
                 </div>
               ) : (
                 snapshots.map((snap) => (
@@ -1413,16 +1529,16 @@ export default function EditorView() {
                       className="btn btn-ghost btn-sm"
                       disabled={snapBusy}
                       onClick={() => setSnapshotConfirm({ action: "restore", filename: snap.filename })}
-                      title="Restaurar esta versión"
+                      title={copy.restoreThisVersion}
                       style={{ fontSize: "var(--fs-xs)", flexShrink: 0 }}
                     >
-                      <IconRefresh size={10} /> Restaurar
+                      <IconRefresh size={10} /> {copy.restore}
                     </button>
                     <button
                       className="btn btn-ghost btn-icon"
                       disabled={snapBusy}
                       onClick={() => setSnapshotConfirm({ action: "delete", filename: snap.filename })}
-                      title="Eliminar versión"
+                      title={copy.deleteVersion}
                       style={{ padding: 4, opacity: 0.55, flexShrink: 0 }}
                     >
                       <IconTrash size={11} />

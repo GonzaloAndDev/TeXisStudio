@@ -12,3 +12,8 @@ TeXisStudio ayuda a generar estructura y formato para documentos académicos.
 No sustituye los lineamientos oficiales de la institución ni la revisión
 de asesores, sinodales o comités académicos. Los documentos generados
 pertenecen completamente a sus autores.
+
+Los paquetes comunitarios de idiomas y los diccionarios semilla viven en
+TeXisStudio-Languages. Sus avisos de procedencia, atribución y revisión de
+derechos deben mantenerse en el NOTICE de ese repositorio, especialmente para
+lenguas indígenas y minorizadas.
