@@ -71,10 +71,19 @@ Write-Host "  OK npm    : $((& npm.cmd --version).Trim())" -ForegroundColor Gree
 Write-Host "  OK Rust   : $((& rustc --version).Trim())" -ForegroundColor Green
 
 Write-Host ""
-Write-Host "  Instalando dependencias npm..." -ForegroundColor Yellow
 Set-Location $appDir
-& npm.cmd ci
-if ($LASTEXITCODE -ne 0) { exit 1 }
+$nodeModules = Join-Path $appDir "node_modules"
+$nodeLock = Join-Path $nodeModules ".package-lock.json"
+$packageLock = Join-Path $appDir "package-lock.json"
+$npmReady = (Test-Path $nodeModules) -and (Test-Path $nodeLock) -and ((Get-Item $packageLock).LastWriteTime -le (Get-Item $nodeLock).LastWriteTime)
+
+if ($npmReady) {
+    Write-Host "  OK dependencias npm" -ForegroundColor Green
+} else {
+    Write-Host "  Instalando dependencias npm..." -ForegroundColor Yellow
+    & npm.cmd ci
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+}
 
 Set-Location $root
 if ($Run) {

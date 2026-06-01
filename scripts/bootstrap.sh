@@ -111,6 +111,11 @@ ensure_linux_deps() {
     echo ""
     echo "  Dependencias nativas Linux..."
 
+    if linux_deps_ready; then
+        echo "  OK dependencias nativas Linux"
+        return
+    fi
+
     if command_exists apt-get; then
         sudo apt-get update
         sudo apt-get install -y \
@@ -156,6 +161,26 @@ ensure_linux_deps() {
     fi
 }
 
+linux_deps_ready() {
+    command_exists gcc &&
+        command_exists pkg-config &&
+        pkg-config --exists webkit2gtk-4.1 gtk+-3.0 librsvg-2.0 &&
+        {
+            ! wants_installer ||
+                {
+                    command_exists patchelf &&
+                        command_exists rpm
+                }
+        }
+}
+
+wants_installer() {
+    case "$ACTION" in
+        installer|build|compiler|package|dist) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 ensure_macos_deps() {
     echo ""
     echo "  Dependencias nativas macOS..."
@@ -170,14 +195,31 @@ ensure_macos_deps() {
 }
 
 ensure_macos_targets() {
+    if rustup target list --installed | grep -qx "aarch64-apple-darwin" &&
+        rustup target list --installed | grep -qx "x86_64-apple-darwin"; then
+        echo "  OK Rust targets macOS universal"
+        return
+    fi
+
     rustup target add aarch64-apple-darwin x86_64-apple-darwin
 }
 
 install_npm_deps() {
     echo ""
+    if npm_deps_ready; then
+        echo "  OK dependencias npm"
+        return
+    fi
+
     echo "  Instalando dependencias npm..."
     cd "$APP_DIR"
     npm ci
+}
+
+npm_deps_ready() {
+    [[ -d "$APP_DIR/node_modules" ]] &&
+        [[ -f "$APP_DIR/node_modules/.package-lock.json" ]] &&
+        [[ ! "$APP_DIR/package-lock.json" -nt "$APP_DIR/node_modules/.package-lock.json" ]]
 }
 
 run_action() {

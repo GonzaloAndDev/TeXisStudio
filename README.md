@@ -1,327 +1,242 @@
 # TeXisStudio
 
-> **ES** — Escribe tu tesis con calidad de publicación. Sin aprender LaTeX.  
-> **EN** — Write your thesis at publication quality. Without learning LaTeX.
+Write your thesis at publication quality without learning LaTeX.
 
-**Author / Autor:** Gonzalo Andrade Estrella · [@GonzaloAndDev](https://github.com/GonzaloAndDev)  
-**License / Licencia:** AGPL v3 + Commons Clause  
-**Status / Estado:** v1.0 — active development / desarrollo activo
+Author: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
+License: AGPL v3 + Commons Clause
+Status: v1.0, active development
 
 ---
 
-## Uso diario / Daily use
+## English
 
-Ejecuta estos comandos desde la raiz del repo `TeXisStudio`.
+### Definitive Build Flow
 
-Requisitos base:
+Run commands from the repository root, `TeXisStudio`.
 
-- Node.js 20+
-- Rust stable (`cargo` y `rustc`)
+First time on a machine, or after missing dependency errors:
 
-Preparacion automatica:
+| System | Prepare only | Prepare and run app | Prepare and build installer |
+|---|---|---|---|
+| Linux/macOS | `bash scripts/bootstrap.sh` | `bash scripts/bootstrap.sh run` | `bash scripts/bootstrap.sh installer` |
+| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer` |
 
-| Sistema | Comando |
-|---|---|
-| Linux/macOS | `bash scripts/bootstrap.sh` |
-| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` |
+After the machine is prepared:
 
-Tambien puedes preparar y ejecutar en un solo paso:
-
-```bash
-bash scripts/bootstrap.sh run
-bash scripts/bootstrap.sh installer
-```
-
-En Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer
-```
-
-| Quiero... | Comando | Resultado |
+| Need | Command | Result |
 |---|---|---|
-| Correr la app | `node scripts/texis.mjs run` | Abre TeXisStudio en modo desarrollo con hot reload. No genera instalador. |
-| Generar instalador/paquete | `node scripts/texis.mjs installer` | Genera los artefactos del sistema operativo actual. |
-| Verificar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript + Vite sin compilar app nativa. |
+| Run the app | `node scripts/texis.mjs run` | Opens TeXisStudio in Tauri dev mode with hot reload. It does not create an installer. |
+| Build installer/package | `node scripts/texis.mjs installer` | Builds artifacts for the current operating system. |
+| Check frontend only | `node scripts/texis.mjs frontend-build` | Runs TypeScript and Vite without compiling the native app. |
+| Test Rust core | `cargo test -p texis-core` | Runs core tests for LaTeX generation, compilation, bibliography, snapshots, and models. |
 
-Alias utiles:
+Aliases:
 
-- Para correr la app: `dev`, `start`, `app`.
-- Para generar instalador/paquete: `build`, `compiler`, `package`, `dist`.
+- Run app: `dev`, `start`, `app`.
+- Build installer/package: `build`, `compiler`, `package`, `dist`.
+- Frontend check: `check`, `frontend`.
 
 VS Code:
 
-- `Ctrl+Shift+B` debe usarse para **correr la app**.
-- Para instalador: `Terminal > Run Task... > TeXisStudio: Build current OS`.
+- `Ctrl+Shift+B` runs **TeXisStudio: Run app**. It uses the bootstrap task, so the first run can install or verify dependencies; later runs skip work that is already done.
+- To build an installer, use `Terminal > Run Task... > TeXisStudio: Build current OS`.
 
----
+Local build outputs:
 
-## ES — ¿Qué es?
-
-TeXisStudio es una aplicación de escritorio que genera tesis y tesinas académicas de calidad tipográfica institucional (MIT, Oxford, ETH Zürich) usando LaTeX como motor de renderizado. El usuario trabaja con formularios, editores visuales y asistentes — nunca escribe LaTeX directamente.
-
-```
-El usuario describe su contenido
-        ↓
-TeXisStudio genera LaTeX correcto
-        ↓
-PDF portable y compilable sin la app
-```
-
-## EN — What is it?
-
-TeXisStudio is a desktop application that produces academic theses at institutional typographic quality (MIT, Oxford, ETH Zürich) using LaTeX as the rendering engine. The user works with forms, visual editors, and assistants — never writing LaTeX directly.
-
-```
-User describes their content
-        ↓
-TeXisStudio generates correct LaTeX
-        ↓
-Portable PDF — compilable without the app
-```
-
----
-
-## Ecosystem / Ecosistema de repositorios
-
-| Repo | Description / Descripción |
-|---|---|
-| **TeXisStudio** ← *this repo* | Tauri app (Rust + React) |
-| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | 69 figure plugins — publication-quality LaTeX without writing code · 69 plugins de figuras sin código |
-| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Downloadable language packs (spelling, grammar, vocabulary) · Paquetes de idioma descargables |
-| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | Institutional and discipline profiles · Perfiles institucionales y de disciplina |
-
----
-
-## Features / Funcionalidades
-
-### Thesis editor / Editor de tesis
-- **Block editor** — paragraphs, headings, lists, tables, equations, code, algorithms, theorems  
-  **Editor de bloques** — párrafos, títulos, listas, tablas, ecuaciones, código, algoritmos, teoremas
-- 14 block types including graduate-level elements (glossary, acronyms, pseudocode)  
-  14 tipos de bloque incluyendo elementos de posgrado
-- Drag & drop to reorder content / Drag & drop para reordenar contenido
-- Auto-save with unsaved-change detection / Guardado automático
-
-### Plugin figures / Figuras generadas por plugins
-Integration with **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)**:
-
-- **69 plugins** organised by discipline and quality level (Core / Extended / Experimental)  
-  **69 plugins** organizados por disciplina y nivel de calidad
-- Insert gallery with full-text search and category / quality filters  
-  Galería de inserción con búsqueda y filtros por categoría y calidad
-- Edit modal: change title/label or regenerate from saved source  
-  Modal de edición: cambiar título/etiqueta o regenerar desde datos guardados
-- Required LaTeX packages injected automatically into the preamble  
-  Paquetes LaTeX requeridos inyectados automáticamente en el preámbulo
-- Figures stored as `source.json` + `output.tex` — re-editable in future sessions  
-  Figuras almacenadas como `source.json` + `output.tex` — re-editables
-
-### Bibliography / Bibliografía
-- Import by **DOI** (CrossRef + DataCite) · Importación por DOI
-- Search in **CrossRef, OpenAlex, Semantic Scholar** · Búsqueda integrada
-- **Zotero** integration (local library) · Integración con Zotero
-- Export to **BibTeX, CSL-JSON, RIS** · Exportación a múltiples formatos
-- Citation types: `\parencite`, `\textcite`, `\footcite` · Tipos de cita
-
-### Compilation / Compilación
-- Engines: **latexmk** and **Tectonic** · Motores: latexmk y Tectonic
-- Quick compile (active chapter) and full compile (entire thesis)  
-  Compilación rápida (capítulo) y completa (tesis entera)
-- Diagnostics panel with parsed errors and warnings  
-  Panel de diagnósticos con errores parseados
-- Automatic toolchain detection (MiKTeX / TeX Live)  
-  Detección automática del toolchain instalado
-
-### Spelling & grammar / Ortografía y gramática
-- Real-time spell-check (ES / EN / FR / DE) · Ortografía en tiempo real
-- **LanguageTool** integration for grammar · Gramática avanzada vía LanguageTool
-- Downloadable vocabulary packs from [TeXisStudio-Languages](../TeXisStudio-Languages/README.md)  
-  Paquetes de vocabulario especializado descargables
-
-### Other / Otras
-- **Institutional profiles** via wizard · Perfiles institucionales via wizard
-- **Snapshots** — restore points with labels · Puntos de restauración
-- Integrated **AI assistant** (multi-provider) · Asistente de IA integrado
-- Final **PDF export** with postflight validation · Exportación final con validación
-- **System Doctor** — diagnoses the installed LaTeX environment · Diagnóstico del entorno
-
----
-
-## Tech stack / Stack técnico
-
-| Layer / Capa | Technology / Tecnología |
-|---|---|
-| Core | Rust 2021 · `texis-core` |
-| Desktop | Tauri v2 · WebView2 |
-| Frontend | React 18 · TypeScript 5 · Vite 5 · Zustand 5 |
-| Plugins | TypeScript · [TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md) |
-| LaTeX | XeLaTeX / pdfLaTeX · latexmk · Tectonic · biber / biblatex |
-| Serialisation | serde_yaml |
-| Network | reqwest 0.12 · rustls-tls |
-| Math preview | KaTeX |
-| Templates | MiniJinja v2 |
-
----
-
-## Code structure / Estructura del código
-
-```
-texis-core/                  Rust library — all business logic
-  src/
-    project/                 ProjectModel, ContentBlock, PluginFigureBlock
-    generator/               LaTeXGenerator (model → .tex files)
-    compiler/                latexmk / tectonic runner
-    bibliography/            CrossRef, DataCite, Zotero, exporters
-    build_engine/            BuildEngine, toolchain detection
-    template_engine/         MiniJinja templates
-    validator/               Project structure validation
-    asset/                   Image/PDF asset registry
-    plugin/                  TexisPlugin trait + PluginRegistry
-    postflight/              PDF postflight validation
-    visual/                  Legacy native visual blocks
-
-texis-app/                   Tauri app
-  src-tauri/src/
-    commands/                project, compiler, figure_plugin, bibliography_unified,
-                             build, system, ai, template, glossary, package…
-    lib.rs                   Handler registration + global state
-  src/                       React frontend
-    views/                   Editor, Compile, Library, Settings, Home…
-    components/              FigurePickerModal, FigureEditModal, Chrome, SpellPanel…
-    services/                figure-plugin-service, grammar, spellcheck, AI
-    stores/                  Zustand: project, settings, ai, vocabularyPacks
-    types.ts                 TypeScript types mirroring Rust structs
-```
-
----
-
-## Block types / Tipos de bloque
-
-| Type / Tipo | Description / Descripción |
-|---|---|
-| `paragraph` | Text with inline formulas and references / Texto con fórmulas y referencias |
-| `heading` | Section / subsection / subsubsection |
-| `equation` | Numbered or display equation / Ecuación numerada |
-| `figure` | Imported image (PNG, JPG, SVG, PDF) / Imagen importada |
-| `plugin_figure` | **Auto-generated figure** from plugin catalog / **Figura generada** por plugin |
-| `table` | Table with booktabs styling / Tabla con estilo booktabs |
-| `list` | Itemize / enumerate / description |
-| `citation` | Parenthetical, narrative, or footnote citation / Cita bibliográfica |
-| `raw_latex` | Manual LaTeX (requires explicit user confirmation) / LaTeX manual |
-| `code` | Source code with syntax highlighting / Código con resaltado |
-| `algorithm` | Pseudocode (`algpseudocode`) / Pseudocódigo |
-| `theorem` | amsthm — theorem, lemma, corollary, definition, proof, remark |
-| `glossary_entry` | Term + definition / Término + definición |
-| `acronym_entry` | Acronym + full form / Acrónimo + forma completa |
-
----
-
-## Development / Desarrollo
-
-### Comandos definitivos
-
-La tabla de uso diario esta al inicio del README. Resumen tecnico:
-
-| Necesidad | Comando | Resultado |
+| System | Script | Expected output |
 |---|---|---|
-| Correr la app para desarrollar | `node scripts/texis.mjs run` | Abre TeXisStudio en modo Tauri dev con hot reload. No genera instalador. |
-| Verificar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript + Vite. Rapido; sirve para revisar UI. No genera app nativa ni instalador. |
-| Generar build/instalador del SO actual | `node scripts/texis.mjs installer` | Detecta Windows/macOS/Linux y ejecuta el script nativo correspondiente. Genera instaladores/paquetes. |
-| Probar core Rust | `cargo test -p texis-core` | Ejecuta tests de generacion LaTeX, compilacion, bibliografia, snapshots y modelos. |
+| Windows | `scripts/build-windows.ps1` | MSI, NSIS `.exe`, and portable ZIP in `target/release/bundle/`. |
+| macOS | `scripts/build-mac.sh` | Universal DMG/app in `target/universal-apple-darwin/release/bundle/`. |
+| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm`, and AppImage in `target/release/bundle/`. |
 
-Alias utiles: `dev`, `start` y `app` hacen lo mismo que `run`; `build`, `compiler`, `package` y `dist` hacen lo mismo que `installer`.
+The bootstrap scripts are idempotent: Node, Rust, native packages, and npm dependencies are installed only when missing or stale. Normal development runs should not reinstall everything.
 
-### VS Code
-
-`Ctrl+Shift+B` ejecuta la tarea default **TeXisStudio: Run app**. Es equivalente a:
-
-```bash
-node scripts/texis.mjs run
-```
-
-Por tanto, `Ctrl+Shift+B` es para correr y probar la app, no para generar instalador.
-
-Para generar instalador desde VS Code usa:
-
-1. `Terminal > Run Task...`
-2. `TeXisStudio: Build current OS`
-
-### Salidas por sistema operativo
-
-`node scripts/texis.mjs build` genera artefactos segun el equipo donde se ejecute:
-
-| Sistema | Script usado | Salida esperada |
-|---|---|---|
-| Windows | `scripts/build-windows.ps1` | MSI, NSIS `.exe` y ZIP portable en `target/release/bundle/` |
-| macOS | `scripts/build-mac.sh` | DMG/app universal en `target/universal-apple-darwin/release/bundle/` |
-| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/` |
-
-Requisitos generales: Rust stable, Node.js 20+, MiKTeX o TeX Live para compilar documentos LaTeX. En Windows se requiere WebView2; el instalador lo maneja via Tauri. En macOS se requieren Xcode Command Line Tools. En Linux el script intenta instalar dependencias WebKit/GTK con el gestor de paquetes disponible.
-
-En Linux/macOS, si el comando falla con `node: command not found`, `cargo: command not found` o dependencias WebKit/GTK faltantes, prepara el sistema con:
-
-```bash
-bash scripts/bootstrap.sh
-```
-
-En Windows usa:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1
-```
-
-### Distribucion para usuarios finales
-
-Para un usuario no tecnico, la distribucion recomendada es entregar un instalador por sistema operativo y pedir solo una suite LaTeX aparte:
-
-| Usuario final | Artefacto recomendado | Nota |
-|---|---|---|
-| Windows | NSIS `.exe` | Opcion mas familiar: descargar, doble clic, instalar. |
-| Windows avanzado/portable | ZIP portable | Util para pruebas o equipos sin instalacion formal. |
-| macOS | `.dmg` | Instalacion tipo arrastrar a Applications. Sin firma Apple puede mostrar advertencia. |
-| Debian/Ubuntu | `.deb` | Instalacion nativa con el gestor del sistema. |
-| Fedora/RHEL | `.rpm` | Instalacion nativa con el gestor del sistema. |
-| Linux general | AppImage | Opcion portable cuando no se quiere paquete por distro. |
-
-No se espera que una sola maquina local genere profesionalmente todos los instaladores. La regla operativa es:
-
-- En local: `node scripts/texis.mjs build` genera el instalador del SO actual.
-- Para publicar todos los SO soportados: usar GitHub Actions con `.github/workflows/release.yml`.
-
-Publicacion completa desde GitHub:
+One local machine is not expected to build every professional installer. For all supported systems, use GitHub Actions:
 
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Al subir un tag `v*`, GitHub Actions compila en runners Windows, Linux y macOS, y publica una GitHub Release con MSI, NSIS `.exe`, ZIP portable, `.deb`, `.rpm`, AppImage y DMG.
+Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and macOS runners, then publishes a GitHub Release with MSI, NSIS `.exe`, portable ZIP, `.deb`, `.rpm`, AppImage, and DMG.
 
-Para probar el pipeline sin publicar release, ejecuta manualmente el workflow **Build & Release** desde la pestaña **Actions** de GitHub. Eso genera artefactos descargables del workflow, pero no crea release publica si no hay tag.
+To test the pipeline without publishing a release, run **Build & Release** manually from the GitHub Actions tab.
+
+### What TeXisStudio Is
+
+TeXisStudio is a desktop application for producing academic theses and dissertations with institutional typographic quality using LaTeX as the rendering engine. Users work with forms, visual editors, and assistants instead of writing LaTeX directly.
+
+```text
+User describes the content
+        ↓
+TeXisStudio generates correct LaTeX
+        ↓
+Portable PDF, compilable without the app
+```
+
+### Repository Ecosystem
+
+| Repository | Purpose |
+|---|---|
+| **TeXisStudio** | This repository. Tauri desktop app, Rust core, React frontend, and packaging scripts. |
+| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Figure plugins for publication-quality LaTeX output without writing figure code. |
+| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Downloadable spelling, grammar, and specialized vocabulary packs. |
+| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | Institutional and discipline profiles, templates, and project samples. |
+
+### Main Features
+
+- Thesis block editor for paragraphs, headings, lists, tables, equations, code, algorithms, theorems, glossary entries, and acronyms.
+- Plugin-generated figures with search, filters, editable source data, and automatic LaTeX package injection.
+- Bibliography tools for DOI import, CrossRef, DataCite, OpenAlex, Semantic Scholar, Zotero, BibTeX, CSL-JSON, and RIS.
+- Compilation through `latexmk` and Tectonic, with diagnostics and toolchain detection.
+- Spell-checking and grammar integrations for ES, EN, FR, and DE.
+- Institutional profile wizard, snapshots, AI assistant, final PDF export, and system doctor.
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Core | Rust 2021, `texis-core` |
+| Desktop | Tauri v2, WebView2 on Windows |
+| Frontend | React 18, TypeScript 5, Vite 5, Zustand 5 |
+| Plugins | TypeScript, `TeXisStudio-Plugins` |
+| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
+| Serialization | serde_yaml |
+| Network | reqwest 0.12, rustls-tls |
+| Math preview | KaTeX |
+| Templates | MiniJinja v2 |
+
+### Code Structure
+
+```text
+texis-core/
+  src/
+    project/
+    generator/
+    compiler/
+    bibliography/
+    build_engine/
+    template_engine/
+    validator/
+    asset/
+    plugin/
+    postflight/
+    visual/
+
+texis-app/
+  src-tauri/src/
+    commands/
+    lib.rs
+  src/
+    views/
+    components/
+    services/
+    stores/
+    types.ts
+```
 
 ---
 
-## How the repos fit together / Cómo encajan los repos
+## Español
 
+Escribe tu tesis con calidad de publicación sin aprender LaTeX.
+
+Autor: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
+Licencia: AGPL v3 + Commons Clause
+Estado: v1.0, desarrollo activo
+
+### Flujo Definitivo De Compilación
+
+Ejecuta los comandos desde la raíz del repositorio, `TeXisStudio`.
+
+Primera vez en una máquina, o después de errores por dependencias faltantes:
+
+| Sistema | Preparar solamente | Preparar y correr la app | Preparar y generar instalador |
+|---|---|---|---|
+| Linux/macOS | `bash scripts/bootstrap.sh` | `bash scripts/bootstrap.sh run` | `bash scripts/bootstrap.sh installer` |
+| Windows | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Run` | `powershell -ExecutionPolicy Bypass -File scripts\bootstrap-windows.ps1 -Installer` |
+
+Después de preparar la máquina:
+
+| Necesidad | Comando | Resultado |
+|---|---|---|
+| Correr la app | `node scripts/texis.mjs run` | Abre TeXisStudio en modo Tauri dev con hot reload. No crea instalador. |
+| Generar instalador/paquete | `node scripts/texis.mjs installer` | Genera artefactos para el sistema operativo actual. |
+| Revisar solo frontend | `node scripts/texis.mjs frontend-build` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
+| Probar core Rust | `cargo test -p texis-core` | Ejecuta pruebas del core de generación LaTeX, compilación, bibliografía, snapshots y modelos. |
+
+Alias:
+
+- Correr app: `dev`, `start`, `app`.
+- Generar instalador/paquete: `build`, `compiler`, `package`, `dist`.
+- Revisar frontend: `check`, `frontend`.
+
+VS Code:
+
+- `Ctrl+Shift+B` ejecuta **TeXisStudio: Run app**. Usa bootstrap, así que la primera ejecución puede instalar o verificar dependencias; las siguientes omiten lo que ya esté listo.
+- Para generar instalador usa `Terminal > Run Task... > TeXisStudio: Build current OS`.
+
+Salidas locales:
+
+| Sistema | Script | Salida esperada |
+|---|---|---|
+| Windows | `scripts/build-windows.ps1` | MSI, `.exe` NSIS y ZIP portable en `target/release/bundle/`. |
+| macOS | `scripts/build-mac.sh` | DMG/app universal en `target/universal-apple-darwin/release/bundle/`. |
+| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/`. |
+
+Los scripts bootstrap son idempotentes: Node, Rust, paquetes nativos y dependencias npm se instalan solo cuando faltan o están desactualizados. Las ejecuciones normales de desarrollo no deberían reinstalar todo.
+
+No se espera que una sola máquina local genere todos los instaladores profesionales. Para todos los sistemas soportados, usa GitHub Actions:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
 ```
-TeXisStudio (this repo / este repo)
-├── texis-core  ← generates LaTeX / genera el LaTeX
-├── texis-app   ← Tauri UI + plugin integration / integración con plugins
-│
-└── imports at runtime ←──────────────────────────────────────────┐
-                                                                    │
-TeXisStudio-Plugins                                                 │
-├── 35 official-core plugins (math, physics, chemistry…)           │
-├── 25 official-extended plugins                                    │
-├── 10 experimental plugins                                         │
-└── 12 rendering engines (TikZ, PGFPlots, CircuiTikZ, ChemFig…)  │
-    ↑ loaded via Vite alias @texisstudio/plugins ──────────────────┘
 
-TeXisStudio-Languages
-└── dictionaries + grammar packs ← downloaded on demand
+Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows, Linux y macOS, y publica una GitHub Release con MSI, `.exe` NSIS, ZIP portable, `.deb`, `.rpm`, AppImage y DMG.
 
-TeXisStudio-Profiles
-└── institutional templates ← downloaded when creating a project
+Para probar el pipeline sin publicar release, ejecuta manualmente **Build & Release** desde la pestaña Actions de GitHub.
+
+### Qué Es TeXisStudio
+
+TeXisStudio es una aplicación de escritorio para producir tesis y tesinas académicas con calidad tipográfica institucional usando LaTeX como motor. El usuario trabaja con formularios, editores visuales y asistentes en lugar de escribir LaTeX directamente.
+
+```text
+El usuario describe el contenido
+        ↓
+TeXisStudio genera LaTeX correcto
+        ↓
+PDF portable, compilable sin la app
 ```
+
+### Ecosistema De Repositorios
+
+| Repositorio | Propósito |
+|---|---|
+| **TeXisStudio** | Este repositorio. App de escritorio Tauri, core Rust, frontend React y scripts de empaquetado. |
+| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Plugins de figuras para generar LaTeX de calidad editorial sin escribir código de figuras. |
+| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Paquetes descargables de ortografía, gramática y vocabulario especializado. |
+| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | Perfiles institucionales y disciplinares, plantillas y proyectos de ejemplo. |
+
+### Funcionalidades Principales
+
+- Editor de bloques para párrafos, títulos, listas, tablas, ecuaciones, código, algoritmos, teoremas, glosario y acrónimos.
+- Figuras generadas por plugins con búsqueda, filtros, datos fuente editables e inyección automática de paquetes LaTeX.
+- Bibliografía con DOI, CrossRef, DataCite, OpenAlex, Semantic Scholar, Zotero, BibTeX, CSL-JSON y RIS.
+- Compilación con `latexmk` y Tectonic, diagnósticos y detección del toolchain.
+- Ortografía y gramática para ES, EN, FR y DE.
+- Wizard de perfiles institucionales, snapshots, asistente de IA, exportación final a PDF y diagnóstico del sistema.
+
+### Stack Técnico
+
+| Capa | Tecnología |
+|---|---|
+| Core | Rust 2021, `texis-core` |
+| Escritorio | Tauri v2, WebView2 en Windows |
+| Frontend | React 18, TypeScript 5, Vite 5, Zustand 5 |
+| Plugins | TypeScript, `TeXisStudio-Plugins` |
+| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
+| Serialización | serde_yaml |
+| Red | reqwest 0.12, rustls-tls |
+| Vista previa matemática | KaTeX |
+| Plantillas | MiniJinja v2 |
