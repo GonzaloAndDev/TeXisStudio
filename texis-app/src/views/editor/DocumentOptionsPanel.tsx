@@ -88,8 +88,8 @@ export function DocumentOptionsPanel({
   onSave: (opts: DocumentOptions) => void;
   onClose: () => void;
 }) {
-  const { userMode } = useSettingsStore();
   const { t } = useTranslation();
+  const { userMode } = useSettingsStore();
   const isAdvanced = userMode === "advanced";
 
   const [typo, setTypo] = useState<LatexTypography>({ ...typography });
@@ -155,7 +155,7 @@ export function DocumentOptionsPanel({
           display: "flex", alignItems: "center", flexShrink: 0,
         }}>
           <span style={{ flex: 1, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
-            {t("document_options.title")}
+            {t("doc_options.title")}
           </span>
           <button className="btn btn-ghost btn-icon" onClick={onClose}>
             <IconX size={13} />
@@ -167,24 +167,24 @@ export function DocumentOptionsPanel({
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
             {/* ── Tipografía ── */}
-            <SectionTitle label={t("document_options.typography")} />
+            <SectionTitle label={t("doc_options.typography")} />
 
-            <OptionRow label={t("document_options.font_size")}>
+            <OptionRow label={t("doc_options.font_size")}>
               {[["10pt","10"], ["11pt","11"], ["12pt","12 (rec.)"]] .map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.font_size} label={l}
                   onClick={() => updateTypo({ font_size: typo.font_size === v ? undefined : v })} />
               ))}
             </OptionRow>
 
-            <OptionRow label={t("document_options.paper_size")}>
-              {[["a4paper","A4"], ["letterpaper", t("document_options.letter")]].map(([v, l]) => (
+            <OptionRow label={t("doc_options.paper_size")}>
+              {[["a4paper","A4"], ["letterpaper",t("doc_options.letter_paper")]].map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.paper_size} label={l}
                   onClick={() => updateTypo({ paper_size: typo.paper_size === v ? undefined : v })} />
               ))}
             </OptionRow>
 
-            <OptionRow label={t("document_options.line_spacing")}>
-              {[["single", t("document_options.single")],["onehalf","1.5 (rec.)"],["double", t("document_options.double")]].map(([v, l]) => (
+            <OptionRow label={t("doc_options.line_spacing")}>
+              {[["single",t("doc_options.spacing_single")],["onehalf",t("doc_options.spacing_onehalf")],["double",t("doc_options.spacing_double")]].map(([v, l]) => (
                 <Chip key={v} value={v} current={typo.line_spacing} label={l}
                   onClick={() => updateTypo({ line_spacing: typo.line_spacing === v ? undefined : v })} />
               ))}
@@ -192,7 +192,7 @@ export function DocumentOptionsPanel({
 
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", fontWeight: 600 }}>
-                {t("document_options.margins")} - {typo.margin_cm ?? 2.5} cm
+                {t("doc_options.margins")} — {typo.margin_cm ?? 2.5} cm
               </label>
               <input type="range" min={1.5} max={4.0} step={0.25}
                 value={typo.margin_cm ?? 2.5}
@@ -207,7 +207,7 @@ export function DocumentOptionsPanel({
             {/* ── Fuentes CJK ── */}
             {showCjkSection && (
               <>
-                <SectionTitle label={t("document_options.cjk_fonts")} />
+                <SectionTitle label={t("doc_options.cjk_fonts")} />
                 {hasCjkContent && (
                   <div style={{
                     padding: "8px 12px", borderRadius: "var(--r-sm)",
@@ -217,19 +217,20 @@ export function DocumentOptionsPanel({
                   }}>
                     <span style={{ flexShrink: 0 }}>✓</span>
                     <span>
-                      {t("document_options.cjk_detected")} <strong>{pc.cjk_main_font || "Heiti SC"}</strong>.
-                      {" "}{t("document_options.cjk_change")}
+                      {t("doc_options.cjk_detected_prefix")}
+                      {" "}xeCJK {t("doc_options.cjk_detected_middle")} <strong>{pc.cjk_main_font || "Heiti SC"}</strong>.
+                      {" "}{t("doc_options.cjk_detected_suffix")}
                     </span>
                   </div>
                 )}
-                <OptionRow label={t("document_options.cjk_main_font")} hint={t("document_options.exact_system_name")}>
+                <OptionRow label={t("doc_options.cjk_main_font")} hint={t("doc_options.system_exact_name")}>
                   <TextInput
                     value={pc.cjk_main_font ?? ""}
                     onChange={(v) => updatePc({ cjk_main_font: v || undefined })}
                     placeholder="Heiti SC"
                   />
                 </OptionRow>
-                <OptionRow label={t("document_options.japanese_font")} hint={t("document_options.japanese_hint")}>
+                <OptionRow label={t("doc_options.japanese_font")} hint={t("doc_options.japanese_font_hint")}>
                   <TextInput
                     value={pc.cjk_japanese_font ?? ""}
                     onChange={(v) => updatePc({ cjk_japanese_font: v || undefined })}
@@ -237,7 +238,7 @@ export function DocumentOptionsPanel({
                   />
                 </OptionRow>
                 {isAdvanced && (
-                  <OptionRow label={t("document_options.korean_font")}>
+                  <OptionRow label={t("doc_options.korean_font")}>
                     <TextInput
                       value={pc.cjk_korean_font ?? ""}
                       onChange={(v) => updatePc({ cjk_korean_font: v || undefined })}
@@ -251,18 +252,18 @@ export function DocumentOptionsPanel({
             {/* ── Fuentes del documento (solo avanzado) ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={t("document_options.document_fonts")} />
-                <OptionRow label={t("document_options.main_font")} hint={t("document_options.profile_override")}>
+                <SectionTitle label={t("doc_options.document_fonts")} />
+                <OptionRow label={t("doc_options.main_font")} hint={t("doc_options.profile_override")}>
                   <TextInput value={pc.main_font ?? ""} onChange={(v) => updatePc({ main_font: v || undefined })}
-                    placeholder={`${t("document_options.example")} Times New Roman`} />
+                    placeholder={t("doc_options.main_font_placeholder")} />
                 </OptionRow>
-                <OptionRow label={t("document_options.sans_font")}>
+                <OptionRow label={t("doc_options.sans_font")}>
                   <TextInput value={pc.sans_font ?? ""} onChange={(v) => updatePc({ sans_font: v || undefined })}
-                    placeholder={`${t("document_options.example")} Helvetica Neue`} />
+                    placeholder={t("doc_options.sans_font_placeholder")} />
                 </OptionRow>
-                <OptionRow label={t("document_options.mono_font")}>
+                <OptionRow label={t("doc_options.mono_font")}>
                   <TextInput value={pc.mono_font ?? ""} onChange={(v) => updatePc({ mono_font: v || undefined })}
-                    placeholder={`${t("document_options.example")} Fira Code`} />
+                    placeholder={t("doc_options.mono_font_placeholder")} />
                 </OptionRow>
               </>
             )}
@@ -270,11 +271,11 @@ export function DocumentOptionsPanel({
             {/* ── Operadores matemáticos ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={t("document_options.math_operators")} />
+                <SectionTitle label={t("doc_options.math_operators")} />
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.5, marginTop: -8 }}>
-                  {t("document_options.math_hint")} <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-sunken)", padding: "1px 4px", borderRadius: 3 }}>
+                  {t("doc_options.generates")} <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-sunken)", padding: "1px 4px", borderRadius: 3 }}>
                     \DeclareMathOperator{`{\\cmd}{text}`}
-                  </code> {t("document_options.in_preamble")}
+                  </code> en el preámbulo.
                 </div>
                 {(pc.math_operators ?? []).map((op, i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -293,7 +294,7 @@ export function DocumentOptionsPanel({
                   <TextInput value={newOp.text} onChange={(v) => setNewOp(o => ({ ...o, text: v }))}
                     placeholder="rank" mono />
                   <button className="btn btn-ghost btn-sm" onClick={addOp}
-                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{t("common.add")}</button>
+                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>+ {t("common.add")}</button>
                 </div>
               </>
             )}
@@ -301,7 +302,7 @@ export function DocumentOptionsPanel({
             {/* ── Teoremas adicionales ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={t("document_options.extra_theorems")} />
+                <SectionTitle label={t("doc_options.extra_theorems")} />
                 {(pc.extra_theorems ?? []).map((t, i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <code style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-strong)",
@@ -317,9 +318,9 @@ export function DocumentOptionsPanel({
                   <TextInput value={newThm.id} onChange={(v) => setNewThm(t => ({ ...t, id: v }))}
                     placeholder="hypothesis" mono />
                   <TextInput value={newThm.label} onChange={(v) => setNewThm(t => ({ ...t, label: v }))}
-                    placeholder={t("document_options.hypothesis")} />
+                    placeholder={t("doc_options.hypothesis_placeholder")} />
                   <button className="btn btn-ghost btn-sm" onClick={addThm}
-                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>{t("common.add")}</button>
+                    style={{ flexShrink: 0, fontSize: "var(--fs-xs)" }}>+ {t("common.add")}</button>
                 </div>
               </>
             )}
@@ -327,19 +328,19 @@ export function DocumentOptionsPanel({
             {/* ── Preámbulo extra (solo avanzado) ── */}
             {isAdvanced && (
               <>
-                <SectionTitle label={t("document_options.extra_preamble")} />
+                <SectionTitle label={t("doc_options.extra_preamble")} />
                 <div style={{
                   padding: "8px 10px", borderRadius: "var(--r-sm)",
                   background: "color-mix(in srgb, var(--build-warn) 10%, transparent)",
                   border: "1px solid color-mix(in srgb, var(--build-warn) 30%, transparent)",
                   fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5,
                 }}>
-                  ⚠ {t("document_options.latex_warning")}
+                  ⚠ {t("doc_options.extra_preamble_warning")}
                 </div>
                 <textarea
                   value={pc.extra ?? ""}
                   onChange={(e) => updatePc({ extra: e.target.value || undefined })}
-                  placeholder={t("document_options.latex_placeholder")}
+                  placeholder={"% ej:\n\\hypersetup{colorlinks=true, linkcolor=blue}\n\\newcommand{\\R}{\\mathbb{R}}"}
                   rows={5}
                   style={{
                     width: "100%", padding: "8px 10px", borderRadius: "var(--r-sm)",
@@ -356,15 +357,15 @@ export function DocumentOptionsPanel({
         {/* Footer */}
         <div style={{ padding: "10px 14px 10px", borderTop: "1px solid var(--border-subtle)", flexShrink: 0 }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 10, lineHeight: 1.5 }}>
-            {t("document_options.footer")}
+            {t("doc_options.applies_next_compile")}
             {!isAdvanced && (
-              <span style={{ color: "var(--accent-deep)" }}>{t("document_options.advanced_hint")}</span>
+              <span style={{ color: "var(--accent-deep)" }}> {t("doc_options.advanced_hint")}</span>
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <button className="btn btn-ghost" onClick={onClose}>{t("common.cancel")}</button>
             <button className="btn btn-accent" disabled={saving} onClick={handleSave}>
-              <IconCheck size={12} /> {t("common.apply")}
+              <IconCheck size={12} /> {t("doc_options.apply")}
             </button>
           </div>
         </div>

@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconCheck, IconChevronD, IconChevronL, IconPlus, IconTrash, IconX,
@@ -65,6 +66,7 @@ function slugify(text: string): string {
 // ── Componentes de paso ───────────────────────────────────────────
 
 function StepHeader({ step, total, title }: { step: number; total: number; title: string }) {
+  const { t } = useTranslation();
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
@@ -80,7 +82,7 @@ function StepHeader({ step, total, title }: { step: number; total: number; title
         ))}
       </div>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 4 }}>
-        Paso {step + 1} de {total}
+        {t("profile_wizard.step_of", { current: step + 1, total })}
       </div>
       <h2 style={{ margin: 0, fontSize: "var(--fs-xl)", fontWeight: 600, color: "var(--fg-strong)" }}>
         {title}
@@ -133,6 +135,7 @@ function SelectField({
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function ProfileWizardView() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id?: string }>();
   const isEditing = !!editId;
@@ -175,7 +178,7 @@ export default function ProfileWizardView() {
     }
   }
 
-  const steps = ["Información", "LaTeX", "Secciones", "Revisar"];
+  const steps = [t("profile_wizard.step_info"), "LaTeX", t("profile_wizard.step_sections"), t("profile_wizard.step_review")];
 
   const canNext = [
     name.trim().length > 0 && profileId.trim().length > 0,
@@ -202,7 +205,7 @@ export default function ProfileWizardView() {
     const id = slugify(customSection.id || customSection.title);
     if (!id) return;
     if (sections.some((s) => s.id === id)) {
-      setError("Ya existe una sección con ese ID.");
+      setError(t("profile_wizard.error_duplicate_section"));
       return;
     }
     setSections((prev) => [...prev, {
@@ -300,42 +303,42 @@ export default function ProfileWizardView() {
           {/* ── Paso 0: Información básica ─────────────────────── */}
           {step === 0 && (
             <div>
-              <Field label="Nombre del perfil *" hint="Cómo aparecerá en la lista de perfiles al crear un proyecto.">
+              <Field label={t("profile_wizard.profile_name_required")} hint={t("profile_wizard.profile_name_hint")}>
                 <input
                   style={inputStyle}
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Ej: Tesis UNAM · Ingeniería"
+                  placeholder={t("profile_wizard.profile_name_placeholder")}
                   autoFocus
                 />
               </Field>
               <Field
-                label="ID del perfil *"
-                hint="Identificador único. Solo letras, números, puntos y guiones. Se genera automáticamente pero puedes editarlo."
+                label={t("profile_wizard.profile_id_required")}
+                hint={t("profile_wizard.profile_id_hint")}
               >
                 <input
                   style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 13 }}
                   value={profileId}
                   onChange={(e) => { setProfileId(e.target.value); setIdManuallyEdited(true); }}
-                  placeholder="ej: unam.ingenieria"
+                  placeholder={t("profile_wizard.profile_id_placeholder")}
                 />
               </Field>
-              <Field label="Descripción">
+              <Field label={t("library.description")}>
                 <textarea
                   style={{ ...inputStyle, resize: "vertical", minHeight: 72 }}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe brevemente para qué tipo de documento es este perfil."
+                  placeholder={t("profile_wizard.description_placeholder")}
                 />
               </Field>
-              <Field label="Autor">
-                <input style={inputStyle} value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Tu nombre" />
+              <Field label={t("library.author")}>
+                <input style={inputStyle} value={author} onChange={(e) => setAuthor(e.target.value)} placeholder={t("profile_wizard.author_placeholder")} />
               </Field>
-              <Field label="Versión" hint="Formato semver recomendado: 0.1.0">
+              <Field label={t("library.version")} hint={t("profile_wizard.version_hint")}>
                 <input style={{ ...inputStyle, width: 140 }} value={version} onChange={(e) => setVersion(e.target.value)} placeholder="0.1.0" />
               </Field>
-              <Field label="Etiquetas" hint="Separadas por coma. Ej: tesis, licenciatura, unam">
-                <input style={inputStyle} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tesis, licenciatura, maestria" />
+              <Field label={t("profile_wizard.tags")} hint={t("profile_wizard.tags_hint")}>
+                <input style={inputStyle} value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t("profile_wizard.tags_placeholder")} />
               </Field>
             </div>
           )}
@@ -396,7 +399,7 @@ export default function ProfileWizardView() {
           {step === 2 && (
             <div>
               <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginTop: 0 }}>
-                Define las secciones del documento. El orden aquí es el orden en que aparecerán en el editor.
+                {t("profile_wizard.sections_intro")}
               </p>
 
               {/* Lista de secciones */}
@@ -454,7 +457,7 @@ export default function ProfileWizardView() {
 
                 {sections.length === 0 && (
                   <div style={{ textAlign: "center", color: "var(--fg-faint)", padding: "24px 0", fontSize: "var(--fs-sm)" }}>
-                    Sin secciones — agrega desde el catálogo o crea una personalizada.
+                    {t("profile_wizard.no_sections")}
                   </div>
                 )}
               </div>
@@ -466,7 +469,7 @@ export default function ProfileWizardView() {
                 style={{ marginBottom: 12 }}
               >
                 <IconPlus size={11} />
-                {showCatalog ? "Ocultar catálogo" : "Agregar del catálogo"}
+                {showCatalog ? t("profile_wizard.hide_catalog") : t("profile_wizard.add_from_catalog")}
                 <IconChevronD size={11} />
               </button>
 
@@ -509,14 +512,14 @@ export default function ProfileWizardView() {
                 border: "1px solid var(--border-subtle)",
               }}>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 8 }}>
-                  Sección personalizada
+                  {t("profile_wizard.custom_section")}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
                     style={{ ...inputStyle, flex: 2 }}
                     value={customSection.title}
                     onChange={(e) => setCustomSection((v) => ({ ...v, title: e.target.value }))}
-                    placeholder="Título de la sección"
+                    placeholder={t("profile_wizard.section_title_placeholder")}
                     onKeyDown={(e) => { if (e.key === "Enter") addCustomSection(); }}
                   />
                   <select
@@ -559,7 +562,7 @@ export default function ProfileWizardView() {
                   <span>⚙ {engine === "xelatex" ? "XeLaTeX" : engine === "pdflatex" ? "pdfLaTeX" : "LuaLaTeX"}</span>
                   <span>📄 {docClass}</span>
                   <span>📚 {bibStyle.toUpperCase()} · {bibBackend}</span>
-                  <span>📋 {sections.length} secciones</span>
+                  <span>📋 {t("profile_wizard.sections_count", { count: sections.length })}</span>
                   {author && <span>✍ {author}</span>}
                   <span>🏷 v{version}</span>
                 </div>
@@ -567,7 +570,7 @@ export default function ProfileWizardView() {
 
               {/* Resumen de secciones */}
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 8 }}>
-                Secciones incluidas
+                {t("profile_wizard.included_sections")}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
                 {sections.map((s) => (
@@ -591,9 +594,7 @@ export default function ProfileWizardView() {
               }}>
                 <IconCheck size={13} style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  El perfil se guardará en el directorio de perfiles local y estará disponible
-                  inmediatamente al crear nuevos proyectos. Puedes exportarlo como ZIP desde
-                  la Biblioteca para compartirlo.
+                  {t("profile_wizard.review_notice")}
                 </div>
               </div>
             </div>
@@ -606,7 +607,7 @@ export default function ProfileWizardView() {
               onClick={() => step > 0 ? setStep((s) => s - 1) : navigate("/library")}
             >
               <IconChevronL size={13} />
-              {step === 0 ? "Cancelar" : "Anterior"}
+              {step === 0 ? t("common.cancel") : t("common.back")}
             </button>
 
             {step < steps.length - 1 ? (
@@ -615,7 +616,7 @@ export default function ProfileWizardView() {
                 disabled={!canNext[step]}
                 onClick={() => setStep((s) => s + 1)}
               >
-                Siguiente →
+                {t("common.next")} →
               </button>
             ) : (
               <button
@@ -623,7 +624,7 @@ export default function ProfileWizardView() {
                 disabled={saving || sections.length === 0}
                 onClick={handleCreate}
               >
-                {saving ? "Creando…" : <><IconCheck size={13} /> Crear perfil</>}
+                {saving ? t("wizard.creating") : <><IconCheck size={13} /> {t("library.create_profile")}</>}
               </button>
             )}
           </div>
@@ -632,8 +633,8 @@ export default function ProfileWizardView() {
       </div>
 
       <TxStatusbar items={[
-        { text: isEditing ? "Editando perfil" : "Nuevo perfil" },
-        { text: `Paso ${step + 1} de ${steps.length}: ${steps[step]}` },
+        { text: isEditing ? t("profile_wizard.editing_profile") : t("profile_wizard.new_profile") },
+        { text: `${t("profile_wizard.step_of", { current: step + 1, total: steps.length })}: ${steps[step]}` },
       ]} />
     </>
   );

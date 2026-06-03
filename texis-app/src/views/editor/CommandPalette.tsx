@@ -1,34 +1,35 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconSearch } from "../../components/Icons";
 import type { ContentBlock, ProjectSection } from "../../types";
 
 // ── CommandPalette (Ctrl+K) ───────────────────────────────────────
 
 export const PALETTE_BLOCK_ITEMS = [
-  { type: "paragraph"     as ContentBlock["type"],  label: "Párrafo",      icon: "¶",  hint: "Texto libre" },
-  { type: "heading"       as ContentBlock["type"],  label: "Título",       icon: "H",  hint: "H1 / H2 / H3" },
-  { type: "list"          as ContentBlock["type"],  label: "Lista",        icon: "•",  hint: "Viñetas o numerada" },
-  { type: "equation"      as ContentBlock["type"],  label: "Ecuación",     icon: "∑",  hint: "LaTeX math" },
-  { type: "figure"        as ContentBlock["type"],  label: "Figura",       icon: "🖼",  hint: "Imagen con leyenda" },
-  { type: "table"         as ContentBlock["type"],  label: "Tabla",        icon: "⊞",  hint: "Tabla editable" },
-  { type: "citation"      as ContentBlock["type"],  label: "Cita",         icon: "❞",  hint: "Referencia bibliográfica" },
-  { type: "raw_latex"     as ContentBlock["type"],  label: "LaTeX directo",icon: "{}",  hint: "Fragmento LaTeX" },
+  { type: "paragraph"     as ContentBlock["type"],  labelKey: "editor.block_paragraph",      icon: "¶",  hintKey: "command_palette.hint_free_text" },
+  { type: "heading"       as ContentBlock["type"],  labelKey: "editor.block_heading",       icon: "H",  hintKey: "command_palette.hint_heading_levels" },
+  { type: "list"          as ContentBlock["type"],  labelKey: "editor.block_list",        icon: "•",  hintKey: "command_palette.hint_list" },
+  { type: "equation"      as ContentBlock["type"],  labelKey: "editor.block_equation",     icon: "∑",  hintKey: "command_palette.hint_latex_math" },
+  { type: "figure"        as ContentBlock["type"],  labelKey: "editor.block_figure",       icon: "🖼",  hintKey: "command_palette.hint_image_caption" },
+  { type: "table"         as ContentBlock["type"],  labelKey: "editor.block_table",        icon: "⊞",  hintKey: "command_palette.hint_editable_table" },
+  { type: "citation"      as ContentBlock["type"],  labelKey: "editor.block_citation",         icon: "❞",  hintKey: "command_palette.hint_bibliographic_ref" },
+  { type: "raw_latex"     as ContentBlock["type"],  labelKey: "editor.block_rawlatex",icon: "{}",  hintKey: "command_palette.hint_latex_fragment" },
   // Posgrado
-  { type: "code"          as ContentBlock["type"],  label: "Código",       icon: "<>", hint: "Bloque de código fuente" },
-  { type: "algorithm"     as ContentBlock["type"],  label: "Algoritmo",    icon: "∷",  hint: "Pseudocódigo numerado" },
-  { type: "theorem"       as ContentBlock["type"],  label: "Teorema",      icon: "∀",  hint: "Teorema / Lema / Definición" },
-  { type: "glossary_entry"as ContentBlock["type"],  label: "Glosario",     icon: "Gl", hint: "Entrada de glosario" },
-  { type: "acronym_entry" as ContentBlock["type"],  label: "Acrónimo",     icon: "Ab", hint: "Lista de abreviaturas" },
+  { type: "code"          as ContentBlock["type"],  labelKey: "editor.block_code",       icon: "<>", hintKey: "command_palette.hint_source_code" },
+  { type: "algorithm"     as ContentBlock["type"],  labelKey: "editor.block_algorithm",    icon: "∷",  hintKey: "command_palette.hint_numbered_pseudocode" },
+  { type: "theorem"       as ContentBlock["type"],  labelKey: "editor.block_theorem",      icon: "∀",  hintKey: "command_palette.hint_theorem" },
+  { type: "glossary_entry"as ContentBlock["type"],  labelKey: "editor.block_glossary",     icon: "Gl", hintKey: "command_palette.hint_glossary_entry" },
+  { type: "acronym_entry" as ContentBlock["type"],  labelKey: "editor.block_acronym",     icon: "Ab", hintKey: "command_palette.hint_acronym_list" },
   // ── Visuales ──
-  { type: "visual"        as ContentBlock["type"],  label: "Venn/Euler",   icon: "⬤⬤", hint: "Diagrama de conjuntos" },
-  { type: "visual"        as ContentBlock["type"],  label: "Flujo",        icon: "→",  hint: "Diagrama de proceso" },
-  { type: "visual"        as ContentBlock["type"],  label: "Timeline",     icon: "──", hint: "Línea de tiempo" },
-  { type: "visual"        as ContentBlock["type"],  label: "Reacción",     icon: "⇌",  hint: "Reacción química (mhchem)" },
-  { type: "visual"        as ContentBlock["type"],  label: "Molécula",     icon: "⬡",  hint: "Estructura química (chemfig)" },
-  { type: "visual"        as ContentBlock["type"],  label: "Circuito",     icon: "⚡", hint: "Circuito eléctrico" },
-  { type: "visual"        as ContentBlock["type"],  label: "Feynman",      icon: "∿",  hint: "Diagrama de Feynman" },
-  { type: "visual"        as ContentBlock["type"],  label: "Vía biológica",icon: "⟳",  hint: "Krebs, glucólisis, etc." },
-  { type: "visual"        as ContentBlock["type"],  label: "Partitura",    icon: "♩",  hint: "Fragmento musical (ABC)" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_venn",   icon: "⬤⬤", hintKey: "command_palette.hint_set_diagram" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_flow",        icon: "→",  hintKey: "command_palette.hint_process_diagram" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_timeline",     icon: "──", hintKey: "command_palette.hint_timeline" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_reaction",     icon: "⇌",  hintKey: "command_palette.hint_chemical_reaction" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_molecule",     icon: "⬡",  hintKey: "command_palette.hint_molecule" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_circuit",     icon: "⚡", hintKey: "command_palette.hint_circuit" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_feynman",      icon: "∿",  hintKey: "command_palette.hint_feynman" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_bio_pathway",icon: "⟳",  hintKey: "command_palette.hint_bio_pathway" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_score",    icon: "♩",  hintKey: "command_palette.hint_music_fragment" },
 ];
 
 // ── Utilidades de búsqueda de contenido ──────────────────────────
@@ -120,6 +121,7 @@ export function CommandPalette({
   onJumpToBlock: (sectionId: string, blockId: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +135,7 @@ export function CommandPalette({
 
   // Bloques (insertar) — se muestran solo si no hay query o la query coincide
   const blockItems = PALETTE_BLOCK_ITEMS.filter(
-    (b) => !q || b.label.toLowerCase().includes(q) || b.hint.toLowerCase().includes(q)
+    (b) => !q || t(b.labelKey).toLowerCase().includes(q) || t(b.hintKey).toLowerCase().includes(q)
   ).filter((b) => !allowedBlockTypes || allowedBlockTypes.has(b.type));
 
   // Secciones (saltar a) — coincidencia por título
@@ -146,7 +148,7 @@ export function CommandPalette({
 
   // Lista unificada para navegación por teclado
   type AnyItem =
-    | { kind: "block"; type: ContentBlock["type"]; label: string; icon: string; hint: string }
+    | { kind: "block"; type: ContentBlock["type"]; labelKey: string; icon: string; hintKey: string }
     | { kind: "section"; id: string; label: string; placement: string }
     | ContentMatch;
 
@@ -193,7 +195,7 @@ export function CommandPalette({
             ref={inputRef}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
-            placeholder="Buscar en la tesis, ir a sección, o insertar…"
+            placeholder={t("command_palette.placeholder")}
             style={{
               flex: 1, border: "none", outline: "none", background: "transparent",
               fontSize: "var(--fs-md)", color: "var(--fg-strong)",
@@ -205,7 +207,7 @@ export function CommandPalette({
               if (e.key === "Escape")    { e.preventDefault(); onClose(); }
             }}
           />
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0 }}>Esc cierra</span>
+          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0 }}>{t("command_palette.esc_closes")}</span>
         </div>
 
         {/* Resultados */}
@@ -214,16 +216,16 @@ export function CommandPalette({
           {/* Insertar bloque (solo cuando no hay búsqueda o la query coincide con un tipo) */}
           {allItems.some(i => i.kind === "block") && (
             <>
-              <SectionHeader label={userMode === "basic" ? "Agregar contenido" : "Insertar bloque"} hasBorder={false} />
+              <SectionHeader label={userMode === "basic" ? t("command_palette.add_content") : t("command_palette.insert_block")} hasBorder={false} />
               {allItems.filter(i => i.kind === "block").map((item) => {
-                const b = item as { kind: "block"; type: ContentBlock["type"]; icon: string; label: string; hint: string };
+                const b = item as { kind: "block"; type: ContentBlock["type"]; icon: string; labelKey: string; hintKey: string };
                 const globalIdx = allItems.indexOf(item);
                 return (
                   <PaletteRow
                     key={b.type}
                     icon={b.icon}
-                    label={b.label}
-                    hint={b.hint}
+                    label={t(b.labelKey)}
+                    hint={t(b.hintKey)}
                     selected={cursor === globalIdx}
                     onHover={() => setCursor(globalIdx)}
                     onClick={() => confirm(globalIdx)}
@@ -236,11 +238,16 @@ export function CommandPalette({
           {/* Ir a sección */}
           {sectionItems.length > 0 && (
             <>
-              <SectionHeader label="Ir a sección" hasBorder={allItems.some(i => i.kind === "block")} />
+              <SectionHeader label={t("command_palette.go_to_section")} hasBorder={allItems.some(i => i.kind === "block")} />
               {allItems.filter(i => i.kind === "section").map((item) => {
                 const s = item as { kind: "section"; id: string; label: string; placement: string };
                 const globalIdx = allItems.indexOf(item);
-                const placementLabel = { front_matter: "preámbulo", body: "cuerpo", back_matter: "final", appendix: "anexo" }[s.placement] ?? s.placement;
+                const placementLabel = {
+                  front_matter: t("command_palette.placement_front"),
+                  body: t("command_palette.placement_body"),
+                  back_matter: t("command_palette.placement_back"),
+                  appendix: t("command_palette.placement_appendix"),
+                }[s.placement] ?? s.placement;
                 return (
                   <PaletteRow
                     key={s.id}
@@ -260,7 +267,7 @@ export function CommandPalette({
           {contentMatches.length > 0 && (
             <>
               <SectionHeader
-                label={`Encontrado en ${new Set(contentMatches.map(m => m.sectionId)).size === 1 ? contentMatches[0].sectionTitle : `${new Set(contentMatches.map(m => m.sectionId)).size} secciones`}`}
+                label={new Set(contentMatches.map(m => m.sectionId)).size === 1 ? t("command_palette.found_in_one", { section: contentMatches[0].sectionTitle }) : t("command_palette.found_in_many", { count: new Set(contentMatches.map(m => m.sectionId)).size })}
                 hasBorder={sectionItems.length > 0 || allItems.some(i => i.kind === "block")}
               />
               {contentMatches.map((match) => {
@@ -313,14 +320,14 @@ export function CommandPalette({
           {/* Sin resultados */}
           {total === 0 && q.length > 0 && (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
-              Sin resultados para «{query}»
+              {t("command_palette.no_results", { query })}
             </div>
           )}
 
           {/* Estado inicial: mostrar hint de búsqueda */}
           {total === 0 && q.length === 0 && (
             <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
-              Escribe para buscar en el contenido de tu tesis,<br />ir a una sección, o insertar un bloque.
+              {t("command_palette.initial_hint_line_1")}<br />{t("command_palette.initial_hint_line_2")}
             </div>
           )}
         </div>
@@ -328,14 +335,14 @@ export function CommandPalette({
         {/* Footer hint */}
         {q.length >= 2 && contentMatches.length === 0 && sectionItems.length === 0 && (
           <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-            Buscando en todo el texto de la tesis…
+            {t("command_palette.searching_all_text")}
           </div>
         )}
         {contentMatches.length > 0 && (
           <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "flex", gap: 12 }}>
-            <span>↑↓ navegar</span>
-            <span>↵ ir al bloque</span>
-            <span>Esc cancelar</span>
+            <span>{t("command_palette.footer_navigate")}</span>
+            <span>{t("command_palette.footer_go_block")}</span>
+            <span>{t("command_palette.footer_cancel")}</span>
           </div>
         )}
       </div>

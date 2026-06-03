@@ -100,7 +100,7 @@ export function ParagraphEditor({
             onClick={() => setRefPickerOpen((o) => !o)}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--fg-faint)", padding: 0, display: "flex", alignItems: "center", gap: 4 }}
           >
-            ⌗ Insertar referencia cruzada ({availableLabels.length})
+            {t("block_editor.insert_cross_reference", { count: availableLabels.length })}
           </button>
           {refPickerOpen && (
             <>
@@ -146,6 +146,7 @@ export function HeadingEditor({
   onLevelChange: (v: HeadingLevel) => void;
   onBlur: () => void;
 }) {
+  const { t } = useTranslation();
   const fontSizes: Record<HeadingLevel, number> = { section: 22, subsection: 18, subsubsection: 16 };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -172,7 +173,7 @@ export function HeadingEditor({
           fontFamily: "var(--font-display)", fontSize: fontSizes[level], fontWeight: 500,
           color: "var(--fg-strong)", background: "transparent", padding: 0, width: "100%",
         }}
-        placeholder="Título de la sección…"
+        placeholder={t("editor.placeholder_heading")}
       />
     </div>
   );
@@ -210,11 +211,11 @@ export function KaTeXPreview({ latex, displayMode = true }: { latex: string; dis
 
 // ── SectionStatusBar ─────────────────────────────────────────────
 
-export const STATUS_CONFIG: Record<SectionStatus, { label: string; color: string; bg: string }> = {
-  draft:     { label: "Borrador",   color: "#888",    bg: "rgba(136,136,136,0.12)" },
-  in_review: { label: "En revisión",color: "#E09B2F", bg: "rgba(224,155,47,0.12)"  },
-  revised:   { label: "Revisado",   color: "#4A90E2", bg: "rgba(74,144,226,0.12)"  },
-  approved:  { label: "Aprobado",   color: "#52C41A", bg: "rgba(82,196,26,0.12)"   },
+export const STATUS_CONFIG: Record<SectionStatus, { labelKey: string; color: string; bg: string }> = {
+  draft:     { labelKey: "progress.status_draft",     color: "#888",    bg: "rgba(136,136,136,0.12)" },
+  in_review: { labelKey: "progress.status_in_review", color: "#E09B2F", bg: "rgba(224,155,47,0.12)"  },
+  revised:   { labelKey: "block_editor.status_revised", color: "#4A90E2", bg: "rgba(74,144,226,0.12)"  },
+  approved:  { labelKey: "progress.status_approved",  color: "#52C41A", bg: "rgba(82,196,26,0.12)"   },
 };
 
 export function SectionStatusBar({
@@ -226,6 +227,7 @@ export function SectionStatusBar({
   onChangeStatus: (s: SectionStatus) => void;
   onChangeNotes: (n: string) => void;
 }) {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState(section.notes ?? "");
@@ -252,21 +254,21 @@ export function SectionStatusBar({
           }}
         >
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
-          {cfg.label}
+          {t(cfg.labelKey)}
           <IconChevronD size={9} />
         </button>
 
         {/* Botón notas */}
         <button
           onClick={() => setNotesOpen((o) => !o)}
-          title="Notas internas (no se incluyen en el PDF)"
+          title={t("block_editor.notes_title")}
           style={{
             fontSize: "var(--fs-xs)", color: notesOpen || section.notes ? "var(--accent)" : "var(--fg-faint)",
             background: "none", border: "none", cursor: "pointer", padding: "3px 6px",
             display: "flex", alignItems: "center", gap: 4,
           }}
         >
-          📝 {section.notes && !notesOpen ? "ver notas" : "notas"}
+          📝 {section.notes && !notesOpen ? t("block_editor.view_notes") : t("block_editor.notes")}
         </button>
 
         {/* Menú desplegable de estados */}
@@ -291,7 +293,7 @@ export function SectionStatusBar({
                 }}
               >
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
-                {c.label}
+                {t(c.labelKey)}
                 {s === status && <IconCheck size={11} sw={2.5} style={{ marginLeft: "auto", color: c.color }} />}
               </button>
             ))}
@@ -315,7 +317,7 @@ export function SectionStatusBar({
             onChange={(e) => setNotesDraft(e.target.value)}
             onBlur={() => { if (notesDraft !== (section.notes ?? "")) onChangeNotes(notesDraft); }}
             rows={3}
-            placeholder="Notas internas para esta sección (no se incluyen en el PDF)…"
+            placeholder={t("block_editor.notes_placeholder")}
             style={{
               width: "100%", resize: "vertical",
               border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
@@ -338,13 +340,14 @@ export function EquationEditor({
   onNumberedChange: (v: boolean) => void;
   onBlur: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>LaTeX</span>
         <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer" }}>
           <input type="checkbox" checked={numbered} onChange={(e) => onNumberedChange(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
-          numerada
+          {t("block_editor.numbered_lower")}
         </label>
       </div>
       <textarea
@@ -376,17 +379,18 @@ export function ListEditor({
   onTypeChange: (v: string) => void;
   onBlur: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 6 }}>
-        {["itemize", "enumerate"].map((t) => (
+        {["itemize", "enumerate"].map((listKind) => (
           <button
-            key={t}
-            className={`btn btn-sm ${list_type === t ? "btn-accent" : "btn-ghost"}`}
-            onClick={() => onTypeChange(t)}
+            key={listKind}
+            className={`btn btn-sm ${list_type === listKind ? "btn-accent" : "btn-ghost"}`}
+            onClick={() => onTypeChange(listKind)}
             style={{ fontSize: "var(--fs-xs)", padding: "3px 8px" }}
           >
-            {t === "itemize" ? "• Lista" : "1. Numerada"}
+            {listKind === "itemize" ? t("block_editor.list_bulleted") : t("block_editor.list_numbered")}
           </button>
         ))}
       </div>
@@ -414,7 +418,7 @@ export function ListEditor({
               fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65,
               color: "var(--fg-default)", background: "transparent", padding: 0,
             }}
-            placeholder={`Ítem ${i + 1}…`}
+            placeholder={t("block_editor.item_placeholder", { n: i + 1 })}
           />
           {items.length > 1 && (
             <button
@@ -432,7 +436,7 @@ export function ListEditor({
         onClick={() => onChange([...items, ""])}
         style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)" }}
       >
-        <IconPlus size={11} /> Agregar ítem
+        <IconPlus size={11} /> {t("block_editor.add_item")}
       </button>
     </div>
   );
@@ -448,6 +452,7 @@ export function FigureEditor({
   availableAssets?: Array<{ name: string; path: string }>;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const assetsListId = "figure-assets-datalist";
   const fieldStyle = { border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)", color: "var(--fg-strong)", outline: "none", width: "100%" } as const;
   return (
@@ -459,7 +464,9 @@ export function FigureEditor({
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-          Archivo{availableAssets && availableAssets.length > 0 ? ` (${availableAssets.length} en assets/)` : " (en assets/)"}
+          {availableAssets && availableAssets.length > 0
+            ? t("block_editor.file_with_assets", { count: availableAssets.length })
+            : t("block_editor.file_in_assets")}
         </label>
         <input
           autoFocus
@@ -471,15 +478,15 @@ export function FigureEditor({
         />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda</label>
-        <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Descripción de la figura" style={fieldStyle} />
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.caption")}</label>
+        <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder={t("block_editor.figure_caption_placeholder")} style={fieldStyle} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.latex_label")}</label>
         <input value={label} onChange={(e) => onChange({ label: e.target.value })} placeholder="fig:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Ancho</label>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.width")}</label>
         <div style={{ display: "flex", gap: 6 }}>
           {(["half", "three_quarters", "full"] as const).map((w) => (
             <button key={w} className={`btn btn-sm ${width === w ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ width: w })}>
@@ -501,6 +508,7 @@ export function TableEditor({
   caption: string; label: string; headers: string[]; rows: string[][];
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const cellStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-xs)",
     padding: "4px 8px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -510,11 +518,11 @@ export function TableEditor({
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda</label>
-          <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Descripción de la tabla" style={cellStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.caption")}</label>
+          <input value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder={t("block_editor.table_caption_placeholder")} style={cellStyle} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.latex_label")}</label>
           <input value={label} onChange={(e) => onChange({ label: e.target.value })} placeholder="tab:nombre" style={cellStyle} />
         </div>
       </div>
@@ -524,7 +532,7 @@ export function TableEditor({
             <tr>
               {headers.map((h, ci) => (
                 <th key={ci} style={{ padding: 4 }}>
-                  <input value={h} onChange={(e) => { const nh = [...headers]; nh[ci] = e.target.value; onChange({ headers: nh }); }} placeholder={`Col ${ci + 1}`} style={{ ...cellStyle, fontWeight: 600 }} />
+                  <input value={h} onChange={(e) => { const nh = [...headers]; nh[ci] = e.target.value; onChange({ headers: nh }); }} placeholder={t("block_editor.column_placeholder", { n: ci + 1 })} style={{ ...cellStyle, fontWeight: 600 }} />
                 </th>
               ))}
               <th style={{ padding: 4 }}>
@@ -555,7 +563,7 @@ export function TableEditor({
         </table>
         <button className="btn btn-ghost btn-sm" style={{ marginTop: 6, fontSize: "var(--fs-xs)" }}
           onClick={() => onChange({ rows: [...rows, headers.map(() => "")] })}>
-          <IconPlus size={11} /> Agregar fila
+          <IconPlus size={11} /> {t("block_editor.add_row")}
         </button>
       </div>
     </div>
@@ -572,6 +580,7 @@ export function CitationEditor({
   availableCiteKeys?: string[];
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const listId = "cite-keys-datalist";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -596,7 +605,9 @@ export function CitationEditor({
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-            Clave bibliográfica{availableCiteKeys && availableCiteKeys.length > 0 ? ` (${availableCiteKeys.length} disponibles)` : ""}
+            {availableCiteKeys && availableCiteKeys.length > 0
+              ? t("block_editor.citation_key_with_count", { count: availableCiteKeys.length })
+              : t("block_editor.citation_key")}
           </label>
           <input
             autoFocus
@@ -608,7 +619,7 @@ export function CitationEditor({
           />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Página</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.page")}</label>
           <input
             value={page ?? ""}
             onChange={(e) => onChange({ page: e.target.value })}
@@ -629,6 +640,7 @@ export function GlossaryEntryEditor({
   term: string; definition: string;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fieldStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
     padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -637,11 +649,11 @@ export function GlossaryEntryEditor({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Término</label>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.term")}</label>
         <input autoFocus value={term} onChange={(e) => onChange({ term: e.target.value })} placeholder="Ontología" style={fieldStyle} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Definición</label>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.definition")}</label>
         <textarea value={definition} onChange={(e) => onChange({ definition: e.target.value })} placeholder="Rama de la filosofía que estudia el ser en cuanto ser." rows={3} style={{ ...fieldStyle, resize: "vertical" }} />
       </div>
     </div>
@@ -656,6 +668,7 @@ export function AcronymEntryEditor({
   acronym: string; full_form: string; description?: string;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fieldStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
     padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -665,17 +678,17 @@ export function AcronymEntryEditor({
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Acrónimo</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.acronym")}</label>
           <input autoFocus value={acronym} onChange={(e) => onChange({ acronym: e.target.value })} placeholder="IA" style={{ ...fieldStyle, fontWeight: 600 }} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Forma completa</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.full_form")}</label>
           <input value={full_form} onChange={(e) => onChange({ full_form: e.target.value })} placeholder="Inteligencia Artificial" style={fieldStyle} />
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Descripción adicional (opcional)</label>
-        <input value={description ?? ""} onChange={(e) => onChange({ description: e.target.value || undefined })} placeholder="Contexto o aclaración opcional…" style={fieldStyle} />
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.additional_description_optional")}</label>
+        <input value={description ?? ""} onChange={(e) => onChange({ description: e.target.value || undefined })} placeholder={t("block_editor.additional_description_placeholder")} style={fieldStyle} />
       </div>
     </div>
   );
@@ -694,6 +707,7 @@ export function CodeBlockEditor({
   language: string; caption?: string; label?: string; content: string; show_line_numbers: boolean;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fieldStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
     padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -702,25 +716,25 @@ export function CodeBlockEditor({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Lenguaje:</span>
+        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.language")}</span>
         {CODE_LANGUAGES.map((l) => (
           <button key={l} className={`btn btn-sm ${language === l ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ language: l })} style={{ fontSize: "var(--fs-xs)", padding: "2px 8px" }}>{l}</button>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Leyenda (caption)</label>
-          <input value={caption ?? ""} onChange={(e) => onChange({ caption: e.target.value || undefined })} placeholder="Algoritmo de clasificación" style={fieldStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.caption_with_latex_name")}</label>
+          <input value={caption ?? ""} onChange={(e) => onChange({ caption: e.target.value || undefined })} placeholder={t("block_editor.code_caption_placeholder")} style={fieldStyle} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.latex_label")}</label>
           <input value={label ?? ""} onChange={(e) => onChange({ label: e.target.value || undefined })} placeholder="lst:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
         </div>
       </div>
       <div>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer", marginBottom: 6 }}>
           <input type="checkbox" checked={show_line_numbers} onChange={(e) => onChange({ show_line_numbers: e.target.checked })} style={{ accentColor: "var(--accent)" }} />
-          Mostrar números de línea
+          {t("block_editor.show_line_numbers")}
         </label>
         <textarea
           autoFocus
@@ -732,7 +746,7 @@ export function CodeBlockEditor({
             background: "var(--ink-900)", border: "none", outline: "none",
             padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
           }}
-          placeholder={`# Escribe tu código aquí\ndef ejemplo():\n    pass`}
+          placeholder={t("block_editor.code_placeholder")}
           spellCheck={false}
         />
       </div>
@@ -748,6 +762,7 @@ export function AlgorithmBlockEditor({
   caption: string; label?: string; input?: string; output?: string; body: string;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fieldStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
     padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -757,27 +772,27 @@ export function AlgorithmBlockEditor({
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Nombre del algoritmo *</label>
-          <input autoFocus value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Clasificador por vecinos más cercanos" style={fieldStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.algorithm_name_required")}</label>
+          <input autoFocus value={caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder={t("block_editor.algorithm_name_placeholder")} style={fieldStyle} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Label LaTeX</label>
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.latex_label")}</label>
           <input value={label ?? ""} onChange={(e) => onChange({ label: e.target.value || undefined })} placeholder="alg:nombre" style={{ ...fieldStyle, fontFamily: "var(--font-mono)" }} />
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Entrada (Require)</label>
-          <input value={input ?? ""} onChange={(e) => onChange({ input: e.target.value || undefined })} placeholder="dataset D, umbral θ" style={fieldStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.algorithm_input")}</label>
+          <input value={input ?? ""} onChange={(e) => onChange({ input: e.target.value || undefined })} placeholder={t("block_editor.algorithm_input_placeholder")} style={fieldStyle} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Salida (Ensure)</label>
-          <input value={output ?? ""} onChange={(e) => onChange({ output: e.target.value || undefined })} placeholder="clasificación C" style={fieldStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.algorithm_output")}</label>
+          <input value={output ?? ""} onChange={(e) => onChange({ output: e.target.value || undefined })} placeholder={t("block_editor.algorithm_output_placeholder")} style={fieldStyle} />
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-          Pseudocódigo — una instrucción por línea
+          {t("block_editor.pseudocode_label")}
         </label>
         <textarea
           value={body}
@@ -788,10 +803,10 @@ export function AlgorithmBlockEditor({
             background: "var(--ink-900)", border: "none", outline: "none",
             padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
           }}
-          placeholder={"Inicializar modelo M\nPara cada muestra x en D:\n  Calcular distancia d(x, centroide)\n  Asignar etiqueta más cercana\nRetornar M"}
+          placeholder={t("block_editor.pseudocode_placeholder")}
         />
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
-          Cada línea se convierte en un paso numerado en el PDF. Usa LaTeX matemático si necesitas: $x_i$, $\theta$, etc.
+          {t("block_editor.pseudocode_hint")}
         </div>
       </div>
     </div>
@@ -800,14 +815,14 @@ export function AlgorithmBlockEditor({
 
 // ── TheoremBlockEditor ────────────────────────────────────────────
 
-export const THEOREM_KINDS: { kind: TheoremKind; label: string; env: string }[] = [
-  { kind: "theorem",    label: "Teorema",     env: "theorem"    },
-  { kind: "lemma",      label: "Lema",        env: "lemma"      },
-  { kind: "corollary",  label: "Corolario",   env: "corollary"  },
-  { kind: "proposition",label: "Proposición", env: "proposition"},
-  { kind: "definition", label: "Definición",  env: "definition" },
-  { kind: "proof",      label: "Demostración",env: "proof"      },
-  { kind: "remark",     label: "Observación", env: "remark"     },
+export const THEOREM_KINDS: { kind: TheoremKind; labelKey: string; env: string }[] = [
+  { kind: "theorem",     labelKey: "block_editor.theorem_theorem", env: "theorem"    },
+  { kind: "lemma",       labelKey: "block_editor.theorem_lemma", env: "lemma"      },
+  { kind: "corollary",   labelKey: "block_editor.theorem_corollary", env: "corollary"  },
+  { kind: "proposition", labelKey: "block_editor.theorem_proposition", env: "proposition"},
+  { kind: "definition",  labelKey: "block_editor.theorem_definition", env: "definition" },
+  { kind: "proof",       labelKey: "block_editor.theorem_proof", env: "proof"      },
+  { kind: "remark",      labelKey: "block_editor.theorem_remark", env: "remark"     },
 ];
 
 export function TheoremBlockEditor({
@@ -816,6 +831,7 @@ export function TheoremBlockEditor({
   kind: TheoremKind; title?: string; content: string; numbered: boolean;
   onChange: (u: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   const fieldStyle: React.CSSProperties = {
     border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)",
     padding: "6px 10px", fontSize: "var(--fs-sm)", background: "var(--bg-panel)",
@@ -825,34 +841,33 @@ export function TheoremBlockEditor({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {THEOREM_KINDS.map((t) => (
-          <button key={t.kind} className={`btn btn-sm ${kind === t.kind ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ kind: t.kind })} style={{ fontSize: "var(--fs-xs)", padding: "3px 10px" }}>{t.label}</button>
+        {THEOREM_KINDS.map((theoremKind) => (
+          <button key={theoremKind.kind} className={`btn btn-sm ${kind === theoremKind.kind ? "btn-accent" : "btn-ghost"}`} onClick={() => onChange({ kind: theoremKind.kind })} style={{ fontSize: "var(--fs-xs)", padding: "3px 10px" }}>{t(theoremKind.labelKey)}</button>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr auto", gap: 8, alignItems: "end" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Título opcional</label>
-          <input value={title ?? ""} onChange={(e) => onChange({ title: e.target.value || undefined })} placeholder="Teorema de Pitágoras" style={fieldStyle} />
+          <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.optional_title")}</label>
+          <input value={title ?? ""} onChange={(e) => onChange({ title: e.target.value || undefined })} placeholder={t("block_editor.theorem_title_placeholder")} style={fieldStyle} />
         </div>
         {!isPureUnnumbered && (
           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer", paddingBottom: 2 }}>
             <input type="checkbox" checked={numbered} onChange={(e) => onChange({ numbered: e.target.checked })} style={{ accentColor: "var(--accent)" }} />
-            Numerado
+            {t("block_editor.numbered")}
           </label>
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Contenido (acepta LaTeX matemático)</label>
+        <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.math_content")}</label>
         <textarea
           autoFocus
           value={content}
           onChange={(e) => onChange({ content: e.target.value })}
           rows={4}
           style={{ ...fieldStyle, fontFamily: "var(--font-display)", lineHeight: 1.6, resize: "vertical" }}
-          placeholder="Sea $a^2 + b^2 = c^2$ donde $c$ es la hipotenusa..."
+          placeholder={t("block_editor.theorem_content_placeholder")}
         />
       </div>
     </div>
   );
 }
-

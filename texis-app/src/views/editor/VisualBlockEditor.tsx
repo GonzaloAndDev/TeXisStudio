@@ -2,6 +2,7 @@
 // El usuario NUNCA ve LaTeX — configura parámetros y ve el resultado en tiempo real.
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   FlowNode, TimelineEvent, VisualBlock, VisualConfig,
   VisualKind, VennSet,
@@ -11,25 +12,25 @@ import { IconX } from "../../components/Icons";
 
 // ── Colores disponibles ───────────────────────────────────────────
 const COLORS = [
-  { id: "red",    label: "Rojo",    bg: "#E74C3C", text: "#fff" },
-  { id: "blue",   label: "Azul",    bg: "#3498DB", text: "#fff" },
-  { id: "green",  label: "Verde",   bg: "#27AE60", text: "#fff" },
-  { id: "purple", label: "Morado",  bg: "#9B59B6", text: "#fff" },
-  { id: "orange", label: "Naranja", bg: "#E67E22", text: "#fff" },
-  { id: "teal",   label: "Teal",    bg: "#1ABC9C", text: "#fff" },
+  { id: "red",    labelKey: "visual.color_red",    bg: "#E74C3C", text: "#fff" },
+  { id: "blue",   labelKey: "visual.color_blue",   bg: "#3498DB", text: "#fff" },
+  { id: "green",  labelKey: "visual.color_green",  bg: "#27AE60", text: "#fff" },
+  { id: "purple", labelKey: "visual.color_purple", bg: "#9B59B6", text: "#fff" },
+  { id: "orange", labelKey: "visual.color_orange", bg: "#E67E22", text: "#fff" },
+  { id: "teal",   labelKey: "visual.color_teal",   bg: "#1ABC9C", text: "#fff" },
 ];
 
 // ── Tipos de visuales con metadatos ──────────────────────────────
-const VISUAL_KINDS: { kind: VisualKind; icon: string; label: string; desc: string }[] = [
-  { kind: "venn_euler",    icon: "⬤⬤", label: "Diagrama de Venn",    desc: "Conjuntos e intersecciones — 2, 3 o 4 círculos" },
-  { kind: "flow_diagram",  icon: "→",   label: "Diagrama de flujo",   desc: "Proceso o algoritmo con nodos y flechas" },
-  { kind: "timeline",      icon: "──",  label: "Línea de tiempo",     desc: "Eventos cronológicos horizontal o vertical" },
-  { kind: "chem_reaction", icon: "⇌",   label: "Reacción química",    desc: "Ecuación con notación mhchem (mhchem)" },
-  { kind: "molecule",      icon: "⬡",   label: "Molécula",            desc: "Estructura química con presets o chemfig" },
-  { kind: "circuit",       icon: "⚡",  label: "Circuito eléctrico",  desc: "Circuitos RC, RLC, op-amp y más" },
-  { kind: "feynman",       icon: "∿",   label: "Diagrama de Feynman", desc: "Procesos cuánticos: QED, debil, Higgs" },
-  { kind: "bio_pathway",   icon: "⟳",   label: "Vía biológica",       desc: "Krebs, glucólisis, fotosíntesis y más" },
-  { kind: "music_fragment",icon: "♩",   label: "Partitura",           desc: "Fragmento musical en notación ABC" },
+const VISUAL_KINDS: { kind: VisualKind; icon: string; labelKey: string; descKey: string }[] = [
+  { kind: "venn_euler",     icon: "⬤⬤", labelKey: "visual.kind_venn", descKey: "visual.kind_venn_desc" },
+  { kind: "flow_diagram",   icon: "→",   labelKey: "visual.kind_flow", descKey: "visual.kind_flow_desc" },
+  { kind: "timeline",       icon: "──",  labelKey: "visual.kind_timeline", descKey: "visual.kind_timeline_desc" },
+  { kind: "chem_reaction",  icon: "⇌",   labelKey: "visual.kind_chem_reaction", descKey: "visual.kind_chem_reaction_desc" },
+  { kind: "molecule",       icon: "⬡",   labelKey: "visual.kind_molecule", descKey: "visual.kind_molecule_desc" },
+  { kind: "circuit",        icon: "⚡",  labelKey: "visual.kind_circuit", descKey: "visual.kind_circuit_desc" },
+  { kind: "feynman",        icon: "∿",   labelKey: "visual.kind_feynman", descKey: "visual.kind_feynman_desc" },
+  { kind: "bio_pathway",    icon: "⟳",   labelKey: "visual.kind_bio_pathway", descKey: "visual.kind_bio_pathway_desc" },
+  { kind: "music_fragment", icon: "♩",   labelKey: "visual.kind_music", descKey: "visual.kind_music_desc" },
 ];
 
 // ── Defaults por tipo ─────────────────────────────────────────────
@@ -56,6 +57,7 @@ export function VisualBlockEditor({
   onChange: (updates: Partial<VisualBlock>) => void;
   onBlur?: () => void;
 }) {
+  const { t } = useTranslation();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -66,14 +68,14 @@ export function VisualBlockEditor({
       {/* Caption y label */}
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 2, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Leyenda (caption)</label>
+          <label style={labelStyle}>{t("block_editor.caption_with_latex_name")}</label>
           <input type="text" value={block.caption}
             onChange={e => onChange({ caption: e.target.value })}
-            placeholder="Descripción del diagrama..."
+            placeholder={t("visual.caption_placeholder")}
             style={inputStyle} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Etiqueta (\ref)</label>
+          <label style={labelStyle}>{t("visual.label_ref")}</label>
           <input type="text" value={block.label}
             onChange={e => onChange({ label: e.target.value })}
             placeholder="fig:mi-diagrama"
@@ -97,7 +99,7 @@ export function VisualBlockEditor({
       {/* Override avanzado */}
       <button className="btn btn-ghost btn-sm" onClick={() => setShowAdvanced(v => !v)}
         style={{ fontSize: "var(--fs-xs)", alignSelf: "flex-start", color: "var(--fg-faint)" }}>
-        {showAdvanced ? "▲ Ocultar LaTeX avanzado" : "▼ Ver / editar LaTeX generado (avanzado)"}
+        {showAdvanced ? t("visual.hide_advanced_latex") : t("visual.show_advanced_latex")}
       </button>
       {showAdvanced && (
         <AdvancedOverridePanel block={block} onChange={onChange} />
@@ -108,43 +110,15 @@ export function VisualBlockEditor({
 
 // ── Selector de tipo de diagrama ──────────────────────────────────
 
-export function VisualKindSelector({
-  onSelect,
-  onExplorePluginFigures,
-}: {
-  onSelect: (kind: VisualKind) => void;
-  onExplorePluginFigures?: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const filteredKinds = VISUAL_KINDS.filter(({ label, desc }) => {
-    const q = query.trim().toLowerCase();
-    return !q || label.toLowerCase().includes(q) || desc.toLowerCase().includes(q);
-  });
-
+export function VisualKindSelector({ onSelect }: { onSelect: (kind: VisualKind) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-        Tipo de elemento visual
+        {t("visual.kind_selector_title")}
       </div>
-      <input
-        autoFocus
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar: flujo, química, circuito..."
-        style={{
-          width: "100%",
-          padding: "7px 10px",
-          borderRadius: "var(--r-sm)",
-          border: "1px solid var(--border-firm)",
-          background: "var(--bg-panel)",
-          color: "var(--fg-default)",
-          fontSize: "var(--fs-sm)",
-          outline: "none",
-          marginBottom: 4,
-        }}
-      />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
-        {filteredKinds.map(({ kind, icon, label, desc }) => (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+        {VISUAL_KINDS.map(({ kind, icon, labelKey, descKey }) => (
           <button key={kind} onClick={() => onSelect(kind)}
             style={{
               padding: "10px 12px", borderRadius: "var(--r-md)",
@@ -156,21 +130,11 @@ export function VisualKindSelector({
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-firm)"; }}
           >
             <span style={{ fontSize: 22 }}>{icon}</span>
-            <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{label}</span>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.4 }}>{desc}</span>
+            <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{t(labelKey)}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.4 }}>{t(descKey)}</span>
           </button>
         ))}
       </div>
-      {onExplorePluginFigures && (
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={onExplorePluginFigures}
-          style={{ justifyContent: "center", marginTop: 6, fontSize: "var(--fs-sm)" }}
-        >
-          Explorar catálogo completo de figuras generadas
-        </button>
-      )}
     </div>
   );
 }
@@ -178,6 +142,7 @@ export function VisualKindSelector({
 // ── Banner del tipo activo ────────────────────────────────────────
 
 function KindBanner({ kind }: { kind: VisualKind }) {
+  const { t } = useTranslation();
   const meta = VISUAL_KINDS.find(k => k.kind === kind);
   if (!meta) return null;
   return (
@@ -188,8 +153,8 @@ function KindBanner({ kind }: { kind: VisualKind }) {
     }}>
       <span style={{ fontSize: 20 }}>{meta.icon}</span>
       <div>
-        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)" }}>{meta.label}</div>
-        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{meta.desc}</div>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)" }}>{t(meta.labelKey)}</div>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{t(meta.descKey)}</div>
       </div>
     </div>
   );
@@ -215,6 +180,7 @@ function ConfigEditor({ config, onChange }: { config: VisualConfig; onChange: (c
 // ── Editor Venn ───────────────────────────────────────────────────
 
 function VennEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "venn_euler" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   const sets = config.sets ?? [];
 
   function updateSet(i: number, patch: Partial<VennSet>) {
@@ -224,7 +190,7 @@ function VennEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
   function addSet() {
     if (sets.length >= 4) return;
     const colors = ["red","blue","green","purple"];
-    onChange({ ...config, sets: [...sets, { label: `Conjunto ${String.fromCharCode(65+sets.length)}`, color: colors[sets.length] ?? "teal" }] });
+    onChange({ ...config, sets: [...sets, { label: t("visual.default_set", { letter: String.fromCharCode(65+sets.length) }), color: colors[sets.length] ?? "teal" }] });
   }
   function removeSet(i: number) {
     onChange({ ...config, sets: sets.filter((_, j) => j !== i) });
@@ -240,11 +206,11 @@ function VennEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <SectionLabel label="Conjuntos" />
+      <SectionLabel label={t("visual.sets")} />
       {sets.map((s, i) => (
         <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <ColorPicker value={s.color} onChange={color => updateSet(i, { color })} />
-          <input type="text" value={s.label} placeholder={`Conjunto ${String.fromCharCode(65+i)}`}
+          <input type="text" value={s.label} placeholder={t("visual.default_set", { letter: String.fromCharCode(65+i) })}
             onChange={e => updateSet(i, { label: e.target.value })}
             style={{ ...inputStyle, flex: 1 }} />
           {sets.length > 2 && (
@@ -257,19 +223,19 @@ function VennEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
       {sets.length < 4 && (
         <button className="btn btn-ghost btn-sm" onClick={addSet}
           style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)" }}>
-          + Añadir conjunto
+          + {t("visual.add_set")}
         </button>
       )}
 
       {interKeys.length > 0 && (
         <>
-          <SectionLabel label="Etiquetas de intersecciones (opcional)" />
+          <SectionLabel label={t("visual.intersection_labels_optional")} />
           {interKeys.map(([key, label]) => (
             <div key={key} style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", width: 60, flexShrink: 0 }}>{label}</span>
               <input type="text" value={config.intersections?.[key] ?? ""}
                 onChange={e => setIntersection(key, e.target.value)}
-                placeholder="etiqueta..."
+                placeholder={t("visual.label_placeholder")}
                 style={{ ...inputStyle, flex: 1 }} />
             </div>
           ))}
@@ -282,11 +248,12 @@ function VennEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
 // ── Editor Flow ───────────────────────────────────────────────────
 
 function FlowEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "flow_diagram" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   const nodes = config.nodes ?? [];
 
   function addNode() {
     const id = `n${Date.now()}`;
-    onChange({ ...config, nodes: [...nodes, { id, label: "Nuevo nodo", shape: "rect", color: "blue" }] });
+    onChange({ ...config, nodes: [...nodes, { id, label: t("visual.new_node"), shape: "rect", color: "blue" }] });
   }
   function updateNode(i: number, patch: Partial<FlowNode>) {
     onChange({ ...config, nodes: nodes.map((n, j) => j === i ? { ...n, ...patch } : n) });
@@ -304,35 +271,35 @@ function FlowEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Orientación</label>
+          <label style={labelStyle}>{t("visual.orientation")}</label>
           <select value={config.orientation ?? "vertical"} onChange={e => onChange({ ...config, orientation: e.target.value })} style={inputStyle}>
-            <option value="vertical">Vertical (↓)</option>
-            <option value="horizontal">Horizontal (→)</option>
+            <option value="vertical">{t("visual.vertical")} (↓)</option>
+            <option value="horizontal">{t("visual.horizontal")} (→)</option>
           </select>
         </div>
       </div>
-      <SectionLabel label="Nodos (en orden de flujo)" />
+      <SectionLabel label={t("visual.flow_nodes")} />
       {nodes.map((n, i) => (
         <div key={n.id} style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", width: 18, textAlign: "center" }}>{i+1}</span>
           <input type="text" value={n.label} onChange={e => updateNode(i, { label: e.target.value })}
-            placeholder="Etiqueta del nodo" style={{ ...inputStyle, flex: 2 }} />
+            placeholder={t("visual.node_label_placeholder")} style={{ ...inputStyle, flex: 2 }} />
           <select value={n.shape ?? "rect"} onChange={e => updateNode(i, { shape: e.target.value })}
             style={{ ...inputStyle, flex: 1 }}>
-            <option value="rect">Rectángulo</option>
-            <option value="diamond">Rombo (decisión)</option>
-            <option value="circle">Círculo</option>
-            <option value="rounded">Redondeado</option>
+            <option value="rect">{t("visual.shape_rect")}</option>
+            <option value="diamond">{t("visual.shape_diamond")}</option>
+            <option value="circle">{t("visual.shape_circle")}</option>
+            <option value="rounded">{t("visual.shape_rounded")}</option>
           </select>
           <button className="btn btn-ghost btn-icon" onClick={() => removeNode(i)}><IconX size={11} /></button>
         </div>
       ))}
       <button className="btn btn-ghost btn-sm" onClick={addNode}
         style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)" }}>
-        + Añadir nodo
+        + {t("visual.add_node")}
       </button>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-        Las flechas se generan automáticamente en secuencia. Modo avanzado para flechas personalizadas.
+        {t("visual.flow_hint")}
       </div>
     </div>
   );
@@ -341,10 +308,11 @@ function FlowEditor({ config, onChange }: { config: Extract<VisualConfig, { kind
 // ── Editor Timeline ───────────────────────────────────────────────
 
 function TimelineEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "timeline" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   const events = config.events ?? [];
 
   function addEvent() {
-    onChange({ ...config, events: [...events, { date: "", title: "Nuevo evento", description: "" }] });
+    onChange({ ...config, events: [...events, { date: "", title: t("visual.new_event"), description: "" }] });
   }
   function updateEvent(i: number, patch: Partial<TimelineEvent>) {
     onChange({ ...config, events: events.map((e, j) => j === i ? { ...e, ...patch } : e) });
@@ -357,36 +325,36 @@ function TimelineEditor({ config, onChange }: { config: Extract<VisualConfig, { 
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Orientación</label>
+          <label style={labelStyle}>{t("visual.orientation")}</label>
           <select value={config.orientation ?? "horizontal"} onChange={e => onChange({ ...config, orientation: e.target.value })} style={inputStyle}>
-            <option value="horizontal">Horizontal (→)</option>
-            <option value="vertical">Vertical (↓)</option>
+            <option value="horizontal">{t("visual.horizontal")} (→)</option>
+            <option value="vertical">{t("visual.vertical")} (↓)</option>
           </select>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Color</label>
+          <label style={labelStyle}>{t("visual.color")}</label>
           <ColorPicker value={config.accent_color ?? "blue"} onChange={accent_color => onChange({ ...config, accent_color })} />
         </div>
       </div>
-      <SectionLabel label="Eventos" />
+      <SectionLabel label={t("visual.events")} />
       {events.map((ev, i) => (
         <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", background: "var(--bg-surface)", padding: "8px", borderRadius: "var(--r-sm)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
             <div style={{ display: "flex", gap: 6 }}>
               <input type="text" value={ev.date} onChange={e => updateEvent(i, { date: e.target.value })}
-                placeholder="Fecha o año" style={{ ...inputStyle, width: 100, flexShrink: 0 }} />
+                placeholder={t("visual.date_placeholder")} style={{ ...inputStyle, width: 100, flexShrink: 0 }} />
               <input type="text" value={ev.title} onChange={e => updateEvent(i, { title: e.target.value })}
-                placeholder="Título del evento" style={{ ...inputStyle, flex: 1 }} />
+                placeholder={t("visual.event_title_placeholder")} style={{ ...inputStyle, flex: 1 }} />
             </div>
             <input type="text" value={ev.description ?? ""} onChange={e => updateEvent(i, { description: e.target.value })}
-              placeholder="Descripción breve (opcional)" style={{ ...inputStyle, fontSize: 12 }} />
+              placeholder={t("visual.event_description_placeholder")} style={{ ...inputStyle, fontSize: 12 }} />
           </div>
           <button className="btn btn-ghost btn-icon" onClick={() => removeEvent(i)}><IconX size={11} /></button>
         </div>
       ))}
       <button className="btn btn-ghost btn-sm" onClick={addEvent}
         style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)" }}>
-        + Añadir evento
+        + {t("visual.add_event")}
       </button>
     </div>
   );
@@ -395,10 +363,11 @@ function TimelineEditor({ config, onChange }: { config: Extract<VisualConfig, { 
 // ── Editor Reacción Química ───────────────────────────────────────
 
 function ChemReactionEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "chem_reaction" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Ecuación química <span style={{ fontWeight: 400, color: "var(--fg-faint)" }}>(notación mhchem)</span></label>
+        <label style={labelStyle}>{t("visual.chemical_equation")} <span style={{ fontWeight: 400, color: "var(--fg-faint)" }}>({t("visual.mhchem_notation")})</span></label>
         <input type="text" value={config.equation}
           onChange={e => onChange({ ...config, equation: e.target.value })}
           placeholder="H2 + O2 -> H2O  |  N2 + 3H2 <=> 2NH3  |  CaCO3 -> CaO + CO2 ^"
@@ -409,31 +378,31 @@ function ChemReactionEditor({ config, onChange }: { config: Extract<VisualConfig
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Catalizador / condición</label>
+        <label style={labelStyle}>{t("visual.catalyst_condition")}</label>
           <input type="text" value={config.catalyst ?? ""} onChange={e => onChange({ ...config, catalyst: e.target.value || undefined })}
             placeholder="Fe, Δ, hν, H⁺…" style={inputStyle} />
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Condición inferior</label>
+        <label style={labelStyle}>{t("visual.lower_condition")}</label>
           <input type="text" value={config.conditions ?? ""} onChange={e => onChange({ ...config, conditions: e.target.value || undefined })}
             placeholder="400°C, 200 atm…" style={inputStyle} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Tipo</label>
+          <label style={labelStyle}>{t("visual.type")}</label>
           <select value={config.reaction_type ?? "forward"} onChange={e => onChange({ ...config, reaction_type: e.target.value })} style={inputStyle}>
-            <option value="forward">→ Directa</option>
-            <option value="equilibrium">⇌ Equilibrio</option>
-            <option value="resonance">↔ Resonancia</option>
-            <option value="backward">← Inversa</option>
+            <option value="forward">→ {t("visual.reaction_forward")}</option>
+            <option value="equilibrium">⇌ {t("visual.reaction_equilibrium")}</option>
+            <option value="resonance">↔ {t("visual.reaction_resonance")}</option>
+            <option value="backward">← {t("visual.reaction_backward")}</option>
           </select>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Modo</label>
+          <label style={labelStyle}>{t("visual.mode")}</label>
           <select value={config.display_mode ? "display" : "inline"} onChange={e => onChange({ ...config, display_mode: e.target.value === "display" })} style={inputStyle}>
-            <option value="display">Bloque centrado</option>
-            <option value="inline">Inline en párrafo</option>
+            <option value="display">{t("visual.display_block")}</option>
+            <option value="inline">{t("visual.inline_paragraph")}</option>
           </select>
         </div>
       </div>
@@ -444,6 +413,7 @@ function ChemReactionEditor({ config, onChange }: { config: Extract<VisualConfig
 // ── Editor Molécula ───────────────────────────────────────────────
 
 function MoleculeEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "molecule" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<"preset" | "custom">(config.chemfig_formula ? "custom" : "preset");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -452,7 +422,7 @@ function MoleculeEditor({ config, onChange }: { config: Extract<VisualConfig, { 
           <button key={m} onClick={() => setMode(m)}
             style={{ flex: 1, padding: "6px", fontSize: "var(--fs-xs)", fontWeight: mode === m ? 600 : 400,
               background: mode === m ? "var(--accent-tint)" : "var(--bg-panel)", color: mode === m ? "var(--accent-deep)" : "var(--fg-muted)", border: "none", cursor: "pointer" }}>
-            {m === "preset" ? "📚 Preset" : "⚗️ Fórmula chemfig"}
+            {m === "preset" ? t("visual.preset_mode") : t("visual.chemfig_formula_mode")}
           </button>
         ))}
       </div>
@@ -473,18 +443,18 @@ function MoleculeEditor({ config, onChange }: { config: Extract<VisualConfig, { 
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Fórmula chemfig</label>
+          <label style={labelStyle}>{t("visual.chemfig_formula")}</label>
           <input type="text" value={config.chemfig_formula ?? ""}
             onChange={e => onChange({ ...config, chemfig_formula: e.target.value || undefined, preset: undefined })}
-            placeholder="*6(-=-=-=) para benceno, H-O-H para agua..."
+            placeholder={t("visual.chemfig_placeholder")}
             style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 12 }} />
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-            Sintaxis chemfig. Consulta la documentación del paquete para fórmulas complejas.
+            {t("visual.chemfig_hint")}
           </div>
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Escala — {config.scale?.toFixed(1) ?? "1.0"}×</label>
+        <label style={labelStyle}>{t("visual.scale")} — {config.scale?.toFixed(1) ?? "1.0"}×</label>
         <input type="range" min={0.5} max={2.0} step={0.1} value={config.scale ?? 1.0}
           onChange={e => onChange({ ...config, scale: parseFloat(e.target.value) })}
           style={{ accentColor: "var(--accent)" }} />
@@ -498,9 +468,10 @@ function MoleculeEditor({ config, onChange }: { config: Extract<VisualConfig, { 
 function PresetEditor<C extends { kind: VisualKind; preset: string }>({
   config, onChange, presets, kindLabel,
 }: { config: C; onChange: (c: VisualConfig) => void; presets: { id: string; name: string }[]; kindLabel: string }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <SectionLabel label={`Tipo de ${kindLabel}`} />
+      <SectionLabel label={t("visual.preset_type", { kind: kindLabel })} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {presets.map(p => (
           <button key={p.id} onClick={() => onChange({ ...config, preset: p.id } as VisualConfig)}
@@ -522,15 +493,16 @@ function PresetEditor<C extends { kind: VisualKind; preset: string }>({
 // ── Editor Bio Pathway ────────────────────────────────────────────
 
 function BioPathwayEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "bio_pathway" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <PresetEditor config={config} onChange={onChange} presets={[...PRESETS.bio_pathway]} kindLabel="vía biológica" />
+      <PresetEditor config={config} onChange={onChange} presets={[...PRESETS.bio_pathway]} kindLabel={t("visual.bio_pathway_lower")} />
       <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
         <input type="checkbox" checked={config.show_cofactors !== false}
           onChange={e => onChange({ ...config, show_cofactors: e.target.checked })}
           style={{ accentColor: "var(--accent)" }} />
         <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)" }}>
-          Mostrar cofactores (ATP, NADH, FADH₂, etc.)
+          {t("visual.show_cofactors")}
         </span>
       </label>
     </div>
@@ -540,13 +512,14 @@ function BioPathwayEditor({ config, onChange }: { config: Extract<VisualConfig, 
 // ── Editor Música ─────────────────────────────────────────────────
 
 function MusicEditor({ config, onChange }: { config: Extract<VisualConfig, { kind: "music_fragment" }>; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ padding: "8px 12px", borderRadius: "var(--r-sm)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", fontSize: "var(--fs-xs)", color: "var(--accent-deep)", lineHeight: 1.5 }}>
-        💡 Usa notación ABC — simple y portable. Ejemplo: <code>X:1 | T:Título | M:4/4 | K:C | CDEFGABC|</code>
+        💡 {t("visual.abc_hint")} <code>X:1 | T:{t("editor.meta_title")} | M:4/4 | K:C | CDEFGABC|</code>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label style={labelStyle}>Notación ABC</label>
+        <label style={labelStyle}>{t("visual.abc_notation")}</label>
         <textarea value={config.abc_notation}
           onChange={e => onChange({ ...config, abc_notation: e.target.value })}
           rows={5}
@@ -555,15 +528,15 @@ function MusicEditor({ config, onChange }: { config: Extract<VisualConfig, { kin
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={labelStyle}>Instrumento (para caption)</label>
+          <label style={labelStyle}>{t("visual.instrument_caption")}</label>
           <input type="text" value={config.instrument ?? ""} onChange={e => onChange({ ...config, instrument: e.target.value || undefined })}
-            placeholder="Piano, Violín, Flauta..." style={inputStyle} />
+            placeholder={t("visual.instrument_placeholder")} style={inputStyle} />
         </div>
         <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer", flexShrink: 0 }}>
           <input type="checkbox" checked={config.try_musixtex !== false}
             onChange={e => onChange({ ...config, try_musixtex: e.target.checked })}
             style={{ accentColor: "var(--accent)" }} />
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>Generar con MusiXTeX</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{t("visual.generate_with_musixtex")}</span>
         </label>
       </div>
     </div>
@@ -573,23 +546,23 @@ function MusicEditor({ config, onChange }: { config: Extract<VisualConfig, { kin
 // ── Override avanzado ─────────────────────────────────────────────
 
 function AdvancedOverridePanel({ block, onChange }: { block: VisualBlock; onChange: (u: Partial<VisualBlock>) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--bg-sunken)", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)" }}>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-        <strong>Modo avanzado</strong> — el código LaTeX generado automáticamente se muestra abajo.
-        Puedes editarlo, pero los cambios se perderán si modificas el formulario.
+        <strong>{t("visual.advanced_mode")}</strong> — {t("visual.advanced_mode_body")}
       </div>
       <textarea rows={6}
         value={block.advanced_latex_override ?? ""}
         onChange={e => onChange({ advanced_latex_override: e.target.value || undefined })}
-        placeholder="// El LaTeX generado aparecerá aquí cuando actives el override"
+        placeholder={t("visual.advanced_placeholder")}
         style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11, resize: "vertical" }} />
       <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
         <input type="checkbox" checked={!!block.advanced_override_confirmed}
           onChange={e => onChange({ advanced_override_confirmed: e.target.checked })}
           style={{ accentColor: "var(--accent)" }} />
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-          Usar este LaTeX en lugar del generado automáticamente
+          {t("visual.use_override")}
         </span>
       </label>
     </div>
@@ -599,6 +572,7 @@ function AdvancedOverridePanel({ block, onChange }: { block: VisualBlock; onChan
 // ── SVG Preview ───────────────────────────────────────────────────
 
 function VisualPreview({ config }: { config: VisualConfig }) {
+  const { t } = useTranslation();
   switch (config.kind) {
     case "venn_euler":    return <VennSVG    config={config} />;
     case "flow_diagram":  return <FlowSVG    config={config} />;
@@ -608,17 +582,18 @@ function VisualPreview({ config }: { config: VisualConfig }) {
     case "circuit":       return <GenericPreview icon="⚡" label={PRESETS.circuit.find(p => p.id === config.preset)?.name ?? config.preset} />;
     case "feynman":       return <GenericPreview icon="∿" label={PRESETS.feynman.find(p => p.id === config.preset)?.name ?? config.preset} />;
     case "bio_pathway":   return <GenericPreview icon="⟳" label={PRESETS.bio_pathway.find(p => p.id === config.preset)?.name ?? config.preset} />;
-    case "music_fragment":return <GenericPreview icon="♩" label="Partitura — se renderiza al compilar" />;
-    default:              return <GenericPreview icon="📊" label="Vista previa no disponible" />;
+    case "music_fragment":return <GenericPreview icon="♩" label={t("visual.music_renders_on_compile")} />;
+    default:              return <GenericPreview icon="📊" label={t("visual.preview_unavailable")} />;
   }
 }
 
 function GenericPreview({ icon, label }: { icon: string; label: string }) {
+  const { t } = useTranslation();
   return (
     <div style={{ textAlign: "center", color: "var(--fg-faint)", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
       <span style={{ fontSize: 40 }}>{icon}</span>
       <span style={{ fontSize: "var(--fs-xs)", maxWidth: 200, lineHeight: 1.4 }}>{label}</span>
-      <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>Vista previa disponible al compilar el PDF</span>
+      <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>{t("visual.preview_available_on_compile")}</span>
     </div>
   );
 }
@@ -711,10 +686,11 @@ function FlowSVG({ config }: { config: Extract<VisualConfig, { kind: "flow_diagr
 // ── SVG Timeline ──────────────────────────────────────────────────
 
 function TimelineSVG({ config }: { config: Extract<VisualConfig, { kind: "timeline" }> }) {
+  const { t } = useTranslation();
   const events = config.events ?? [];
   const color = toColor(config.accent_color ?? "blue");
   const W = 280, H = 100;
-  if (events.length === 0) return <GenericPreview icon="──" label="Añade eventos" />;
+  if (events.length === 0) return <GenericPreview icon="──" label={t("visual.add_events")} />;
   const step = (W - 30) / Math.max(events.length, 1);
 
   return (
@@ -740,6 +716,7 @@ function TimelineSVG({ config }: { config: Extract<VisualConfig, { kind: "timeli
 // ── Preview Reacción ──────────────────────────────────────────────
 
 function ChemReactionPreview({ config }: { config: Extract<VisualConfig, { kind: "chem_reaction" }> }) {
+  const { t } = useTranslation();
   const arrow = config.reaction_type === "equilibrium" ? "⇌"
     : config.reaction_type === "resonance" ? "↔"
     : config.reaction_type === "backward" ? "←" : "→";
@@ -748,7 +725,7 @@ function ChemReactionPreview({ config }: { config: Extract<VisualConfig, { kind:
     .replace("->", ` ${arrow} `).replace("<=>", ` ${arrow} `).replace("<->", ` ${arrow} `);
   return (
     <div style={{ textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--fg-strong)", padding: 16, background: "var(--bg-surface)", borderRadius: "var(--r-sm)", border: "1px solid var(--border-subtle)", maxWidth: "100%", wordBreak: "break-all" }}>
-      {eq || "Ecuación vacía"}
+      {eq || t("visual.empty_equation")}
       {(config.catalyst || config.conditions) && (
         <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 4 }}>
           {config.catalyst ? `↑ ${config.catalyst}` : ""} {config.conditions ? `↓ ${config.conditions}` : ""}
@@ -761,18 +738,19 @@ function ChemReactionPreview({ config }: { config: Extract<VisualConfig, { kind:
 // ── Preview Molécula ──────────────────────────────────────────────
 
 function MoleculePreview({ config }: { config: Extract<VisualConfig, { kind: "molecule" }> }) {
+  const { t } = useTranslation();
   const preset = PRESETS.molecule.find(p => p.id === config.preset);
   const icons: Record<string, string> = {
     benzene: "⬡", water: "💧", co2: "🌫", ethanol: "🍷", glucose: "🍬",
     aspirin: "💊", nacl: "🧂", methane: "⛽",
   };
   const icon = config.preset ? (icons[config.preset] ?? "⚗️") : "⚗️";
-  const name = preset?.name ?? config.chemfig_formula ?? "Molécula personalizada";
+  const name = preset?.name ?? config.chemfig_formula ?? t("visual.custom_molecule");
   return (
     <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
       <span style={{ fontSize: 44 }}>{icon}</span>
       <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{name}</span>
-      <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>Estructura generada con chemfig al compilar</span>
+      <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>{t("visual.molecule_compile_hint")}</span>
     </div>
   );
 }
@@ -780,10 +758,11 @@ function MoleculePreview({ config }: { config: Extract<VisualConfig, { kind: "mo
 // ── Utilidades UI ─────────────────────────────────────────────────
 
 function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", gap: 4 }}>
       {COLORS.map(c => (
-        <button key={c.id} title={c.label} onClick={() => onChange(c.id)}
+        <button key={c.id} title={t(c.labelKey)} onClick={() => onChange(c.id)}
           style={{
             width: 22, height: 22, borderRadius: "50%", background: c.bg, border: `2px solid ${value === c.id ? "#fff" : "transparent"}`,
             outline: value === c.id ? `2px solid ${c.bg}` : "none",

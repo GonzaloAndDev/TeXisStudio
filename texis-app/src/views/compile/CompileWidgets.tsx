@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { IconCheck, IconCheckCircle, IconErr, IconPlay, IconWarn, IconX } from "../../components/Icons";
 import { AI_ASSISTANT_ENABLED, useAiStore } from "../../stores/ai";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -66,12 +67,13 @@ export function BackendChip({
   id?: Backend; label: string; available: boolean | null;
   version?: string; selected: boolean; onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={available === false}
-      title={available === false ? `${label} no está instalado` : version ?? label}
+      title={available === false ? t("compile_widgets.backend_not_installed", { label }) : version ?? label}
       style={{
         padding: "5px 12px",
         borderRadius: "var(--r-md)",
@@ -103,6 +105,7 @@ export function AiErrorHelper({
   errors: Array<{ message: string; suggestion?: string }>;
   log: string;
 }) {
+  const { t } = useTranslation();
   const aiPanel = useAiStore();
 
   if (!AI_ASSISTANT_ENABLED) {
@@ -120,10 +123,10 @@ export function AiErrorHelper({
       }}
     >
       <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
-        ¿Quieres ayuda para entender este fallo?
+        {t("compile_widgets.ai_help_title")}
       </div>
       <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 10 }}>
-        TeXisStudio puede abrir el asistente en el editor para explicar el error principal y sugerir qué revisar, sin tocar tu documento.
+        {t("compile_widgets.ai_help_body")}
       </div>
       <button
         className="btn btn-ghost btn-sm"
@@ -133,7 +136,7 @@ export function AiErrorHelper({
           aiPanel.setContextScope(log ? "build_log" : "diagnostics");
         }}
       >
-        Explicar este error en el editor
+        {t("compile_widgets.ai_help_button")}
       </button>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8 }}>
         {errors[0]?.message}
@@ -148,16 +151,17 @@ export const SEV_COLOR: Record<string, string> = {
   Suggestion: "var(--accent)",
 };
 
-export const SEV_LABEL: Record<string, string> = {
-  Error:      "Error",
-  Warning:    "Advertencia",
-  Suggestion: "Sugerencia",
+export const SEV_LABEL_KEY: Record<string, string> = {
+  Error:      "common.error",
+  Warning:    "common.warning",
+  Suggestion: "compile_widgets.suggestion",
 };
 
 export function IssueRow({ issue, onGoTo }: {
   issue: ValidationIssue;
   onGoTo?: () => void;
 }) {
+  const { t } = useTranslation();
   const color = SEV_COLOR[issue.severity] ?? "var(--fg-muted)";
   return (
     <div style={{
@@ -173,7 +177,7 @@ export function IssueRow({ issue, onGoTo }: {
           padding: "1px 6px", borderRadius: "var(--r-sm)",
           flexShrink: 0, marginTop: 1, letterSpacing: "0.04em",
         }}>
-          {SEV_LABEL[issue.severity]}
+          {t(SEV_LABEL_KEY[issue.severity] ?? "compile_widgets.suggestion")}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", lineHeight: 1.5 }}>
@@ -191,7 +195,7 @@ export function IssueRow({ issue, onGoTo }: {
             style={{ fontSize: 11, flexShrink: 0 }}
             onClick={onGoTo}
           >
-            Ir a sección
+            {t("compile_widgets.go_to_section")}
           </button>
         )}
       </div>
@@ -206,11 +210,12 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
   onClose: () => void;
   onGoToSection: (sectionId: string) => void;
 }) {
+  const { t } = useTranslation();
   const errors      = report.issues.filter(i => i.severity === "Error");
   const warnings    = report.issues.filter(i => i.severity === "Warning");
   const suggestions = report.issues.filter(i => i.severity === "Suggestion");
   const hasErrors   = errors.length > 0;
-  const actionLabel = pendingAction === "compile" ? "Compilar" : "Exportar entrega";
+  const actionLabel = pendingAction === "compile" ? t("editor.compile") : t("compile_widgets.export_delivery");
 
   return (
     <div style={{
@@ -237,12 +242,12 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
           }
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: "var(--fs-md)", color: "var(--fg-strong)" }}>
-              Verificación antes de {actionLabel.toLowerCase()}
+              {t("compile_widgets.preflight_before", { action: actionLabel.toLowerCase() })}
             </div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
               {hasErrors
-                ? `Corrige ${errors.length} error${errors.length > 1 ? "es" : ""} antes de continuar.`
-                : `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""} encontrada${warnings.length !== 1 ? "s" : ""}. Puedes continuar de todos modos.`
+                ? t("compile_widgets.fix_errors_before", { count: errors.length })
+                : t("compile_widgets.warnings_found", { count: warnings.length })
               }
             </div>
           </div>
@@ -256,7 +261,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
           {errors.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-err)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Errores ({errors.length})
+                {t("compile_widgets.errors_count", { count: errors.length })}
               </div>
               {errors.map((issue, i) => (
                 <IssueRow
@@ -269,7 +274,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
           {warnings.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-warn)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Advertencias ({warnings.length})
+                {t("compile_widgets.warnings_count", { count: warnings.length })}
               </div>
               {warnings.map((issue, i) => (
                 <IssueRow
@@ -282,7 +287,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
           {suggestions.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Sugerencias ({suggestions.length})
+                {t("compile_widgets.suggestions_count", { count: suggestions.length })}
               </div>
               {suggestions.map((issue, i) => (
                 <IssueRow key={i} issue={issue} />
@@ -298,7 +303,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
           background: "var(--bg-panel)",
         }}>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>
-            Cerrar
+            {t("common.close")}
           </button>
           {!hasErrors && (
             <button
@@ -306,7 +311,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
               style={{ background: "var(--build-warn)", color: "#fff", border: "none" }}
               onClick={() => { onClose(); onProceed(); }}
             >
-              <IconPlay size={11} /> {actionLabel} de todos modos
+              <IconPlay size={11} /> {t("compile_widgets.action_anyway", { action: actionLabel })}
             </button>
           )}
         </div>
@@ -318,6 +323,7 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
 // ── Visor de PDF embebido ─────────────────────────────────────────
 
 export function PdfViewer({ pdfPath }: { pdfPath: string }) {
+  const { t } = useTranslation();
   const [assetUrl, setAssetUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -333,7 +339,7 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
   if (!assetUrl) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
-        No se pudo cargar el visor de PDF.
+        {t("compile_widgets.pdf_viewer_error")}
       </div>
     );
   }
@@ -341,7 +347,7 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
   return (
     <iframe
       src={assetUrl}
-      title="Vista previa del PDF"
+      title={t("compile_widgets.pdf_preview_title")}
       style={{ flex: 1, border: "none", width: "100%", height: "100%", background: "#404040" }}
     />
   );
@@ -350,10 +356,11 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
 // ── Panel de verificación PDF ─────────────────────────────────────
 
 export function PdfaBadge({ pdfa }: { pdfa: PdfaCheck }) {
+  const { t } = useTranslation();
   if (pdfa.flavour === null) {
     return (
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 6, padding: "4px 8px", borderRadius: "var(--r-xs)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
-        PDF/A: no declarado — el PDF no incluye metadatos XMP de conformidad.
+        {t("compile_widgets.pdfa_not_declared")}
         {pdfa.verapdf_version && <span style={{ marginLeft: 8, opacity: 0.6 }}>veraPDF {pdfa.verapdf_version}</span>}
       </div>
     );
@@ -369,13 +376,14 @@ export function PdfaBadge({ pdfa }: { pdfa: PdfaCheck }) {
       <span style={{ color: ok ? "var(--build-ok)" : "var(--build-warn)", fontWeight: 600 }}>
         {ok ? "✓" : "⚠"} PDF/A — {pdfa.flavour}
       </span>
-      <span style={{ color: "var(--fg-muted)" }}>{ok ? "conforme" : "no conforme"}</span>
+      <span style={{ color: "var(--fg-muted)" }}>{ok ? t("compile_widgets.pdfa_compliant") : t("compile_widgets.pdfa_not_compliant")}</span>
       {pdfa.verapdf_version && <span style={{ marginLeft: "auto", opacity: 0.5 }}>veraPDF {pdfa.verapdf_version}</span>}
     </div>
   );
 }
 
 export function PostflightPanel({ result }: { result: PdfPostflightResult }) {
+  const { t } = useTranslation();
   const errors   = result.issues.filter((i) => i.severity === "error");
   const warnings = result.issues.filter((i) => i.severity === "warning");
 
@@ -393,28 +401,28 @@ export function PostflightPanel({ result }: { result: PdfPostflightResult }) {
         marginBottom: 8,
       }}>
         {result.passed ? <IconCheckCircle size={14} /> : <IconErr size={14} />}
-        Verificación PDF — {result.passed ? "apta para entrega" : "no apta para entrega"}
+        {t("compile_widgets.pdf_check")} — {result.passed ? t("compile_widgets.ready_for_delivery") : t("compile_widgets.not_ready_for_delivery")}
       </div>
 
       {!result.pdf_exists && (
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>
-          El PDF no existe. Compila primero.
+          {t("compile_widgets.pdf_missing_compile_first")}
         </div>
       )}
 
       {result.pdf_exists && (
         <>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", marginBottom: 4, fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-            {result.metadata.pages !== undefined && <span>Páginas: <strong>{result.metadata.pages}</strong></span>}
+            {result.metadata.pages !== undefined && <span>{t("compile_widgets.pages")}: <strong>{result.metadata.pages}</strong></span>}
             {result.metadata.pdf_version && <span>PDF {result.metadata.pdf_version}</span>}
             {result.metadata.file_size_bytes != null && (
               <span>{(result.metadata.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
             )}
             {result.metadata.page_size && <span>{result.metadata.page_size}</span>}
             <span style={{ color: result.all_fonts_embedded ? "var(--build-ok)" : "var(--build-warn)" }}>
-              Fuentes: {result.all_fonts_embedded
-                ? "todas incrustadas ✓"
-                : `${result.non_embedded_fonts.length} sin incrustar`}
+              {t("compile_widgets.fonts")}: {result.all_fonts_embedded
+                ? t("compile_widgets.fonts_all_embedded")
+                : t("compile_widgets.fonts_not_embedded", { count: result.non_embedded_fonts.length })}
             </span>
           </div>
 
@@ -455,7 +463,7 @@ export function PostflightPanel({ result }: { result: PdfPostflightResult }) {
 
           {result.tools_missing.length > 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 4 }}>
-              Sin herramientas: {result.tools_missing.join(", ")} — instala poppler-utils para análisis completo.
+              {t("compile_widgets.missing_tools", { tools: result.tools_missing.join(", ") })}
             </div>
           )}
         </>
@@ -473,9 +481,9 @@ const SEV_COLORS = {
 };
 
 const SEV_LABELS = {
-  critical: "Bloqueante",
-  warning:  "Advertencia",
-  info:     "Sugerencia",
+  critical: "compile_widgets.blocking",
+  warning:  "common.warning",
+  info:     "compile_widgets.suggestion",
 };
 
 function OsStep({ label, content }: { label: string; content: string }) {
@@ -501,9 +509,10 @@ export function DependencyIssueCard({ issue, platform }: {
   issue: DependencyIssue;
   platform?: "macos" | "windows" | "linux" | string;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(issue.severity === "critical");
   const color = SEV_COLORS[issue.severity] ?? "var(--fg-muted)";
-  const label = SEV_LABELS[issue.severity] ?? issue.severity;
+  const label = t(SEV_LABELS[issue.severity] ?? "compile_widgets.suggestion");
 
   // Mostrar solo las instrucciones del SO actual
   const platformInstructions = platform === "macos" ? issue.instructions.macos
@@ -588,7 +597,7 @@ export function DependencyIssueCard({ issue, platform }: {
               display: "flex", gap: 8, alignItems: "flex-start",
             }}>
               <span style={{ flexShrink: 0, marginTop: 1 }}>💡</span>
-              <span><strong>Alternativa más simple:</strong> {issue.simple_alternative}</span>
+              <span><strong>{t("compile_widgets.simple_alternative")}:</strong> {issue.simple_alternative}</span>
             </div>
           )}
 
@@ -596,7 +605,7 @@ export function DependencyIssueCard({ issue, platform }: {
             <div style={{
               marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)",
             }}>
-              Después de instalar, vuelve a compilar.
+              {t("compile_widgets.retry_after_install")}
             </div>
           )}
         </div>
@@ -610,6 +619,7 @@ export function DependencyIssuesPanel({ issues, platform }: {
   issues: DependencyIssue[];
   platform?: string;
 }) {
+  const { t } = useTranslation();
   if (!issues || issues.length === 0) return null;
 
   const critical = issues.filter(i => i.severity === "critical");
@@ -627,8 +637,8 @@ export function DependencyIssuesPanel({ issues, platform }: {
         }
         <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>
           {critical.length > 0
-            ? `${critical.length === 1 ? "Hay un problema" : `Hay ${critical.length} problemas`} que debes resolver antes de compilar`
-            : "Tu entorno tiene algunas advertencias"}
+            ? t("compile_widgets.problems_before_compile", { count: critical.length })
+            : t("compile_widgets.environment_warnings")}
         </span>
       </div>
       {[...critical, ...rest].map(issue => (

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook,
@@ -110,35 +111,36 @@ function SimpleList({
 }
 
 export default function AboutView() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const capabilities = [
-    "Te ayuda a organizar la estructura de tu trabajo por secciones y capítulos.",
-    "Aplica formato institucional mediante perfiles sin obligarte a editar LaTeX a mano.",
-    "Gestiona citas, bibliografía y compilación para que tú te concentres en el contenido.",
-    "Revisa la salud del proyecto y te avisa qué te falta antes de entregar.",
-    "Prepara exportaciones finales con evidencia técnica cuando el flujo lo requiere.",
+    t("about.capability_structure"),
+    t("about.capability_profiles"),
+    t("about.capability_citations"),
+    t("about.capability_health"),
+    t("about.capability_exports"),
   ];
 
   const boundaries = [
-    "No sustituye los lineamientos oficiales de tu institución ni el juicio de tu asesor o jurado.",
-    "Algunos perfiles tienen más evidencia y verificación que otros; la Biblioteca lo indica.",
-    "La calidad académica de la investigación, redacción y argumentación sigue dependiendo del autor.",
+    t("about.boundary_institution"),
+    t("about.boundary_profiles"),
+    t("about.boundary_quality"),
   ];
 
   const stack = [
-    "App de escritorio sobre Tauri + React + TypeScript.",
-    "Core académico y de compilación en Rust.",
-    "Soporte de perfiles, bibliografía, exportación final y verificación de entorno.",
-    "Corrección ortográfica y lingüística modular con packs y vocabularios especializados.",
+    t("about.stack_app"),
+    t("about.stack_core"),
+    t("about.stack_profiles"),
+    t("about.stack_language"),
   ];
 
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Acerca de</span></>}
+        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ {t("about.title")}</span></>}
         center={null}
-        right={<button className="btn btn-ghost btn-sm" onClick={() => navigate("/")}>← Inicio</button>}
+        right={<button className="btn btn-ghost btn-sm" onClick={() => navigate("/")}>← {t("library.back_home").replace("← ", "")}</button>}
       />
 
       <div style={{ flex: 1, overflow: "auto", background: "var(--bg-app)" }} className="scroll">
@@ -158,7 +160,7 @@ export default function AboutView() {
               TeXis<em style={{ fontStyle: "italic", color: "var(--detail)" }}>Studio</em>
             </h1>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
-              v1.0.0 · asistente de tesis desktop-first
+              v1.0.0 · {t("about.tagline")}
             </div>
             <div style={{
               marginTop: 18,
@@ -169,68 +171,62 @@ export default function AboutView() {
               color: "var(--accent-deep)",
               lineHeight: 1.7,
             }}>
-              La idea central es simple: tú trabajas en tu tesis, tesina o investigación;
-              TeXisStudio te ayuda con estructura, formato, bibliografía, compilación y entrega.
+              {t("about.hero")}
             </div>
           </div>
 
-          <Section title="Qué es">
+          <Section title={t("about.what_is")}>
             <InfoCard
-              title="Una herramienta pensada para quien no quiere aprender LaTeX para poder titularse"
+              title={t("about.what_is_card_title")}
               tone="ok"
-              body={(
-                <>
-                  TeXisStudio busca que estudiantes de licenciatura, especialidad, maestría, doctorado y posdoctorado
-                  puedan producir trabajos académicos serios sin cargar con el peso técnico de LaTeX como condición previa.
-                </>
-              )}
+              body={t("about.what_is_card_body")}
             />
           </Section>
 
-          <Section title="Qué hace por ti">
+          <Section title={t("about.capabilities_title")}>
             <SimpleList items={capabilities} />
           </Section>
 
-          <Section title="Qué sigue siendo tu responsabilidad">
+          <Section title={t("about.boundaries_title")}>
             <InfoCard
-              title="La app te acompaña; no reemplaza el criterio académico"
+              title={t("about.boundaries_card_title")}
               tone="warn"
               body={<SimpleList items={boundaries} />}
             />
           </Section>
 
-          <Section title="En qué base técnica se apoya">
+          <Section title={t("about.stack_title")}>
             <div style={{ padding: "14px 16px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)" }}>
               <SimpleList items={stack} />
             </div>
           </Section>
 
-          <Section title="Estado de madurez">
+          <Section title={t("about.maturity_title")}>
             <div style={{ display: "grid", gap: 12 }}>
               <InfoCard
-                title="Base técnica fuerte"
+                title={t("about.maturity_strong_title")}
                 tone="ok"
-                body="El núcleo de validación, compilación, perfiles, idiomas y exportación ya existe y ya resuelve trabajo académico real."
+                body={t("about.maturity_strong_body")}
               />
               <InfoCard
-                title="Transición activa hacia experiencia neófito-first"
-                body="La app se está reorganizando para que el flujo principal sea guiado, simple y centrado en momentos del trabajo en vez de herramientas técnicas."
+                title={t("about.maturity_transition_title")}
+                body={t("about.maturity_transition_body")}
               />
               <InfoCard
-                title="Promesa honesta"
+                title={t("about.maturity_honest_title")}
                 tone="warn"
-                body="TeXisStudio ya es un producto académico serio, pero todavía está cerrando algunos contratos de UX, CI y cobertura institucional antes de poder prometer una experiencia premium universal sin asteriscos."
+                body={t("about.maturity_honest_body")}
               />
             </div>
           </Section>
 
-          <Section title="Autoría y proyecto">
+          <Section title={t("about.authorship_title")}>
             <div style={{ padding: "14px 16px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
               <div style={{ marginBottom: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
                 Gonzalo Andrade Estrella
               </div>
               <div style={{ color: "var(--fg-muted)" }}>
-                Repositorio principal:{" "}
+                {t("about.main_repo")}:{" "}
                 <a href="https://github.com/GonzaloAndDev/TeXisStudio" style={{ color: "var(--link)", textDecoration: "none" }}>
                   GonzaloAndDev/TeXisStudio
                 </a>
@@ -244,14 +240,13 @@ export default function AboutView() {
             </div>
           </Section>
 
-          <Section title="Licencia">
+          <Section title={t("about.license_title")}>
             <div style={{ padding: "14px 16px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
               <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--fg-strong)" }}>
                 AGPL v3 + Commons Clause
               </div>
               <div style={{ color: "var(--fg-muted)" }}>
-                Source-available. Gratuito para uso personal, académico, educativo y comunitario.
-                La explotación comercial directa requiere acuerdo con el autor original.
+                {t("about.license_body")}
               </div>
             </div>
           </Section>
@@ -260,7 +255,7 @@ export default function AboutView() {
 
       <TxStatusbar items={[
         { icon: <IconBook size={11} />, text: "TeXisStudio v1.0.0" },
-        { icon: <IconFile size={11} />, text: "Desktop-first · tesis guiada" },
+        { icon: <IconFile size={11} />, text: t("about.statusbar_guided") },
         { right: true, text: "github.com/GonzaloAndDev/TeXisStudio" },
       ]} />
     </>

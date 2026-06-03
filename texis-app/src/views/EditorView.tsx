@@ -1,8 +1,7 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
-import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
 import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
@@ -12,25 +11,24 @@ import {
   IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
-import { AI_ASSISTANT_ENABLED, useAiStore } from "../stores/ai";
+import { SpellPanel } from "../components/SpellPanel";
+import { GrammarPanel } from "../components/GrammarPanel";
+import { AiAssistantPanel } from "../components/AiAssistantPanel";
+import { useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, LatexTypography, ProjectSection, SectionStatus } from "../types";
+import type { BibReference, ContentBlock, LatexTypography, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
-import { BlockItem } from "./editor/BlockItem";
-import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
-import type { ContentBlock, PluginFigureBlock, VisualKind } from "../types";
+import { CitationPickerModal } from "./editor/CitationPickerModal";
 
-const AiAssistantPanel = lazy(() => import("../components/AiAssistantPanel").then((m) => ({ default: m.AiAssistantPanel })));
-const CitationPickerModal = lazy(() => import("./editor/CitationPickerModal").then((m) => ({ default: m.CitationPickerModal })));
-const CommandPalette = lazy(() => import("./editor/CommandPalette").then((m) => ({ default: m.CommandPalette })));
-const DocumentOptionsPanel = lazy(() => import("./editor/DocumentOptionsPanel").then((m) => ({ default: m.DocumentOptionsPanel })));
-const FigureEditModal = lazy(() => import("../components/FigureEditModal").then((m) => ({ default: m.FigureEditModal })));
-const FigurePickerModal = lazy(() => import("../components/FigurePickerModal").then((m) => ({ default: m.FigurePickerModal })));
-const GrammarPanel = lazy(() => import("../components/GrammarPanel").then((m) => ({ default: m.GrammarPanel })));
-const SpellPanel = lazy(() => import("../components/SpellPanel").then((m) => ({ default: m.SpellPanel })));
+
+import { BlockItem } from "./editor/BlockItem";
+import { CommandPalette } from "./editor/CommandPalette";
+import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
+import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
+import type { VisualKind } from "../types";
 // ── Utilidades ────────────────────────────────────────────────────
 
 const PLACEMENT_KEYS: Record<string, string> = {
@@ -40,10 +38,8 @@ const PLACEMENT_KEYS: Record<string, string> = {
   appendix: "editor.placement_appendix",
 };
 
-function buildPlacementGroup(
-  sections: ProjectSection[],
-  t: ReturnType<typeof useTranslation>["t"],
-) {
+function usePlacementGroup(sections: ProjectSection[]) {
+  const { t } = useTranslation();
   const groups: Record<string, ProjectSection[]> = {};
   for (const s of sections) {
     const key = PLACEMENT_KEYS[s.placement];
@@ -84,24 +80,6 @@ function countWords(blocks: ContentBlock[]): number {
   return blocks
     .filter((b) => b.type === "paragraph")
     .reduce((acc, b) => acc + (b.type === "paragraph" ? b.content.split(/\s+/).filter(Boolean).length : 0), 0);
-}
-
-function LazyPanelFallback() {
-  return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 940,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "rgba(0,0,0,0.24)",
-      color: "var(--fg-muted)",
-      fontSize: "var(--fs-sm)",
-    }}>
-      Cargando herramienta...
-    </div>
-  );
 }
 
 /**
@@ -154,8 +132,6 @@ export default function EditorView() {
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-  const [routeLoadError, setRouteLoadError] = useState<string | null>(null);
-  const [routeLoading, setRouteLoading] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drag & drop state
@@ -170,7 +146,6 @@ export default function EditorView() {
   const [snapshots, setSnapshots] = useState<{ filename: string; timestamp: string; label: string }[]>([]);
   const [newSnapLabel, setNewSnapLabel] = useState("");
   const [snapBusy, setSnapBusy] = useState(false);
-  const [snapshotConfirm, setSnapshotConfirm] = useState<{ action: "restore" | "delete"; filename: string } | null>(null);
 
   // Navigation guard — bloquear si hay cambios sin guardar
   const isUnsaved = saveStatus === "unsaved" || saveStatus === "error";
@@ -188,40 +163,28 @@ export default function EditorView() {
     for (const section of activeProject?.sections ?? []) {
       for (const block of section.blocks ?? []) {
         if (block.type === "figure" && block.label)
-          labels.push({ key: block.label, kind: "figura", caption: block.caption ?? "" });
+          labels.push({ key: block.label, kind: t("editor.ref_kind_figure"), caption: block.caption ?? "" });
         else if (block.type === "table" && block.label)
-          labels.push({ key: block.label, kind: "tabla", caption: block.caption ?? "" });
+          labels.push({ key: block.label, kind: t("editor.ref_kind_table"), caption: block.caption ?? "" });
         else if (block.type === "equation" && block.label)
-          labels.push({ key: block.label, kind: "ecuación", caption: "" });
+          labels.push({ key: block.label, kind: t("editor.ref_kind_equation"), caption: "" });
         else if (block.type === "algorithm" && block.label)
-          labels.push({ key: block.label, kind: "algoritmo", caption: block.caption ?? "" });
+          labels.push({ key: block.label, kind: t("editor.ref_kind_algorithm"), caption: block.caption ?? "" });
       }
     }
     return labels;
-  }, [activeProject]);
+  }, [activeProject, t]);
 
   // Paneles de revisión de texto
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
   const aiPanel = useAiStore();
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
-  const [metaPanelCollapsed, setMetaPanelCollapsed] = useState(false);
-  const [aiPanelWide, setAiPanelWide] = useState(false);
 
   // Navegación a bloque específico (desde búsqueda en CommandPalette)
   const [jumpTargetBlockId, setJumpTargetBlockId] = useState<string | null>(null);
 
   // Selector de tipo de Visual Block — se abre al insertar un bloque visual
   const [visualSelectorOpen, setVisualSelectorOpen] = useState<string | null>(null);
-
-  // Modal de inserción de figura por plugin
-  const [figurePickerOpen, setFigurePickerOpen] = useState(false);
-
-  // Modal de edición de figura de plugin existente
-  const [editingPluginFigureId, setEditingPluginFigureId] = useState<string | null>(null);
-  const editingPluginFigureBlock = editingPluginFigureId
-    ? (localBlocks.find((b) => b.id === editingPluginFigureId && b.type === "plugin_figure") as PluginFigureBlock | undefined)
-    : undefined;
 
   // Scroll y highlight cuando jumpTargetBlockId cambia
   useEffect(() => {
@@ -249,30 +212,6 @@ export default function EditorView() {
     end: number;
   } | null>(null);
   const [lastAiUndoBlocks, setLastAiUndoBlocks] = useState<ContentBlock[] | null>(null);
-
-  useEffect(() => {
-    const isTauriEnv = "__TAURI_INTERNALS__" in window;
-    if (!isTauriEnv || activeProject || activeProjectPath || !encodedPath || encodedPath === "demo") return;
-
-    let cancelled = false;
-    const projectPath = decodeURIComponent(encodedPath);
-    setRouteLoading(true);
-    setRouteLoadError(null);
-    api.getProject(projectPath)
-      .then((model) => {
-        if (!cancelled) useProjectStore.getState().openProject(model, projectPath);
-      })
-      .catch((e) => {
-        if (!cancelled) setRouteLoadError(String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setRouteLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeProject, activeProjectPath, encodedPath]);
 
   const captureSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -377,15 +316,18 @@ export default function EditorView() {
     }
   }, [activeProjectPath, newSnapLabel, loadSnapshots]);
 
-  const restoreSnapshot = useCallback(async (filename: string) => {
+  const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
+    const ok = window.confirm(
+      t("editor.snapshot_restore_confirm")
+    );
+    if (!ok) return;
     setSnapBusy(true);
     try {
       await api.restoreSnapshot(activeProjectPath, filename);
       // Recargar el proyecto desde disco
       const model = await api.getProject(activeProjectPath);
       useProjectStore.getState().openProject(model, activeProjectPath);
-      setSnapshotConfirm(null);
       setSnapshotsOpen(false);
     } catch (e) {
       console.error("Error restaurando snapshot:", e);
@@ -394,17 +336,15 @@ export default function EditorView() {
     }
   }, [activeProjectPath]);
 
-  const deleteSnapshot = useCallback(async (filename: string) => {
+  const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    setSnapBusy(true);
+    const ok = window.confirm(t("editor.snapshot_delete_confirm"));
+    if (!ok) return;
     try {
       await api.deleteSnapshot(activeProjectPath, filename);
       await loadSnapshots();
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
-    } finally {
-      setSnapBusy(false);
-      setSnapshotConfirm(null);
     }
   }, [activeProjectPath, loadSnapshots]);
 
@@ -463,42 +403,12 @@ export default function EditorView() {
   }, [scheduleAutoSave]);
 
   const deleteBlock = useCallback((id: string) => {
-    // Clean up disk assets if it's a plugin figure
-    if (activeProjectPath) {
-      const block = localBlocks.find((b) => b.id === id);
-      if (block?.type === "plugin_figure") {
-        import("../services/figure-plugin-service")
-          .then((m) => m.deletePluginFigureAssets(block, activeProjectPath))
-          .catch(() => {});
-      }
-    }
     setLocalBlocks((prev) => {
       const next = prev.filter((b) => b.id !== id);
       scheduleAutoSave(next);
       return next;
     });
     setEditingId(null);
-  }, [scheduleAutoSave, activeProjectPath, localBlocks]);
-
-  // Callback del FigureEditModal — aplica la figura actualizada al bloque
-  const handlePluginFigureUpdated = useCallback((updated: PluginFigureBlock) => {
-    setLocalBlocks((prev) => {
-      const next = prev.map((b) => b.id === updated.id ? updated : b);
-      scheduleAutoSave(next);
-      return next;
-    });
-    setEditingPluginFigureId(null);
-  }, [scheduleAutoSave]);
-
-  // Insertar figura generada por plugin
-  const insertPluginFigure = useCallback((block: PluginFigureBlock) => {
-    setLocalBlocks((prev) => {
-      const next = [...prev, block];
-      scheduleAutoSave(next);
-      return next;
-    });
-    setEditingId(block.id);
-    setFigurePickerOpen(false);
   }, [scheduleAutoSave]);
 
   // Insertar cita bibliográfica desde el picker
@@ -655,64 +565,50 @@ export default function EditorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [activeSectionId, localBlocks, doSave, paletteOpen, citPickerOpen]);
 
-  if (routeLoading) {
-    return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid var(--border-soft)", borderTopColor: "var(--accent)" }} />
-        <p>{t("editor.loading_project")}</p>
-      </div>
-    );
-  }
-
   if (!activeProject || !activeProjectPath) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
-        <p>{routeLoadError ? "No se pudo cargar el proyecto." : "Proyecto no cargado."}</p>
-        {routeLoadError && (
-          <div style={{ maxWidth: 560, color: "var(--build-err)", fontSize: "var(--fs-sm)", textAlign: "center", lineHeight: 1.5 }}>
-            {routeLoadError}
-          </div>
-        )}
-        <button className="btn" onClick={() => navigate("/")}>← Inicio</button>
+        <p>{t("editor.project_not_loaded")}</p>
+        <button className="btn" onClick={() => navigate("/")}>← {t("library.back_home").replace("← ", "")}</button>
       </div>
     );
   }
 
-  const groups = buildPlacementGroup(activeProject.sections, t);
+  const groups = usePlacementGroup(activeProject.sections);
   const activeSection = activeProject.sections.find((s) => s.id === activeSectionId)
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
 
   const bodyWordCount = activeProject.sections
     .filter((s) => s.placement === "body")
-    .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks ?? []), 0);
+    .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks), 0);
 
   const projectName = activeProject.metadata.title;
   const toolbarItems: [ContentBlock["type"], React.ReactNode, string, string?][] = userMode === "basic"
     ? [
-        ["paragraph", <IconText size={12} />, t("editor.toolbar_basic_paragraph"), t("editor.toolbar_basic_paragraph_hint")],
-        ["heading", <IconHeading size={12} />, t("editor.toolbar_basic_heading"), t("editor.toolbar_basic_heading_hint")],
-        ["list", <IconList size={12} />, t("editor.toolbar_basic_list"), t("editor.toolbar_basic_list_hint")],
-        ["citation", <IconMore size={12} />, t("editor.toolbar_basic_citation"), t("editor.toolbar_basic_citation_hint")],
-        ["figure", <IconImage size={12} />, t("editor.toolbar_basic_figure"), t("editor.toolbar_basic_figure_hint")],
-        ["table", <IconTable size={12} />, t("editor.toolbar_basic_table"), t("editor.toolbar_basic_table_hint")],
-        ["equation", <IconSigma size={12} />, t("editor.toolbar_basic_equation"), t("editor.toolbar_basic_equation_hint")],
-        ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, t("editor.toolbar_basic_visual"), t("editor.toolbar_basic_visual_hint")],
+        ["paragraph", <IconText size={12} />, t("editor.toolbar_add_text"), t("editor.toolbar_add_text_tip")],
+        ["heading", <IconHeading size={12} />, t("editor.toolbar_add_heading"), t("editor.toolbar_add_heading_tip")],
+        ["list", <IconList size={12} />, t("editor.toolbar_add_list"), t("editor.toolbar_add_list_tip")],
+        ["citation", <IconMore size={12} />, t("editor.toolbar_add_citation"), t("editor.toolbar_add_citation_tip")],
+        ["figure", <IconImage size={12} />, t("editor.toolbar_add_figure"), t("editor.toolbar_add_figure_tip")],
+        ["table", <IconTable size={12} />, t("editor.toolbar_add_table"), t("editor.toolbar_add_table_tip")],
+        ["equation", <IconSigma size={12} />, t("editor.toolbar_add_equation"), t("editor.toolbar_add_equation_tip")],
+        ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, t("editor.toolbar_add_visual"), t("editor.toolbar_add_visual_tip")],
       ]
     : [
-        ["paragraph", <IconText size={12} />, t("editor.toolbar_advanced_paragraph"), t("editor.toolbar_advanced_paragraph_hint")],
-        ["heading", <IconHeading size={12} />, t("editor.toolbar_advanced_heading"), t("editor.toolbar_advanced_heading_hint")],
-        ["list", <IconList size={12} />, t("editor.toolbar_advanced_list"), t("editor.toolbar_advanced_list_hint")],
-        ["equation", <IconSigma size={12} />, t("editor.toolbar_advanced_equation"), t("editor.toolbar_advanced_equation_hint")],
-        ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, t("editor.toolbar_advanced_visual"), t("editor.toolbar_advanced_visual_hint")],
-        ["figure", <IconImage size={12} />, t("editor.toolbar_advanced_figure")],
-        ["table", <IconTable size={12} />, t("editor.toolbar_advanced_table")],
-        ["raw_latex", <IconCode size={12} />, t("editor.toolbar_advanced_raw_latex"), t("editor.toolbar_advanced_raw_latex_hint")],
-        ["code", <IconCode size={12} />, t("editor.toolbar_advanced_code"), t("editor.toolbar_advanced_code_hint")],
-        ["algorithm", <IconAlgorithm size={12} />, t("editor.toolbar_advanced_algorithm"), t("editor.toolbar_advanced_algorithm_hint")],
-        ["theorem", <IconTheorem size={12} />, t("editor.toolbar_advanced_theorem"), t("editor.toolbar_advanced_theorem_hint")],
-        ["glossary_entry", <IconGlossaryEntry size={12} />, t("editor.toolbar_advanced_glossary"), t("editor.toolbar_advanced_glossary_hint")],
-        ["acronym_entry", <IconAcronym size={12} />, t("editor.toolbar_advanced_acronym"), t("editor.toolbar_advanced_acronym_hint")],
+        ["paragraph", <IconText size={12} />, t("editor.block_paragraph"), t("editor.toolbar_paragraph_tip")],
+        ["heading", <IconHeading size={12} />, t("editor.block_heading"), t("editor.toolbar_heading_tip")],
+        ["list", <IconList size={12} />, t("editor.block_list"), "Itemize / Enumerate"],
+        ["equation", <IconSigma size={12} />, t("editor.block_equation"), "equation / equation* (amsmath)"],
+        ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, t("editor.block_visual"), t("editor.toolbar_visual_tip")],
+        ["figure", <IconImage size={12} />, t("editor.block_figure")],
+        ["table", <IconTable size={12} />, t("editor.block_table")],
+        ["raw_latex", <IconCode size={12} />, "LaTeX", t("editor.toolbar_raw_latex_tip")],
+        ["code", <IconCode size={12} />, t("editor.block_code"), t("editor.toolbar_code_tip")],
+        ["algorithm", <IconAlgorithm size={12} />, t("editor.block_algorithm"), t("editor.toolbar_algorithm_tip")],
+        ["theorem", <IconTheorem size={12} />, t("editor.block_theorem"), t("editor.toolbar_theorem_tip")],
+        ["glossary_entry", <IconGlossaryEntry size={12} />, t("editor.block_glossary"), t("editor.toolbar_glossary_tip")],
+        ["acronym_entry", <IconAcronym size={12} />, t("editor.block_acronym"), t("editor.toolbar_acronym_tip")],
       ];
 
   const saveLabel =
@@ -729,7 +625,7 @@ export default function EditorView() {
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><TxBreadcrumb parts={[projectName, activeSection?.title ?? t("editor.section_fallback")]} /></>}
+        left={<><TxLogo /><TxBreadcrumb parts={[projectName, activeSection?.title ?? t("editor.section_fallback")] } /></>}
         center={null}
         right={
           <>
@@ -737,12 +633,12 @@ export default function EditorView() {
             <button
               className={`btn btn-ghost btn-sm${snapshotsOpen ? " btn-active" : ""}`}
               onClick={() => setSnapshotsOpen((o) => !o)}
-              title={t("editor.versions_title")}
+              title={t("editor.snapshots_title")}
             >
-              <IconRefresh size={13} /> {t("editor.versions")}
+              <IconRefresh size={13} /> {t("editor.snapshots")}
             </button>
             <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title={t("editor.progress_title")}>
-              {t("editor.progress")}
+              {t("progress.tab_progress")}
             </button>
             <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
               <IconBuild size={13} /> {t("editor.compile")}
@@ -768,37 +664,14 @@ export default function EditorView() {
         }
       />
 
-      <div className="editor-shell">
-      <div className={`editor-grid${leftPanelCollapsed ? " editor-grid-left-collapsed" : ""}${metaPanelCollapsed ? " editor-grid-meta-collapsed" : ""}`}>
+      <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0 }}>
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
-        {leftPanelCollapsed ? (
-          <div className="editor-panel-rail">
-            <button
-              className="btn btn-ghost btn-icon"
-              onClick={() => setLeftPanelCollapsed(false)}
-              title={t("editor.show_route")}
-              style={{ width: 28, height: 28, padding: 4 }}
-            >
-              ›
-            </button>
-            <div className="editor-rail-label">{t("editor.route")}</div>
-          </div>
-        ) : (
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {userMode === "basic" ? t("editor.document_route") : t("editor.sections")}
-            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
-              <button
-                className="btn btn-ghost btn-icon"
-                onClick={() => setLeftPanelCollapsed(true)}
-                title={t("editor.minimize_route")}
-                style={{ padding: 4 }}
-              >
-                ‹
-              </button>
-            </div>
+            {userMode === "basic" ? t("editor.document_path") : t("editor.sections")}
+            <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
           </div>
           <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
             {Object.entries(groups).map(([groupLabel, secs]) => (
@@ -814,12 +687,12 @@ export default function EditorView() {
                       key={s.id}
                       style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
                       onClick={() => setActiveSectionId(s.id)}
-                      title={`${s.title ?? s.element_id} · ${STATUS_CONFIG[sStatus as SectionStatus]?.label ?? sStatus}`}
+                      title={`${s.title ?? s.element_id} · ${STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus}`}
                     >
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title ?? s.element_id}</span>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
-                        {(s.id === activeSectionId ? localBlocks.length : s.blocks?.length ?? 0) || ""}
+                        {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
                       </span>
                     </div>
                   );
@@ -828,18 +701,18 @@ export default function EditorView() {
             ))}
           </div>
         </div>
-        )}
 
         {/* ── Canvas editor ──────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }} className="editor-workspace">
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
-          <div style={{ height: "calc(68px * var(--ui-density-scale))", flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "5px 14px 9px", display: "flex", alignItems: "center", gap: 6, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }} className="editor-toolbar">
+          <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
-                className="btn btn-ghost btn-sm editor-tool-button"
+                className="btn btn-ghost btn-sm"
                 onClick={() => addBlock(type)}
                 title={tooltip ?? label}
+                style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
               >
                 {icon}<span>{label}</span>
               </button>
@@ -850,20 +723,12 @@ export default function EditorView() {
 
             {/* Picker de citas */}
             <button
-              className="btn btn-ghost btn-sm editor-tool-button"
+              className="btn btn-ghost btn-sm"
               onClick={() => setCitPickerOpen(true)}
-              title={t("editor.citation_picker")}
+              title={t("editor.insert_citation_title")}
+              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
             >
-              <IconMore size={12} /><span>{t("editor.citation_short")}</span>
-            </button>
-
-            {/* Insertar figura generada por plugin */}
-            <button
-              className="btn btn-ghost btn-sm editor-tool-button"
-              onClick={() => setFigurePickerOpen(true)}
-              title={t("editor.figure_plus_title")}
-            >
-              <span style={{ fontSize: 12 }}>📊</span><span>{t("editor.figure_plus_title")Short}</span>
+              <IconMore size={12} /><span>{t("editor.block_citation")}</span>
             </button>
 
             <div style={{ flex: 1 }} />
@@ -886,16 +751,14 @@ export default function EditorView() {
             >
               LT
             </button>
-            {AI_ASSISTANT_ENABLED && (
-              <button
-                className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
-                onClick={() => aiPanel.togglePanel()}
-                title={t("editor.ai_assistant")}
-                style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
-              >
-                ✦ IA
-              </button>
-            )}
+            <button
+              className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => aiPanel.togglePanel()}
+              title={t("ai.panel_title")}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+            >
+              ✦ IA
+            </button>
 
             <div style={{ display: "none" }} />
 
@@ -903,11 +766,11 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setPaletteOpen(true)}
-              title={t("editor.command_palette")}
+              title={t("editor.command_palette_title")}
               style={{ fontSize: "var(--fs-xs)", gap: 5, padding: "4px 10px" }}
             >
               <IconSearch size={11} />
-              <span>{t("editor.commands")}</span>
+              <span>{t("command_palette.commands")}</span>
               <span className="kbd" style={{ fontSize: 9 }}>⌘K</span>
             </button>
 
@@ -922,7 +785,7 @@ export default function EditorView() {
                   style={{ fontSize: "var(--fs-xs)", padding: "1px 6px", marginLeft: 4 }}
                   onClick={() => activeProjectPath && doSave(localBlocks, activeSectionId ?? "")}
                 >
-                  {t("common.retry")}
+                  {t("editor.retry")}
                 </button>
               )}
             </div>
@@ -931,22 +794,22 @@ export default function EditorView() {
           {/* Paper canvas */}
           <div
             style={{ flex: 1, overflow: "auto", padding: "32px 0", background: "var(--bg-app)" }}
-            className="scroll editor-canvas"
+            className="scroll"
             onClick={(e) => { if (e.target === e.currentTarget) setEditingId(null); }}
             onMouseUp={captureSelection}
             onKeyUp={captureSelection}
           >
             {activeSection ? (
-              <div className="editor-paper">
+              <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", flex: 1 }}>
-                    {userMode === "advanced" ? activeSection.element_id : "Sección activa"}
+                    {userMode === "advanced" ? activeSection.element_id : t("editor.active_section")}
                   </div>
                   {activeProjectPath && userMode === "advanced" && (
                     <button
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: 10, padding: "2px 8px", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}
-                      title="Abrir el archivo .tex generado en el editor externo. Nota: los cambios se sobreescriben al compilar."
+                      title={t("editor.open_generated_tex_title")}
                       onClick={() => {
                         const texPath = sectionTexPath(activeSection, activeProject.sections, activeProjectPath);
                         if (texPath) api.openInSystem(texPath).catch(() => {});
@@ -967,7 +830,7 @@ export default function EditorView() {
                     border: "1px solid var(--accent-soft)", fontSize: "var(--fs-sm)",
                     color: "var(--accent-deep)", lineHeight: 1.6,
                   }}>
-                    Empieza escribiendo el contenido principal de esta sección. Si usas una fuente, agrega una cita. Si necesitas material visual, agrega una figura o una tabla.
+                    {t("editor.basic_section_hint")}
                   </div>
                 )}
 
@@ -986,11 +849,11 @@ export default function EditorView() {
                     style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", cursor: "text" }}
                     onClick={() => addBlock("paragraph")}
                   >
-                    <p style={{ margin: 0 }}>{userMode === "basic" ? t("editor.start_writing_basic") : t("editor.start_writing_advanced")}</p>
+                    <p style={{ margin: 0 }}>{userMode === "basic" ? t("editor.empty_basic_title") : t("editor.empty_advanced_title")}</p>
                     <p style={{ fontSize: "var(--fs-sm)", marginTop: 8, color: "var(--fg-faint)" }}>
                       {userMode === "basic"
-                        ? t("editor.start_writing_basic")Hint
-                        : t("editor.start_writing_advanced")Hint}
+                        ? t("editor.empty_basic_body")
+                        : t("editor.empty_advanced_body")}
                     </p>
                   </div>
                 ) : (
@@ -1014,7 +877,6 @@ export default function EditorView() {
                         onDragOver={() => { if (dragId && dragId !== block.id) setDropId(block.id); }}
                         onDragLeave={() => setDropId((prev) => prev === block.id ? null : prev)}
                         onDrop={() => handleDrop(block.id)}
-                        onEditPluginFigure={block.type === "plugin_figure" ? () => setEditingPluginFigureId(block.id) : undefined}
                       />
                     ))}
                     {/* Zona de click al final para agregar párrafo */}
@@ -1024,46 +886,31 @@ export default function EditorView() {
                       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                       onClick={() => addBlock("paragraph")}
                     >
-                      <IconPlus size={12} style={{ marginRight: 6 }} /> {t("editor.new_paragraph")}
+                      <IconPlus size={12} style={{ marginRight: 6 }} /> Nuevo párrafo
                     </div>
                   </>
                 )}
               </div>
             ) : (
               <div style={{ textAlign: "center", color: "var(--fg-faint)", marginTop: 80 }}>
-                {t("editor.select_section")}
+                Selecciona una sección en el árbol
               </div>
             )}
           </div>
         </div>
 
         {/* ── Panel derecho: metadata + diagnósticos ─────────────── */}
-        {metaPanelCollapsed ? (
-          <div className="editor-panel-rail editor-panel-rail-right">
-            <button
-              className="btn btn-ghost btn-icon"
-              onClick={() => setMetaPanelCollapsed(false)}
-              title={t("editor.show_project_guide")}
-              style={{ width: 28, height: 28, padding: 4 }}
-            >
-              ‹
-            </button>
-            <div className="editor-rail-label">{t("editor.guide")}</div>
-          </div>
-        ) : (
-          <EditorMetaPanel
-            project={activeProject}
-            wordCount={bodyWordCount}
-            blockCount={localBlocks.length}
-            maxWords={profileMaxWords}
-            activeSection={activeSection}
-            userMode={userMode}
-            onSave={saveMetadata}
-            onCompile={() => navigate(`/project/${encodedPath}/compile`)}
-            diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
-            onCollapse={() => setMetaPanelCollapsed(true)}
-          />
-        )}
+        <EditorMetaPanel
+          project={activeProject}
+          wordCount={bodyWordCount}
+          blockCount={localBlocks.length}
+          maxWords={profileMaxWords}
+          activeSection={activeSection}
+          userMode={userMode}
+          onSave={saveMetadata}
+          onCompile={() => navigate(`/project/${encodedPath}/compile`)}
+          diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
+        />
       </div>
 
       {/* Paneles de revisión ortográfica / gramatical */}
@@ -1132,19 +979,19 @@ export default function EditorView() {
           onClose={() => setGrammarPanelOpen(false)}
         />
       )}
+      </div>
 
       {/* Panel de asistente IA */}
-      {AI_ASSISTANT_ENABLED && aiPanel.isPanelOpen && (
-        <Suspense fallback={<LazyPanelFallback />}>
-          <AiAssistantPanel
-            currentSelection={aiSelection?.text}
-            aiSelection={aiSelection}
-            currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
-            currentFileContent={localBlocks
-              .filter((b) => b.type === "paragraph" || b.type === "heading")
-              .map((b) => ("content" in b ? b.content : ""))
-              .join("\n\n")}
-            onApplyReplacement={(original, replacement) => {
+      {aiPanel.isPanelOpen && (
+        <AiAssistantPanel
+          currentSelection={aiSelection?.text}
+          aiSelection={aiSelection}
+          currentFileName={activeSection ? `${activeSection.element_id}.tex` : undefined}
+          currentFileContent={localBlocks
+            .filter((b) => b.type === "paragraph" || b.type === "heading")
+            .map((b) => ("content" in b ? b.content : ""))
+            .join("\n\n")}
+          onApplyReplacement={(original, replacement) => {
             // Reemplazar SOLO usando la selección y posición exactas capturadas por el editor.
             // Si no hay selección ordinaria identificable, no aplicar nada.
             setLocalBlocks((prev) => {
@@ -1179,8 +1026,8 @@ export default function EditorView() {
               setAiSelection(null);
               return next;
             });
-            }}
-            onInsertAtCursor={(content) => {
+          }}
+          onInsertAtCursor={(content) => {
             // Insertar después del bloque activo (editingId) o del último bloque de la sección
             const newBlock: ContentBlock = {
               type: "raw_latex",
@@ -1205,36 +1052,30 @@ export default function EditorView() {
               scheduleAutoSave(next);
               return next;
             });
-            }}
-            onUndoLastChange={() => {
-              if (!lastAiUndoBlocks) return;
-              setLocalBlocks(lastAiUndoBlocks);
-              scheduleAutoSave(lastAiUndoBlocks);
-              setLastAiUndoBlocks(null);
-              setAiSelection(null);
-            }}
-            wide={aiPanelWide}
-            onToggleWide={() => setAiPanelWide((wide) => !wide)}
-          />
-        </Suspense>
+          }}
+          onUndoLastChange={() => {
+            if (!lastAiUndoBlocks) return;
+            setLocalBlocks(lastAiUndoBlocks);
+            scheduleAutoSave(lastAiUndoBlocks);
+            setLastAiUndoBlocks(null);
+            setAiSelection(null);
+          }}
+        />
       )}
-      </div>
 
       {/* Paleta de comandos (Ctrl+K) */}
       {paletteOpen && (
-        <Suspense fallback={<LazyPanelFallback />}>
-          <CommandPalette
-            sections={activeProject.sections}
-            userMode={userMode}
-            onInsertBlock={(type) => addBlock(type)}
-            onJumpSection={(id) => { setActiveSectionId(id); }}
-            onJumpToBlock={(sectionId, blockId) => {
-              setActiveSectionId(sectionId);
-              setJumpTargetBlockId(blockId);
-            }}
-            onClose={() => setPaletteOpen(false)}
-          />
-        </Suspense>
+        <CommandPalette
+          sections={activeProject.sections}
+          userMode={userMode}
+          onInsertBlock={(type) => addBlock(type)}
+          onJumpSection={(id) => { setActiveSectionId(id); }}
+          onJumpToBlock={(sectionId, blockId) => {
+            setActiveSectionId(sectionId);
+            setJumpTargetBlockId(blockId);
+          }}
+          onClose={() => setPaletteOpen(false)}
+        />
       )}
 
       {/* Modal: selector de tipo de Visual Block */}
@@ -1264,68 +1105,23 @@ export default function EditorView() {
               });
               setVisualSelectorOpen(null);
               setEditingId(blockId);
-            }} onExplorePluginFigures={activeProjectPath ? () => {
-              setVisualSelectorOpen(null);
-              setFigurePickerOpen(true);
-            } : undefined} />
+            }} />
           </div>
         </div>
       )}
 
       {/* Picker de citas (Ctrl+[) */}
       {citPickerOpen && (
-        <Suspense fallback={<LazyPanelFallback />}>
-          <CitationPickerModal
-            refs={bibRefs}
-            onInsert={(ref) => insertCitation(ref, "parenthetical")}
-            onClose={() => setCitPickerOpen(false)}
-            projectPath={activeProjectPath}
-            onBibUpdated={reloadBibRefs}
-          />
-        </Suspense>
-      )}
-
-      {/* Modal de figura generada por plugin */}
-      {figurePickerOpen && activeProjectPath && (
-        <Suspense fallback={<LazyPanelFallback />}>
-          <FigurePickerModal
-            projectPath={activeProjectPath}
-            onInsert={insertPluginFigure}
-            onClose={() => setFigurePickerOpen(false)}
-          />
-        </Suspense>
-      )}
-
-      {/* Modal de edición de figura de plugin existente */}
-      {editingPluginFigureBlock && activeProjectPath && (
-        <Suspense fallback={<LazyPanelFallback />}>
-          <FigureEditModal
-            block={editingPluginFigureBlock}
-            projectPath={activeProjectPath}
-            onUpdate={handlePluginFigureUpdated}
-            onClose={() => setEditingPluginFigureId(null)}
-          />
-        </Suspense>
-      )}
-
-      {/* ── Panel de versiones (snapshots) ───────────────────────── */}
-      {snapshotConfirm && (
-        <ConfirmDialog
-          title={snapshotConfirm.action === "restore" ? t("editor.restore_version_title") : t("editor.delete_version_title")}
-          message={snapshotConfirm.action === "restore"
-            ? t("editor.restore_version_message")
-            : t("editor.delete_version_message")}
-          confirmLabel={snapshotConfirm.action === "restore" ? t("editor.restore_version_title") : t("editor.delete_version_title")}
-          destructive={snapshotConfirm.action === "delete"}
-          busy={snapBusy}
-          onClose={() => setSnapshotConfirm(null)}
-          onConfirm={() => {
-            if (snapshotConfirm.action === "restore") restoreSnapshot(snapshotConfirm.filename);
-            else deleteSnapshot(snapshotConfirm.filename);
-          }}
+        <CitationPickerModal
+          refs={bibRefs}
+          onInsert={(ref) => insertCitation(ref, "parenthetical")}
+          onClose={() => setCitPickerOpen(false)}
+          projectPath={activeProjectPath}
+          onBibUpdated={reloadBibRefs}
         />
       )}
 
+      {/* ── Panel de versiones (snapshots) ───────────────────────── */}
       {snapshotsOpen && (
         <div
           style={{
@@ -1349,7 +1145,7 @@ export default function EditorView() {
               display: "flex", alignItems: "center", gap: 8,
             }}>
               <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)", flex: 1 }}>
-                {t("editor.saved_versions")}
+                {t("editor.snapshots_title")}
               </span>
               <button className="btn btn-ghost btn-icon" onClick={() => setSnapshotsOpen(false)}>
                 <IconX size={13} />
@@ -1359,13 +1155,13 @@ export default function EditorView() {
             {/* Crear nuevo snapshot */}
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6 }}>
-                {t("editor.save_current_version")}
+                {t("editor.snapshot_save_current")}
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <input
                   value={newSnapLabel}
                   onChange={(e) => setNewSnapLabel(e.target.value)}
-                  placeholder={t("editor.version_name_placeholder")}
+                  placeholder={t("editor.snapshot_name_placeholder")}
                   disabled={snapBusy}
                   onKeyDown={(e) => { if (e.key === "Enter" && newSnapLabel.trim()) handleCreateSnapshot(); }}
                   style={{
@@ -1388,9 +1184,9 @@ export default function EditorView() {
             <div style={{ flex: 1, overflow: "auto", padding: "4px 0" }} className="scroll">
               {snapshots.length === 0 ? (
                 <div style={{ padding: "36px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
-                  {t("editor.no_saved_versions")}
+                  {t("editor.no_snapshots")}
                   <br />
-                  <span style={{ fontSize: "var(--fs-xs)" }}>{t("editor.create_one_hint")}</span>
+                  <span style={{ fontSize: "var(--fs-xs)" }}>{t("editor.no_snapshots_hint")}</span>
                 </div>
               ) : (
                 snapshots.map((snap) => (
@@ -1412,8 +1208,8 @@ export default function EditorView() {
                     <button
                       className="btn btn-ghost btn-sm"
                       disabled={snapBusy}
-                      onClick={() => setSnapshotConfirm({ action: "restore", filename: snap.filename })}
-                      title={t("editor.restore_this_version")}
+                      onClick={() => handleRestoreSnapshot(snap.filename)}
+                      title={t("editor.snapshot_restore_title")}
                       style={{ fontSize: "var(--fs-xs)", flexShrink: 0 }}
                     >
                       <IconRefresh size={10} /> {t("editor.restore")}
@@ -1421,8 +1217,8 @@ export default function EditorView() {
                     <button
                       className="btn btn-ghost btn-icon"
                       disabled={snapBusy}
-                      onClick={() => setSnapshotConfirm({ action: "delete", filename: snap.filename })}
-                      title={t("editor.delete_version")}
+                      onClick={() => handleDeleteSnapshot(snap.filename)}
+                      title={t("editor.snapshot_delete_title")}
                       style={{ padding: 4, opacity: 0.55, flexShrink: 0 }}
                     >
                       <IconTrash size={11} />

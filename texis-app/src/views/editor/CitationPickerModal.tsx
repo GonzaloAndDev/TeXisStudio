@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconCheck, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { BatchDoiResult, BibReference, ZoteroImportResult, ZoteroItem, ZoteroStatus } from "../../types";
@@ -18,6 +19,7 @@ export function CitationPickerModal({
   projectPath: string | null;
   onBibUpdated: () => void;
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [citationType, setCitationType] = useState<"parenthetical" | "narrative" | "footnote">("parenthetical");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +54,7 @@ export function CitationPickerModal({
 
   const checkZotero = async () => {
     setZoteroChecked(false);
-    const status = await api.checkZoteroStatus().catch(() => ({ available: false, version: null, message: "Error al conectar." }));
+    const status = await api.checkZoteroStatus().catch(() => ({ available: false, version: null, message: t("citation.error_connect") }));
     setZoteroStatus(status);
     setZoteroChecked(true);
     if (status.available) {
@@ -207,7 +209,7 @@ export function CitationPickerModal({
         {/* Header */}
         <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", flex: 1 }}>
-            Insertar cita bibliográfica
+            {t("citation.insert_title")}
           </span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)" }}>
             <IconX size={14} />
@@ -216,7 +218,7 @@ export function CitationPickerModal({
 
         {/* Tipo de cita */}
         <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--border-subtle)", display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>Tipo:</span>
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>{t("citation.type")}:</span>
           {(["parenthetical", "narrative", "footnote"] as const).map((t) => (
             <button
               key={t}
@@ -237,7 +239,7 @@ export function CitationPickerModal({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por clave, título, autor o año…"
+            placeholder={t("citation.search_placeholder")}
             style={{
               flex: 1, border: "none", outline: "none", background: "transparent",
               fontSize: "var(--fs-sm)", color: "var(--fg-strong)",
@@ -265,7 +267,7 @@ export function CitationPickerModal({
                   marginBottom: -1,
                 }}
               >
-                {m === "single" ? "Un DOI" : m === "batch" ? "Múltiples DOIs" : "Zotero"}
+                {m === "single" ? t("citation.single_doi") : m === "batch" ? t("citation.multiple_dois") : "Zotero"}
               </button>
             ))}
           </div>
@@ -290,7 +292,7 @@ export function CitationPickerModal({
                   className="btn btn-sm btn-accent"
                   style={{ fontSize: 11, whiteSpace: "nowrap" }}
                 >
-                  {doiLoading ? "Buscando…" : "Buscar"}
+                  {doiLoading ? t("common.loading") : t("common.search")}
                 </button>
               </div>
               {doiError && (
@@ -311,10 +313,10 @@ export function CitationPickerModal({
                   />
                   <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                     <button onClick={handleDoiSave} disabled={doiSaved || !projectPath} className="btn btn-sm btn-accent" style={{ fontSize: 11 }}>
-                      {doiSaved ? "✓ Agregado" : "Agregar al .bib"}
+                      {doiSaved ? t("citation.added_check") : t("citation.add_to_bib")}
                     </button>
                     <button onClick={() => navigator.clipboard.writeText(doiResult!)} className="btn btn-sm btn-ghost" style={{ fontSize: 11 }}>
-                      Copiar BibTeX
+                      {t("citation.copy_bibtex")}
                     </button>
                   </div>
                 </div>
@@ -325,7 +327,7 @@ export function CitationPickerModal({
           {doiMode === "batch" && (
             <div style={{ padding: "10px 16px" }}>
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 6 }}>
-                Un DOI por línea (también separados por coma o punto y coma):
+                {t("citation.batch_hint")}
               </div>
               <textarea
                 value={batchInput}
@@ -346,11 +348,11 @@ export function CitationPickerModal({
                   className="btn btn-sm btn-accent"
                   style={{ fontSize: 11 }}
                 >
-                  {batchLoading ? "Importando…" : "Buscar todos"}
+                  {batchLoading ? t("citation.importing") : t("citation.search_all")}
                 </button>
                 {batchResults.some((r) => r.bibtex && !batchSaved.has(r.doi)) && (
                   <button onClick={handleBatchSaveAll} className="btn btn-sm btn-ghost" style={{ fontSize: 11 }} disabled={!projectPath}>
-                    Agregar todos al .bib
+                    {t("citation.add_all_to_bib")}
                   </button>
                 )}
               </div>
@@ -369,7 +371,7 @@ export function CitationPickerModal({
                       {r.error && <span style={{ color: "var(--build-err)", flexShrink: 0 }}>{r.error}</span>}
                       {r.bibtex && !r.error && !batchSaved.has(r.doi) && (
                         <button onClick={() => handleBatchSaveOne(r)} className="btn btn-xs btn-accent" disabled={!projectPath} style={{ flexShrink: 0 }}>
-                          Agregar
+                          {t("common.add")}
                         </button>
                       )}
                       {batchSaved.has(r.doi) && <span style={{ color: "var(--build-ok)", flexShrink: 0 }}>✓</span>}
@@ -386,18 +388,18 @@ export function CitationPickerModal({
               {!zoteroChecked ? (
                 <div style={{ textAlign: "center", padding: "12px 0" }}>
                   <button onClick={checkZotero} className="btn btn-sm btn-accent">
-                    Detectar Zotero
+                    {t("citation.detect_zotero")}
                   </button>
                   <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 6 }}>
-                    Requiere Zotero + plugin Better BibTeX en ejecución.
+                    {t("citation.zotero_requirement")}
                   </div>
                 </div>
               ) : !zoteroStatus?.available ? (
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "center", padding: "8px 0" }}>
-                  <div style={{ marginBottom: 4 }}>Zotero no está disponible.</div>
+                  <div style={{ marginBottom: 4 }}>{t("citation.zotero_unavailable")}</div>
                   <div style={{ color: "var(--fg-faint)" }}>{zoteroStatus?.message}</div>
                   <button onClick={checkZotero} className="btn btn-xs btn-ghost" style={{ marginTop: 8 }}>
-                    Reintentar
+                    {t("editor.retry")}
                   </button>
                 </div>
               ) : (
@@ -407,7 +409,7 @@ export function CitationPickerModal({
                       value={zoteroQuery}
                       onChange={(e) => setZoteroQuery(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleZoteroSearch(zoteroQuery); }}
-                      placeholder="Buscar en tu librería Zotero…"
+                      placeholder={t("citation.zotero_search_placeholder")}
                       style={{
                         flex: 1, border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)",
                         padding: "5px 8px", fontSize: "var(--fs-xs)",
@@ -419,7 +421,7 @@ export function CitationPickerModal({
                       disabled={zoteroLoading}
                       className="btn btn-xs btn-ghost"
                     >
-                      {zoteroLoading ? "…" : "Buscar"}
+                      {zoteroLoading ? "…" : t("common.search")}
                     </button>
                   </div>
 
@@ -461,8 +463,8 @@ export function CitationPickerModal({
                       style={{ marginTop: 8, fontSize: 11 }}
                     >
                       {zoteroImporting
-                        ? "Importando…"
-                        : `Importar ${zoteroSelected.size} referencia${zoteroSelected.size > 1 ? "s" : ""} al .bib`}
+                        ? t("citation.importing")
+                        : t("citation.import_refs_to_bib", { count: zoteroSelected.size })}
                     </button>
                   )}
 
@@ -483,15 +485,15 @@ export function CitationPickerModal({
         <div style={{ flex: 1, overflow: "auto" }} className="scroll">
           {refs.length === 0 && (
             <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--fg-faint)" }}>
-              <div style={{ fontSize: "var(--fs-sm)", marginBottom: 6 }}>No se encontró el archivo .bib</div>
+              <div style={{ fontSize: "var(--fs-sm)", marginBottom: 6 }}>{t("citation.bib_not_found")}</div>
               <div style={{ fontSize: "var(--fs-xs)" }}>
-                Crea <span style={{ fontFamily: "var(--font-mono)" }}>content/bibliography/references.bib</span> en tu proyecto.
+                {t("citation.create_bib_prefix")} <span style={{ fontFamily: "var(--font-mono)" }}>content/bibliography/references.bib</span> {t("citation.create_bib_suffix")}
               </div>
             </div>
           )}
           {refs.length > 0 && filtered.length === 0 && (
             <div style={{ padding: "32px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
-              Sin resultados para «{query}»
+              {t("citation.no_results", { query })}
             </div>
           )}
           {filtered.map((ref) => (
@@ -520,7 +522,7 @@ export function CitationPickerModal({
                   {ref.key}
                 </div>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", lineHeight: 1.3, marginBottom: 3 }}>
-                  {ref.title || <em style={{ color: "var(--fg-faint)" }}>Sin título</em>}
+                  {ref.title || <em style={{ color: "var(--fg-faint)" }}>{t("citation.no_title")}</em>}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {ref.author && <span>{ref.author.split(" and ")[0]}{ref.author.includes(" and ") ? " et al." : ""}</span>}
@@ -551,4 +553,3 @@ export function CitationPickerModal({
       </div>
   );
 }
-

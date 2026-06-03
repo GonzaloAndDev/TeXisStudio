@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { IconDownload, IconEdit, IconPlus, IconTrash, IconX } from "../../components/Icons";
 import type { ProfileInfo, ProfileSectionInfo } from "../../types";
 import { PLACEMENT_COLOR, PLACEMENT_LABEL } from "./constants";
@@ -5,16 +7,16 @@ import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
 import { useSettingsStore } from "../../stores/settings";
 
 const DEGREE_TAGS = new Set(["licenciatura", "maestria", "doctorado", "especialidad", "posdoctorado"]);
-const DEGREE_LABEL: Record<string, string> = {
-  licenciatura: "Licenciatura", maestria: "Maestría", doctorado: "Doctorado",
-  especialidad: "Especialidad", posdoctorado: "Posdoctorado",
+const DEGREE_LABEL_KEY: Record<string, string> = {
+  licenciatura: "home.level_licenciatura", maestria: "home.level_maestria", doctorado: "home.level_doctorado",
+  especialidad: "home.level_especialidad", posdoctorado: "home.level_posdoctorado",
 };
 
-function statusMeaning(status: string): { icon: string; text: string; color: string } {
+function statusMeaning(status: string, t: TFunction): { icon: string; text: string; color: string } {
   switch (status) {
-    case "verified": return { icon: "✓", text: "Verificado con evidencia técnica real (CI + compilación comprobada)", color: "var(--build-ok)" };
-    case "reviewed": return { icon: "●", text: "Revisado por un editor humano con trazabilidad de fuentes", color: "var(--accent-deep)" };
-    case "experimental": return { icon: "○", text: "En desarrollo — puede contener errores o estar incompleto", color: "var(--build-warn)" };
+    case "verified": return { icon: "✓", text: t("library.status_verified_meaning"), color: "var(--build-ok)" };
+    case "reviewed": return { icon: "●", text: t("library.status_reviewed_meaning"), color: "var(--accent-deep)" };
+    case "experimental": return { icon: "○", text: t("library.status_experimental_meaning"), color: "var(--build-warn)" };
     default: return { icon: "—", text: status, color: "var(--fg-faint)" };
   }
 }
@@ -25,19 +27,11 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
   profile: ProfileInfo; onClose: () => void; onEdit: () => void;
   onUse: () => void; onExport: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const { userMode } = useSettingsStore();
   const degreeTags = (profile.tags ?? []).filter((t) => DEGREE_TAGS.has(t));
   const otherTags  = (profile.tags ?? []).filter((t) => !DEGREE_TAGS.has(t) && t !== "tesis" && t !== "tesina");
-  const statusInfo = statusMeaning(profile.status);
-  const certificationChecks = [
-    { ok: profile.status === "verified", label: "Estado verificado" },
-    { ok: (profile.verification?.source_urls?.length ?? 0) > 0, label: "Fuente institucional registrada" },
-    { ok: !!profile.verification?.ci_evidence, label: "Evidencia CI o PDF muestra" },
-    { ok: !!profile.verification?.verified_at || !!profile.verification?.reviewed_at, label: "Fecha de revision trazable" },
-  ];
-  const certificationScore = Math.round(
-    (certificationChecks.filter((item) => item.ok).length / certificationChecks.length) * 100
-  );
+  const statusInfo = statusMeaning(profile.status, t);
 
   const sectionsByPlacement = (profile.sections ?? []).reduce<Record<string, ProfileSectionInfo[]>>(
     (acc, s) => { const k = s.placement; if (!acc[k]) acc[k] = []; acc[k].push(s); return acc; }, {}
@@ -47,10 +41,10 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
   return (
     <div style={{ width: 320, flexShrink: 0, borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>Detalle del perfil</span>
+        <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{t("library.profile_detail")}</span>
         <div style={{ display: "flex", gap: 4 }}>
           <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding: "3px 8px" }}>
-            <IconEdit size={12} /> Editar
+            <IconEdit size={12} /> {t("common.edit")}
           </button>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}>
             <IconX size={14} />
@@ -71,13 +65,13 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
           {/* Cobertura — legible para neófitos */}
           <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
             <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-faint)", marginBottom: 6 }}>
-              Cobertura
+              {t("library.coverage")}
             </div>
             {degreeTags.length > 0 && (
               <div style={{ marginBottom: 4, display: "flex", gap: 4, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>Grado:</span>
-                {degreeTags.map((t) => (
-                  <span key={t} className="chip" style={{ fontSize: 9 }}>{DEGREE_LABEL[t] ?? t}</span>
+                <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>{t("library.degree_filter")}:</span>
+                {degreeTags.map((tag) => (
+                  <span key={tag} className="chip" style={{ fontSize: 9 }}>{DEGREE_LABEL_KEY[tag] ? t(DEGREE_LABEL_KEY[tag]) : tag}</span>
                 ))}
               </div>
             )}
@@ -89,7 +83,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
               </div>
             )}
             {degreeTags.length === 0 && otherTags.length === 0 && (
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>Sin etiquetas de cobertura</span>
+              <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("library.no_coverage_tags")}</span>
             )}
           </div>
 
@@ -100,34 +94,17 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
           </div>
 
           {/* Evidencia de verificación */}
-          <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-faint)" }}>
-                Confianza profesional
-              </span>
-              <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: certificationScore >= 75 ? "var(--build-ok)" : "var(--build-warn)" }}>
-                {certificationScore}%
-              </span>
-            </div>
-            {certificationChecks.map((item) => (
-              <div key={item.label} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: "var(--fs-xs)", color: item.ok ? "var(--fg-muted)" : "var(--build-warn)", lineHeight: 1.6 }}>
-                <span style={{ color: item.ok ? "var(--build-ok)" : "var(--build-warn)", fontWeight: 700 }}>{item.ok ? "OK" : "!"}</span>
-                {item.label}
-              </div>
-            ))}
-          </div>
-
           {profile.verification && (
             <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
               {profile.verification.verified_at && (
-                <div>Verificado el {profile.verification.verified_at}{profile.verification.verified_by ? ` por ${profile.verification.verified_by}` : ""}</div>
+                <div>{t("library.verified_at", { date: profile.verification.verified_at, by: profile.verification.verified_by ? t("library.by_person", { person: profile.verification.verified_by }) : "" })}</div>
               )}
               {profile.verification.reviewed_at && !profile.verification.verified_at && (
-                <div>Revisado el {profile.verification.reviewed_at}{profile.verification.reviewed_by ? ` por ${profile.verification.reviewed_by}` : ""}</div>
+                <div>{t("library.reviewed_at", { date: profile.verification.reviewed_at, by: profile.verification.reviewed_by ? t("library.by_person", { person: profile.verification.reviewed_by }) : "" })}</div>
               )}
               {profile.verification.source_urls?.length > 0 && (
                 <div style={{ marginTop: 3 }}>
-                  Fuente: {profile.verification.source_urls.slice(0, 1).map((url, i) => (
+                  {t("library.source")}: {profile.verification.source_urls.slice(0, 1).map((url, i) => (
                     <span key={i} style={{ wordBreak: "break-all" }}>{url.replace(/^https?:\/\//, "")}</span>
                   ))}
                   {profile.verification.source_urls.length > 1 && ` +${profile.verification.source_urls.length - 1}`}
@@ -136,7 +113,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
               {profile.verification.ci_evidence && (
                 <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ color: "var(--build-ok)", fontWeight: 700, fontSize: 10 }}>✓</span>
-                  <span>Evidencia CI disponible</span>
+                  <span>{t("library.ci_evidence_available")}</span>
                 </div>
               )}
             </div>
@@ -146,7 +123,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
         {/* Detalles técnicos — solo en modo avanzado */}
         {userMode === "advanced" && (
         <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
-          {[["Motor LaTeX", profile.latex_engine ?? "xelatex"], ["Bibliografía", profile.bibliography_style?.toUpperCase() ?? "APA"], ["Clase", profile.document_class ?? "book"], ["Autor", profile.author ?? "—"], ["Licencia", profile.license ?? "—"]].map(([k, v]) => (
+          {[[t("library.latex_engine"), profile.latex_engine ?? "xelatex"], [t("library.bibliography"), profile.bibliography_style?.toUpperCase() ?? "APA"], [t("library.document_class"), profile.document_class ?? "book"], [t("library.author"), profile.author ?? "—"], [t("library.license"), profile.license ?? "—"]].map(([k, v]) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{k}</span>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", fontFamily: "var(--font-mono)" }}>{v}</span>
@@ -156,7 +133,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
         )}
         {userMode === "basic" && (
         <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
-          {[["Estilo de citas", profile.bibliography_style?.toUpperCase() ?? "APA"], ["Autor del perfil", profile.author ?? "—"]].map(([k, v]) => (
+          {[[t("library.citation_style"), profile.bibliography_style?.toUpperCase() ?? "APA"], [t("library.profile_author"), profile.author ?? "—"]].map(([k, v]) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{k}</span>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)" }}>{v}</span>
@@ -165,7 +142,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
         </div>
         )}
         <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 10 }}>
-          Secciones ({profile.sections_count ?? profile.sections?.length ?? 0})
+          {t("library.sections_count", { count: profile.sections_count ?? profile.sections?.length ?? 0 })}
         </div>
         {placementOrder.map((placement) => {
           const secs = sectionsByPlacement[placement];
@@ -178,7 +155,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
               {secs.map((s) => (
                 <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", borderRadius: "var(--r-sm)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", marginBottom: 4 }}>
                   <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)" }}>{s.title ?? s.id}</span>
-                  {s.required ? <span style={{ fontSize: 9, color: "var(--accent-deep)", fontWeight: 600 }}>requerida</span> : <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>opcional</span>}
+                  {s.required ? <span style={{ fontSize: 9, color: "var(--accent-deep)", fontWeight: 600 }}>{t("library.required")}</span> : <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>{t("wizard.optional")}</span>}
                 </div>
               ))}
             </div>
@@ -186,13 +163,12 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
         })}
       </div>
       <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", flexDirection: "column", gap: 8 }}>
-        <button className="btn btn-accent" style={{ width: "100%" }} onClick={onUse}><IconPlus size={13} /> Nuevo proyecto con este perfil</button>
+        <button className="btn btn-accent" style={{ width: "100%" }} onClick={onUse}><IconPlus size={13} /> {t("library.new_project_with_profile")}</button>
         <div style={{ display: "flex", gap: 6 }}>
-          <button className="btn" style={{ flex: 1 }} onClick={onExport}><IconDownload size={13} /> Exportar</button>
-          <button className="btn btn-ghost" style={{ padding: "6px 10px", color: "var(--build-err)" }} onClick={onDelete} title="Eliminar perfil"><IconTrash size={13} /></button>
+          <button className="btn" style={{ flex: 1 }} onClick={onExport}><IconDownload size={13} /> {t("common.export", { defaultValue: "Exportar" })}</button>
+          <button className="btn btn-ghost" style={{ padding: "6px 10px", color: "var(--build-err)" }} onClick={onDelete} title={t("library.delete_profile")}><IconTrash size={13} /></button>
         </div>
       </div>
     </div>
   );
 }
-

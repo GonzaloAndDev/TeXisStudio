@@ -1,70 +1,52 @@
 {
   "folders": [
     {
-      "name": "TeXisStudio",
       "path": "."
     },
     {
-      "name": "TeXisStudio-Languages",
       "path": "../TeXisStudio-Languages"
     },
     {
-      "name": "TeXisStudio-Profiles",
       "path": "../TeXisStudio-Profiles"
     },
     {
-      "name": "Lenguas",
-      "path": "../Lenguas"
-    },
-    {
-      "name": "TeXisStudio-Plugins",
       "path": "../TeXisStudio-Plugins"
     }
   ],
   "settings": {
-    "java.autobuild.enabled": false,
-    "task.autoDetect": "off",
-    "npm.autoDetect": "off",
-    "typescript.tsc.autoDetect": "off",
-    "gulp.autoDetect": "off",
-    "grunt.autoDetect": "off",
-    "jake.autoDetect": "off",
-    "cmake.configureOnOpen": false
+    "java.autobuild.enabled": false
   },
   "launch": {
     "version": "0.2.0",
     "configurations": [
       {
         "name": "TeXisStudio: Dev",
-        "type": "node-terminal",
+        "type": "node",
         "request": "launch",
-        "command": "./run",
-        "windows": {
-          "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder:TeXisStudio}\\run.ps1"
-        },
-        "cwd": "${workspaceFolder:TeXisStudio}",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
         "presentation": { "group": "texis", "order": 1 }
       },
       {
         "name": "TeXisStudio: Build",
-        "type": "node-terminal",
+        "type": "node",
         "request": "launch",
-        "command": "./build",
-        "windows": {
-          "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder:TeXisStudio}\\build.ps1"
-        },
-        "cwd": "${workspaceFolder:TeXisStudio}",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "build"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
         "presentation": { "group": "texis", "order": 2 }
       },
       {
         "name": "TeXisStudio: Frontend only",
-        "type": "node-terminal",
+        "type": "node",
         "request": "launch",
-        "command": "./check",
-        "windows": {
-          "command": "powershell -ExecutionPolicy Bypass -File ${workspaceFolder:TeXisStudio}\\check.ps1"
-        },
-        "cwd": "${workspaceFolder:TeXisStudio}",
+        "runtimeExecutable": "node",
+        "runtimeArgs": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
+        "console": "integratedTerminal",
+        "skipFiles": ["<node_internals>/**"],
         "presentation": { "group": "texis", "order": 3 }
       }
     ]
@@ -75,18 +57,8 @@
       {
         "label": "TeXisStudio: Run app",
         "type": "shell",
-        "command": "./run",
-        "args": [],
-        "windows": {
-          "command": "powershell",
-          "args": [
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            "${workspaceFolder:TeXisStudio}\\run.ps1"
-          ]
-        },
-        "options": { "cwd": "${workspaceFolder:TeXisStudio}" },
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "dev"],
         "group": { "kind": "build", "isDefault": true },
         "problemMatcher": [],
         "presentation": {
@@ -98,18 +70,8 @@
       {
         "label": "TeXisStudio: Build current OS",
         "type": "shell",
-        "command": "./build",
-        "args": [],
-        "windows": {
-          "command": "powershell",
-          "args": [
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            "${workspaceFolder:TeXisStudio}\\build.ps1"
-          ]
-        },
-        "options": { "cwd": "${workspaceFolder:TeXisStudio}" },
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "build"],
         "group": "build",
         "problemMatcher": [],
         "presentation": {
@@ -121,18 +83,8 @@
       {
         "label": "TeXisStudio: Frontend only",
         "type": "shell",
-        "command": "./check",
-        "args": [],
-        "windows": {
-          "command": "powershell",
-          "args": [
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            "${workspaceFolder:TeXisStudio}\\check.ps1"
-          ]
-        },
-        "options": { "cwd": "${workspaceFolder:TeXisStudio}" },
+        "command": "node",
+        "args": ["${workspaceFolder}/scripts/texis.mjs", "frontend-build"],
         "group": "test",
         "problemMatcher": [],
         "presentation": {

@@ -4,6 +4,8 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconCheck, IconChevronR, IconErr, IconRefresh, IconWarn,
@@ -380,9 +382,26 @@ function getPlatformLabel(platform: Platform): string {
   return platform;
 }
 
+function localizeOption(option: InstallOption, platform: Platform, t: TFunction): InstallOption {
+  const baseKey = `setup_latex.options.${platform}.${option.id}`;
+  return {
+    ...option,
+    tagline: t(`${baseKey}.tagline`, { defaultValue: option.tagline }),
+    description: t(`${baseKey}.description`, { defaultValue: option.description }),
+    pros: option.pros.map((value, index) => t(`${baseKey}.pros.${index}`, { defaultValue: value })),
+    cons: option.cons.map((value, index) => t(`${baseKey}.cons.${index}`, { defaultValue: value })),
+    steps: option.steps.map((step, index) => ({
+      ...step,
+      title: t(`${baseKey}.steps.${index}.title`, { defaultValue: step.title }),
+      note: t(`${baseKey}.steps.${index}.note`, { defaultValue: step.note }),
+    })),
+  };
+}
+
 // ── Componente de estado de detección ────────────────────────────
 
 function DetectionStatus({ info }: { info: LatexInfo | null }) {
+  const { t } = useTranslation();
   const items = [
     { label: "latexmk",  ok: info?.has_latexmk  ?? false, version: info?.latexmk_version },
     { label: "xelatex",  ok: info?.has_xelatex  ?? false },
@@ -416,7 +435,7 @@ function DetectionStatus({ info }: { info: LatexInfo | null }) {
               </div>
             )}
             {!item.ok && (
-              <div style={{ fontSize: 10, color: "var(--build-err)", marginTop: 1 }}>no encontrado</div>
+              <div style={{ fontSize: 10, color: "var(--build-err)", marginTop: 1 }}>{t("setup_latex.not_found")}</div>
             )}
           </div>
         </div>
@@ -436,6 +455,7 @@ function OptionCard({
   recommended: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       onClick={onClick}
@@ -464,11 +484,11 @@ function OptionCard({
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           {recommended && !installed && (
-            <span className="chip chip-accent" style={{ fontSize: 10 }}>recomendado</span>
+            <span className="chip chip-accent" style={{ fontSize: 10 }}>{t("wizard.recommended")}</span>
           )}
           {installed && (
             <span className="chip chip-ok" style={{ fontSize: 10 }}>
-              <IconCheck size={8} sw={2.5} /> instalado
+              <IconCheck size={8} sw={2.5} /> {t("settings.community_installed")}
             </span>
           )}
         </div>
@@ -490,6 +510,7 @@ function OptionCard({
 // ── Panel de instrucciones ────────────────────────────────────────
 
 function InstructionsPanel({ option }: { option: InstallOption }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {option.steps.map((step, i) => (
@@ -539,7 +560,7 @@ function InstructionsPanel({ option }: { option: InstallOption }) {
           textDecoration: "none", alignSelf: "flex-start", marginTop: 4,
         }}
       >
-        Sitio oficial de {option.name} <IconChevronR size={12} />
+        {t("setup_latex.official_site", { name: option.name })} <IconChevronR size={12} />
       </a>
     </div>
   );
@@ -570,6 +591,7 @@ function SummaryCard({
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function SetupLatexView() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const userMode = useSettingsStore((s) => s.userMode);
   const [info, setInfo]         = useState<LatexInfo | null>(null);
@@ -601,22 +623,23 @@ export default function SetupLatexView() {
   const options      = getOptionsForPlatform(platform);
   const recommendedId = options[0].id;
   const activeId     = selectedId ?? recommendedId;
-  const selectedOption = options.find((o) => o.id === activeId) ?? options[0];
+  const displayOptions = options.map((option) => localizeOption(option, platform, t));
+  const selectedDisplayOption = displayOptions.find((o) => o.id === activeId) ?? displayOptions[0];
 
   const installedIds = new Set<string>();
   if (info?.has_tectonic)   installedIds.add("tectonic");
   if (info?.latexmk_usable) { installedIds.add("miktex"); installedIds.add("texlive"); installedIds.add("mactex"); }
 
   const guidedBody = info?.is_usable
-    ? "Ya puedes generar tu PDF desde TeXisStudio. Si un perfil institucional pide algo más, la app te lo irá señalando antes de entregar."
-    : `En ${getPlatformLabel(platform)}, la opción más recomendada es ${options[0].name}. Sigue los pasos guiados debajo para dejarlo listo.`;
+    ? t("setup_latex.guided_ready")
+    : t("setup_latex.guided_recommendation", { platform: getPlatformLabel(platform), name: displayOptions[0].name });
 
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ Preparar generación de PDF</span></>}
+        left={<><TxLogo /><span style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)" }}>/ {t("setup_latex.nav_title")}</span></>}
         center={null}
-        right={<button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>← Volver</button>}
+        right={<button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>← {t("common.back")}</button>}
       />
 
       <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)", overflow: "auto" }} className="scroll">
@@ -625,18 +648,17 @@ export default function SetupLatexView() {
           {/* Encabezado */}
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: "0 0 6px", color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>
-              Preparar la generación de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>PDF</em>
+              {t("setup_latex.heading_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>PDF</em>
             </h1>
             <p style={{ margin: 0, color: "var(--fg-muted)", fontSize: "var(--fs-md)", maxWidth: 580 }}>
-              TeXisStudio se encarga del formato y la compilación, pero necesita una herramienta instalada en tu equipo para convertir tu tesis en PDF.
-              No necesitas aprender LaTeX: elige la ruta más sencilla para tu sistema.
+              {t("setup_latex.intro")}
             </p>
             <div style={{ marginTop: 10 }}>
               <AiHelpButton
                 panel="setup_latex"
                 mode="app_help"
-                label="Ayúdame a elegir"
-                question="Estoy en la pantalla para preparar la generación de PDF. ¿Cuál opción me conviene más si solo quiero empezar a compilar mi tesis sin meterme a detalles técnicos?"
+                label={t("setup_latex.help_label")}
+                question={t("setup_latex.help_question")}
                 variant="ghost"
               />
             </div>
@@ -645,11 +667,11 @@ export default function SetupLatexView() {
           {/* Resumen */}
           <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 14, marginBottom: 24 }}>
             <SummaryCard
-              title={`Sistema detectado: ${getPlatformLabel(platform)}`}
-              body="Solo se muestran las opciones disponibles y recomendadas para tu sistema operativo."
+              title={t("setup_latex.detected_system", { platform: getPlatformLabel(platform) })}
+              body={t("setup_latex.system_body")}
             />
             <SummaryCard
-              title={info?.is_usable ? "Tu equipo ya está listo" : "Recomendación inicial"}
+              title={info?.is_usable ? t("setup_latex.ready_title") : t("setup_latex.initial_recommendation")}
               body={guidedBody}
               tone={info?.is_usable ? "ok" : "info"}
             />
@@ -658,10 +680,10 @@ export default function SetupLatexView() {
           {/* Detección */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
-              Comprobación del equipo
+              {t("setup_latex.environment_check")}
             </div>
             <button className="btn btn-sm" onClick={() => handleDetect()} disabled={detecting} style={{ fontSize: "var(--fs-xs)" }}>
-              <IconRefresh size={12} /> {detecting ? "Detectando…" : "Volver a detectar"}
+              <IconRefresh size={12} /> {detecting ? t("setup_latex.detecting") : t("setup_latex.detect_again")}
             </button>
           </div>
 
@@ -670,19 +692,19 @@ export default function SetupLatexView() {
               {info.is_usable ? (
                 <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20, background: "var(--build-ok-tint)", border: "1px solid var(--build-ok)", display: "flex", gap: 8, alignItems: "center", fontSize: "var(--fs-sm)", color: "var(--build-ok)" }}>
                   <IconCheck size={13} sw={2.5} />
-                  <strong>Todo listo.</strong> Ya puedes generar tu PDF desde el editor.{userMode === "advanced" && <> Motores disponibles: {info.available_backends.join(", ")}.</>}
+                  <strong>{t("setup_latex.all_ready")}</strong> {t("setup_latex.can_generate_pdf")}{userMode === "advanced" && <> {t("setup_latex.available_engines", { engines: info.available_backends.join(", ") })}</>}
                 </div>
               ) : (
                 <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", marginBottom: 20, background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", display: "flex", gap: 8, alignItems: "center", fontSize: "var(--fs-sm)", color: "var(--accent-deep)" }}>
                   <IconWarn size={13} />
-                  Aún no encontramos una herramienta para generar el PDF. Elige una opción debajo y sigue los pasos guiados.
+                  {t("setup_latex.no_tool_found")}
                 </div>
               )}
               <DetectionStatus info={info} />
             </>
           ) : (
             <div style={{ padding: "20px 0 24px", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
-              {detecting ? "Detectando instalaciones…" : "No se pudo detectar el estado (modo browser)."}
+              {detecting ? t("setup_latex.detecting_installs") : t("setup_latex.detect_failed_browser")}
             </div>
           )}
 
@@ -697,18 +719,17 @@ export default function SetupLatexView() {
               <span style={{ fontSize: 22, flexShrink: 0 }}>⭐</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-md)", marginBottom: 4 }}>
-                  Si no sabes cuál elegir, instala <strong>{options[0].name}</strong>
+                  {t("setup_latex.basic_recommend_title", { name: displayOptions[0].name })}
                 </div>
                 <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-                  {options[0].tagline} — cubre la mayoría de los casos sin configuración extra.
-                  Puedes instalar otra opción después si la necesitas.
+                  {displayOptions[0].tagline} — {t("setup_latex.basic_recommend_body")}
                 </div>
                 <button
                   className="btn btn-sm btn-accent"
                   style={{ marginTop: 10 }}
                   onClick={() => setSelectedId(options[0].id)}
                 >
-                  Ver pasos para instalar {options[0].name}
+                  {t("setup_latex.view_install_steps", { name: displayOptions[0].name })}
                 </button>
               </div>
             </div>
@@ -716,10 +737,10 @@ export default function SetupLatexView() {
 
           {/* Opciones para este OS */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-            {userMode === "basic" ? "Todas las opciones disponibles" : `Opciones disponibles en ${getPlatformLabel(platform)}`}
+            {userMode === "basic" ? t("setup_latex.all_options") : t("setup_latex.options_for_platform", { platform: getPlatformLabel(platform) })}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12, marginBottom: 32 }}>
-            {options.map((opt) => (
+            {displayOptions.map((opt) => (
               <OptionCard
                 key={opt.id}
                 option={opt}
@@ -733,19 +754,19 @@ export default function SetupLatexView() {
 
           {/* Instrucciones */}
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 20 }}>
-            Pasos guiados — {selectedOption.name} en {getPlatformLabel(platform)}
+            {t("setup_latex.guided_steps", { name: selectedDisplayOption.name, platform: getPlatformLabel(platform) })}
           </div>
           <div style={{ maxWidth: 640 }}>
-            <InstructionsPanel option={selectedOption} />
+            <InstructionsPanel option={selectedDisplayOption} />
           </div>
 
           {userMode === "advanced" && (
             <div style={{ maxWidth: 640, marginTop: 28, padding: "14px 16px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)" }}>
               <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--fg-faint)", marginBottom: 8 }}>
-                Detalle técnico
+                {t("setup_latex.technical_detail")}
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                TeXisStudio elige el backend automáticamente según lo instalado. En modo avanzado puedes elegir el motor manualmente en la pantalla de compilación.
+                {t("setup_latex.technical_detail_body")}
               </div>
             </div>
           )}
@@ -756,9 +777,9 @@ export default function SetupLatexView() {
 
       <TxStatusbar items={[
         info?.is_usable
-          ? { text: "Listo para generar PDF", dot: "var(--build-ok)" }
-          : { text: "Falta preparar la generación de PDF", dot: "var(--build-err)" },
-        { right: true, text: `Sistema: ${getPlatformLabel(platform)}` },
+          ? { text: t("setup_latex.status_ready"), dot: "var(--build-ok)" }
+          : { text: t("setup_latex.status_missing"), dot: "var(--build-err)" },
+        { right: true, text: t("setup_latex.status_system", { platform: getPlatformLabel(platform) }) },
       ]} />
     </>
   );

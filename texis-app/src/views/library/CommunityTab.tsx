@@ -1,4 +1,5 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconBuilding, IconDownload, IconMap, IconRefresh, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { ProfileInfo } from "../../types";
@@ -56,21 +57,6 @@ const DISCIPLINE_LABEL: Record<string, string> = {
   natural_sciences: "Ciencias naturales",
 };
 
-const filterSelectStyle: CSSProperties = {
-  width: "100%",
-  minWidth: 0,
-  boxSizing: "border-box",
-  padding: "7px 34px 7px 10px",
-  borderRadius: "var(--r-md)",
-  border: "1px solid var(--border-firm)",
-  background: "var(--bg-panel)",
-  color: "var(--fg-strong)",
-  fontSize: "var(--fs-sm)",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
 
 // ── CommunityTab ──────────────────────────────────────────────────────────────
 
@@ -81,6 +67,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
   onInstalled: (profile: ProfileInfo) => void;
   userMode: "basic" | "advanced";
 }) {
+  const { t } = useTranslation();
   const [catalog, setCatalog]       = useState<CatalogProfile[]>([]);
   const [catLoading, setCatLoading] = useState(false);
   const [catError, setCatError]     = useState<string | null>(null);
@@ -285,10 +272,10 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
           <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>Comunidad</h1>
-            <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>Perfiles por institución, grado, área y programa. Requiere conexión a internet.</p>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>{t("community.heading")}</h1>
+            <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>{t("community.heading_desc")}</p>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={fetchCatalog} disabled={catLoading} style={{ flexShrink: 0 }}><IconRefresh size={12} /> {catLoading ? "Cargando…" : "Actualizar"}</button>
+          <button className="btn btn-ghost btn-sm" onClick={fetchCatalog} disabled={catLoading} style={{ flexShrink: 0 }}><IconRefresh size={12} /> {catLoading ? t("common.loading") : t("community.refresh")}</button>
         </div>
 
         {userMode === "basic" && (
@@ -346,23 +333,23 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
           gap: 8,
           marginBottom: 16,
         }}>
-          <button className="btn btn-sm" onClick={() => applyGuidedPreset("starter")}>Base institucional simple</button>
-          <button className="btn btn-sm" onClick={() => applyGuidedPreset("verified")}>Solo perfiles verificados</button>
-          <button className="btn btn-sm" onClick={() => applyGuidedPreset("engineering")}>Ingeniería · IEEE</button>
-          <button className="btn btn-sm" onClick={() => applyGuidedPreset("health")}>Salud · Vancouver</button>
-          <button className="btn btn-sm" onClick={() => applyGuidedPreset("doctoral")}>Doctorado</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("starter")}>{t("community.preset_starter")}</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("verified")}>{t("community.preset_verified")}</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("engineering")}>{t("community.preset_engineering")}</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("health")}>{t("community.preset_health")}</button>
+          <button className="btn btn-sm" onClick={() => applyGuidedPreset("doctoral")}>{t("home.level_doctorado")}</button>
           <button
             className={noviceSafeOnly ? "btn btn-sm btn-accent" : "btn btn-sm btn-ghost"}
             onClick={() => setNoviceSafeOnly((v) => !v)}
-            title="Muestra solo perfiles revisados, listos para empezar sin ajustes adicionales"
+            title={t("community.novice_safe_title")}
           >
-            {noviceSafeOnly ? "✓ " : ""}Seguros para empezar
+            {noviceSafeOnly ? "✓ " : ""}{t("community.novice_safe")}
           </button>
           <AiHelpButton
             panel="library_profiles"
             mode="app_help"
-            label="Ayúdame a elegir perfil"
-            question="Estoy en la biblioteca de perfiles. ¿Cómo decido cuál me conviene si no encuentro una coincidencia exacta para mi institución o programa?"
+            label={t("community.help_label")}
+            question={t("community.help_question")}
             variant="chip"
           />
         </div>
@@ -370,52 +357,52 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         {/* Search bar */}
         <div style={{ position: "relative", marginBottom: 20 }}>
           <IconSearch size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-faint)" }} />
-          <input value={search} onChange={(e) => { setSearch(e.target.value); setNavContinent(null); setNavCountry(null); }} placeholder="Buscar institución, país, facultad, programa o área…" style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none", boxSizing: "border-box" }} />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setNavContinent(null); setNavCountry(null); }} placeholder={t("community.search_placeholder")} style={{ width: "100%", padding: "7px 12px 7px 32px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none", boxSizing: "border-box" }} />
           {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}><IconX size={12} /></button>}
         </div>
 
         {/* Structured filters */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 18 }}>
-          <select value={institutionFilter} onChange={(e) => { setInstitutionFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todas las instituciones</option>
+          <select value={institutionFilter} onChange={(e) => { setInstitutionFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_institutions")}</option>
             {availableInstitutions.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Institución no indicada" : value}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_institution") : value}</option>
             ))}
           </select>
-          <select value={programFilter} onChange={(e) => { setProgramFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todos los programas</option>
+          <select value={programFilter} onChange={(e) => { setProgramFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_programs")}</option>
             {availablePrograms.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Programa no indicado" : value}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_program") : value}</option>
             ))}
           </select>
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todos los estados</option>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_statuses")}</option>
             {availableStatuses.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Estado no indicado" : value}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_status") : value}</option>
             ))}
           </select>
-          <select value={styleFilter} onChange={(e) => { setStyleFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todos los estilos</option>
+          <select value={styleFilter} onChange={(e) => { setStyleFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_styles")}</option>
             {availableStyles.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Estilo no indicado" : value}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_style") : value}</option>
             ))}
           </select>
-          <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todos los grados</option>
+          <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_degrees")}</option>
             {availableLevels.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Grado no indicado" : (ACADEMIC_LEVEL_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_degree") : (ACADEMIC_LEVEL_LABEL[value] ?? value)}</option>
             ))}
           </select>
-          <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todas las áreas</option>
+          <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_areas")}</option>
             {availableDisciplines.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Área no indicada" : (DISCIPLINE_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_area") : (DISCIPLINE_LABEL[value] ?? value)}</option>
             ))}
           </select>
-          <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={filterSelectStyle}>
-            <option value="all">Todos los alcances</option>
+          <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
+            <option value="all">{t("community.all_scopes")}</option>
             {availableScopes.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? "Alcance no indicado" : (PROFILE_SCOPE_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_scope") : (PROFILE_SCOPE_LABEL[value] ?? value)}</option>
             ))}
           </select>
         </div>
@@ -423,18 +410,18 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         {/* Search results */}
         {search.trim() ? (
           <div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 12 }}>{searchResults.length} resultado{searchResults.length !== 1 ? "s" : ""} para «{search}»</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 12 }}>{t("community.search_results", { count: searchResults.length, search })}</div>
             {searchResults.length === 0
-              ? <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>Sin resultados. Intenta con otro término.</div>
+              ? <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>{t("community.no_results")}</div>
               : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{searchResults.map(renderProfileCard)}</div>
             }
           </div>
         ) : catLoading ? (
-          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "40px 0", textAlign: "center" }}>Cargando catálogo…</div>
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "40px 0", textAlign: "center" }}>{t("community.loading_catalog")}</div>
         ) : catLoaded && catalog.length === 0 ? (
-          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>El catálogo está vacío.</div>
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>{t("community.empty_catalog")}</div>
         ) : catLoaded && filteredCatalog.length === 0 ? (
-          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>Ningún perfil coincide con los filtros actuales.</div>
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", padding: "20px 0" }}>{t("community.no_filter_matches")}</div>
         ) : catLoaded ? (
           <>
             {/* Breadcrumb */}
@@ -535,5 +522,4 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
 }
 
 // ── LibraryView ───────────────────────────────────────────────────────────────
-
 

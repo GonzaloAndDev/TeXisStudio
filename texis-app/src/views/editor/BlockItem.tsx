@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconDrag, IconTrash } from "../../components/Icons";
 import type { ContentBlock, HeadingLevel } from "../../types";
 import {
@@ -38,6 +39,7 @@ export function BlockItem({
   /** Abre el modal de edición para un PluginFigureBlock. */
   onEditPluginFigure?: () => void;
 }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
 
   const renderEdit = () => {
@@ -116,7 +118,7 @@ export function BlockItem({
         return (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-              ⚠ LaTeX manual — puede romper la compilación
+              ⚠ {t("block_item.manual_latex_warning")}
             </div>
             <textarea
               autoFocus
@@ -137,12 +139,12 @@ export function BlockItem({
                   onChange={(e) => onUpdate({ user_confirmed: e.target.checked } as Partial<ContentBlock>)}
                   style={{ accentColor: "var(--build-ok)", cursor: "pointer" }}
                 />
-                Confirmo que este LaTeX manual puede afectar la compilación
+                {t("block_item.confirm_manual_latex")}
               </label>
             </div>
             {!block.user_confirmed && (
               <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
-                No confirmado — este bloque no se incluirá en el PDF hasta que lo confirmes.
+                {t("block_item.unconfirmed_latex_hint")}
               </div>
             )}
           </div>
@@ -236,7 +238,7 @@ export function BlockItem({
           </div>
         );
       default:
-        return <div style={{ color: "var(--fg-faint)" }}>Bloque no editable</div>;
+        return <div style={{ color: "var(--fg-faint)" }}>{t("block_item.not_editable")}</div>;
     }
   };
 
@@ -245,14 +247,14 @@ export function BlockItem({
       case "paragraph":
         return (
           <p style={{ fontFamily: "var(--font-display)", fontSize: 15, color: block.content ? "var(--fg-default)" : "var(--fg-faint)", lineHeight: 1.65, margin: 0 }}>
-            {block.content || "Párrafo vacío — clic para editar"}
+            {block.content || t("block_item.empty_paragraph")}
           </p>
         );
       case "heading": {
         const fsMap: Record<HeadingLevel, number> = { section: 22, subsection: 18, subsubsection: 16 };
         return (
           <div style={{ fontFamily: "var(--font-display)", fontSize: fsMap[block.level], fontWeight: 500, color: block.content ? "var(--fg-strong)" : "var(--fg-faint)", lineHeight: 1.2 }}>
-            {block.content || "Título vacío — clic para editar"}
+            {block.content || t("block_item.empty_heading")}
           </div>
         );
       }
@@ -263,21 +265,21 @@ export function BlockItem({
           </div>
         ) : (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg-faint)", padding: "10px 16px", textAlign: "center" }}>
-            Ecuación vacía — clic para editar
+            {t("block_item.empty_equation")}
           </div>
         );
       case "list":
         return block.items.length > 0 ? (
           <ul style={{ margin: 0, paddingLeft: 20 }}>
             {block.items.map((item, i) => (
-              <li key={i} style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65 }}>{item || "(ítem vacío)"}</li>
+              <li key={i} style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.65 }}>{item || t("block_item.empty_item")}</li>
             ))}
           </ul>
-        ) : <div style={{ color: "var(--fg-faint)" }}>Lista vacía</div>;
+        ) : <div style={{ color: "var(--fg-faint)" }}>{t("block_item.empty_list")}</div>;
       case "figure":
         return (
           <div style={{ padding: "12px 16px", background: "var(--bg-app)", borderRadius: "var(--r-sm)", border: "1px dashed var(--border-firm)", textAlign: "center" }}>
-            <div style={{ color: "var(--fg-faint)", fontSize: 13 }}>📷 {block.file || "sin archivo — clic para editar"}</div>
+            <div style={{ color: "var(--fg-faint)", fontSize: 13 }}>📷 {block.file || t("block_item.no_file")}</div>
             {block.caption && <div style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 4 }}>{block.caption}</div>}
           </div>
         );
@@ -300,7 +302,7 @@ export function BlockItem({
             </table>
             {block.caption && <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 5, textAlign: "center" }}>{block.caption}</div>}
           </div>
-        ) : <div style={{ color: "var(--fg-faint)" }}>Tabla vacía — clic para editar</div>;
+        ) : <div style={{ color: "var(--fg-faint)" }}>{t("block_item.empty_table")}</div>;
       case "citation":
         return (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--accent-deep)", background: "var(--accent-tint)", padding: "2px 8px", borderRadius: "var(--r-xs)" }}>
@@ -315,11 +317,11 @@ export function BlockItem({
         return (
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)" }}>
-              {block.content || "(LaTeX vacío)"}
+              {block.content || t("block_item.empty_latex")}
             </div>
             {!block.user_confirmed && (
               <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
-                ⚠ No confirmado — no se incluirá en el PDF
+                ⚠ {t("block_item.not_confirmed_pdf")}
               </div>
             )}
           </div>
@@ -329,10 +331,10 @@ export function BlockItem({
         return (
           <div style={{ display: "flex", gap: 8, fontFamily: "var(--font-display)", fontSize: 14, lineHeight: 1.55 }}>
             <span style={{ fontWeight: 700, color: "var(--fg-strong)", whiteSpace: "nowrap", minWidth: 120 }}>
-              {block.term || <em style={{ fontStyle: "normal", opacity: 0.4 }}>término</em>}
+              {block.term || <em style={{ fontStyle: "normal", opacity: 0.4 }}>{t("block_item.term_placeholder")}</em>}
             </span>
             <span style={{ color: "var(--fg-default)" }}>
-              {block.definition || <em style={{ opacity: 0.4 }}>definición…</em>}
+              {block.definition || <em style={{ opacity: 0.4 }}>{t("block_item.definition_placeholder")}</em>}
             </span>
           </div>
         );
@@ -343,7 +345,7 @@ export function BlockItem({
               {block.acronym || <em style={{ fontStyle: "normal", opacity: 0.4 }}>ACR</em>}
             </span>
             <span style={{ color: "var(--fg-default)" }}>
-              {block.full_form || <em style={{ opacity: 0.4 }}>forma completa…</em>}
+              {block.full_form || <em style={{ opacity: 0.4 }}>{t("block_item.full_form_placeholder")}</em>}
               {block.description ? <span style={{ color: "var(--fg-muted)" }}>. {block.description}</span> : null}
             </span>
           </div>
@@ -352,10 +354,10 @@ export function BlockItem({
         return (
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", top: 6, right: 8, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", background: "var(--ink-800)", padding: "1px 6px", borderRadius: "var(--r-xs)" }}>
-              {block.language || "código"}
+              {block.language || t("block_item.code_language")}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)", overflowX: "auto", whiteSpace: "pre" }}>
-              {block.content || "(vacío)"}
+              {block.content || t("block_item.empty_content")}
             </div>
             {block.caption && <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 4, textAlign: "center", fontStyle: "italic" }}>{block.caption}</div>}
           </div>
@@ -364,22 +366,22 @@ export function BlockItem({
         return (
           <div style={{ border: "1px solid var(--border-firm)", borderRadius: "var(--r-sm)", overflow: "hidden", fontSize: "var(--fs-sm)", fontFamily: "var(--font-display)" }}>
             <div style={{ background: "var(--bg-panel)", padding: "6px 12px", borderBottom: "1px solid var(--border-subtle)", fontWeight: 600, color: "var(--fg-strong)", fontSize: 13 }}>
-              Algoritmo: {block.caption || <em style={{ opacity: 0.5, fontWeight: 400 }}>sin nombre</em>}
+              {t("block_item.algorithm")}: {block.caption || <em style={{ opacity: 0.5, fontWeight: 400 }}>{t("block_item.unnamed")}</em>}
             </div>
             {(block.input || block.output) && (
               <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--border-subtle)", fontSize: 12, color: "var(--fg-muted)" }}>
-                {block.input && <div><strong>Entrada:</strong> {block.input}</div>}
-                {block.output && <div><strong>Salida:</strong> {block.output}</div>}
+                {block.input && <div><strong>{t("block_item.input")}:</strong> {block.input}</div>}
+                {block.output && <div><strong>{t("block_item.output")}:</strong> {block.output}</div>}
               </div>
             )}
             <div style={{ padding: "8px 12px", background: "var(--bg-app)", fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", whiteSpace: "pre-wrap" }}>
-              {block.body || <span style={{ opacity: 0.4 }}>(pseudocódigo vacío)</span>}
+              {block.body || <span style={{ opacity: 0.4 }}>{t("block_item.empty_pseudocode")}</span>}
             </div>
           </div>
         );
       case "theorem": {
         const tk = THEOREM_KINDS.find((t) => t.kind === block.kind);
-        const envLabel = tk?.label ?? block.kind;
+        const envLabel = tk?.labelKey ? t(tk.labelKey) : block.kind;
         const envColor: Record<string, string> = {
           theorem: "#4A90E2", lemma: "#7B68EE", corollary: "#6A9FB5",
           proposition: "#5F9EA0", definition: "#52C41A", proof: "#888", remark: "#888",
@@ -388,10 +390,10 @@ export function BlockItem({
         return (
           <div style={{ borderLeft: `3px solid ${color}`, paddingLeft: 12, paddingRight: 4 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color, marginBottom: 4, fontFamily: "var(--font-display)" }}>
-              {envLabel}{block.title ? ` (${block.title})` : ""}{block.numbered && block.kind !== "proof" && block.kind !== "remark" ? " [numerado]" : ""}
+              {envLabel}{block.title ? ` (${block.title})` : ""}{block.numbered && block.kind !== "proof" && block.kind !== "remark" ? ` [${t("block_item.numbered")}]` : ""}
             </div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 15, lineHeight: 1.6, color: "var(--fg-default)", fontStyle: "italic" }}>
-              {block.content || <span style={{ opacity: 0.4, fontStyle: "normal" }}>contenido vacío…</span>}
+              {block.content || <span style={{ opacity: 0.4, fontStyle: "normal" }}>{t("block_item.empty_block_content")}</span>}
             </div>
           </div>
         );
@@ -399,11 +401,11 @@ export function BlockItem({
       case "visual": {
         const vk = block.config.kind;
         const kindLabels: Record<string, string> = {
-          venn_euler: "Diagrama de Venn", flow_diagram: "Diagrama de flujo",
-          timeline: "Línea de tiempo", chem_reaction: "Reacción química",
-          molecule: "Molécula", circuit: "Circuito eléctrico",
-          feynman: "Diagrama de Feynman", bio_pathway: "Vía biológica",
-          music_fragment: "Partitura",
+          venn_euler: t("block_item.visual_venn"), flow_diagram: t("block_item.visual_flow"),
+          timeline: t("block_item.visual_timeline"), chem_reaction: t("block_item.visual_reaction"),
+          molecule: t("block_item.visual_molecule"), circuit: t("block_item.visual_circuit"),
+          feynman: t("block_item.visual_feynman"), bio_pathway: t("block_item.visual_bio_pathway"),
+          music_fragment: t("block_item.visual_music"),
         };
         const kindIcons: Record<string, string> = {
           venn_euler:"⬤⬤", flow_diagram:"→", timeline:"──", chem_reaction:"⇌",
@@ -422,7 +424,7 @@ export function BlockItem({
                 </div>
               )}
               <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 2, fontFamily: "var(--font-mono)" }}>
-                Clic para editar • se genera al compilar
+                {t("block_item.visual_compile_hint")}
               </div>
             </div>
           </div>
@@ -464,7 +466,7 @@ export function BlockItem({
         );
       }
       default:
-        return <div style={{ color: "var(--fg-faint)" }}>[bloque desconocido]</div>;
+        return <div style={{ color: "var(--fg-faint)" }}>{t("block_item.unknown_block")}</div>;
     }
   };
 
@@ -531,7 +533,7 @@ export function BlockItem({
           className="btn btn-ghost btn-icon"
           style={{ position: "absolute", right: 6, top: 6, padding: 3, opacity: 0.6 }}
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          title="Eliminar bloque"
+          title={t("block_item.delete_block")}
         >
           <IconTrash size={11} />
         </button>
@@ -539,4 +541,3 @@ export function BlockItem({
     </div>
   );
 }
-

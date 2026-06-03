@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconCheck, IconPlus, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../../types";
@@ -9,6 +10,7 @@ import { KNOWN_SECTION_ELEMENTS, PLACEMENT_LABEL, PLACEMENT_COLOR } from "./cons
 export function ProfileEditorPanel({ profile, onSave, onCancel }: {
   profile: ProfileInfo; onSave: (updated: ProfileInfo) => void; onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName]               = useState(profile.name);
   const [description, setDescription] = useState(profile.description ?? "");
   const [author, setAuthor]           = useState(profile.author ?? "");
@@ -45,7 +47,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
     setAddingSection(false);
   }
   async function handleSave() {
-    if (!name.trim()) { setError("El nombre del perfil es requerido."); return; }
+    if (!name.trim()) { setError(t("library.profile_name_required")); return; }
     setSaving(true); setError(null);
     const payload: ProfileUpdatePayload = {
       name: name.trim(), description: description.trim() || undefined, author: author.trim() || undefined,
@@ -77,7 +79,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
     <div style={{ width: 380, flexShrink: 0, borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>Editar perfil</span>
+          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{t("library.edit_profile")}</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", marginLeft: 8 }}>{profile.id}</span>
         </div>
         <button onClick={onCancel} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-faint)", padding: 2 }}><IconX size={14} /></button>
@@ -85,22 +87,22 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
 
       <div style={{ flex: 1, overflow: "auto", padding: 16 }} className="scroll">
         <div style={{ marginBottom: 18 }}>
-          <div style={sectionLabel}>Metadatos</div>
-          <div style={{ marginBottom: 10 }}><label style={labelStyle}>Nombre *</label><input value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} /></div>
-          <div style={{ marginBottom: 10 }}><label style={labelStyle}>Descripción</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...fieldStyle, resize: "vertical" }} /></div>
+          <div style={sectionLabel}>{t("library.metadata")}</div>
+          <div style={{ marginBottom: 10 }}><label style={labelStyle}>{t("library.name_required")}</label><input value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} /></div>
+          <div style={{ marginBottom: 10 }}><label style={labelStyle}>{t("library.description")}</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ ...fieldStyle, resize: "vertical" }} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-            <div><label style={labelStyle}>Autor</label><input value={author} onChange={(e) => setAuthor(e.target.value)} style={fieldStyle} /></div>
-            <div><label style={labelStyle}>Versión</label><input value={version} onChange={(e) => setVersion(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("library.author")}</label><input value={author} onChange={(e) => setAuthor(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("library.version")}</label><input value={version} onChange={(e) => setVersion(e.target.value)} style={fieldStyle} /></div>
           </div>
-          <div style={{ marginBottom: 10 }}><label style={labelStyle}>Licencia</label><input value={license} onChange={(e) => setLicense(e.target.value)} placeholder="p.ej. CC BY 4.0" style={fieldStyle} /></div>
-          <div><label style={labelStyle}>Etiquetas (separadas por coma)</label><input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="tesis, licenciatura, apa" style={fieldStyle} /></div>
+          <div style={{ marginBottom: 10 }}><label style={labelStyle}>{t("library.license")}</label><input value={license} onChange={(e) => setLicense(e.target.value)} placeholder={t("library.license_placeholder")} style={fieldStyle} /></div>
+          <div><label style={labelStyle}>{t("library.tags_comma")}</label><input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="tesis, licenciatura, apa" style={fieldStyle} /></div>
         </div>
 
         <div style={{ marginBottom: 18 }}>
-          <div style={sectionLabel}>Configuración técnica</div>
+          <div style={sectionLabel}>{t("library.technical_config")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
             <div>
-              <label style={labelStyle}>Motor LaTeX</label>
+              <label style={labelStyle}>{t("library.latex_engine")}</label>
               <select value={latexEngine} onChange={(e) => setLatexEngine(e.target.value)} style={fieldStyle}>
                 <option value="xelatex">XeLaTeX</option>
                 <option value="pdflatex">pdfLaTeX</option>
@@ -108,7 +110,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Clase de documento</label>
+              <label style={labelStyle}>{t("library.document_class")}</label>
               <select value={docClass} onChange={(e) => setDocClass(e.target.value)} style={fieldStyle}>
                 <option value="book">book</option>
                 <option value="article">article</option>
@@ -118,13 +120,13 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Estilo bibliográfico</label>
+            <label style={labelStyle}>{t("library.bibliography_style")}</label>
             <select value={bibStyle} onChange={(e) => setBibStyle(e.target.value)} style={fieldStyle}>
               <option value="apa">APA 7</option>
               <option value="vancouver">Vancouver</option>
               <option value="ieee">IEEE</option>
-              <option value="chicago-notes">Chicago 17 (Notas)</option>
-              <option value="chicago-authordate">Chicago 17 (Autor-Fecha)</option>
+              <option value="chicago-notes">{t("library.bib_style_chicago_notes")}</option>
+              <option value="chicago-authordate">{t("library.bib_style_chicago_authordate")}</option>
               <option value="mla">MLA 9</option>
               <option value="mhra">MHRA</option>
               <option value="abnt">ABNT</option>
@@ -135,18 +137,18 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
 
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <div style={sectionLabel}>Secciones ({sections.length})</div>
-            <button className="btn btn-sm" onClick={() => setAddingSection(!addingSection)} style={{ fontSize: 11, padding: "3px 8px" }}><IconPlus size={11} /> Añadir</button>
+            <div style={sectionLabel}>{t("library.sections_count", { count: sections.length })}</div>
+            <button className="btn btn-sm" onClick={() => setAddingSection(!addingSection)} style={{ fontSize: 11, padding: "3px 8px" }}><IconPlus size={11} /> {t("common.add")}</button>
           </div>
           {addingSection && (
             <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={labelStyle}>Tipo de sección</label>
+              <label style={labelStyle}>{t("library.section_type")}</label>
               <select value={newSectionEl} onChange={(e) => setNewSectionEl(e.target.value)} style={fieldStyle}>
                 {KNOWN_SECTION_ELEMENTS.map((el) => <option key={el.id} value={el.id}>{el.label} ({PLACEMENT_LABEL[el.placement] ?? el.placement})</option>)}
               </select>
               <div style={{ display: "flex", gap: 6 }}>
-                <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={addSection}><IconCheck size={11} sw={2.5} /> Añadir sección</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setAddingSection(false)}>Cancelar</button>
+                <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={addSection}><IconCheck size={11} sw={2.5} /> {t("library.add_section")}</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setAddingSection(false)}>{t("common.cancel")}</button>
               </div>
             </div>
           )}
@@ -155,9 +157,9 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: PLACEMENT_COLOR[sec.placement] ?? "var(--fg-faint)" }} />
                 <span style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--fg-strong)", fontFamily: "var(--font-mono)" }}>{sec.id}</span>
-                <button onClick={() => moveSection(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }} title="Subir">▲</button>
-                <button onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} style={{ background: "none", border: "none", cursor: i === sections.length - 1 ? "default" : "pointer", color: i === sections.length - 1 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }} title="Bajar">▼</button>
-                <button onClick={() => removeSection(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--build-err)", padding: "0 2px" }} title="Eliminar sección"><IconX size={11} /></button>
+                <button onClick={() => moveSection(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "default" : "pointer", color: i === 0 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }} title={t("library.move_up")}>▲</button>
+                <button onClick={() => moveSection(i, 1)} disabled={i === sections.length - 1} style={{ background: "none", border: "none", cursor: i === sections.length - 1 ? "default" : "pointer", color: i === sections.length - 1 ? "var(--fg-faint)" : "var(--fg-muted)", padding: "0 2px", fontSize: 12 }} title={t("library.move_down")}>▼</button>
+                <button onClick={() => removeSection(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--build-err)", padding: "0 2px" }} title={t("library.delete_section")}><IconX size={11} /></button>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <select value={sec.placement} onChange={(e) => changePlacement(i, e.target.value)} style={{ ...fieldStyle, padding: "3px 6px", fontSize: 11, flex: 1 }}>
@@ -165,12 +167,12 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
                 </select>
                 <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--fg-muted)", cursor: "pointer", flexShrink: 0 }}>
                   <input type="checkbox" checked={sec.required} onChange={() => toggleRequired(i)} style={{ accentColor: "var(--accent)" }} />
-                  requerida
+                  {t("library.required")}
                 </label>
               </div>
             </div>
           ))}
-          {sections.length === 0 && <div style={{ padding: "16px 0", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-xs)" }}>Sin secciones. Añade al menos una.</div>}
+          {sections.length === 0 && <div style={{ padding: "16px 0", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-xs)" }}>{t("library.no_sections_add_one")}</div>}
         </div>
 
         {error && <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: "var(--r-sm)", background: "var(--build-err-tint, #ffeded)", color: "var(--build-err)", fontSize: "var(--fs-xs)", border: "1px solid var(--build-err)" }}>{error}</div>}
@@ -178,11 +180,10 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
 
       <div style={{ padding: 14, borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8 }}>
         <button className="btn btn-accent" style={{ flex: 1 }} onClick={handleSave} disabled={saving}>
-          {saving ? "Guardando…" : <><IconCheck size={13} sw={2} /> Guardar cambios</>}
+          {saving ? t("editor.saving") : <><IconCheck size={13} sw={2} /> {t("library.save_changes")}</>}
         </button>
-        <button className="btn btn-ghost" onClick={onCancel} disabled={saving}>Cancelar</button>
+        <button className="btn btn-ghost" onClick={onCancel} disabled={saving}>{t("common.cancel")}</button>
       </div>
     </div>
   );
 }
-

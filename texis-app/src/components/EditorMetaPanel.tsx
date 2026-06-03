@@ -75,7 +75,6 @@ export function EditorMetaPanel({
   onSave,
   onCompile,
   diagnosticsPanel,
-  onCollapse,
 }: {
   project: ProjectModel;
   wordCount: number;
@@ -86,27 +85,14 @@ export function EditorMetaPanel({
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
   diagnosticsPanel?: React.ReactNode;
-  onCollapse?: () => void;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const readiness = deriveProjectReadiness(project);
-  const formatNumber = (value: number) => value.toLocaleString(i18n.language || undefined);
 
   return (
-    <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll editor-meta-panel">
-      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span>{userMode === "basic" ? t("editor.meta_panel_guide") : t("editor.meta_panel_project")}</span>
-        {onCollapse && (
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon"
-            onClick={onCollapse}
-            title={t("editor.meta_panel_minimize")}
-            style={{ padding: 3, width: 22, height: 22, color: "var(--fg-faint)" }}
-          >
-            ›
-          </button>
-        )}
+    <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll">
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
+        {userMode === "basic" ? t("editor_meta.project_guide") : t("editor_meta.project")}
       </div>
 
       {userMode === "basic" && (
@@ -116,12 +102,12 @@ export function EditorMetaPanel({
           border: "1px solid var(--accent-soft)",
         }}>
           <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
-            {t("editor.meta_panel_what_here")}
+            {t("editor_meta.what_to_do")}
           </div>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
             {activeSection?.title
-              ? t("editor.meta_panel_active_hint", { title: activeSection.title })
-              : t("editor.meta_panel_default_hint")}
+              ? t("editor_meta.active_section_hint", { title: activeSection.title })
+              : t("editor_meta.general_hint")}
           </div>
         </div>
       )}
@@ -144,14 +130,14 @@ export function EditorMetaPanel({
           onChange={(v) => onSave({ metadata: { ...project.metadata, subtitle: v || undefined } })}
         />
         <MetaField
-          label={t("editor.meta_primary_author")}
+          label={t("editor_meta.main_author")}
           value={project.student.full_name}
           onChange={(v) => onSave({ student: { ...project.student, full_name: v } })}
         />
 
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor.meta_advisors")}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor_meta.advisors")}</span>
             <button
               type="button"
               onClick={() => {
@@ -165,7 +151,7 @@ export function EditorMetaPanel({
           </div>
           {(project.student.advisors ?? []).length === 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic", padding: "4px 0" }}>
-              {t("editor.meta_no_advisors")}
+              {t("editor_meta.no_advisors")}
             </div>
           )}
           {(project.student.advisors ?? []).map((adv, i) => (
@@ -178,7 +164,7 @@ export function EditorMetaPanel({
                   onSave({ student: { ...project.student, advisors: next } });
                 }}
                 style={{ flex: 1, padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none" }}
-                placeholder="Dra. Ana Torres"
+                placeholder={t("editor_meta.advisor_placeholder")}
               />
               <button
                 type="button"
@@ -196,7 +182,7 @@ export function EditorMetaPanel({
 
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor.meta_coauthors")}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor_meta.coauthors")}</span>
             <button
               type="button"
               onClick={() => {
@@ -218,7 +204,7 @@ export function EditorMetaPanel({
                   onSave({ student: { ...project.student, co_authors: next } });
                 }}
                 style={{ flex: 1, padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none" }}
-                placeholder="Luis Hernández"
+                placeholder={t("editor_meta.coauthor_placeholder")}
               />
               <button
                 type="button"
@@ -236,7 +222,7 @@ export function EditorMetaPanel({
 
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor.meta_committee")}</span>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("editor_meta.committee")}</span>
             <button
               type="button"
               onClick={() => {
@@ -250,7 +236,7 @@ export function EditorMetaPanel({
           </div>
           {(project.student.committee ?? []).length === 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic", padding: "4px 0" }}>
-              {t("editor.meta_no_committee")}
+              {t("editor_meta.no_committee")}
             </div>
           )}
           {(project.student.committee ?? []).map((m, i) => (
@@ -262,7 +248,7 @@ export function EditorMetaPanel({
                   next[i] = { ...next[i], full_name: e.target.value };
                   onSave({ student: { ...project.student, committee: next } });
                 }}
-                placeholder="Dra. María García"
+                placeholder={t("editor_meta.committee_name_placeholder")}
                 style={{ padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-strong)", outline: "none" }}
               />
               <input
@@ -272,7 +258,7 @@ export function EditorMetaPanel({
                   next[i] = { ...next[i], role: e.target.value || undefined };
                   onSave({ student: { ...project.student, committee: next } });
                 }}
-                placeholder={t("editor.meta_committee_role_placeholder")}
+                placeholder={t("editor_meta.committee_role_placeholder")}
                 style={{ padding: "5px 8px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", outline: "none" }}
               />
               <button
@@ -319,7 +305,7 @@ export function EditorMetaPanel({
         </div>
 
         <div>
-          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor.meta_profile")}</div>
+          <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor_meta.profile")}</div>
           <span className="chip tx-mono" style={{ fontSize: 11 }}>{project.profile_id}</span>
         </div>
 
@@ -327,8 +313,8 @@ export function EditorMetaPanel({
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           <div>
-            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor.words_label")}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{formatNumber(wordCount)}</div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor_meta.words")}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{wordCount.toLocaleString()}</div>
             {maxWords && maxWords > 0 && (() => {
               const pct = Math.min(100, (wordCount / maxWords) * 100);
               const over = wordCount > maxWords;
@@ -341,15 +327,15 @@ export function EditorMetaPanel({
                   </div>
                   <div style={{ fontSize: 10, color: over ? "var(--build-err)" : "var(--fg-faint)", marginTop: 2 }}>
                     {over
-                      ? t("editor.words_over_limit", { n: formatNumber(wordCount - maxWords) })
-                      : t("editor.words_remaining", { n: formatNumber(maxWords - wordCount) })}
+                      ? t("editor_meta.words_over_limit", { count: (wordCount - maxWords).toLocaleString() })
+                      : t("editor_meta.words_remaining", { count: (maxWords - wordCount).toLocaleString() })}
                   </div>
                 </div>
               );
             })()}
           </div>
           <div>
-            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor.blocks_label")}</div>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-xs)", marginBottom: 2 }}>{t("editor_meta.blocks")}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: "var(--fs-md)" }}>{blockCount}</div>
           </div>
         </div>
@@ -358,21 +344,21 @@ export function EditorMetaPanel({
 
         {userMode === "basic" && (
           <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-            <div style={{ fontWeight: 600, color: "var(--fg-default)", marginBottom: 4 }}>{t("editor.suggested_route")}</div>
-            <div>{t("editor.suggested_route_1")}</div>
-            <div>{t("editor.suggested_route_2")}</div>
-            <div>{t("editor.suggested_route_3")}</div>
+            <div style={{ fontWeight: 600, color: "var(--fg-default)", marginBottom: 4 }}>{t("editor_meta.suggested_path")}</div>
+            <div>{t("editor_meta.suggested_step_1")}</div>
+            <div>{t("editor_meta.suggested_step_2")}</div>
+            <div>{t("editor_meta.suggested_step_3")}</div>
           </div>
         )}
 
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.9 }}>
-          <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 2 }}>{t("settings.help_shortcuts")}</div>
+          <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 2 }}>{t("editor_meta.shortcuts")}</div>
           {([
-            ["Ctrl+K", t("editor.command_palette_shortcut")],
-            ["Ctrl+[", t("editor.insert_citation_shortcut")],
+            ["Ctrl+K", t("editor_meta.shortcut_palette")],
+            ["Ctrl+[", t("editor_meta.shortcut_citation")],
             ["Ctrl+S", t("common.save")],
-            ["Esc", t("editor.exit_edit_shortcut")],
-            ["Enter", t("editor.list_new_item_shortcut")],
+            ["Esc", t("editor_meta.shortcut_exit_edit")],
+            ["Enter", t("editor_meta.shortcut_list_item")],
           ] as [string, string][]).map(([key, desc]) => (
             <div key={key} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--bg-app)", border: "1px solid var(--border-firm)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>{key}</kbd>
@@ -386,7 +372,7 @@ export function EditorMetaPanel({
 
       <div style={{ marginTop: "auto", paddingTop: 12 }}>
         <button className="btn btn-accent" style={{ width: "100%" }} onClick={onCompile}>
-          <IconBuild size={13} /> {userMode === "basic" ? t("editor.review_and_compile") : t("editor.compile_pdf")}
+          <IconBuild size={13} /> {userMode === "basic" ? t("editor_meta.review_and_compile") : t("editor_meta.compile_pdf")}
         </button>
       </div>
     </div>

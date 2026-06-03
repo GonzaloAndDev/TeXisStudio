@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { AppDialog } from "../components/AppDialog";
@@ -19,6 +20,7 @@ import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, P
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function CompileView() {
+  const { t } = useTranslation();
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
@@ -52,7 +54,7 @@ export default function CompileView() {
 
   const logRef = useRef<HTMLDivElement>(null);
 
-  const projectName = activeProject?.metadata.title ?? "Proyecto";
+  const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
 
   // Detectar backend preferido al montar
@@ -150,7 +152,7 @@ export default function CompileView() {
       } else {
         setResult({
           success: false,
-          user_errors: [{ message: errMsg, suggestion: "Verifica que el compilador LaTeX esté instalado y en el PATH." }],
+          user_errors: [{ message: errMsg, suggestion: t("compile.ensure_latex_installed_path") }],
           warnings: [],
           log_preview: errMsg,
         });
@@ -204,7 +206,7 @@ export default function CompileView() {
       setExportResult(res);
       setExportedZip(res.zip_path);
     } catch (e) {
-      setExportError(`Error al exportar: ${e}`);
+      setExportError(t("compile.export_error", { error: String(e) }));
     } finally {
       setExportBusy(false);
     }
@@ -219,7 +221,7 @@ export default function CompileView() {
       const res = await api.checkPdfPostflight(activeProjectPath);
       setPostflightResult(res);
     } catch (e) {
-      setPostflightError(`Error en verificación PDF: ${e}`);
+      setPostflightError(t("compile.postflight_error", { error: String(e) }));
     } finally {
       setPostflightBusy(false);
     }
@@ -262,24 +264,24 @@ export default function CompileView() {
   const warningCount = result?.warnings.length ?? 0;
   const readinessLabel =
     compileState === "success"
-      ? "Listo para revisar y entregar"
+      ? t("compile.ready_deliver")
       : compileState === "error"
-      ? "Hay problemas que debes corregir antes de entregar"
+      ? t("compile.must_fix_before_delivery")
       : compileState === "compiling"
-      ? "Estamos preparando tu PDF"
+      ? t("compile.preparing_pdf")
       : nothingInstalled
-      ? "Tu entorno todavía no está listo"
-      : "Tu proyecto está listo para intentar una compilación";
+      ? t("compile.environment_not_ready")
+      : t("compile.ready_to_compile");
   const nextActionLabel =
     compileState === "success"
-      ? "Revisa el PDF y genera tu paquete de entrega."
+      ? t("compile.next_review_pdf")
       : compileState === "error"
-      ? "Corrige primero los problemas bloqueantes. Puedes abrir el detalle técnico solo si lo necesitas."
+      ? t("compile.next_fix_blockers")
       : compileState === "compiling"
-      ? "Espera a que termine la compilación. Te mostraremos primero el resultado útil."
+      ? t("compile.next_wait")
       : nothingInstalled
-      ? "Instala un compilador LaTeX para poder generar y verificar tu documento."
-      : "Cuando quieras, compila para validar portada, bibliografía y estructura.";
+      ? t("compile.next_install_latex")
+      : t("compile.next_compile_when_ready");
 
   return (
     <>
@@ -355,14 +357,14 @@ export default function CompileView() {
         left={
           <>
             <TxLogo />
-            <TxBreadcrumb parts={[projectName, "Compilar"]} />
+            <TxBreadcrumb parts={[projectName, t("editor.compile")]} />
           </>
         }
         center={
           (userMode === "advanced" || (tectonicOk && latexmkOk)) ? (
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginRight: 4 }}>
-                {tectonicOk && latexmkOk ? "Motor:" : "Motor:"}
+                {t("compile.engine")}:
               </span>
               <BackendChip id="auto"     label="Auto"     available={latexInfo ? latexInfo.is_usable : null}    selected={backend === "auto"}     onClick={() => setBackend("auto")} />
               <BackendChip id="tectonic" label="Tectonic" available={tectonicOk} version={latexInfo?.tectonic_version} selected={backend === "tectonic"} onClick={() => setBackend("tectonic")} />
@@ -370,21 +372,21 @@ export default function CompileView() {
             </div>
           ) : (
             <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-              Centro de entrega · modo guiado
+              {t("compile.guided_delivery_center")}
             </span>
           )
         }
         right={
           <>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/project/${encodedPath}`)}>
-              <IconChevronL size={13} /> Editor
+              <IconChevronL size={13} /> {t("progress.back_to_editor").replace("← ", "")}
             </button>
             {userMode === "advanced" && (
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => setShowTechnicalLog((value) => !value)}
               >
-                {showTechnicalLog ? "Ocultar detalles" : "Ver detalles técnicos"}
+                {showTechnicalLog ? t("compile.hide_details") : t("compile.show_technical_details")}
               </button>
             )}
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", cursor: "pointer" }}>
@@ -394,20 +396,20 @@ export default function CompileView() {
                 onChange={(e) => setDraft(e.target.checked)}
                 style={{ accentColor: "var(--accent)" }}
               />
-              Borrador
+              {t("compile.draft")}
             </label>
             {compileState === "compiling" ? (
               <button className="btn btn-ghost btn-sm" onClick={handleCancel} style={{ color: "var(--build-err)" }}>
-                <IconX size={13} /> Cancelar
+                <IconX size={13} /> {t("common.cancel")}
               </button>
             ) : (
               <button
                 className="btn btn-accent"
                 onClick={handleCompile}
                 disabled={!!nothingInstalled}
-                title={nothingInstalled ? "Instala LaTeX primero" : undefined}
+                title={nothingInstalled ? t("compile.install_latex_first") : undefined}
               >
-                <IconPlay size={13} /> Compilar
+                <IconPlay size={13} /> {t("editor.compile")}
               </button>
             )}
           </>
@@ -434,13 +436,13 @@ export default function CompileView() {
             {compileState === "error"     && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
             {compileState === "idle"      && <IconBuild size={14} />}
             {compileState === "compiling" && <IconRefresh size={14} />}
-            {compileState === "idle"      && "Listo para compilar"}
-            {compileState === "compiling" && "Compilando…"}
-            {compileState === "success"   && "Compilación exitosa"}
-            {compileState === "error"     && `${result?.user_errors.length ?? 0} error(es)`}
+            {compileState === "idle"      && t("compile.ready_to_compile_short")}
+            {compileState === "compiling" && t("compile.compiling")}
+            {compileState === "success"   && t("compile.compile_success")}
+            {compileState === "error"     && t("compile.error_count", { count: result?.user_errors.length ?? 0 })}
             {result?.backend_used && (
               <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", fontWeight: 400 }}>
-                via {result.backend_used}
+                {t("compile.via_backend", { backend: result.backend_used })}
               </span>
             )}
           </div>
@@ -453,7 +455,7 @@ export default function CompileView() {
                 marginBottom: 12,
               }}>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                  Salud del proyecto
+                  {t("compile.project_health")}
                 </div>
                 <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 6 }}>
                   {readinessLabel}
@@ -462,9 +464,9 @@ export default function CompileView() {
                   {nextActionLabel}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                  <span className="chip">{blockingIssues} bloqueantes</span>
-                  <span className="chip">{warningCount} advertencias</span>
-                  <span className="chip">{showPdf && result?.pdf_path ? "PDF visible" : "PDF no visible"}</span>
+                  <span className="chip">{t("compile.blocking_count", { count: blockingIssues })}</span>
+                  <span className="chip">{t("compile.warning_count", { count: warningCount })}</span>
+                  <span className="chip">{showPdf && result?.pdf_path ? t("compile.pdf_visible") : t("compile.pdf_not_visible")}</span>
                 </div>
                 {readiness && (
                   <div style={{ marginTop: 10 }}>
@@ -485,21 +487,21 @@ export default function CompileView() {
                   <span style={{ fontSize: 20, lineHeight: 1 }}>⚠</span>
                   <div>
                     <div style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)", marginBottom: 6 }}>
-                      No hay compilador LaTeX instalado
+                      {t("compile.no_latex_installed")}
                     </div>
                     <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7, marginBottom: 10 }}>
-                      Necesitas al menos uno de estos:
+                      {t("compile.need_one_of")}
                     </div>
                     <ul style={{ margin: "0 0 10px", paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 2 }}>
-                      <li><strong>Tectonic</strong> — recomendado, minimal, no necesita Perl</li>
-                      <li><strong>MiKTeX</strong> — fácil en Windows, descarga paquetes bajo demanda</li>
-                      <li><strong>TeX Live 2024</strong> — instalación completa</li>
+                      <li><strong>Tectonic</strong> — {t("compile.tectonic_desc")}</li>
+                      <li><strong>MiKTeX</strong> — {t("compile.miktex_desc")}</li>
+                      <li><strong>TeX Live 2024</strong> — {t("compile.texlive_desc")}</li>
                     </ul>
                     <button
                       className="btn btn-accent btn-sm"
                       onClick={() => navigate("/setup-latex")}
                     >
-                      Ver guía de instalación →
+                      {t("compile.view_install_guide")} →
                     </button>
                   </div>
                 </div>
@@ -517,11 +519,11 @@ export default function CompileView() {
             {compileState === "idle" && !nothingInstalled && (pkgConflicts.length > 0 || pkgMissing.length > 0) && (
               <div style={{ margin: "12px 16px 0", padding: "12px 14px", borderRadius: "var(--r-md)", background: "color-mix(in srgb, var(--build-warn) 10%, var(--bg-panel))", border: "1px solid var(--build-warn)" }}>
                 <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--build-warn)", marginBottom: 6 }}>
-                  Advertencias de paquetes LaTeX
+                  {t("compile.latex_package_warnings")}
                 </div>
                 {pkgConflicts.filter(c => c.is_blocking).map((c, i) => (
                   <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", marginBottom: 4 }}>
-                    ✗ Conflicto bloqueante: {c.description}
+                    ✗ {t("compile.blocking_conflict")}: {c.description}
                   </div>
                 ))}
                 {pkgConflicts.filter(c => !c.is_blocking).map((c, i) => (
@@ -531,7 +533,7 @@ export default function CompileView() {
                 ))}
                 {pkgMissing.map((m, i) => (
                   <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 2 }}>
-                    + Falta <span style={{ fontFamily: "var(--font-mono)", color: "var(--fg-strong)" }}>{m.package_name}</span> en el preámbulo
+                    + {t("compile.missing_package_prefix")} <span style={{ fontFamily: "var(--font-mono)", color: "var(--fg-strong)" }}>{m.package_name}</span> {t("compile.missing_package_suffix")}
                   </div>
                 ))}
               </div>
@@ -541,16 +543,16 @@ export default function CompileView() {
             {compileState === "idle" && !nothingInstalled && glossaryIssues && (
               <div style={{ margin: "12px 16px 0", padding: "12px 14px", borderRadius: "var(--r-md)", background: "color-mix(in srgb, var(--accent) 8%, var(--bg-panel))", border: "1px solid var(--accent-soft)" }}>
                 <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--accent-deep)", marginBottom: 6 }}>
-                  Advertencias de glosario
+                  {t("compile.glossary_warnings")}
                 </div>
                 {glossaryIssues.undefined_references.map((k, i) => (
                   <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 2 }}>
-                    ⚠ <span style={{ fontFamily: "var(--font-mono)" }}>{k}</span> referenciado con \gls pero no definido
+                    ⚠ <span style={{ fontFamily: "var(--font-mono)" }}>{k}</span> {t("compile.gls_undefined")}
                   </div>
                 ))}
                 {glossaryIssues.unused_count > 0 && (
                   <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 4 }}>
-                    {glossaryIssues.unused_count} entrada{glossaryIssues.unused_count > 1 ? "s" : ""} definida{glossaryIssues.unused_count > 1 ? "s" : ""} sin usar en el documento
+                    {t("compile.glossary_unused_count", { count: glossaryIssues.unused_count })}
                   </div>
                 )}
               </div>
@@ -561,9 +563,9 @@ export default function CompileView() {
               <div style={{ margin: "12px 16px 0", padding: "9px 14px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ color: "var(--build-ok)", fontWeight: 700 }}>✓</span>
                 <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-                  Glosario listo — {glossarySummary.acronyms > 0 && `${glossarySummary.acronyms} acrónimo${glossarySummary.acronyms > 1 ? "s" : ""}`}
+                  {t("compile.glossary_ready")} — {glossarySummary.acronyms > 0 && t("compile.acronym_count", { count: glossarySummary.acronyms })}
                   {glossarySummary.acronyms > 0 && glossarySummary.entries > 0 && " · "}
-                  {glossarySummary.entries > 0 && `${glossarySummary.entries} término${glossarySummary.entries > 1 ? "s" : ""}`}
+                  {glossarySummary.entries > 0 && t("compile.term_count", { count: glossarySummary.entries })}
                 </span>
               </div>
             )}
@@ -572,10 +574,10 @@ export default function CompileView() {
             {compileState === "idle" && !nothingInstalled && !glossarySummary && !glossaryIssues && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
-                <p style={{ margin: 0 }}>Presiona <strong>Compilar</strong> para generar el PDF.</p>
+                <p style={{ margin: 0 }}>{t("compile.press_compile_prefix")} <strong>{t("editor.compile")}</strong> {t("compile.press_compile_suffix")}</p>
                 <p style={{ fontSize: "var(--fs-xs)", marginTop: 8 }}>
-                  Se regenerarán los archivos LaTeX y se ejecutará{" "}
-                  {backend === "auto" ? (latexInfo?.preferred_backend ?? "el motor disponible") : backend}.
+                  {t("compile.regenerate_latex_run")}{" "}
+                  {backend === "auto" ? (latexInfo?.preferred_backend ?? t("compile.available_engine")) : backend}.
                 </p>
               </div>
             )}
@@ -583,13 +585,13 @@ export default function CompileView() {
             {compileState === "compiling" && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-muted)" }}>
                 <IconRefresh size={24} style={{ opacity: 0.4, marginBottom: 12 }} />
-                <p>Compilando — {liveLog.length} líneas recibidas…</p>
+                <p>{t("compile.compiling_lines", { count: liveLog.length })}</p>
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={handleCancel}
                   style={{ marginTop: 12, color: "var(--build-err)" }}
                 >
-                  <IconX size={11} /> Cancelar compilación
+                  <IconX size={11} /> {t("compile.cancel_compile")}
                 </button>
               </div>
             )}
@@ -603,7 +605,7 @@ export default function CompileView() {
                 }}>
                   <IconCheckCircle size={16} />
                   <div>
-                    <div style={{ fontWeight: 500 }}>PDF generado correctamente</div>
+                    <div style={{ fontWeight: 500 }}>{t("compile.pdf_generated")}</div>
                     {result.pdf_path && (
                       <div style={{ fontSize: "var(--fs-xs)", marginTop: 2, fontFamily: "var(--font-mono)", opacity: 0.8 }}>
                         {result.pdf_path}
@@ -616,7 +618,7 @@ export default function CompileView() {
                       style={{ marginLeft: "auto" }}
                       onClick={() => setShowPdf((v) => !v)}
                     >
-                      {showPdf ? "Ocultar PDF" : "Ver PDF"}
+                      {showPdf ? t("compile.hide_pdf") : t("compile.view_pdf")}
                     </button>
                   )}
                 </div>
@@ -626,7 +628,7 @@ export default function CompileView() {
                   background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
                   fontSize: "var(--fs-sm)", color: "var(--accent-deep)", lineHeight: 1.6, marginBottom: 12,
                 }}>
-                  <strong>Qué sigue:</strong> revisa el PDF, ejecuta la verificación final si tu institución la pide y luego exporta el paquete de entrega.
+                  <strong>{t("compile.next_steps_title")}:</strong> {t("compile.next_steps_body")}
                 </div>
 
                 {/* Paquete de entrega */}
@@ -636,13 +638,13 @@ export default function CompileView() {
                   marginBottom: 12,
                 }}>
                   <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 8 }}>
-                    Paquete de entrega
+                    {t("compile.delivery_package")}
                   </div>
 
                   {/* Selector de modo */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
                     {(["draft", "review", "final"] as const).map((m) => {
-                      const labels = { draft: "Borrador", review: "Revisión", final: "Final" };
+                      const labels = { draft: t("compile.export_mode_draft"), review: t("compile.export_mode_review"), final: t("compile.export_mode_final") };
                       const col = m === "draft" ? "var(--fg-muted)" : m === "review" ? "var(--accent)" : "var(--build-ok)";
                       const active = exportMode === m;
                       return (
@@ -662,9 +664,9 @@ export default function CompileView() {
                       );
                     })}
                     <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginLeft: 2 }}>
-                      {exportMode === "draft"  && "Sin verificación"}
-                      {exportMode === "review" && "Bloquea errores de validación"}
-                      {exportMode === "final"  && "Bloquea errores + fuentes no incrustadas"}
+                      {exportMode === "draft"  && t("compile.export_draft_hint")}
+                      {exportMode === "review" && t("compile.export_review_hint")}
+                      {exportMode === "final"  && t("compile.export_final_hint")}
                     </span>
                   </div>
 
@@ -676,15 +678,15 @@ export default function CompileView() {
                       onClick={handleExportDelivery}
                     >
                       <IconMore size={12} />
-                      {exportBusy ? "Generando…" : "Exportar entrega (.zip)"}
+                      {exportBusy ? t("compile.generating") : t("compile.export_delivery_zip")}
                     </button>
                     <button
                       className="btn btn-sm btn-ghost"
                       disabled={postflightBusy || !result?.pdf_path}
                       onClick={doPostflightCheck}
-                      title={!result?.pdf_path ? "Compila primero para obtener un PDF" : undefined}
+                      title={!result?.pdf_path ? t("compile.compile_first_pdf") : undefined}
                     >
-                      {postflightBusy ? "Verificando…" : "Verificar PDF"}
+                      {postflightBusy ? t("compile.verifying") : t("compile.verify_pdf")}
                     </button>
                   </div>
                   {exportError && (
@@ -711,7 +713,7 @@ export default function CompileView() {
                         {exportedZip}
                         {exportResult && !exportResult.all_fonts_embedded && (
                           <div style={{ color: "var(--build-warn)", marginTop: 4, fontFamily: "inherit" }}>
-                            ⚠ Hay fuentes no incrustadas en el PDF
+                            ⚠ {t("compile.non_embedded_fonts_warning")}
                           </div>
                         )}
                       </div>
@@ -752,13 +754,13 @@ export default function CompileView() {
             background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
           }}>
             <IconFile size={14} />
-            {showTechnicalLog ? "Detalles técnicos" : "Resumen guiado"}
+            {showTechnicalLog ? t("compile.technical_details") : t("compile.guided_summary")}
             <button
               className="btn btn-ghost btn-sm"
               style={{ marginLeft: "auto", fontSize: 10 }}
               onClick={() => setShowTechnicalLog((value) => !value)}
             >
-              {showTechnicalLog ? "Ocultar detalle" : "Ver detalles técnicos"}
+              {showTechnicalLog ? t("compile.hide_detail") : t("compile.show_technical_details")}
             </button>
           </div>
           {showTechnicalLog ? (
@@ -780,7 +782,7 @@ export default function CompileView() {
                   ))
                 : (
                   <div style={{ color: "#9C9685" }}>
-                    {compileState === "idle" ? "— esperando compilación —" : compileState === "compiling" ? "iniciando…" : "sin log"}
+                    {compileState === "idle" ? t("compile.waiting_compile_log") : compileState === "compiling" ? t("compile.starting") : t("compile.no_log")}
                   </div>
                 )
               }
@@ -792,12 +794,12 @@ export default function CompileView() {
                 borderRadius: "var(--r-lg)", padding: 18, marginBottom: 12,
               }}>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-                  Qué hace TeXisStudio por ti
+                  {t("compile.what_texis_does")}
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.9 }}>
-                  <li>Genera los archivos necesarios para tu tesis.</li>
-                  <li>Intenta compilar el PDF y detectar errores importantes.</li>
-                  <li>Te ayuda a verificar antes de exportar la entrega final.</li>
+                  <li>{t("compile.what_does_1")}</li>
+                  <li>{t("compile.what_does_2")}</li>
+                  <li>{t("compile.what_does_3")}</li>
                 </ul>
               </div>
               <div style={{
@@ -805,10 +807,10 @@ export default function CompileView() {
                 borderRadius: "var(--r-lg)", padding: 18,
               }}>
                 <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 8 }}>
-                  ¿Cuándo abrir los detalles técnicos?
+                  {t("compile.when_open_details")}
                 </div>
                 <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                  Solo cuando un error no se entienda con el resumen principal, cuando soporte te lo pida o cuando quieras revisar el backend exacto usado.
+                  {t("compile.when_open_details_body")}
                 </div>
               </div>
             </div>
@@ -824,13 +826,13 @@ export default function CompileView() {
               background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
             }}>
               <IconFile size={14} />
-              Vista previa PDF
+              {t("compile.pdf_preview")}
               <button
                 className="btn btn-ghost btn-sm"
                 style={{ marginLeft: "auto", fontSize: 10 }}
                 onClick={() => setShowPdf(false)}
               >
-                <IconX size={11} /> Cerrar
+                <IconX size={11} /> {t("common.close")}
               </button>
             </div>
             <PdfViewer pdfPath={result.pdf_path} />
@@ -840,18 +842,18 @@ export default function CompileView() {
 
       <TxStatusbar items={[
         compileState === "success"
-          ? { text: "PDF listo", dot: "var(--build-ok)" }
+          ? { text: t("compile.pdf_ready"), dot: "var(--build-ok)" }
           : compileState === "error"
-          ? { text: "Error de compilación", dot: "var(--build-err)" }
+          ? { text: t("compile.compile_error"), dot: "var(--build-err)" }
           : compileState === "compiling"
-          ? { text: `Compilando… (${liveLog.length} líneas)`, dot: "var(--build-warn)" }
-          : { text: "Listo", dot: "var(--fg-faint)" },
+          ? { text: t("compile.compiling_statusbar", { count: liveLog.length }), dot: "var(--build-warn)" }
+          : { text: t("editor.status_done"), dot: "var(--fg-faint)" },
         { icon: <IconFile size={11} />, text: projectName },
         {
           right: true,
           text: latexInfo?.is_usable
-            ? `${latexInfo.available_backends.join(" · ")} disponibles`
-            : "⚠ LaTeX no instalado",
+            ? t("compile.backends_available", { backends: latexInfo.available_backends.join(" · ") })
+            : t("compile.latex_not_installed_status"),
         },
       ]} />
     </>

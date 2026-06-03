@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AiHelpButton } from "../AiHelpButton";
 import { IconDownload } from "../Icons";
 import { useVocabPacksStore } from "../../stores/vocabularyPacks";
 import type { VocabPackKind } from "../../types";
 
 export function VocabularyPacksPanel() {
+  const { t } = useTranslation();
   const {
     officialPacks, catalogLoading, catalogError,
     installed, installing,
@@ -45,13 +47,13 @@ export function VocabularyPacksPanel() {
     return langOk && kindOk;
   });
 
-  const kindOptions: Array<{ id: "all" | VocabPackKind; label: string }> = [
-    { id: "all", label: "Todos" },
-    { id: "general", label: "General" },
-    { id: "academic", label: "Académico" },
-    { id: "discipline", label: "Área" },
-    { id: "subject", label: "Materia" },
-    { id: "program", label: "Programa" },
+  const kindOptions: Array<{ id: "all" | VocabPackKind; labelKey: string }> = [
+    { id: "all", labelKey: "library.all" },
+    { id: "general", labelKey: "vocabulary.kind_general" },
+    { id: "academic", labelKey: "vocabulary.kind_academic" },
+    { id: "discipline", labelKey: "vocabulary.kind_discipline" },
+    { id: "subject", labelKey: "vocabulary.kind_subject" },
+    { id: "program", labelKey: "vocabulary.kind_program" },
   ];
 
   const inputStyle: React.CSSProperties = {
@@ -77,10 +79,10 @@ export function VocabularyPacksPanel() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div>
           <div style={{ fontWeight: 600, fontSize: "var(--fs-sm)", color: "var(--fg-strong)" }}>
-            Vocabularios de dominio
+            {t("vocabulary.title")}
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
-            Activa varios a la vez — son independientes entre sí y del idioma base.
+            {t("vocabulary.subtitle")}
           </div>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => loadOfficialCatalog()} disabled={catalogLoading}>
@@ -92,8 +94,8 @@ export function VocabularyPacksPanel() {
         <AiHelpButton
           panel="settings_vocabulary"
           mode="app_help"
-          label="¿Qué vocabularios debería activar?"
-          question="Estoy en la sección de vocabularios de dominio. ¿Cómo elijo una combinación simple y útil para mi tesis si no sé qué instalar?"
+          label={t("vocabulary.help_label")}
+          question={t("vocabulary.help_question")}
           variant="inline"
         />
       </div>
@@ -107,7 +109,7 @@ export function VocabularyPacksPanel() {
       {installed.length > 0 && (
         <div style={{ marginBottom: 12, padding: "8px 10px", borderRadius: "var(--r-sm)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 4 }}>
-            Vocabularios activos ({installed.length}):
+            {t("vocabulary.active_count", { count: installed.length })}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {installed.map((pack) => (
@@ -118,7 +120,7 @@ export function VocabularyPacksPanel() {
             ))}
           </div>
           <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 4 }}>
-            {installed.reduce((n, pack) => n + (pack.terms?.length ?? 0), 0)} términos combinados
+            {t("vocabulary.combined_terms", { count: installed.reduce((n, pack) => n + (pack.terms?.length ?? 0), 0) })}
           </div>
         </div>
       )}
@@ -135,7 +137,7 @@ export function VocabularyPacksPanel() {
                   className={`btn btn-sm ${langFilter === filter ? "btn-accent" : "btn-ghost"}`}
                   style={{ fontSize: 11, padding: "2px 10px" }}
                 >
-                  {filter === "all" ? `Todos (${count})` : filter === "es" ? `Español (${count})` : `English (${count})`}
+                  {filter === "all" ? t("vocabulary.filter_all", { count }) : filter === "es" ? t("vocabulary.filter_spanish", { count }) : t("vocabulary.filter_english", { count })}
                 </button>
               );
             })}
@@ -153,7 +155,7 @@ export function VocabularyPacksPanel() {
                   className={`btn btn-sm ${kindFilter === option.id ? "btn-accent" : "btn-ghost"}`}
                   style={{ fontSize: 11, padding: "2px 10px" }}
                 >
-                  {option.label} ({count})
+                  {t(option.labelKey)} ({count})
                 </button>
               );
             })}
@@ -164,7 +166,7 @@ export function VocabularyPacksPanel() {
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
         {allPacks.length === 0 && !catalogLoading && (
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", padding: "8px 0" }}>
-            {allPacksRaw.length > 0 ? "Sin paquetes para esta combinación de filtros. Prueba otra." : "Sin paquetes disponibles. Recarga el catálogo."}
+            {allPacksRaw.length > 0 ? t("vocabulary.no_filtered_packs") : t("vocabulary.no_packs")}
           </div>
         )}
         {allPacks.map((pack) => {
@@ -188,11 +190,11 @@ export function VocabularyPacksPanel() {
               </div>
               {installedPack ? (
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--build-err)" }} onClick={() => uninstall(pack.id)}>
-                  Quitar
+                  {t("vocabulary.remove")}
                 </button>
               ) : (
                 <button className="btn btn-sm btn-accent" style={{ fontSize: 11 }} disabled={installingPack} onClick={() => install(pack).catch(() => {})}>
-                  {installingPack ? "…" : <><IconDownload size={11} /> Instalar</>}
+                  {installingPack ? "…" : <><IconDownload size={11} /> {t("vocabulary.install")}</>}
                 </button>
               )}
             </div>
@@ -203,10 +205,10 @@ export function VocabularyPacksPanel() {
       <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Repositorios externos ({customRepos.length})
+            {t("vocabulary.external_repos", { count: customRepos.length })}
           </div>
           <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => setShowAddRepo(!showAddRepo)}>
-            + Añadir repo
+            + {t("vocabulary.add_repo")}
           </button>
         </div>
 
@@ -216,7 +218,7 @@ export function VocabularyPacksPanel() {
               <div style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "var(--fg-strong)" }}>{repo.id}</div>
               <div style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{repo.url}</div>
               {repo.error && <div style={{ fontSize: 10, color: "var(--build-err)" }}>{repo.error}</div>}
-              {!repo.error && <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>{(repo.packs ?? []).length} paquetes</div>}
+              {!repo.error && <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>{t("vocabulary.packs_count", { count: (repo.packs ?? []).length })}</div>}
             </div>
             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => syncRepo(repo.id)} disabled={repoLoading}>↻</button>
             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--build-err)" }} onClick={() => removeRepo(repo.id)}>×</button>
@@ -226,16 +228,16 @@ export function VocabularyPacksPanel() {
         {showAddRepo && (
           <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-              Apunta a cualquier <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>catalog.json</code> que tenga sección <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>vocabulary_packs</code>. Puede ser tu propio repo de GitHub.
+              {t("vocabulary.repo_hint_prefix")} <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>catalog.json</code> {t("vocabulary.repo_hint_middle")} <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>vocabulary_packs</code>. {t("vocabulary.repo_hint_suffix")}
             </div>
-            <input value={newRepoAlias} onChange={(e) => setNewRepoAlias(e.target.value)} placeholder="Alias (ej: mi-lab-terminos)" style={inputStyle} />
+            <input value={newRepoAlias} onChange={(e) => setNewRepoAlias(e.target.value)} placeholder={t("vocabulary.alias_placeholder")} style={inputStyle} />
             <input value={newRepoUrl} onChange={(e) => setNewRepoUrl(e.target.value)} placeholder="https://raw.githubusercontent.com/.../catalog.json" style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11 }} />
             {repoError && <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{repoError}</div>}
             <div style={{ display: "flex", gap: 6 }}>
               <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={handleAddRepo} disabled={repoLoading || !newRepoAlias.trim() || !newRepoUrl.trim()}>
-                {repoLoading ? "Añadiendo…" : "Añadir repo"}
+                {repoLoading ? t("vocabulary.adding") : t("vocabulary.add_repo")}
               </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowAddRepo(false)}>Cancelar</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowAddRepo(false)}>{t("common.cancel")}</button>
             </div>
           </div>
         )}

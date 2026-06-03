@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -23,7 +24,6 @@ async function resolveDocumentsPath(): Promise<string> {
 }
 
 type StepState = "done" | "active" | "todo";
-type WizardErrors = Partial<Record<"title" | "full_name" | "institution" | "advisors" | "outputPath", string>>;
 
 const BUILTIN_PROFILES: ProfileInfo[] = [
   {
@@ -308,74 +308,6 @@ function describePackKind(kind?: VocabPackEntry["pack_kind"]): string {
   }
 }
 
-const VOCAB_AREA_OPTIONS = [
-  { id: "", label: "Usar el área del proyecto" },
-  { id: "medicine", label: "Medicina y salud" },
-  { id: "chemistry", label: "Química" },
-  { id: "biology", label: "Biología" },
-  { id: "engineering", label: "Ingeniería" },
-  { id: "mathematics", label: "Matemáticas" },
-  { id: "physics", label: "Física" },
-  { id: "economics", label: "Economía" },
-  { id: "social_sciences", label: "Ciencias sociales" },
-  { id: "humanities", label: "Humanidades" },
-  { id: "arts", label: "Artes y diseño" },
-] as const;
-
-const VOCAB_AREA_ALIASES: Record<string, string[]> = {
-  medicine: ["medicina", "medico", "médico", "salud", "clinica", "clínica", "enfermeria", "enfermería", "odontologia", "odontología", "farmacia", "biomedicina", "biomedical"],
-  chemistry: ["quimica", "química", "bioquimica", "bioquímica", "farmaceutica", "farmacéutica", "chemistry"],
-  biology: ["biologia", "biología", "biotech", "biotecnologia", "biotecnología", "genetica", "genética", "ecologia", "ecología"],
-  engineering: ["ingenieria", "ingeniería", "engineering", "civil", "mecanica", "mecánica", "electrica", "eléctrica", "electronica", "electrónica", "computacion", "computación", "software", "robotica", "robótica"],
-  mathematics: ["matematica", "matemática", "matematicas", "matemáticas", "math", "estadistica", "estadística", "calculo", "cálculo", "algebra", "álgebra"],
-  physics: ["fisica", "física", "physics", "mecanica", "mecánica", "optica", "óptica", "termodinamica", "termodinámica"],
-  economics: ["economia", "economía", "finanzas", "contaduria", "contaduría", "negocios", "administracion", "administración"],
-  social_sciences: ["sociologia", "sociología", "psicologia", "psicología", "educacion", "educación", "derecho", "politica", "política", "antropologia", "antropología"],
-  humanities: ["historia", "literatura", "filosofia", "filosofía", "linguistica", "lingüística", "humanidades"],
-  arts: ["arte", "artes", "diseño", "diseno", "arquitectura", "musica", "música"],
-};
-
-const VOCAB_RELATED_AREAS: Record<string, string[]> = {
-  medicine: ["chemistry", "biology"],
-  chemistry: ["biology", "medicine"],
-  biology: ["chemistry", "medicine"],
-  engineering: ["mathematics", "physics"],
-  mathematics: ["engineering", "physics"],
-  physics: ["mathematics", "engineering"],
-  economics: ["mathematics", "social_sciences"],
-  social_sciences: ["humanities", "economics"],
-  humanities: ["social_sciences", "arts"],
-  arts: ["humanities"],
-};
-
-function detectVocabularyArea(value: string): string | null {
-  const norm = normalize(value);
-  if (!norm) return null;
-  for (const [area, aliases] of Object.entries(VOCAB_AREA_ALIASES)) {
-    if (aliases.some((alias) => {
-      const aliasNorm = normalize(alias);
-      return norm.includes(aliasNorm) || aliasNorm.includes(norm);
-    })) {
-      return area;
-    }
-  }
-  return null;
-}
-
-function packVocabularyArea(pack: VocabPackEntry): string | null {
-  return detectVocabularyArea([
-    pack.discipline ?? "",
-    pack.subject ?? "",
-    pack.program_name ?? "",
-    pack.name,
-    pack.description,
-  ].join(" "));
-}
-
-function vocabularyAreaLabel(area: string): string {
-  return VOCAB_AREA_OPTIONS.find((option) => option.id === area)?.label ?? area;
-}
-
 function recommendVocabularyPacks(
   packs: VocabPackEntry[],
   language: string,
@@ -385,33 +317,16 @@ function recommendVocabularyPacks(
 ) {
   const langNorm = normalize(language);
   const levelNorm = normalize(academicLevel);
-  const targetArea = detectVocabularyArea([discipline, programName].join(" "));
+  const disciplineNorm = normalize(discipline);
   const programNorm = normalize(programName);
 
   return packs
     .map((pack) => {
       let score = 0;
-      const packKind = pack.pack_kind ?? "discipline";
-      const packLang = normalize(pack.base_language_hint ?? "");
-      const packArea = packVocabularyArea(pack);
-
-      if (packLang && packLang !== langNorm) return { pack, score: -1 };
-      score += packLang === langNorm ? 4 : 1;
-
-      if (packKind === "general") score += 2;
-      if (packKind === "academic") score += 3;
-
-      if (["discipline", "subject", "program"].includes(packKind)) {
-        if (!targetArea) return { pack, score: -1 };
-        if (packArea === targetArea) {
-          score += packKind === "program" ? 8 : 7;
-        } else if (packArea && (VOCAB_RELATED_AREAS[targetArea] ?? []).includes(packArea)) {
-          score += 2;
-        } else {
-          return { pack, score: -1 };
-        }
-      }
-
+      if (normalize(pack.base_language_hint ?? "") === langNorm) score += 4;
+      if ((pack.pack_kind ?? "discipline") === "general") score += 1;
+      if ((pack.pack_kind ?? "discipline") === "academic") score += 2;
+      if (disciplineNorm && normalize(pack.discipline ?? "").includes(disciplineNorm)) score += 4;
       if (programNorm && normalize(pack.program_name ?? "").includes(programNorm)) score += 5;
       if (levelNorm && (pack.target_levels ?? []).some((level) => normalize(level) === levelNorm)) score += 2;
       return { pack, score };
@@ -481,19 +396,20 @@ function StepTipo({
 }: {
   selected: string; onSelect: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   const options = [
-    { id: "tesina", title: "Tesina", desc: "Trabajo corto o monográfico con estructura sencilla.", meta: "Licenciatura" },
-    { id: "tesis", title: "Tesis", desc: "Investigación formal para licenciatura o posgrado.", meta: "Licenciatura · Maestría · Doctorado" },
-    { id: "especialidad", title: "Especialidad", desc: "Trabajo profesional o clínico con requisitos más acotados.", meta: "Especialidad" },
-    { id: "posdoctorado", title: "Posdoctorado", desc: "Reporte avanzado con énfasis en resultados y publicaciones.", meta: "Posdoctorado" },
+    { id: "tesina", title: t("wizard.doc_tesina"), desc: t("wizard.doc_tesina_desc"), meta: t("home.level_licenciatura") },
+    { id: "tesis", title: t("wizard.doc_tesis"), desc: t("wizard.doc_tesis_desc"), meta: t("wizard.doc_tesis_meta") },
+    { id: "especialidad", title: t("home.level_especialidad"), desc: t("wizard.doc_especialidad_desc"), meta: t("home.level_especialidad") },
+    { id: "posdoctorado", title: t("home.level_posdoctorado"), desc: t("wizard.doc_posdoctorado_desc"), meta: t("home.level_posdoctorado") },
   ];
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        ¿Qué tipo de <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>trabajo académico</em> vas a crear?
+        {t("wizard.doc_type_title_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>{t("wizard.doc_type_title_em")}</em> {t("wizard.doc_type_title_suffix")}
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 540 }}>
-        TeXisStudio te propondrá una estructura inicial. Después podrás ajustar secciones, portada y requisitos institucionales.
+        {t("wizard.doc_type_subtitle")}
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, maxWidth: 820 }}>
         {options.map((o) => (
@@ -531,10 +447,10 @@ function StepTipo({
 // ── Helpers ──────────────────────────────────────────────────────
 
 function InputField({
-  label, value, onChange, placeholder, mono = false, error,
+  label, value, onChange, placeholder, mono = false,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; mono?: boolean; error?: string;
+  placeholder?: string; mono?: boolean;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -542,27 +458,26 @@ function InputField({
       <input
         style={{
           padding: "8px 12px", borderRadius: "var(--r-md)",
-          border: `1px solid ${error ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-panel)",
+          border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
           fontSize: "var(--fs-base)", color: "var(--fg-strong)",
           outline: "none", fontFamily: mono ? "var(--font-mono)" : undefined,
         }}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        aria-invalid={!!error}
       />
-      {error && <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{error}</span>}
     </div>
   );
 }
 
 /** Lista dinámica de strings con botón + para agregar y × para eliminar */
 function DynamicList({
-  label, sublabel, items, onChange, placeholder, error,
+  label, sublabel, items, onChange, placeholder,
 }: {
   label: string; sublabel?: string;
-  items: string[]; onChange: (items: string[]) => void; placeholder?: string; error?: string;
+  items: string[]; onChange: (items: string[]) => void; placeholder?: string;
 }) {
+  const { t } = useTranslation();
   const addItem = () => onChange([...items, ""]);
   const setItem = (i: number, v: string) => {
     const next = [...items]; next[i] = v; onChange(next);
@@ -584,7 +499,7 @@ function DynamicList({
           style={{ padding: "2px 10px", fontSize: "var(--fs-xs)" }}
           onClick={addItem}
         >
-          + Agregar
+          + {t("common.add")}
         </button>
       </div>
       {items.length === 0 && (
@@ -593,7 +508,7 @@ function DynamicList({
           border: "1px dashed var(--border-soft)", background: "var(--bg-app)",
           fontSize: "var(--fs-sm)", color: "var(--fg-faint)", textAlign: "center",
         }}>
-          Ninguno — haz clic en «+ Agregar»
+          {t("wizard.dynamic_none")}
         </div>
       )}
       {items.map((item, i) => (
@@ -601,18 +516,17 @@ function DynamicList({
           <input
             style={{
               flex: 1, padding: "7px 12px", borderRadius: "var(--r-md)",
-              border: `1px solid ${error ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-panel)",
+              border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
               fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
             }}
             value={item}
             onChange={(e) => setItem(i, e.target.value)}
             placeholder={placeholder ?? ""}
-            aria-invalid={!!error}
           />
           <button
             type="button"
             onClick={() => removeItem(i)}
-            title="Eliminar"
+            title={t("common.delete")}
             style={{
               width: 28, height: 28, flexShrink: 0,
               border: "1px solid var(--border-firm)", borderRadius: "var(--r-md)",
@@ -625,7 +539,6 @@ function DynamicList({
           </button>
         </div>
       ))}
-      {error && <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{error}</span>}
     </div>
   );
 }
@@ -638,7 +551,6 @@ function StepDatos({
   onAdvisors,
   coAuthors,
   onCoAuthors,
-  errors = {},
 }: {
   form: Record<string, string>;
   onChange: (key: string, val: string) => void;
@@ -646,42 +558,41 @@ function StepDatos({
   onAdvisors: (v: string[]) => void;
   coAuthors: string[];
   onCoAuthors: (v: string[]) => void;
-  errors?: WizardErrors;
 }) {
+  const { t } = useTranslation();
   const { userMode } = useSettingsStore();
   const [showOptional, setShowOptional] = useState(userMode === "advanced");
 
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        Contexto <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>académico</em> y datos personales
+        {t("wizard.context_title_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>{t("wizard.context_title_em")}</em> {t("wizard.context_title_suffix")}
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 20, maxWidth: 560 }}>
-        Estos datos se usan para la portada, para recomendar el perfil correcto y para los metadatos del PDF.
+        {t("wizard.context_subtitle")}
       </p>
 
       {/* ── Campos esenciales ── */}
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--fg-faint)", marginBottom: 10 }}>
-        Lo esencial
+        {t("wizard.essentials")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 20 }}>
-        <InputField label="Título del trabajo" value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder="Análisis de…" error={errors.title} />
-        <InputField label="Tu nombre completo" value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder="María García López" error={errors.full_name} />
-        <InputField label="Universidad / Institución" value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder="UNAM, MIT, UAM…" error={errors.institution} />
+        <InputField label={t("wizard.project_title")} value={form.title ?? ""} onChange={(v) => onChange("title", v)} placeholder={t("wizard.project_title_short_placeholder")} />
+        <InputField label={t("wizard.full_name")} value={form.full_name ?? ""} onChange={(v) => onChange("full_name", v)} placeholder={t("wizard.full_name_placeholder")} />
+        <InputField label={t("wizard.university_institution")} value={form.institution ?? ""} onChange={(v) => onChange("institution", v)} placeholder={t("wizard.institution_examples")} />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>Nivel académico</label>
+          <label style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-default)" }}>{t("wizard.academic_level")}</label>
           <select
             value={form.academic_level ?? "licenciatura"}
             onChange={(e) => onChange("academic_level", e.target.value)}
             style={{
-              padding: "8px 34px 8px 12px", borderRadius: "var(--r-md)",
+              padding: "8px 12px", borderRadius: "var(--r-md)",
               border: "1px solid var(--border-firm)", background: "var(--bg-panel)",
               fontSize: "var(--fs-base)", color: "var(--fg-strong)", outline: "none",
-              width: "100%", boxSizing: "border-box",
             }}
           >
             {ACADEMIC_LEVEL_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>{option.label}</option>
+              <option key={option.id} value={option.id}>{t(`home.level_${option.id}`)}</option>
             ))}
           </select>
         </div>
@@ -690,12 +601,11 @@ function StepDatos({
       {/* Asesor */}
       <div style={{ maxWidth: 820, marginBottom: 20 }}>
         <DynamicList
-          label="Asesor / Director de tesis"
-          sublabel="(obligatorio para la portada)"
+          label={t("wizard.advisor_director")}
+          sublabel={t("wizard.required_for_cover")}
           items={advisors}
           onChange={onAdvisors}
-          placeholder="Dra. Ana Torres"
-          error={errors.advisors}
+          placeholder={t("editor_meta.advisor_placeholder")}
         />
       </div>
 
@@ -710,25 +620,25 @@ function StepDatos({
         }}
       >
         <span>{showOptional ? "▾" : "▸"}</span>
-        {showOptional ? "Ocultar detalles adicionales" : "Agregar más detalles (facultad, área, programa…)"}
+        {showOptional ? t("wizard.hide_optional") : t("wizard.show_optional")}
       </button>
 
       {showOptional && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 820, marginBottom: 20 }}>
-            <InputField label="Facultad / Departamento" value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder="Facultad de Ingeniería" />
-            <InputField label="Ciudad" value={form.city ?? "Ciudad de México"} onChange={(v) => onChange("city", v)} placeholder="Ciudad de México" />
-            <InputField label="Área o disciplina" value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder="Ingeniería eléctrica" />
-            <InputField label="Programa" value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder="Doctorado en Ciencias" />
+            <InputField label={t("wizard.faculty_department")} value={form.faculty ?? ""} onChange={(v) => onChange("faculty", v)} placeholder={t("wizard.faculty_placeholder")} />
+            <InputField label={t("editor.meta_city")} value={form.city ?? t("wizard.default_city")} onChange={(v) => onChange("city", v)} placeholder={t("wizard.default_city")} />
+            <InputField label={t("wizard.discipline_area")} value={form.discipline ?? ""} onChange={(v) => onChange("discipline", v)} placeholder={t("wizard.discipline_placeholder")} />
+            <InputField label={t("wizard.program")} value={form.program_name ?? ""} onChange={(v) => onChange("program_name", v)} placeholder={t("wizard.program_placeholder")} />
             <DisciplineHintPanel discipline={form.discipline ?? ""} />
           </div>
           <div style={{ maxWidth: 820, marginBottom: 16 }}>
             <DynamicList
-              label="Co-autores"
-              sublabel="(para trabajos grupales)"
+              label={t("editor_meta.coauthors")}
+              sublabel={t("wizard.for_group_work")}
               items={coAuthors}
               onChange={onCoAuthors}
-              placeholder="Luis Hernández"
+              placeholder={t("editor_meta.coauthor_placeholder")}
             />
           </div>
         </>
@@ -761,6 +671,7 @@ function StepPerfil({
   discipline: string;
   programName: string;
 }) {
+  const { t } = useTranslation();
   const { userMode } = useSettingsStore();
   const selProfile = profiles.find((p) => p.id === selected);
   const recommended = recommendProfile(
@@ -778,10 +689,10 @@ function StepPerfil({
       {/* Listado */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-          Elige tu <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>perfil académico</em>
+          {t("wizard.choose_profile_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>{t("wizard.choose_profile_em")}</em>
         </h1>
         <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 22, maxWidth: 500 }}>
-          Nosotros te sugerimos uno. Si tu institución no aparece exacta, puedes empezar con la mejor coincidencia y cambiarlo después.
+          {t("wizard.choose_profile_subtitle")}
         </p>
         {recommendedProfile && (
           <div style={{
@@ -789,11 +700,11 @@ function StepPerfil({
             background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
             fontSize: "var(--fs-sm)", color: "var(--accent-deep)", lineHeight: 1.6,
           }}>
-            <strong>Recomendación inicial:</strong> {recommendedProfile.name}
+            <strong>{t("wizard.initial_recommendation")}:</strong> {recommendedProfile.name}
             <div style={{ color: "var(--fg-muted)", marginTop: 4 }}>
               {recommended?.reasons.length
-                ? `La elegimos porque ${recommended.reasons.join(", ")}.`
-                : "La elegimos como punto de partida seguro para este tipo de trabajo."}
+                ? t("wizard.recommendation_reasons", { reasons: recommended.reasons.join(", ") })
+                : t("wizard.recommendation_default_reason")}
             </div>
           </div>
         )}
@@ -825,12 +736,12 @@ function StepPerfil({
                     <ProfileStatusBadge status={p.status} />
                     {recommendedProfile?.id === p.id && (
                       <span className="chip" style={{ fontSize: 10 }}>
-                        recomendado
+                        {t("wizard.recommended")}
                       </span>
                     )}
                     {selected === p.id && (
                       <span className="chip chip-accent" style={{ fontSize: 10 }}>
-                        <IconCheck size={8} sw={2.5} /> seleccionado
+                        <IconCheck size={8} sw={2.5} /> {t("wizard.selected")}
                       </span>
                     )}
                   </div>
@@ -846,7 +757,7 @@ function StepPerfil({
                     <span style={{ fontSize: 10, color: "var(--fg-muted)" }}>{p.meta}</span>
                   )}
                   {p.sections_count > 0 && (
-                    <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>· {p.sections_count} secciones</span>
+                    <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>· {t("wizard.profile_sections", { n: p.sections_count })}</span>
                   )}
                 </div>
               </div>
@@ -862,8 +773,8 @@ function StepPerfil({
         }}>
           <IconInfo size={14} />
           <div>
-            <strong>¿No ves tu institución?</strong> Importa un perfil desde la{" "}
-            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => window.open("/library")}>Biblioteca</span>.
+            <strong>{t("wizard.no_institution")}</strong> {t("wizard.import_profile_from")}{" "}
+            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => window.open("/library")}>{t("library.title")}</span>.
           </div>
         </div>
       </div>
@@ -876,7 +787,7 @@ function StepPerfil({
           borderRadius: "var(--r-lg)", padding: 16,
         }}>
           <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 10 }}>
-            Secciones del perfil
+            {t("wizard.profile_sections_title")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {selProfile.sections.map((s) => (
@@ -908,7 +819,7 @@ function StepReview({
   coAuthors,
   outputPath,
   documentLanguage,
-  selectedVocab,
+  suggestedVocab,
 }: {
   docType: string;
   form: Record<string, string>;
@@ -917,29 +828,30 @@ function StepReview({
   coAuthors: string[];
   outputPath: string;
   documentLanguage: string;
-  selectedVocab: VocabPackEntry[];
+  suggestedVocab: VocabPackEntry[];
 }) {
+  const { t } = useTranslation();
   const summaryRows = [
-    ["Trabajo", docType],
-    ["Nivel", form.academic_level || "Pendiente"],
-    ["Título", form.title || "Pendiente"],
-    ["Autoría", form.full_name || "Pendiente"],
-    ["Institución", form.institution || "Pendiente"],
-    ["Facultad / departamento", form.faculty || "Opcional"],
-    ["Área", form.discipline || "Opcional"],
-    ["Programa", form.program_name || "Opcional"],
-    ["Perfil", profile?.name ?? "Pendiente"],
-    ["Idioma del documento", documentLanguage.toUpperCase()],
-    ["Carpeta de destino", outputPath || "Pendiente"],
+    [t("wizard.review_doc_type"), docType],
+    [t("wizard.review_level"), form.academic_level || t("wizard.pending")],
+    [t("editor.meta_title"), form.title || t("wizard.pending")],
+    [t("wizard.review_authorship"), form.full_name || t("wizard.pending")],
+    [t("editor.meta_institution"), form.institution || t("wizard.pending")],
+    [t("wizard.faculty_department"), form.faculty || t("wizard.optional")],
+    [t("wizard.review_area"), form.discipline || t("wizard.optional")],
+    [t("wizard.program"), form.program_name || t("wizard.optional")],
+    [t("editor_meta.profile"), profile?.name ?? t("wizard.pending")],
+    [t("wizard.review_document_language"), documentLanguage.toUpperCase()],
+    [t("wizard.output_folder_review"), outputPath || t("wizard.pending")],
   ];
 
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        Revisa tu <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>configuración inicial</em>
+        {t("wizard.review_title_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>{t("wizard.review_title_em")}</em>
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 620 }}>
-        Estás a un paso de crear tu proyecto. Luego podrás escribir, revisar y entregar sin tocar LaTeX directamente.
+        {t("wizard.review_subtitle")}
       </p>
       <div style={{
         maxWidth: 820, background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
@@ -957,29 +869,29 @@ function StepReview({
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-              Asesores y comité
+              {t("wizard.advisors_committee")}
             </div>
             <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-              {advisors.filter((item) => item.trim()).length > 0 ? advisors.filter((item) => item.trim()).join(", ") : "Podrás agregarlos después."}
+              {advisors.filter((item) => item.trim()).length > 0 ? advisors.filter((item) => item.trim()).join(", ") : t("wizard.can_add_later")}
             </div>
           </div>
           <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-              Coautores
+              {t("editor_meta.coauthors")}
             </div>
             <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-              {coAuthors.filter((item) => item.trim()).length > 0 ? coAuthors.filter((item) => item.trim()).join(", ") : "No definidos."}
+              {coAuthors.filter((item) => item.trim()).length > 0 ? coAuthors.filter((item) => item.trim()).join(", ") : t("wizard.not_defined")}
             </div>
           </div>
         </div>
         <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-            Apoyos lingüísticos seleccionados
+            {t("wizard.suggested_language_support")}
           </div>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
-            {selectedVocab.length > 0
-              ? selectedVocab.map((pack) => pack.name).join(", ")
-              : "Podrás activar vocabularios académicos o disciplinares después desde Configuración."}
+            {suggestedVocab.length > 0
+              ? suggestedVocab.map((pack) => pack.name).join(", ")
+              : t("wizard.language_support_later")}
           </div>
         </div>
       </div>
@@ -990,32 +902,25 @@ function StepReview({
 function StepLanguageSupport({
   documentLanguage,
   onDocumentLanguage,
-  vocabularyArea,
-  onVocabularyArea,
   availableLanguages,
   recommendedPacks,
-  selectedVocabIds,
-  onToggleVocab,
 }: {
   documentLanguage: string;
   onDocumentLanguage: (lang: string) => void;
-  vocabularyArea: string;
-  onVocabularyArea: (area: string) => void;
   availableLanguages: LangPackEntry[];
   recommendedPacks: VocabPackEntry[];
-  selectedVocabIds: string[];
-  onToggleVocab: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const quickChoices = [
-    { id: "es", name: "Español", note: "Bundled por defecto" },
-    { id: "en", name: "English", note: "Bundled por defecto" },
+    { id: "es", name: "Español", note: t("wizard.bundled_default") },
+    { id: "en", name: "English", note: t("wizard.bundled_default") },
     ...availableLanguages
       .filter((entry) => !["es", "en"].includes(entry.id))
       .slice(0, 6)
       .map((entry) => ({
         id: entry.id,
         name: entry.native_name || entry.name,
-        note: entry.capabilities.spelling ? "Instalable para corrección" : "Disponible en catálogo",
+        note: entry.capabilities.spelling ? t("wizard.installable_spellcheck") : t("wizard.available_catalog"),
       })),
   ];
 
@@ -1026,10 +931,10 @@ function StepLanguageSupport({
   return (
     <>
       <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, color: "var(--fg-strong)", margin: "0 0 6px", letterSpacing: "-0.015em" }}>
-        Elige el <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>idioma principal</em> y tus apoyos
+        {t("wizard.language_title_prefix")} <em style={{ color: "var(--accent-deep)", fontStyle: "italic" }}>{t("wizard.language_title_em")}</em> {t("wizard.language_title_suffix")}
       </h1>
       <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-md)", marginBottom: 28, maxWidth: 620 }}>
-        Esto no cambia la estructura del documento; solo nos ayuda a recomendar corrección ortográfica, gramática y vocabularios útiles para tu área.
+        {t("wizard.language_subtitle")}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, maxWidth: 820 }}>
@@ -1055,94 +960,37 @@ function StepLanguageSupport({
       </div>
 
       <div style={{ marginTop: 24, maxWidth: 820, padding: "16px 18px", borderRadius: "var(--r-lg)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 4 }}>
-              Pila sugerida para {documentLanguage.toUpperCase()}
-            </div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-              Área usada: {vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : "la del proyecto"}
-            </div>
-          </div>
-          <select
-            value={vocabularyArea}
-            onChange={(e) => onVocabularyArea(e.target.value)}
-            style={{
-              minWidth: 220,
-              padding: "7px 30px 7px 10px",
-              borderRadius: "var(--r-md)",
-              border: "1px solid var(--border-firm)",
-              background: "var(--bg-app)",
-              color: "var(--fg-strong)",
-              fontSize: "var(--fs-sm)",
-            }}
-          >
-            {VOCAB_AREA_OPTIONS.map((option) => (
-              <option key={option.id || "project"} value={option.id}>{option.label}</option>
-            ))}
-          </select>
+        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 8 }}>
+          {t("wizard.suggested_stack", { language: documentLanguage.toUpperCase() })}
         </div>
         <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 12 }}>
-          Lo recomendable es combinar un diccionario general del idioma con vocabularios académicos y, si aplica, uno específico de tu área o programa.
+          {t("wizard.suggested_stack_body")}
         </div>
         {recommendedPacks.length > 0 ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-            {recommendedPacks.map((pack) => {
-              const selected = selectedVocabIds.includes(pack.id);
-              return (
-                <button
-                  key={pack.id}
-                  type="button"
-                  onClick={() => onToggleVocab(pack.id)}
-                  aria-pressed={selected}
-                  style={{
-                    textAlign: "left",
-                    padding: "12px 14px",
-                    borderRadius: "var(--r-md)",
-                    background: selected ? "var(--accent-tint)" : "var(--bg-app)",
-                    border: `1px solid ${selected ? "var(--accent)" : "var(--border-subtle)"}`,
-                    boxShadow: selected ? "0 0 0 3px var(--accent-soft)" : "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
-                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{pack.name}</span>
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 999,
-                        border: `1px solid ${selected ? "var(--accent)" : "var(--border-firm)"}`,
-                        background: selected ? "var(--accent)" : "var(--bg-panel)",
-                        color: selected ? "white" : "transparent",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        lineHeight: 1,
-                        flexShrink: 0,
-                      }}
-                    >
-                      ✓
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 7 }}>
-                    <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
-                    <span style={{ fontSize: "var(--fs-xs)", color: selected ? "var(--accent-deep)" : "var(--fg-faint)" }}>
-                      {selected ? "Se activará al crear" : "Click para activar"}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                    {pack.description}
-                  </div>
-                </button>
-              );
-            })}
+            {recommendedPacks.map((pack) => (
+              <div
+                key={pack.id}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: "var(--r-md)",
+                  background: "var(--bg-app)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{pack.name}</span>
+                  <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                  {pack.description}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-            No hay un vocabulario específico que coincida todavía con tu selección. Podrás activar uno general y añadir tu propio vocabulario después desde Configuración.
+            {t("wizard.no_vocab_match")}
           </div>
         )}
       </div>
@@ -1151,16 +999,12 @@ function StepLanguageSupport({
 }
 
 export default function WizardView() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { lang: savedUiLang, spellLang: savedSpellLang, setLang, setSpellLang } = useSettingsStore();
   const { catalog, loadCatalog } = useLangPacksStore();
-  const {
-    officialPacks,
-    loadOfficialCatalog,
-    install: installVocabPack,
-    isInstalled: isVocabInstalled,
-  } = useVocabPacksStore();
+  const { officialPacks, loadOfficialCatalog } = useVocabPacksStore();
   const [step, setStep] = useState(0);
   const [docType, setDocType] = useState("tesis");
   const [profileId, setProfileId] = useState(
@@ -1171,20 +1015,16 @@ export default function WizardView() {
     full_name: "",
     institution: "",
     faculty: "",
-    city: "Ciudad de México",
+    city: t("wizard.default_city"),
     academic_level: defaultAcademicLevelForDocType("tesis"),
     discipline: "",
     program_name: "",
   });
   const [documentLanguage, setDocumentLanguage] = useState(savedSpellLang ?? savedUiLang ?? "es");
-  const [vocabularyArea, setVocabularyArea] = useState("");
-  const [selectedVocabIds, setSelectedVocabIds] = useState<string[]>([]);
   const [advisors, setAdvisors] = useState<string[]>([""]);
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<WizardErrors>({});
   const [profiles, setProfiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
@@ -1226,100 +1066,37 @@ export default function WizardView() {
         officialPacks,
         documentLanguage,
         form.academic_level ?? "licenciatura",
-        vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : form.discipline ?? "",
+        form.discipline ?? "",
         form.program_name ?? "",
       ),
-    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks, vocabularyArea],
+    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks],
   );
-
-  const recommendedVocabPacks = useMemo(
-    () => suggestedVocab.map((entry) => entry.pack),
-    [suggestedVocab],
-  );
-
-  const selectedVocabPacks = useMemo(
-    () => recommendedVocabPacks.filter((pack) => selectedVocabIds.includes(pack.id)),
-    [recommendedVocabPacks, selectedVocabIds],
-  );
-
-  useEffect(() => {
-    const visibleIds = new Set(recommendedVocabPacks.map((pack) => pack.id));
-    setSelectedVocabIds((prev) => {
-      const next = prev.filter((id) => visibleIds.has(id));
-      return next.length === prev.length ? prev : next;
-    });
-  }, [recommendedVocabPacks]);
-
-  function toggleVocabPack(id: string) {
-    setSelectedVocabIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  }
 
   async function handlePickFolder() {
     const picked = await api.pickFolder();
     if (picked) setOutputPath(picked);
   }
 
-  function validateStep(currentStep: number): boolean {
-    const errors: WizardErrors = {};
-
-    if (currentStep === 1) {
-      if (!form.title.trim()) errors.title = "Escribe el título que irá en portada.";
-      if (!form.full_name.trim()) errors.full_name = "Escribe el nombre completo del autor.";
-      if (!form.institution.trim()) errors.institution = "Indica la universidad o institución.";
-      if (!advisors.some((advisor) => advisor.trim())) {
-        errors.advisors = "Agrega al menos un asesor o director de tesis.";
-      }
-    }
-
-    if (currentStep === steps.length - 1 && !outputPath.trim()) {
-      errors.outputPath = "Selecciona la carpeta donde se creará el proyecto.";
-    }
-
-    setFieldErrors(errors);
-    const hasErrors = Object.keys(errors).length > 0;
-    setValidationError(hasErrors ? "Completa los datos marcados antes de continuar." : null);
-    return !hasErrors;
-  }
-
-  function goNext() {
-    if (!validateStep(step)) return;
-    setValidationError(null);
-    setStep((s) => s + 1);
-  }
-
   const steps = [
-    { name: "Tipo de trabajo", hint: docType ? docType : "Tesina · Tesis · Posgrado" },
-    { name: "Contexto académico", hint: form.institution || "Institución, grado y comité" },
-    { name: "Perfil recomendado", hint: profiles.find((p) => p.id === profileId)?.name ?? "Estructura y normas" },
-    { name: "Idioma y apoyo", hint: documentLanguage.toUpperCase() },
-    { name: "Revisión final", hint: "Resumen antes de crear el proyecto" },
+    { name: t("wizard.step_doc_type"), hint: docType ? t(`wizard.doc_${docType}`, { defaultValue: docType }) : t("wizard.doc_type_hint") },
+    { name: t("wizard.step_context"), hint: form.institution || t("wizard.context_hint") },
+    { name: t("wizard.step_profile"), hint: profiles.find((p) => p.id === profileId)?.name ?? t("wizard.profile_hint") },
+    { name: t("wizard.step_language"), hint: documentLanguage.toUpperCase() },
+    { name: t("wizard.step_review"), hint: t("wizard.review_hint") },
   ];
 
   async function handleCreate() {
     setCreateError(null);
-    if (!validateStep(1) || !validateStep(steps.length - 1)) return;
     if (!form.title.trim()) {
-      setCreateError("Escribe un título para el proyecto antes de continuar.");
+      setCreateError(t("wizard.error_title_required"));
       return;
     }
     if (!outputPath.trim()) {
-      setCreateError("Selecciona una carpeta donde guardar el proyecto.");
+      setCreateError(t("wizard.error_folder_required"));
       return;
     }
     setCreating(true);
     try {
-      for (const pack of selectedVocabPacks) {
-        if (!isVocabInstalled(pack.id)) {
-          try {
-            await installVocabPack(pack);
-          } catch (e) {
-            throw new Error(`No se pudo activar "${pack.name}". Revisa tu conexión o desmárcalo para crear el proyecto sin ese apoyo. Detalle: ${e}`);
-          }
-        }
-      }
-
       const result = await api.createProject(form.title, profileId, outputPath);
       // Cargar modelo y enriquecer con datos del wizard
       const model = await api.getProject(result.project_path);
@@ -1336,17 +1113,17 @@ export default function WizardView() {
           title: form.title.trim(),
           academic_level: (form.academic_level as AcademicLevel) || model.metadata.academic_level,
           language: documentLanguage,
-          city: form.city.trim() || "Ciudad de México",
+          city: form.city.trim() || t("wizard.default_city"),
           keywords: seededKeywords.length > 0 ? seededKeywords : model.metadata.keywords,
         },
         institution: {
           ...model.institution,
-          name: form.institution.trim() || "Universidad",
+          name: form.institution.trim() || t("wizard.default_institution"),
           faculty: form.faculty.trim() || undefined,
         },
         student: {
           ...model.student,
-          full_name: form.full_name.trim() || "Autor",
+          full_name: form.full_name.trim() || t("wizard.default_author"),
           advisors: filledAdvisors,
           co_authors: filledCoAuthors,
         },
@@ -1363,7 +1140,7 @@ export default function WizardView() {
       navigate(`/project/${encodeURIComponent(result.project_path)}`);
     } catch (e) {
       console.error("Error creando proyecto:", e);
-      setCreateError(`No se pudo crear el proyecto: ${e}`);
+      setCreateError(t("wizard.error_create_project", { error: String(e) }));
       setCreating(false);
     }
   }
@@ -1377,11 +1154,11 @@ export default function WizardView() {
       <TxAppbar
         left={<TxLogo />}
         center={<span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
-          Asistente de tesis · paso {step + 1} de {steps.length}
+          {t("wizard.appbar_title", { current: step + 1, total: steps.length })}
         </span>}
         right={
           <button className="btn btn-ghost btn-sm" onClick={() => navigate("/")}>
-            Cancelar <span className="kbd">Esc</span>
+            {t("common.cancel")} <span className="kbd">Esc</span>
           </button>
         }
       />
@@ -1389,10 +1166,10 @@ export default function WizardView() {
       <div style={S.shell}>
         <aside style={S.rail}>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)", fontWeight: 500, color: "var(--fg-strong)", margin: "0 0 4px", letterSpacing: "-0.01em" }}>
-            Asistente de tesis
+            {t("wizard.assistant_title")}
           </h2>
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 28 }}>
-            Te guiamos para dejar listo el proyecto sin pedirte que conozcas LaTeX. Todo se puede ajustar después.
+            {t("wizard.assistant_subtitle")}
           </p>
           {steps.map((s, i) => (
             <WizStep
@@ -1409,9 +1186,9 @@ export default function WizardView() {
             background: "var(--bg-panel)", border: "1px solid var(--border-subtle)",
             fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5,
           }}>
-            <strong style={{ color: "var(--fg-default)", fontSize: "var(--fs-sm)" }}>¿Por qué un perfil?</strong>
+            <strong style={{ color: "var(--fg-default)", fontSize: "var(--fs-sm)" }}>{t("wizard.why_profile_title")}</strong>
             <br />
-            Define clase LaTeX, paquetes, estilo de bibliografía y secciones. Se puede cambiar después.
+            {t("wizard.why_profile_body")}
           </div>
         </aside>
 
@@ -1422,20 +1199,11 @@ export default function WizardView() {
           {step === 1 && (
             <StepDatos
               form={form}
-              onChange={(k, v) => {
-                setForm((f) => ({ ...f, [k]: v }));
-                setFieldErrors((prev) => ({ ...prev, [k]: undefined }));
-                setValidationError(null);
-              }}
+              onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
               advisors={advisors}
-              onAdvisors={(next) => {
-                setAdvisors(next);
-                setFieldErrors((prev) => ({ ...prev, advisors: undefined }));
-                setValidationError(null);
-              }}
+              onAdvisors={setAdvisors}
               coAuthors={coAuthors}
               onCoAuthors={setCoAuthors}
-              errors={fieldErrors}
             />
           )}
           {step === 2 && (
@@ -1454,12 +1222,8 @@ export default function WizardView() {
             <StepLanguageSupport
               documentLanguage={documentLanguage}
               onDocumentLanguage={setDocumentLanguage}
-              vocabularyArea={vocabularyArea}
-              onVocabularyArea={setVocabularyArea}
               availableLanguages={availableLanguages}
-              recommendedPacks={recommendedVocabPacks}
-              selectedVocabIds={selectedVocabIds}
-              onToggleVocab={toggleVocabPack}
+              recommendedPacks={suggestedVocab.map((entry) => entry.pack)}
             />
           )}
           {step === 4 && (
@@ -1471,7 +1235,7 @@ export default function WizardView() {
               coAuthors={coAuthors}
               outputPath={outputPath}
               documentLanguage={documentLanguage}
-              selectedVocab={selectedVocabPacks}
+              suggestedVocab={suggestedVocab.map((entry) => entry.pack)}
             />
           )}
 
@@ -1481,45 +1245,35 @@ export default function WizardView() {
               {/* Selector de carpeta */}
               <div style={{ padding: "12px 16px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)" }}>
                 <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "block", marginBottom: 6 }}>
-                  Carpeta donde se creará el proyecto
+                  {t("wizard.output_folder_label")}
                 </label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
                     value={outputPath}
-                    onChange={(e) => {
-                      setOutputPath(e.target.value);
-                      setFieldErrors((prev) => ({ ...prev, outputPath: undefined }));
-                      setValidationError(null);
-                    }}
-                    placeholder="/ruta/a/documentos"
+                    onChange={(e) => setOutputPath(e.target.value)}
+                    placeholder={t("wizard.output_folder_placeholder")}
                     style={{
                       flex: 1, padding: "7px 10px", borderRadius: "var(--r-md)",
-                      border: `1px solid ${fieldErrors.outputPath ? "var(--build-err)" : "var(--border-firm)"}`, background: "var(--bg-app)",
+                      border: "1px solid var(--border-firm)", background: "var(--bg-app)",
                       fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none",
                       fontFamily: "var(--font-mono)",
                     }}
-                    aria-invalid={!!fieldErrors.outputPath}
                   />
                   <button
                     type="button"
                     className="btn btn-sm"
                     onClick={handlePickFolder}
-                    title="Explorar carpetas"
+                    title={t("wizard.browse_folders")}
                     style={{ flexShrink: 0, padding: "6px 14px" }}
                   >
-                    📁 Explorar…
+                    📁 {t("wizard.browse")}
                   </button>
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 5 }}>
-                  Se creará una carpeta{" "}
-                  <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || "mi-tesis"}/</code>{" "}
-                  dentro de esta ruta.
+                  {t("wizard.folder_creation_prefix")}{" "}
+                  <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{form.title || t("wizard.default_project_slug")}/</code>{" "}
+                  {t("wizard.folder_creation_suffix")}
                 </div>
-                {fieldErrors.outputPath && (
-                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", marginTop: 6 }}>
-                    {fieldErrors.outputPath}
-                  </div>
-                )}
               </div>
 
               {/* Sugerencia de nube — si hay carpetas detectadas */}
@@ -1531,23 +1285,18 @@ export default function WizardView() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
                     <span style={{ fontSize: 16 }}>☁</span>
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--accent-deep)" }}>
-                      Guarda en la nube para tener respaldo automático
+                      {t("wizard.cloud_backup_title")}
                     </span>
                   </div>
                   <p style={{ margin: "0 0 10px", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                    Detectamos las siguientes carpetas de sincronización en tu equipo.
-                    Haz clic para usarla como destino.
+                    {t("wizard.cloud_backup_body")}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {cloudFolders.map((cf) => (
                       <button
                         key={cf.path}
                         type="button"
-                        onClick={() => {
-                          setOutputPath(cf.path);
-                          setFieldErrors((prev) => ({ ...prev, outputPath: undefined }));
-                          setValidationError(null);
-                        }}
+                        onClick={() => setOutputPath(cf.path)}
                         style={{
                           textAlign: "left", padding: "8px 12px",
                           borderRadius: "var(--r-md)",
@@ -1563,7 +1312,7 @@ export default function WizardView() {
                           </span>
                           {outputPath === cf.path && (
                             <span className="chip chip-accent" style={{ fontSize: 10, padding: "1px 6px" }}>
-                              <IconCheck size={8} sw={2.5} /> seleccionado
+                              <IconCheck size={8} sw={2.5} /> {t("wizard.selected")}
                             </span>
                           )}
                         </div>
@@ -1584,40 +1333,21 @@ export default function WizardView() {
                   background: "var(--bg-panel)", border: "1px dashed var(--border-soft)",
                   fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5,
                 }}>
-                  <strong style={{ color: "var(--fg-default)" }}>💡 Tip: guarda en la nube</strong>
+                  <strong style={{ color: "var(--fg-default)" }}>💡 {t("wizard.cloud_tip_title")}</strong>
                   <br />
-                  No detectamos OneDrive ni Google Drive en tu equipo. Para tener respaldo automático
-                  puedes instalar{" "}
+                  {t("wizard.cloud_tip_prefix")}{" "}
                   <em>OneDrive</em> (incluido en Windows) o{" "}
                   <em>Google Drive para escritorio</em>{" "}
-                  y luego usar esa carpeta como destino. Tu tesis se sincronizará sola.
+                  {t("wizard.cloud_tip_suffix")}
                 </div>
               )}
-            </div>
-          )}
-
-          {validationError && (
-            <div
-              role="alert"
-              style={{
-                maxWidth: 820,
-                marginTop: 18,
-                padding: "10px 14px",
-                borderRadius: "var(--r-md)",
-                background: "var(--build-err-tint, #ffeded)",
-                border: "1px solid var(--build-err)",
-                color: "var(--build-err)",
-                fontSize: "var(--fs-sm)",
-              }}
-            >
-              {validationError}
             </div>
           )}
 
           <div style={S.footer}>
             {step > 0 ? (
               <button className="btn" onClick={() => setStep((s) => s - 1)}>
-                <IconChevronL size={13} /> Atrás
+                <IconChevronL size={13} /> {t("common.back")}
               </button>
             ) : (
               <span />
@@ -1627,8 +1357,8 @@ export default function WizardView() {
                 {profileId} · v0.1
               </span>
               {step < steps.length - 1 ? (
-                <button className="btn btn-accent" onClick={goNext}>
-                  Continuar <IconChevronR size={13} />
+                <button className="btn btn-accent" onClick={() => setStep((s) => s + 1)}>
+                  {t("wizard.continue")} <IconChevronR size={13} />
                 </button>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
@@ -1642,7 +1372,7 @@ export default function WizardView() {
                     onClick={handleCreate}
                     disabled={creating || !form.title.trim()}
                   >
-                    {creating ? "Creando…" : <><IconFile size={13} /> Crear proyecto</>}
+                    {creating ? t("wizard.creating") : <><IconFile size={13} /> {t("wizard.btn_create")}</>}
                   </button>
                 </div>
               )}
@@ -1652,8 +1382,8 @@ export default function WizardView() {
       </div>
 
       <TxStatusbar items={[
-        { text: "Wizard activo", dot: "var(--accent)" },
-        { icon: <IconFile size={11} />, text: "tesis.project.yaml (sin guardar)" },
+        { text: t("wizard.statusbar_active"), dot: "var(--accent)" },
+        { icon: <IconFile size={11} />, text: t("wizard.statusbar_unsaved") },
         { right: true, text: "Esc para cancelar · ↵ para continuar" },
       ]} />
     </>
