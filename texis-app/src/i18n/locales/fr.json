@@ -67,8 +67,7 @@
     "level_doctorado": "Doctorat",
     "level_posdoctorado": "Postdoctorat",
     "level_bachillerato": "Lycée",
-    "level_tecnico": "Technique",
-    "chip_more": "+ more"
+    "level_tecnico": "Technique"
   },
   "wizard": {
     "title": "Nouveau projet",
@@ -193,7 +192,8 @@
     "cloud_tip_suffix": "and then use that folder as the destination. Your thesis will sync automatically.",
     "continue": "Continue",
     "statusbar_active": "Wizard active",
-    "statusbar_unsaved": "tesis.project.yaml (unsaved)"
+    "statusbar_unsaved": "tesis.project.yaml (unsaved)",
+    "chip_more": "+ more"
   },
   "editor": {
     "placement_front": "Pages liminaires",

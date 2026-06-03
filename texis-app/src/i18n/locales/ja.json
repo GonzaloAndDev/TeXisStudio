@@ -67,8 +67,7 @@
     "level_doctorado": "博士",
     "level_posdoctorado": "博士研究員",
     "level_bachillerato": "高校",
-    "level_tecnico": "専門学校",
-    "chip_more": "+ more"
+    "level_tecnico": "専門学校"
   },
   "wizard": {
     "title": "新しいプロジェクト",
@@ -193,7 +192,8 @@
     "cloud_tip_suffix": "and then use that folder as the destination. Your thesis will sync automatically.",
     "continue": "Continue",
     "statusbar_active": "Wizard active",
-    "statusbar_unsaved": "tesis.project.yaml (unsaved)"
+    "statusbar_unsaved": "tesis.project.yaml (unsaved)",
+    "chip_more": "+ more"
   },
   "editor": {
     "placement_front": "前付け",

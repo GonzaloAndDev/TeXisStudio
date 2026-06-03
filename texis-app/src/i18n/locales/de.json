@@ -67,8 +67,7 @@
     "level_doctorado": "Promotion",
     "level_posdoctorado": "Postdoktorat",
     "level_bachillerato": "Gymnasium",
-    "level_tecnico": "Fachschule",
-    "chip_more": "+ more"
+    "level_tecnico": "Fachschule"
   },
   "wizard": {
     "title": "Neues Projekt",
@@ -193,7 +192,8 @@
     "cloud_tip_suffix": "and then use that folder as the destination. Your thesis will sync automatically.",
     "continue": "Continue",
     "statusbar_active": "Wizard active",
-    "statusbar_unsaved": "tesis.project.yaml (unsaved)"
+    "statusbar_unsaved": "tesis.project.yaml (unsaved)",
+    "chip_more": "+ more"
   },
   "editor": {
     "placement_front": "Titelei",

@@ -644,9 +644,9 @@ export default function HomeView() {
                   {t("home.create_first_desc")}
                 </p>
                 <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
-                  <span className="chip">{t("home.doc_tesis")}</span>
-                  <span className="chip">{t("home.doc_tesina")}</span>
-                  <span className="chip">{t("home.chip_more")}</span>
+                  <span className="chip">{t("wizard.doc_tesis")}</span>
+                  <span className="chip">{t("wizard.doc_tesina")}</span>
+                  <span className="chip">{t("wizard.chip_more")}</span>
                 </div>
               </div>
             )}
