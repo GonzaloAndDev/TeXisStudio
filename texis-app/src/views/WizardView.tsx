@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -25,32 +26,34 @@ async function resolveDocumentsPath(): Promise<string> {
 
 type StepState = "done" | "active" | "todo";
 
-const BUILTIN_PROFILES: ProfileInfo[] = [
-  {
-    id: "generic.thesis",
-    name: "Tesis genérica",
-    description: "Estructura clásica para licenciatura, especialidad, maestría, doctorado o posdoctorado.",
-    meta: "Tesis · Bibliografía automática · APA 7",
-    tags: ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
-    sections_count: 13,
-    sections: [],
-    author: "Gonzalo Andrade Estrella",
-    version: "0.1.0",
-    status: "draft" as ProfileStatus,
-  },
-  {
-    id: "generic.tesina",
-    name: "Tesina genérica",
-    description: "Versión simplificada para licenciatura: introducción, desarrollo y cierre.",
-    meta: "Tesis · Bibliografía automática · APA 7",
-    tags: ["tesina", "licenciatura"],
-    sections_count: 6,
-    sections: [],
-    author: "Gonzalo Andrade Estrella",
-    version: "0.1.0",
-    status: "draft" as ProfileStatus,
-  },
-];
+function getBuiltinProfiles(t: TFunction): ProfileInfo[] {
+  return [
+    {
+      id: "generic.thesis",
+      name: t("wizard.builtin_thesis_name"),
+      description: t("wizard.builtin_thesis_desc"),
+      meta: t("wizard.builtin_thesis_meta"),
+      tags: ["tesis", "licenciatura", "especialidad", "maestria", "doctorado", "posdoctorado"],
+      sections_count: 13,
+      sections: [],
+      author: "Gonzalo Andrade Estrella",
+      version: "0.1.0",
+      status: "draft" as ProfileStatus,
+    },
+    {
+      id: "generic.tesina",
+      name: t("wizard.builtin_tesina_name"),
+      description: t("wizard.builtin_tesina_desc"),
+      meta: t("wizard.builtin_tesina_meta"),
+      tags: ["tesina", "licenciatura"],
+      sections_count: 6,
+      sections: [],
+      author: "Gonzalo Andrade Estrella",
+      version: "0.1.0",
+      status: "draft" as ProfileStatus,
+    },
+  ];
+}
 
 const ACADEMIC_LEVEL_OPTIONS: Array<{ id: AcademicLevel; label: string }> = [
   { id: "licenciatura", label: "Licenciatura" },
@@ -169,6 +172,7 @@ function getDisciplineSupport(discipline: string): DisciplineSupport | null {
 }
 
 function DisciplineHintPanel({ discipline }: { discipline: string }) {
+  const { t } = useTranslation();
   const support = getDisciplineSupport(discipline);
   if (!discipline.trim() || !support) return null;
 
@@ -182,13 +186,13 @@ function DisciplineHintPanel({ discipline }: { discipline: string }) {
       marginTop: 4,
     }}>
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-        Lo que TeXisStudio puede hacer por tu área
+        {t("wizard.discipline_hint_title")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: support.external.length > 0 ? "1fr 1fr" : "1fr", gap: 12 }}>
         {support.native.length > 0 && (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--build-ok)", marginBottom: 4 }}>
-              ✓ Produce directamente
+              {t("wizard.discipline_produces")}
             </div>
             {support.native.map((item) => (
               <div key={item} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7 }}>· {item}</div>
@@ -198,7 +202,7 @@ function DisciplineHintPanel({ discipline }: { discipline: string }) {
         {support.external.length > 0 && (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 4 }}>
-              ↗ Integra como archivo externo
+              {t("wizard.discipline_integrates")}
             </div>
             {support.external.map((item) => (
               <div key={item} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7 }}>· {item}</div>
@@ -235,6 +239,7 @@ function recommendProfile(
   academicLevel: string,
   discipline: string,
   programName: string,
+  t: TFunction,
 ) {
   const institutionNorm = normalize(institution);
   const disciplineNorm = normalize(discipline);
@@ -255,34 +260,34 @@ function recommendProfile(
 
       if (institutionNorm && haystack.includes(institutionNorm)) {
         score += 4;
-        reasons.push(`coincide con ${institution.trim()}`);
+        reasons.push(t("wizard.recommend_reason_institution", { name: institution.trim() }));
       }
       if (levelNorm && haystack.includes(levelNorm)) {
         score += 3;
-        reasons.push(`cubre ${academicLevel}`);
+        reasons.push(t("wizard.recommend_reason_level", { level: academicLevel }));
       }
       if (disciplineNorm && haystack.includes(disciplineNorm)) {
         score += 2;
-        reasons.push(`se alinea con el área ${discipline.trim()}`);
+        reasons.push(t("wizard.recommend_reason_discipline", { discipline: discipline.trim() }));
       }
       if (programNorm && haystack.includes(programNorm)) {
         score += 2;
-        reasons.push(`menciona el programa ${programName.trim()}`);
+        reasons.push(t("wizard.recommend_reason_program", { program: programName.trim() }));
       }
       if (docType === "tesina" && profile.id.includes("tesina")) {
         score += 2;
-        reasons.push("está pensado para tesinas");
+        reasons.push(t("wizard.recommend_reason_tesina"));
       }
       if (docType !== "tesina" && profile.id.includes("thesis")) {
         score += 1;
-        reasons.push("sirve como base sólida para tesis");
+        reasons.push(t("wizard.recommend_reason_tesis"));
       }
       if (profile.status === "verified") {
         score += 2;
-        reasons.push("tiene verificación institucional");
+        reasons.push(t("wizard.recommend_reason_verified"));
       } else if (profile.status === "reviewed") {
         score += 1;
-        reasons.push("ya fue revisado por el equipo");
+        reasons.push(t("wizard.recommend_reason_reviewed"));
       }
 
       return { profile, score, reasons };
@@ -292,35 +297,32 @@ function recommendProfile(
   return ranked[0] ?? null;
 }
 
-function describePackKind(kind?: VocabPackEntry["pack_kind"]): string {
+function describePackKind(kind: VocabPackEntry["pack_kind"] | undefined, t: TFunction): string {
   switch (kind) {
-    case "general":
-      return "general";
-    case "academic":
-      return "académico";
-    case "subject":
-      return "por materia";
-    case "program":
-      return "por programa";
+    case "general":    return t("wizard.vocab_kind_general");
+    case "academic":   return t("wizard.vocab_kind_academic");
+    case "subject":    return t("wizard.vocab_kind_subject");
+    case "program":    return t("wizard.vocab_kind_program");
     case "discipline":
-    default:
-      return "por área";
+    default:           return t("wizard.vocab_kind_discipline");
   }
 }
 
-const VOCAB_AREA_OPTIONS = [
-  { id: "", label: "Usar el área del proyecto" },
-  { id: "medicine", label: "Medicina y salud" },
-  { id: "chemistry", label: "Química" },
-  { id: "biology", label: "Biología" },
-  { id: "engineering", label: "Ingeniería" },
-  { id: "mathematics", label: "Matemáticas" },
-  { id: "physics", label: "Física" },
-  { id: "economics", label: "Economía" },
-  { id: "social_sciences", label: "Ciencias sociales" },
-  { id: "humanities", label: "Humanidades" },
-  { id: "arts", label: "Artes y diseño" },
-] as const;
+function getVocabAreaOptions(t: TFunction) {
+  return [
+    { id: "", label: t("wizard.vocab_area_project") },
+    { id: "medicine", label: t("wizard.vocab_area_medicine") },
+    { id: "chemistry", label: t("wizard.vocab_area_chemistry") },
+    { id: "biology", label: t("wizard.vocab_area_biology") },
+    { id: "engineering", label: t("wizard.vocab_area_engineering") },
+    { id: "mathematics", label: t("wizard.vocab_area_mathematics") },
+    { id: "physics", label: t("wizard.vocab_area_physics") },
+    { id: "economics", label: t("wizard.vocab_area_economics") },
+    { id: "social_sciences", label: t("wizard.vocab_area_social_sciences") },
+    { id: "humanities", label: t("wizard.vocab_area_humanities") },
+    { id: "arts", label: t("wizard.vocab_area_arts") },
+  ];
+}
 
 const VOCAB_AREA_ALIASES: Record<string, string[]> = {
   medicine: ["medicina", "medico", "médico", "salud", "clinica", "clínica", "enfermeria", "enfermería", "odontologia", "odontología", "farmacia", "biomedicina", "biomedical"],
@@ -372,8 +374,8 @@ function packVocabularyArea(pack: VocabPackEntry): string | null {
   ].join(" "));
 }
 
-function vocabularyAreaLabel(area: string): string {
-  return VOCAB_AREA_OPTIONS.find((option) => option.id === area)?.label ?? area;
+function vocabularyAreaLabel(area: string, t: TFunction): string {
+  return getVocabAreaOptions(t).find((option) => option.id === area)?.label ?? area;
 }
 
 function recommendVocabularyPacks(
@@ -736,13 +738,6 @@ function StepDatos({
   );
 }
 
-const PLACEMENT_SHORT: Record<string, string> = {
-  front_matter: "Preliminares",
-  body:         "Cuerpo",
-  back_matter:  "Final",
-  appendix:     "Anexos",
-};
-
 // Paso 3: selección de perfil con preview de secciones
 function StepPerfil({
   profiles, selected, onSelect, docType, institution, academicLevel, discipline, programName,
@@ -758,6 +753,12 @@ function StepPerfil({
 }) {
   const { t } = useTranslation();
   const { userMode } = useSettingsStore();
+  const placementShort = useMemo(() => ({
+    front_matter: t("wizard.placement_front_short"),
+    body:         t("wizard.placement_body_short"),
+    back_matter:  t("wizard.placement_back_short"),
+    appendix:     t("wizard.placement_appendix_short"),
+  }), [t]);
   const selProfile = profiles.find((p) => p.id === selected);
   const recommended = recommendProfile(
     profiles,
@@ -766,6 +767,7 @@ function StepPerfil({
     academicLevel,
     discipline,
     programName,
+    t,
   );
   const recommendedProfile = recommended?.profile;
 
@@ -885,7 +887,7 @@ function StepPerfil({
                   {s.title ?? s.id}
                 </span>
                 <span style={{ fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>
-                  {PLACEMENT_SHORT[s.placement] ?? s.placement}
+                  {placementShort[s.placement as keyof typeof placementShort] ?? s.placement}
                 </span>
               </div>
             ))}
@@ -1059,7 +1061,7 @@ function StepLanguageSupport({
               {t("wizard.suggested_stack", { language: documentLanguage.toUpperCase() })}
             </div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-              {t("wizard.vocab_area_used")}: {vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : t("wizard.vocab_area_from_project")}
+              {t("wizard.vocab_area_used")}: {vocabularyArea ? vocabularyAreaLabel(vocabularyArea, t) : t("wizard.vocab_area_from_project")}
             </div>
           </div>
           <select
@@ -1075,7 +1077,7 @@ function StepLanguageSupport({
               fontSize: "var(--fs-sm)",
             }}
           >
-            {VOCAB_AREA_OPTIONS.map((option) => (
+            {getVocabAreaOptions(t).map((option) => (
               <option key={option.id || "project"} value={option.id}>{option.label}</option>
             ))}
           </select>
@@ -1115,7 +1117,7 @@ function StepLanguageSupport({
                     }}>✓</span>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 7 }}>
-                    <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind)}</span>
+                    <span className="chip" style={{ fontSize: 10 }}>{describePackKind(pack.pack_kind, t)}</span>
                     <span style={{ fontSize: "var(--fs-xs)", color: selected ? "var(--accent-deep)" : "var(--fg-faint)" }}>
                       {selected ? t("wizard.vocab_will_activate") : t("wizard.vocab_click_to_activate")}
                     </span>
@@ -1166,7 +1168,10 @@ export default function WizardView() {
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [profiles, setProfiles] = useState<ProfileInfo[]>(BUILTIN_PROFILES);
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [apiProfiles, setApiProfiles] = useState<ProfileInfo[] | null>(null);
+  const builtinProfiles = useMemo(() => getBuiltinProfiles(t), [t]);
+  const profiles = apiProfiles ?? builtinProfiles;
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
 
@@ -1175,8 +1180,8 @@ export default function WizardView() {
     resolveDocumentsPath().then(setOutputPath).catch(() => setOutputPath("/tmp"));
     api.getCloudFolders().then(setCloudFolders).catch(() => {});
     api.getProfiles()
-      .then((loaded) => { if (loaded.length > 0) setProfiles(loaded); })
-      .catch(() => {}); // silencioso, usa BUILTIN_PROFILES como fallback
+      .then((loaded) => { if (loaded.length > 0) setApiProfiles(loaded); })
+      .catch(() => {}); // silencioso, usa builtinProfiles como fallback
     loadCatalog().catch(() => {});
     loadOfficialCatalog().catch(() => {});
   }, []);
@@ -1207,10 +1212,10 @@ export default function WizardView() {
         officialPacks,
         documentLanguage,
         form.academic_level ?? "licenciatura",
-        vocabularyArea ? vocabularyAreaLabel(vocabularyArea) : form.discipline ?? "",
+        vocabularyArea ? vocabularyAreaLabel(vocabularyArea, t) : form.discipline ?? "",
         form.program_name ?? "",
       ),
-    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks, vocabularyArea],
+    [documentLanguage, form.academic_level, form.discipline, form.program_name, officialPacks, vocabularyArea, t],
   );
 
   const recommendedVocabPacks = useMemo(
@@ -1508,7 +1513,7 @@ export default function WizardView() {
                   <strong style={{ color: "var(--fg-default)" }}>💡 {t("wizard.cloud_tip_title")}</strong>
                   <br />
                   {t("wizard.cloud_tip_prefix")}{" "}
-                  <em>OneDrive</em> (incluido en Windows) o{" "}
+                  <em>OneDrive</em> {t("wizard.cloud_tip_or")}{" "}
                   <em>Google Drive para escritorio</em>{" "}
                   {t("wizard.cloud_tip_suffix")}
                 </div>
@@ -1518,18 +1523,37 @@ export default function WizardView() {
 
           <div style={S.footer}>
             {step > 0 ? (
-              <button className="btn" onClick={() => setStep((s) => s - 1)}>
+              <button className="btn" onClick={() => { setStepError(null); setStep((s) => s - 1); }}>
                 <IconChevronL size={13} /> {t("common.back")}
               </button>
             ) : (
               <span />
             )}
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+              {stepError && (
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "8px 12px", borderRadius: "var(--r-md)", border: "1px solid var(--build-err)" }}>
+                  {stepError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
                 {profileId} · v0.1
               </span>
               {step < steps.length - 1 ? (
-                <button className="btn btn-accent" onClick={() => setStep((s) => s + 1)}>
+                <button className="btn btn-accent" onClick={() => {
+                  if (step === 1) {
+                    if (!form.title.trim()) {
+                      setStepError(t("wizard.error_title_required"));
+                      return;
+                    }
+                    if (!form.full_name.trim()) {
+                      setStepError(t("wizard.error_author_required"));
+                      return;
+                    }
+                  }
+                  setStepError(null);
+                  setStep((s) => s + 1);
+                }}>
                   {t("wizard.continue")} <IconChevronR size={13} />
                 </button>
               ) : (
@@ -1548,6 +1572,7 @@ export default function WizardView() {
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </main>
@@ -1556,7 +1581,7 @@ export default function WizardView() {
       <TxStatusbar items={[
         { text: t("wizard.statusbar_active"), dot: "var(--accent)" },
         { icon: <IconFile size={11} />, text: t("wizard.statusbar_unsaved") },
-        { right: true, text: "Esc para cancelar · ↵ para continuar" },
+        { right: true, text: t("wizard.esc_to_cancel") },
       ]} />
     </>
   );

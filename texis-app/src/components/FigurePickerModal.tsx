@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { listPlugins, groupPluginsByCategory, createPluginFigure } from "../services/figure-plugin-service";
 import type { PluginInfo } from "../services/figure-plugin-service";
 import type { PluginFigureBlock } from "../types";
@@ -6,15 +7,15 @@ import type { PluginCategory } from "@texisstudio/plugins";
 
 // ── Category display metadata ──────────────────────────────────────
 
-const CATEGORY_META: Record<PluginCategory, { label: string; icon: string }> = {
-  "mathematics":       { label: "Matemáticas",         icon: "∑" },
-  "physics":           { label: "Física",               icon: "⚡" },
-  "chemistry":         { label: "Química",              icon: "⚗" },
-  "biology-medicine":  { label: "Biología / Medicina",  icon: "🧬" },
-  "engineering-cs":    { label: "Ingeniería / Comp.",   icon: "⚙" },
-  "humanities-social": { label: "Humanidades / Social", icon: "📚" },
-  "arts-visual":       { label: "Arte / Visual",        icon: "🎨" },
-  "import-external":   { label: "Importar externo",     icon: "↑" },
+const CATEGORY_ICON: Record<PluginCategory, string> = {
+  "mathematics":       "∑",
+  "physics":           "⚡",
+  "chemistry":         "⚗",
+  "biology-medicine":  "🧬",
+  "engineering-cs":    "⚙",
+  "humanities-social": "📚",
+  "arts-visual":       "🎨",
+  "import-external":   "↑",
 };
 
 const CATEGORY_ORDER: PluginCategory[] = [
@@ -24,11 +25,11 @@ const CATEGORY_ORDER: PluginCategory[] = [
 
 type QualityFilter = "all" | "official-core" | "official-extended" | "experimental";
 
-const QUALITY_META: Record<QualityFilter, { label: string; color: string; dot: string }> = {
-  "all":               { label: "Todos",       color: "var(--fg-muted)",   dot: "" },
-  "official-core":     { label: "Core",        color: "var(--build-ok)",   dot: "●" },
-  "official-extended": { label: "Extended",    color: "var(--accent)",     dot: "●" },
-  "experimental":      { label: "Experimental",color: "var(--fg-faint)",   dot: "●" },
+const QUALITY_COLOR: Record<QualityFilter, { color: string; dot: string }> = {
+  "all":               { color: "var(--fg-muted)",   dot: "" },
+  "official-core":     { color: "var(--build-ok)",   dot: "●" },
+  "official-extended": { color: "var(--accent)",     dot: "●" },
+  "experimental":      { color: "var(--fg-faint)",   dot: "●" },
 };
 
 // ── Main modal ────────────────────────────────────────────────────
@@ -40,17 +41,29 @@ interface Props {
 }
 
 export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
+  const { t } = useTranslation();
   const [search, setSearch]                 = useState("");
   const [selectedCategory, setSelectedCategory] = useState<PluginCategory | "all">("all");
   const [qualityFilter, setQualityFilter]   = useState<QualityFilter>("all");
   const [loading, setLoading]               = useState<string | null>(null);
   const [error, setError]                   = useState<string | null>(null);
 
+  const categoryLabel = useMemo(() => ({
+    "mathematics":       t("figure_picker.cat_mathematics"),
+    "physics":           t("figure_picker.cat_physics"),
+    "chemistry":         t("figure_picker.cat_chemistry"),
+    "biology-medicine":  t("figure_picker.cat_biology"),
+    "engineering-cs":    t("figure_picker.cat_engineering"),
+    "humanities-social": t("figure_picker.cat_humanities"),
+    "arts-visual":       t("figure_picker.cat_arts"),
+    "import-external":   t("figure_picker.cat_import"),
+  }), [t]);
+
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   useEffect(() => {
     try { setPlugins(listPlugins()); }
-    catch (e) { setError(`No se pudo cargar el catálogo de figuras: ${e}`); }
-  }, []);
+    catch (e) { setError(t("figure_picker.error_load", { error: String(e) })); }
+  }, [t]);
 
   const categoryGroups = useMemo(() => groupPluginsByCategory(plugins), [plugins]);
 
@@ -90,7 +103,7 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
       const block = await createPluginFigure(plugin.pluginId, projectPath);
       onInsert(block);
     } catch (e) {
-      setError(`Error al generar la figura: ${e}`);
+      setError(t("figure_picker.error_generate", { error: String(e) }));
       setLoading(null);
     }
   }
@@ -113,19 +126,19 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
             <span style={{ fontSize: 18, lineHeight: 1 }}>📊</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 16, color: "var(--fg-strong)" }}>Insertar figura generada</div>
+              <div style={{ fontWeight: 600, fontSize: 16, color: "var(--fg-strong)" }}>{t("figure_picker.title")}</div>
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 1 }}>
-                {plugins.length} figuras · sin código LaTeX
+                {t("figure_picker.count_hint", { count: plugins.length })}
               </div>
             </div>
-            <button className="btn btn-ghost btn-icon" onClick={onClose} title="Cerrar (Esc)">✕</button>
+            <button className="btn btn-ghost btn-icon" onClick={onClose} title={t("figure_picker.close_title")}>✕</button>
           </div>
 
           {/* Search */}
           <input
             autoFocus
             type="text"
-            placeholder="Buscar figura… (nombre, descripción o disciplina)"
+            placeholder={t("figure_picker.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: "100%", padding: "7px 12px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", outline: "none", boxSizing: "border-box", marginBottom: 8 }}
@@ -133,17 +146,18 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
 
           {/* Category tabs */}
           <div style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 0 }}>
-            <CategoryTab label="Todas" icon="⬛" active={selectedCategory === "all"} count={filtered.length} onClick={() => setSelectedCategory("all")} />
+            <CategoryTab label={t("figure_picker.all_tab")} icon="⬛" active={selectedCategory === "all"} count={filtered.length} onClick={() => setSelectedCategory("all")} />
             {CATEGORY_ORDER.filter((c) => categoryGroups.has(c)).map((c) => (
-              <CategoryTab key={c} label={CATEGORY_META[c].label} icon={CATEGORY_META[c].icon} active={selectedCategory === c} count={filtered.filter((p) => p.category === c).length} onClick={() => setSelectedCategory(c)} />
+              <CategoryTab key={c} label={categoryLabel[c] ?? c} icon={CATEGORY_ICON[c]} active={selectedCategory === c} count={filtered.filter((p) => p.category === c).length} onClick={() => setSelectedCategory(c)} />
             ))}
           </div>
 
           {/* Quality filter bar */}
           <div style={{ display: "flex", gap: 6, padding: "8px 0 10px", alignItems: "center" }}>
-            <span style={{ fontSize: 10, color: "var(--fg-faint)", marginRight: 2 }}>Nivel:</span>
+            <span style={{ fontSize: 10, color: "var(--fg-faint)", marginRight: 2 }}>{t("figure_picker.level_label")}</span>
             {(["all", "official-core", "official-extended", "experimental"] as QualityFilter[]).map((q) => {
-              const meta = QUALITY_META[q];
+              const meta = QUALITY_COLOR[q];
+              const label = q === "all" ? t("figure_picker.quality_all") : q === "official-core" ? "Core" : q === "official-extended" ? "Extended" : "Experimental";
               const active = qualityFilter === q;
               return (
                 <button
@@ -159,7 +173,7 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
                   }}
                 >
                   {meta.dot && <span style={{ fontSize: 6, color: meta.color }}>{meta.dot}</span>}
-                  {meta.label}
+                  {label}
                   <span style={{ opacity: 0.7, fontFamily: "var(--font-mono)", fontSize: 9 }}>
                     {qualityCounts[q === "all" ? "all" : q] ?? 0}
                   </span>
@@ -171,7 +185,7 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
                 onClick={() => { setSearch(""); setQualityFilter("all"); setSelectedCategory("all"); }}
                 style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, border: "1px solid var(--border-soft)", background: "transparent", color: "var(--fg-faint)", cursor: "pointer", marginLeft: "auto" }}
               >
-                Limpiar filtros
+                {t("figure_picker.clear_filters")}
               </button>
             )}
           </div>
@@ -186,16 +200,16 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
           )}
           {filtered.length === 0 && !error && (
             <div style={{ textAlign: "center", color: "var(--fg-faint)", padding: 48, fontSize: "var(--fs-sm)" }}>
-              Sin resultados{search ? ` para "${search}"` : ""}
-              <div style={{ marginTop: 8, fontSize: "var(--fs-xs)" }}>Prueba con otro término o limpiar los filtros</div>
+              {search ? t("figure_picker.no_results_search", { search }) : t("figure_picker.no_results")}
+              <div style={{ marginTop: 8, fontSize: "var(--fs-xs)" }}>{t("figure_picker.try_another")}</div>
             </div>
           )}
           {CATEGORY_ORDER.filter((c) => grouped.has(c)).map((cat) => (
             <div key={cat} style={{ marginBottom: 18 }}>
               {selectedCategory === "all" && (
                 <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 7, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>{CATEGORY_META[cat].icon}</span>
-                  {CATEGORY_META[cat].label}
+                  <span>{CATEGORY_ICON[cat]}</span>
+                  {categoryLabel[cat] ?? cat}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, opacity: 0.6 }}>{grouped.get(cat)?.length}</span>
                 </div>
               )}
@@ -216,9 +230,9 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
 
         {/* Footer */}
         <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span>Clic en cualquier figura para insertarla directamente · los paquetes LaTeX se añaden automáticamente</span>
+          <span>{t("figure_picker.footer_hint")}</span>
           <span style={{ flex: 1 }} />
-          <span style={{ fontFamily: "var(--font-mono)" }}>Esc para cerrar</span>
+          <span style={{ fontFamily: "var(--font-mono)" }}>{t("figure_picker.esc_close")}</span>
         </div>
       </div>
     </div>
@@ -252,6 +266,7 @@ function CategoryTab({ label, icon, active, count, onClick }: { label: string; i
 function PluginCard({ plugin, loading, disabled, onInsert }: {
   plugin: PluginInfo; loading: boolean; disabled: boolean; onInsert: (p: PluginInfo) => void;
 }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const qMeta: Record<string, { label: string; color: string }> = {
     "official-core":     { label: "Core",         color: "var(--build-ok)" },
@@ -276,7 +291,7 @@ function PluginCard({ plugin, loading, disabled, onInsert }: {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--fg-strong)", flex: 1, lineHeight: 1.2 }}>
-          {loading ? "Generando…" : plugin.displayName}
+          {loading ? t("figure_picker.generating") : plugin.displayName}
         </span>
         <span style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: q.color, border: `1px solid ${q.color}`, borderRadius: "var(--r-xs)", padding: "1px 4px", flexShrink: 0 }}>
           {q.label}

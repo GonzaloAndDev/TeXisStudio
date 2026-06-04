@@ -210,11 +210,11 @@ export function BlockItem({
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-              Figura generada por plugin <span style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>{block.pluginId}</span>. Para modificarla usa el botón "Editar figura" en la vista previa.
+              {t("figure_edit.plugin_figure_hint", { pluginId: block.pluginId })}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>Título</label>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>{t("editor.meta_title")}</label>
                 <input
                   value={block.caption}
                   onChange={(e) => onUpdate({ caption: e.target.value } as Partial<ContentBlock>)}
@@ -222,7 +222,7 @@ export function BlockItem({
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>Etiqueta (\\ref)</label>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>{t("editor.label_ref")}</label>
                 <input
                   value={block.label}
                   onChange={(e) => onUpdate({ label: e.target.value } as Partial<ContentBlock>)}

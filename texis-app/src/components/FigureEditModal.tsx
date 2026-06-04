@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
 import type { PluginFigureBlock } from "../types";
@@ -9,16 +10,7 @@ const QUALITY_BADGE: Record<string, { label: string; color: string }> = {
   "experimental":      { label: "Experimental",color: "var(--fg-faint)" },
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  "mathematics":       "Matemáticas",
-  "physics":           "Física",
-  "chemistry":         "Química",
-  "biology-medicine":  "Biología / Medicina",
-  "engineering-cs":    "Ingeniería / Comp.",
-  "humanities-social": "Humanidades / Social",
-  "arts-visual":       "Arte / Visual",
-  "import-external":   "Importar externo",
-};
+// Category labels are built from i18n inside the component
 
 interface Props {
   block: PluginFigureBlock;
@@ -28,6 +20,17 @@ interface Props {
 }
 
 export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props) {
+  const { t } = useTranslation();
+  const categoryLabel = useMemo<Record<string, string>>(() => ({
+    "mathematics":       t("figure_picker.cat_mathematics"),
+    "physics":           t("figure_picker.cat_physics"),
+    "chemistry":         t("figure_picker.cat_chemistry"),
+    "biology-medicine":  t("figure_picker.cat_biology"),
+    "engineering-cs":    t("figure_picker.cat_engineering"),
+    "humanities-social": t("figure_picker.cat_humanities"),
+    "arts-visual":       t("figure_picker.cat_arts"),
+    "import-external":   t("figure_picker.cat_import"),
+  }), [t]);
   const [caption, setCaption] = useState(block.caption);
   const [label, setLabel]     = useState(block.label);
   const [busy, setBusy]       = useState<"save" | "regen" | null>(null);
@@ -98,10 +101,10 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
               </span>
             </div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-              {CATEGORY_LABEL[info?.category ?? ""] ?? info?.category} · {block.figureId}
+              {categoryLabel[info?.category ?? ""] ?? info?.category} · {block.figureId}
             </div>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} disabled={!!busy} title="Cerrar (Esc)">✕</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} disabled={!!busy} title={t("figure_edit.close_title")}>✕</button>
         </div>
 
         {/* Scrollable body */}
@@ -110,7 +113,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
-                Título / Caption
+                {t("figure_edit.caption_label")}
               </label>
               <input
                 ref={captionRef}
@@ -123,7 +126,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
             </div>
             <div>
               <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
-                Etiqueta LaTeX (<code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>\ref</code> / <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>\cref</code>)
+                {t("figure_edit.label_latex")}
               </label>
               <input
                 value={label}
@@ -137,7 +140,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
             {/* Packages */}
             {block.requiredPackages.length > 0 && (
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-                Paquetes LaTeX: <span style={{ fontFamily: "var(--font-mono)" }}>{block.requiredPackages.join(", ")}</span>
+                {t("figure_edit.packages_label")} <span style={{ fontFamily: "var(--font-mono)" }}>{block.requiredPackages.join(", ")}</span>
               </div>
             )}
 
@@ -148,8 +151,8 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
                 style={{ width: "100%", padding: "7px 12px", background: "var(--bg-app)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "left" }}
               >
                 <span style={{ transform: showLatex ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block", fontSize: 10 }}>▶</span>
-                {dirty ? "Vista previa del LaTeX generado (con los cambios actuales)" : "Vista previa del LaTeX generado"}
-                {dirty && <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--accent)", fontWeight: 600 }}>EDITADO</span>}
+                {dirty ? t("figure_edit.latex_preview_dirty") : t("figure_edit.latex_preview")}
+                {dirty && <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--accent)", fontWeight: 600 }}>{t("figure_edit.edited_badge")}</span>}
               </button>
               {showLatex && (
                 <pre style={{
@@ -192,24 +195,24 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
         {/* Actions — fijos al fondo */}
         <div style={{ padding: "12px 18px 16px", borderTop: "1px solid var(--border-subtle)", display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
           <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={!!busy} style={{ marginRight: "auto" }}>
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button
             className="btn btn-ghost btn-sm"
             onClick={handleRegen}
             disabled={!!busy}
-            title="Re-ejecuta el plugin desde los datos originales guardados. Útil si el motor fue actualizado."
+            title={t("figure_edit.regen_title")}
             style={{ fontSize: "var(--fs-xs)" }}
           >
-            {busy === "regen" ? "Regenerando…" : "Regenerar figura"}
+            {busy === "regen" ? t("figure_edit.regenerating") : t("figure_edit.regen_btn")}
           </button>
           <button
             className="btn btn-accent btn-sm"
             onClick={handleSave}
             disabled={!dirty || !!busy}
-            title={dirty ? "Guarda el nuevo título y etiqueta sin re-ejecutar el plugin" : "Sin cambios pendientes"}
+            title={dirty ? t("figure_edit.save_title_dirty") : t("figure_edit.save_title_clean")}
           >
-            {busy === "save" ? "Guardando…" : "Guardar cambios"}
+            {busy === "save" ? t("figure_edit.saving") : t("figure_edit.save_btn")}
           </button>
         </div>
       </div>

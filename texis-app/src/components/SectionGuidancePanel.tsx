@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettingsStore } from "../stores/settings";
 
 export function SectionGuidancePanel({ guidance }: { guidance?: string }) {
+  const { t } = useTranslation();
   const { userMode } = useSettingsStore();
   const [open, setOpen] = useState(userMode === "basic");
 
@@ -30,7 +32,7 @@ export function SectionGuidancePanel({ guidance }: { guidance?: string }) {
         }}
       >
         <span style={{ fontSize: 12 }}>{open ? "▾" : "▸"}</span>
-        Orientación de la sección
+        {t("editor.section_guidance_label")}
       </button>
       {open && (
         <div

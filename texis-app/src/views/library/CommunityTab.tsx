@@ -306,12 +306,12 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
               border: "1px solid var(--border-soft)",
             }}>
               <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 6 }}>
-                Cómo leer la confianza
+                {t("community.confidence_title")}
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                <strong style={{ color: "var(--fg-strong)" }}>Verified</strong> indica evidencia fuerte.
-                <strong style={{ color: "var(--fg-strong)" }}> Reviewed</strong> indica revisión editorial sólida.
-                Si vas con prisa, prioriza perfiles con evidencia y muestra asociada.
+                <strong style={{ color: "var(--fg-strong)" }}>Verified</strong> {t("community.confidence_body_verified")}
+                <strong style={{ color: "var(--fg-strong)" }}> Reviewed</strong> {t("community.confidence_body_reviewed")}
+                {" "}{t("community.confidence_tip")}
               </div>
             </div>
           </div>
@@ -319,7 +319,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
 
         {!isTauri && (
           <div style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", fontSize: "var(--fs-sm)", color: "var(--accent-deep)", marginBottom: 16 }}>
-            ℹ La descarga real solo funciona en la app de escritorio. En el navegador se simula.
+            ℹ {t("community.browser_warning")}
           </div>
         )}
 
@@ -505,14 +505,14 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
 
         {/* Custom URL */}
         <div style={{ padding: "20px 22px", borderRadius: "var(--r-lg)", border: "1px dashed var(--border-firm)", background: "var(--bg-panel)", marginTop: 16 }}>
-          <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 6 }}>Instalar desde URL</div>
+          <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 6 }}>{t("community.install_from_url_title")}</div>
           <p style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", margin: "0 0 12px", lineHeight: 1.6 }}>
-            Pega la URL de un <code style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-app)", padding: "1px 4px", borderRadius: 3 }}>.zip</code> que contenga un <code style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--bg-app)", padding: "1px 4px", borderRadius: 3 }}>profile.yaml</code> válido.
+            {t("community.install_from_url_hint")}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <input value={customUrl} onChange={(e) => setCustomUrl(e.target.value)} placeholder="https://github.com/.../download/mi_perfil.zip" style={{ flex: 1, padding: "7px 12px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", fontSize: "var(--fs-sm)", color: "var(--fg-strong)", outline: "none", fontFamily: "var(--font-mono)" }} onKeyDown={(e) => { if (e.key === "Enter") handleCustomUrl(); }} />
             <button className="btn btn-accent btn-sm" onClick={handleCustomUrl} disabled={!customUrl.trim() || fetchingCustom}>
-              {fetchingCustom ? <><IconRefresh size={12} /> …</> : <><IconDownload size={12} /> Instalar</>}
+              {fetchingCustom ? <><IconRefresh size={12} /> …</> : <><IconDownload size={12} /> {t("community.install_btn")}</>}
             </button>
           </div>
         </div>

@@ -8,7 +8,7 @@
  *   4. Revisar y crear
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -37,12 +37,7 @@ const SECTION_CATALOG: { id: string; label: string; placement: string; required:
   { id: "appendix_a",           label: "Apéndice A",             placement: "appendix",     required: false },
 ];
 
-const PLACEMENT_LABEL: Record<string, string> = {
-  front_matter: "Preliminares",
-  body:         "Cuerpo",
-  back_matter:  "Material final",
-  appendix:     "Anexos",
-};
+// PLACEMENT_LABEL is built dynamically inside the component using i18n
 
 const PLACEMENT_COLOR: Record<string, string> = {
   front_matter: "var(--accent)",
@@ -136,6 +131,12 @@ function SelectField({
 
 export default function ProfileWizardView() {
   const { t } = useTranslation();
+  const placementLabel = useMemo<Record<string, string>>(() => ({
+    front_matter: t("profile_wizard.placement_front"),
+    body:         t("profile_wizard.placement_body"),
+    back_matter:  t("profile_wizard.placement_back_matter"),
+    appendix:     t("profile_wizard.placement_appendix"),
+  }), [t]);
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id?: string }>();
   const isEditing = !!editId;
@@ -178,7 +179,7 @@ export default function ProfileWizardView() {
     }
   }
 
-  const steps = [t("profile_wizard.step_info"), "LaTeX", t("profile_wizard.step_sections"), t("profile_wizard.step_review")];
+  const steps = [t("profile_wizard.step_info"), t("profile_wizard.step_latex"), t("profile_wizard.step_sections"), t("profile_wizard.step_review")];
 
   const canNext = [
     name.trim().length > 0 && profileId.trim().length > 0,
@@ -269,12 +270,12 @@ export default function ProfileWizardView() {
         left={
           <>
             <TxLogo />
-            <TxBreadcrumb parts={["Biblioteca", isEditing ? "Editar perfil" : "Nuevo perfil"]} />
+            <TxBreadcrumb parts={[t("library.title"), isEditing ? t("profile_wizard.editing_profile") : t("profile_wizard.new_profile")]} />
           </>
         }
         right={
           <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")}>
-            <IconX size={13} /> Cancelar
+            <IconX size={13} /> {t("common.cancel")}
           </button>
         }
       />
@@ -346,49 +347,49 @@ export default function ProfileWizardView() {
           {/* ── Paso 1: Configuración LaTeX ────────────────────── */}
           {step === 1 && (
             <div>
-              <Field label="Motor LaTeX" hint="XeLaTeX es el recomendado — soporta UTF-8 y fuentes del sistema.">
+              <Field label={t("profile_wizard.latex_engine_label")} hint={t("profile_wizard.latex_engine_hint")}>
                 <SelectField
                   value={engine}
                   onChange={setEngine}
                   options={[
-                    { value: "xelatex",  label: "XeLaTeX (recomendado)" },
-                    { value: "pdflatex", label: "pdfLaTeX (compatibilidad máxima)" },
-                    { value: "lualatex", label: "LuaLaTeX (scripting avanzado)" },
+                    { value: "xelatex",  label: t("profile_wizard.engine_xelatex") },
+                    { value: "pdflatex", label: t("profile_wizard.engine_pdflatex") },
+                    { value: "lualatex", label: t("profile_wizard.engine_lualatex") },
                   ]}
                 />
               </Field>
-              <Field label="Clase de documento" hint="Define la estructura base del documento LaTeX.">
+              <Field label={t("profile_wizard.doc_class_label")} hint={t("profile_wizard.doc_class_hint")}>
                 <SelectField
                   value={docClass}
                   onChange={setDocClass}
                   options={[
-                    { value: "book",    label: "book — Tesis, monografías (capítulos)" },
-                    { value: "article", label: "article — Artículos, papers" },
-                    { value: "report",  label: "report — Reportes, informes" },
+                    { value: "book",    label: t("profile_wizard.class_book") },
+                    { value: "article", label: t("profile_wizard.class_article") },
+                    { value: "report",  label: t("profile_wizard.class_report") },
                   ]}
                 />
               </Field>
-              <Field label="Backend de bibliografía">
+              <Field label={t("profile_wizard.bib_backend_label")}>
                 <SelectField
                   value={bibBackend}
                   onChange={setBibBackend}
                   options={[
-                    { value: "biber",  label: "Biber (recomendado, soporte Unicode)" },
-                    { value: "bibtex", label: "BibTeX (legacy, compatibilidad)" },
+                    { value: "biber",  label: t("profile_wizard.bib_biber") },
+                    { value: "bibtex", label: t("profile_wizard.bib_bibtex") },
                   ]}
                 />
               </Field>
-              <Field label="Estilo bibliográfico">
+              <Field label={t("profile_wizard.bib_style_label")}>
                 <SelectField
                   value={bibStyle}
                   onChange={setBibStyle}
                   options={[
-                    { value: "apa",       label: "APA 7ª edición" },
-                    { value: "ieee",      label: "IEEE" },
-                    { value: "vancouver", label: "Vancouver (ciencias de la salud)" },
-                    { value: "chicago",   label: "Chicago 17ª" },
-                    { value: "mla",       label: "MLA" },
-                    { value: "numeric",   label: "Numérico genérico" },
+                    { value: "apa",       label: t("profile_wizard.bib_apa") },
+                    { value: "ieee",      label: t("profile_wizard.bib_ieee") },
+                    { value: "vancouver", label: t("profile_wizard.bib_vancouver") },
+                    { value: "chicago",   label: t("profile_wizard.bib_chicago") },
+                    { value: "mla",       label: t("profile_wizard.bib_mla") },
+                    { value: "numeric",   label: t("profile_wizard.bib_numeric") },
                   ]}
                 />
               </Field>
@@ -439,9 +440,9 @@ export default function ProfileWizardView() {
                         {s.title || s.id}
                       </span>
                       <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginLeft: 8 }}>
-                        {PLACEMENT_LABEL[s.placement] ?? s.placement}
+                        {placementLabel[s.placement] ?? s.placement}
                         {s.required && (
-                          <span style={{ marginLeft: 6, color: "var(--accent)" }}>obligatoria</span>
+                          <span style={{ marginLeft: 6, color: "var(--accent)" }}>{t("profile_wizard.section_required")}</span>
                         )}
                       </span>
                     </div>
@@ -527,10 +528,10 @@ export default function ProfileWizardView() {
                     onChange={(e) => setCustomSection((v) => ({ ...v, placement: e.target.value }))}
                     style={{ ...inputStyle, flex: 1, cursor: "pointer" }}
                   >
-                    <option value="front_matter">Preliminares</option>
-                    <option value="body">Cuerpo</option>
-                    <option value="back_matter">Material final</option>
-                    <option value="appendix">Anexos</option>
+                    <option value="front_matter">{t("profile_wizard.placement_front")}</option>
+                    <option value="body">{t("profile_wizard.placement_body")}</option>
+                    <option value="back_matter">{t("profile_wizard.placement_back_matter")}</option>
+                    <option value="appendix">{t("profile_wizard.placement_appendix")}</option>
                   </select>
                   <button className="btn btn-accent btn-sm" onClick={addCustomSection}>
                     <IconPlus size={12} />

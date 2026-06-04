@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/tauri";
 
 interface PackageIssue {
@@ -23,6 +24,7 @@ interface GlossaryEntry {
 }
 
 export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string | null }) {
+  const { t } = useTranslation();
   const [pkgMissing, setPkgMissing]     = useState<PackageIssue[]>([]);
   const [pkgConflicts, setPkgConflicts] = useState<PackageConflict[]>([]);
   const [glsUndefined, setGlsUndefined] = useState<string[]>([]);
@@ -76,7 +78,7 @@ export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string |
         }}
       >
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-        Diagnósticos del proyecto
+        {t("editor.diag_title")}
         {loading && <span style={{ marginLeft: "auto", fontSize: 10 }}>…</span>}
         {!loading && <span style={{ marginLeft: "auto" }}>{open ? "▲" : "▼"}</span>}
       </button>
@@ -85,7 +87,7 @@ export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string |
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
           {total === 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-ok)", display: "flex", gap: 5, alignItems: "center" }}>
-              ✓ Sin issues detectados
+              ✓ {t("editor.diag_ok")}
             </div>
           )}
 
@@ -97,19 +99,19 @@ export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string |
 
           {pkgMissing.map((m, i) => (
             <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.4 }}>
-              + Falta <span style={{ fontFamily: "var(--font-mono)", color: "var(--fg-strong)" }}>{m.package_name}</span> en preámbulo
+              + {t("editor.diag_pkg_missing", { pkg: m.package_name })}
             </div>
           ))}
 
           {glsUndefined.map((k, i) => (
             <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", lineHeight: 1.4 }}>
-              ⚠ <span style={{ fontFamily: "var(--font-mono)" }}>\gls{"{" + k + "}"}</span> sin definir
+              ⚠ <span style={{ fontFamily: "var(--font-mono)" }}>\gls{"{" + k + "}"}</span> {t("editor.diag_gls_undefined")}
             </div>
           ))}
 
           {glsUnused > 0 && (
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.4 }}>
-              {glsUnused} entr{glsUnused === 1 ? "ada" : "adas"} de glosario definida{glsUnused === 1 ? "" : "s"} sin usar
+              {t(glsUnused === 1 ? "editor.diag_gls_unused_one" : "editor.diag_gls_unused_other", { count: glsUnused })}
             </div>
           )}
         </div>

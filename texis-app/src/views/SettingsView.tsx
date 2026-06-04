@@ -230,10 +230,11 @@ export default function SettingsView() {
               lineHeight: 1.6,
             }}>
               <div style={{ fontWeight: 600, color: "var(--fg-strong)", marginBottom: 4 }}>
-                Modo básico activo
+                {t("settings.basic_mode_title")}
               </div>
-              Te mostramos solo lo necesario para escribir y entregar sin complicarte.
-              Puedes activar <strong style={{ color: "var(--fg-strong)" }}>Opciones avanzadas</strong> en la sección de texto.
+              {t("settings.basic_mode_body")}{" "}
+              <strong style={{ color: "var(--fg-strong)" }}>{t("settings.text_mode_advanced")}</strong>{" "}
+              {t("settings.basic_mode_suffix")}
             </div>
           )}
         </aside>
@@ -252,8 +253,8 @@ export default function SettingsView() {
               fontSize: "var(--fs-sm)",
               lineHeight: 1.7,
             }}>
-              Esta configuración está pensada para que tomes decisiones útiles sin tener que entrar al detalle técnico de LaTeX.
-              Si más adelante necesitas control fino, puedes cambiar a <strong>Opciones avanzadas</strong>.
+              {t("settings.basic_top_body")}{" "}
+              <strong>{t("settings.text_mode_advanced")}</strong>.
             </div>
           )}
 
@@ -291,7 +292,7 @@ export default function SettingsView() {
                       <span style={{ fontSize: 18 }}>{p.entry.flag}</span>
                       <span>{p.entry.native_name}</span>
                       {lang === p.id && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-                      <span style={{ fontSize: 9, color: "var(--fg-faint)", background: "var(--border-subtle)", padding: "1px 4px", borderRadius: 3 }}>instalado</span>
+                      <span style={{ fontSize: 9, color: "var(--fg-faint)", background: "var(--border-subtle)", padding: "1px 4px", borderRadius: 3 }}>{t("settings.installed_chip")}</span>
                     </button>
                   ))}
                 </div>
@@ -333,16 +334,15 @@ export default function SettingsView() {
                         <span style={{ fontSize: 18 }}>{l.flag}</span>
                         <span style={{ fontSize: "var(--fs-sm)" }}>{l.label}</span>
                         {spellLang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-                        {!hasSpell && <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>sin diccionario</span>}
+                        {!hasSpell && <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>{t("settings.no_dict_chip")}</span>}
                       </button>
                     );
                   })}
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 10, lineHeight: 1.6 }}>
-                  Español e Inglés incluyen diccionario Hunspell integrado. Para otros idiomas,
-                  instala un paquete de idioma desde la sección{" "}
-                  <span style={{ color: "var(--accent-deep)", cursor: "pointer" }} onClick={() => setActiveSection("community")}>Comunidad</span>{" "}
-                  que incluya corrección ortográfica.
+                  {t("settings.spell_lang_hint_1")}{" "}
+                  <span style={{ color: "var(--accent-deep)", cursor: "pointer" }} onClick={() => setActiveSection("community")}>{t("settings.section_community")}</span>{" "}
+                  {t("settings.spell_lang_hint_2")}
                 </div>
               </Card>
             </div>
@@ -761,11 +761,7 @@ export default function SettingsView() {
                 <div style={{
                   paddingLeft: 24, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6,
                 }}>
-                  En este momento la revisión gramatical usa{" "}
-                  <a href="https://languagetool.org" style={{ color: "var(--link)" }} target="_blank" rel="noreferrer">
-                    LanguageTool
-                  </a>
-                  {" "}en modo remoto. Es útil para revisar redacción, pero envía el texto al servicio para su análisis.
+                  {t("settings.grammar_remote_note")}
                 </div>
               </Card>
             </div>

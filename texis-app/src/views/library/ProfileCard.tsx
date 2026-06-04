@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { IconBook, IconCheck } from "../../components/Icons";
 import type { ProfileInfo } from "../../types";
 import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
@@ -7,6 +8,7 @@ import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
 export function ProfileCard({ profile, selected, onClick }: {
   profile: ProfileInfo; selected: boolean; onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div onClick={onClick} style={{
       background: selected ? "var(--accent-tint)" : "var(--bg-panel)",
@@ -38,7 +40,7 @@ export function ProfileCard({ profile, selected, onClick }: {
         <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           <ProfileStatusBadge status={profile.status} />
           <span className={`chip ${selected ? "chip-accent" : "chip-ok"}`} style={{ fontSize: 10 }}>
-            {selected ? <><IconCheck size={8} sw={2.5} /> seleccionado</> : "instalado"}
+            {selected ? <><IconCheck size={8} sw={2.5} /> {t("library.selected_chip")}</> : t("library.installed_chip")}
           </span>
         </div>
       </div>
@@ -52,7 +54,7 @@ export function ProfileCard({ profile, selected, onClick }: {
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid var(--border-subtle)" }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)" }}>{profile.meta}</span>
-        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{profile.sections_count ?? "?"} secciones</span>
+        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{profile.sections_count ?? "?"} {t("library.sections_count_suffix")}</span>
       </div>
     </div>
   );

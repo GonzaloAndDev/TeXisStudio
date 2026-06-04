@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconCode, IconDoc, IconHeading, IconImage, IconList, IconSigma, IconTable, IconText, IconX } from "../../components/Icons";
 
 
@@ -36,14 +37,15 @@ const BLOCK_CATALOG = [
 // ── ElementsTab ───────────────────────────────────────────────────────────────
 
 export function ElementsTab() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const sel = BLOCK_CATALOG.find((b) => b.type === selected);
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
       <div style={{ flex: 1, padding: "32px 40px", overflow: "auto" }} className="scroll">
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>Elementos</h1>
-          <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>Bloques de contenido disponibles en el editor. Haz clic para ver el detalle.</p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>{t("elements_tab.title")}</h1>
+          <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>{t("elements_tab.subtitle")}</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
           {BLOCK_CATALOG.map((b) => (
@@ -71,10 +73,10 @@ export function ElementsTab() {
           </div>
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.6, marginBottom: 14 }}>{sel.description}</p>
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 6 }}>Salida LaTeX</div>
+            <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 6 }}>{t("elements_tab.latex_output_label")}</div>
             <div style={{ padding: "8px 10px", borderRadius: "var(--r-sm)", background: "var(--bg-app)", border: "1px solid var(--border-firm)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-default)", lineHeight: 1.6 }}>{sel.latex_output}</div>
           </div>
-          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 6 }}>Tipo interno</div>
+          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 6 }}>{t("elements_tab.internal_type_label")}</div>
           <span className="chip tx-mono" style={{ fontSize: 11 }}>{sel.type}</span>
         </div>
       )}
