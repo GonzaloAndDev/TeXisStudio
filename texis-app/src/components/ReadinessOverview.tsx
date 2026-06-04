@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { ProjectReadiness } from "../lib/projectReadiness";
 
 export function ReadinessOverview({
@@ -7,12 +8,34 @@ export function ReadinessOverview({
   readiness: ProjectReadiness;
   showPending?: boolean;
 }) {
-  const rows: Array<{ label: string; value: number; pending?: string }> = [
-    { label: "Proyecto", value: readiness.overallCompletion, pending: readiness.deliveryBlocked ? "Hay pendientes para entrega final" : undefined },
-    { label: "Configuracion", value: readiness.setupCompletion, pending: readiness.setupPending[0] },
-    { label: "Escritura", value: readiness.writingCompletion, pending: readiness.writingPending[0] },
-    { label: "Entrega", value: readiness.deliveryReadiness, pending: readiness.deliveryPending[0] },
-    { label: "Calidad final", value: readiness.qualityCompletion, pending: readiness.qualityPending[0] },
+  const { t } = useTranslation();
+
+  const rows = [
+    {
+      label: t("readiness.row_overall"),
+      value: readiness.overallCompletion,
+      pending: readiness.deliveryBlocked ? t("readiness.delivery_blocked") : undefined,
+    },
+    {
+      label: t("readiness.row_setup"),
+      value: readiness.setupCompletion,
+      pending: readiness.setupPending[0] ? t(readiness.setupPending[0]) : undefined,
+    },
+    {
+      label: t("readiness.row_writing"),
+      value: readiness.writingCompletion,
+      pending: readiness.writingPending[0] ? t(readiness.writingPending[0]) : undefined,
+    },
+    {
+      label: t("readiness.row_delivery"),
+      value: readiness.deliveryReadiness,
+      pending: readiness.deliveryPending[0] ? t(readiness.deliveryPending[0]) : undefined,
+    },
+    {
+      label: t("readiness.row_quality"),
+      value: readiness.qualityCompletion,
+      pending: readiness.qualityPending[0] ? t(readiness.qualityPending[0]) : undefined,
+    },
   ];
 
   return (
@@ -23,7 +46,7 @@ export function ReadinessOverview({
       border: "1px solid var(--border-soft)",
     }}>
       <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-        Avance del proyecto
+        {t("readiness.panel_title")}
       </div>
       {rows.map(({ label, value, pending }) => (
         <div key={label} style={{ marginBottom: 10 }}>
@@ -42,7 +65,7 @@ export function ReadinessOverview({
           </div>
           {showPending && typeof pending === "string" && pending.length > 0 && (
             <div style={{ fontSize: "10px", color: "var(--fg-faint)", lineHeight: 1.5 }}>
-              Pendiente: {pending}
+              {t("readiness.pending_prefix")} {pending}
             </div>
           )}
         </div>

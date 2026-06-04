@@ -84,12 +84,12 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
     (project.student.advisor?.trim().length ?? 0) > 0;
 
   const setupChecks = [
-    { ok: !looksLikePlaceholder(project.metadata.title), label: "Define el titulo real del trabajo" },
-    { ok: !looksLikePlaceholder(project.student.full_name), label: "Completa la autoria principal" },
-    { ok: !looksLikePlaceholder(project.institution.name), label: "Indica la institucion real" },
-    { ok: !!project.profile_id.trim(), label: "Selecciona un perfil academico" },
-    { ok: !!project.metadata.language.trim(), label: "Elige el idioma base" },
-    { ok: hasAdvisor, label: "Agrega al menos un asesor o director de tesis" },
+    { ok: !looksLikePlaceholder(project.metadata.title), label: "readiness.setup_title" },
+    { ok: !looksLikePlaceholder(project.student.full_name), label: "readiness.setup_author" },
+    { ok: !looksLikePlaceholder(project.institution.name), label: "readiness.setup_institution" },
+    { ok: !!project.profile_id.trim(), label: "readiness.setup_profile" },
+    { ok: !!project.metadata.language.trim(), label: "readiness.setup_language" },
+    { ok: hasAdvisor, label: "readiness.setup_advisor" },
   ];
 
   const bodySections = project.sections.filter((section) => section.enabled && section.placement === "body");
@@ -101,10 +101,10 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
   const totalWords = bodySections.reduce((sum, section) => sum + countWords(sectionBlocks(section)), 0);
 
   const writingChecks = [
-    { ok: bodySections.length > 0, label: "Activa al menos una seccion de contenido" },
-    { ok: draftedBodySections.length > 0, label: "Escribe contenido en una seccion principal" },
-    { ok: totalWords >= 150, label: "Desarrolla un primer borrador sustancial" },
-    { ok: reviewedSections.length > 0, label: "Marca al menos una seccion como revisada" },
+    { ok: bodySections.length > 0, label: "readiness.writing_sections" },
+    { ok: draftedBodySections.length > 0, label: "readiness.writing_draft" },
+    { ok: totalWords >= 150, label: "readiness.writing_words" },
+    { ok: reviewedSections.length > 0, label: "readiness.writing_reviewed" },
   ];
 
   const hasReferencesSection = project.sections.some((section) => section.enabled && section.element_id === "references");
@@ -125,12 +125,12 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
       : true;
 
   const deliveryChecks = [
-    { ok: hasReferencesSection, label: "Incluye una seccion de referencias" },
-    { ok: hasAbstractContent, label: "Escribe el resumen o abstract del trabajo" },
-    { ok: allRequiredHaveContent, label: "Completa las secciones obligatorias del perfil" },
-    { ok: !hasUnconfirmedRawLatex, label: "Confirma o elimina bloques LaTeX sin validar" },
-    { ok: hasCommitteeWhenAdvanced, label: "Completa el comite para trabajos avanzados" },
-    { ok: reviewedSections.length >= Math.min(2, bodySections.length || 0), label: "Revisa las secciones principales antes de entregar" },
+    { ok: hasReferencesSection, label: "readiness.delivery_references" },
+    { ok: hasAbstractContent, label: "readiness.delivery_abstract" },
+    { ok: allRequiredHaveContent, label: "readiness.delivery_required" },
+    { ok: !hasUnconfirmedRawLatex, label: "readiness.delivery_latex" },
+    { ok: hasCommitteeWhenAdvanced, label: "readiness.delivery_committee" },
+    { ok: reviewedSections.length >= Math.min(2, bodySections.length || 0), label: "readiness.delivery_review_main" },
   ];
 
   const requiredBodyReviewed = requiredBodySections.length === 0 ||
@@ -148,11 +148,11 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
   const usesInstitutionalOrCustomProfile = !usesGenericProfile || project.profile_id.startsWith("custom.");
 
   const qualityChecks = [
-    { ok: hasCitationEvidence(project), label: "Incluye al menos una cita verificable en el cuerpo del trabajo" },
-    { ok: requiredBodyReviewed, label: "Marca como revisadas las secciones obligatorias del cuerpo" },
-    { ok: !hasRawLatex, label: "Migra o revisa manualmente los bloques LaTeX importados antes de entrega final" },
-    { ok: !hasPluginWarnings, label: "Resuelve advertencias de figuras o plugins antes de la entrega final" },
-    { ok: usesInstitutionalOrCustomProfile, label: "Usa un perfil institucional o personalizado para entregas formales" },
+    { ok: hasCitationEvidence(project), label: "readiness.quality_citation" },
+    { ok: requiredBodyReviewed, label: "readiness.quality_required_reviewed" },
+    { ok: !hasRawLatex, label: "readiness.quality_raw_latex" },
+    { ok: !hasPluginWarnings, label: "readiness.quality_plugin_warnings" },
+    { ok: usesInstitutionalOrCustomProfile, label: "readiness.quality_profile" },
   ];
 
   const percentage = (passed: number, total: number) => total === 0 ? 0 : Math.round((passed / total) * 100);
