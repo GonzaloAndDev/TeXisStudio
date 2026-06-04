@@ -227,7 +227,11 @@
     "continue": "Continue",
     "statusbar_active": "Wizard active",
     "statusbar_unsaved": "tesis.project.yaml (unsaved)",
-    "chip_more": "+ more"
+    "chip_more": "+ more",
+    "vocab_area_used": "Area used",
+    "vocab_area_from_project": "from the project",
+    "vocab_will_activate": "Will activate on create",
+    "vocab_click_to_activate": "Click to activate"
   },
   "editor": {
     "placement_front": "前付け",
