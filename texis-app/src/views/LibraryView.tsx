@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import { IconFolder, IconGlobe, IconGrid, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
 import { api } from "../lib/tauri";
+import { ensureProfileLocale, localizeProfile, localizeProfiles } from "../services/profile-i18n";
 import { useSettingsStore } from "../stores/settings";
 import type { ProfileInfo } from "../types";
 import { BLOCK_CATALOG } from "./library/constants";
@@ -39,7 +40,7 @@ function profileDegrees(tags: string[]): string[] {
 }
 
 export default function LibraryView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const userMode = useSettingsStore((s) => s.userMode);
   const [profiles, setProfiles]     = useState<ProfileInfo[]>([]);
@@ -53,6 +54,7 @@ export default function LibraryView() {
   const [importing, setImporting]   = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<ProfileInfo | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [profileLocaleTick, setProfileLocaleTick] = useState(0);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -65,18 +67,35 @@ export default function LibraryView() {
       .catch(() => setLoading(false));
   }, []);
 
-  const availableCountries = useMemo(
-    () => [...new Set(profiles.map((p) => profileCountry(p.id)))].sort(),
-    [profiles]
+  useEffect(() => {
+    let cancelled = false;
+    ensureProfileLocale(i18n.language).then(() => {
+      if (!cancelled) setProfileLocaleTick((tick) => tick + 1);
+    });
+    return () => { cancelled = true; };
+  }, [i18n.language]);
+
+  const localizedProfiles = useMemo(
+    () => localizeProfiles(profiles, i18n.language),
+    [profiles, i18n.language, profileLocaleTick],
   );
-  const availableDegrees = useMemo(
-    () => [...new Set(profiles.flatMap((p) => profileDegrees(p.tags)))].sort(
-      (a, b) => DEGREE_TAGS.indexOf(a) - DEGREE_TAGS.indexOf(b)
-    ),
-    [profiles]
+  const localizedSelected = useMemo(
+    () => selected ? localizeProfile(selected, i18n.language) : null,
+    [selected, i18n.language, profileLocaleTick],
   );
 
-  const filtered = profiles.filter((p) => {
+  const availableCountries = useMemo(
+    () => [...new Set(localizedProfiles.map((p) => profileCountry(p.id)))].sort(),
+    [localizedProfiles]
+  );
+  const availableDegrees = useMemo(
+    () => [...new Set(localizedProfiles.flatMap((p) => profileDegrees(p.tags)))].sort(
+      (a, b) => DEGREE_TAGS.indexOf(a) - DEGREE_TAGS.indexOf(b)
+    ),
+    [localizedProfiles]
+  );
+
+  const filtered = localizedProfiles.filter((p) => {
     if (search) {
       const q = search.toLowerCase();
       const match = p.name.toLowerCase().includes(q)
@@ -268,12 +287,12 @@ export default function LibraryView() {
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
                   {filtered.map((p) => (
-                    <ProfileCard key={p.id} profile={p} selected={selected?.id === p.id} onClick={() => { if (editing && selected?.id === p.id) return; setEditing(false); setSelected(selected?.id === p.id ? null : p); }} />
+                    <ProfileCard key={p.id} profile={p} selected={selected?.id === p.id} onClick={() => { if (editing && selected?.id === p.id) return; setEditing(false); setSelected(selected?.id === p.id ? null : profiles.find((raw) => raw.id === p.id) ?? p); }} />
                   ))}
                 </div>
               )}
             </div>
-            {selected && !editing && <ProfileDetailPanel profile={selected} onClose={() => setSelected(null)} onEdit={() => setEditing(true)} onUse={() => handleUseProfile(selected)} onExport={() => handleExport(selected)} onDelete={() => setConfirmDelete(selected)} />}
+            {selected && localizedSelected && !editing && <ProfileDetailPanel profile={localizedSelected} onClose={() => setSelected(null)} onEdit={() => setEditing(true)} onUse={() => handleUseProfile(selected)} onExport={() => handleExport(selected)} onDelete={() => setConfirmDelete(selected)} />}
             {selected && editing && <ProfileEditorPanel profile={selected} onSave={handleSaveEdit} onCancel={() => setEditing(false)} />}
           </div>
         )}

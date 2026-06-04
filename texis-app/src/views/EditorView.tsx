@@ -18,6 +18,7 @@ import { useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
+import { ensureProfileLocale, localizeProfile } from "../services/profile-i18n";
 import { useProjectStore } from "../stores/project";
 import type { BibReference, ContentBlock, LatexTypography, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
@@ -125,7 +126,7 @@ type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
 
@@ -239,11 +240,16 @@ export default function EditorView() {
   useEffect(() => {
     const pid = activeProject?.profile_id;
     if (!pid) return;
-    api.getProfileDetail(pid).then((p) => {
-      setProfileSections(p.sections ?? []);
+    let cancelled = false;
+    (async () => {
+      await ensureProfileLocale(i18n.language);
+      const p = await api.getProfileDetail(pid);
+      if (cancelled) return;
+      setProfileSections(localizeProfile(p, i18n.language).sections ?? []);
       setProfileMaxWords(p.max_words);
-    }).catch(() => {});
-  }, [activeProject?.profile_id]);
+    })().catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeProject?.profile_id, i18n.language]);
 
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {

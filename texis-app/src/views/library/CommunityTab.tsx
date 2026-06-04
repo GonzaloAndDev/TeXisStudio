@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconBuilding, IconDownload, IconMap, IconRefresh, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { ProfileInfo } from "../../types";
 import { CommunityProfileCard } from "../../components/library/CommunityProfileCard";
 import { fetchProfileCatalog, type CatalogProfile } from "../../services/profileCatalog";
+import { ensureProfileLocale, localizeCatalogProfile } from "../../services/profile-i18n";
 import { AiHelpButton } from "../../components/AiHelpButton";
 
 // ── Helpers de localización ───────────────────────────────────────────────────
@@ -67,7 +68,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
   onInstalled: (profile: ProfileInfo) => void;
   userMode: "basic" | "advanced";
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [catalog, setCatalog]       = useState<CatalogProfile[]>([]);
   const [catLoading, setCatLoading] = useState(false);
   const [catError, setCatError]     = useState<string | null>(null);
@@ -90,6 +91,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
   const [institutionFilter, setInstitutionFilter] = useState<"all" | string>("all");
   const [programFilter, setProgramFilter] = useState<"all" | string>("all");
   const [noviceSafeOnly, setNoviceSafeOnly] = useState(false);
+  const [profileLocaleTick, setProfileLocaleTick] = useState(0);
 
   function applyGuidedPreset(preset: "starter" | "verified" | "engineering" | "health" | "doctoral") {
     setNavContinent(null);
@@ -189,7 +191,20 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     finally { setFetchingCustom(false); }
   }
 
-  const filteredCatalog = catalog.filter((p) => {
+  useEffect(() => {
+    let cancelled = false;
+    ensureProfileLocale(i18n.language).then(() => {
+      if (!cancelled) setProfileLocaleTick((tick) => tick + 1);
+    });
+    return () => { cancelled = true; };
+  }, [i18n.language]);
+
+  const localizedCatalog = useMemo(
+    () => catalog.map((profile) => localizeCatalogProfile(profile, i18n.language)),
+    [catalog, i18n.language, profileLocaleTick],
+  );
+
+  const filteredCatalog = localizedCatalog.filter((p) => {
     const statusOk = statusFilter === "all" || (p.status ?? "unspecified") === statusFilter;
     const styleOk = styleFilter === "all" || (p.style_id ?? p.bibliography_style ?? "unspecified") === styleFilter;
     const profileLevels = [
@@ -213,10 +228,10 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
   const profilesInCountry = (continent: string, country: string) =>
     filteredCatalog.filter((p) => p.continent === continent && p.country === country);
 
-  const availableStatuses = [...new Set(catalog.map((p) => p.status ?? "unspecified"))].sort();
-  const availableStyles = [...new Set(catalog.map((p) => p.style_id ?? p.bibliography_style ?? "unspecified"))].sort();
+  const availableStatuses = [...new Set(localizedCatalog.map((p) => p.status ?? "unspecified"))].sort();
+  const availableStyles = [...new Set(localizedCatalog.map((p) => p.style_id ?? p.bibliography_style ?? "unspecified"))].sort();
   const availableLevels = [...new Set(
-    catalog.flatMap((p) => {
+    localizedCatalog.flatMap((p) => {
       const levels = [
         ...(p.academic_level ? [p.academic_level] : []),
         ...(p.target_levels ?? []),
@@ -224,10 +239,10 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
       return levels.length ? levels : ["unspecified"];
     }),
   )].sort();
-  const availableDisciplines = [...new Set(catalog.map((p) => p.discipline ?? "unspecified"))].sort();
-  const availableScopes = [...new Set(catalog.map((p) => p.profile_scope ?? "unspecified"))].sort();
-  const availableInstitutions = [...new Set(catalog.map((p) => p.institution ?? "unspecified"))].sort();
-  const availablePrograms = [...new Set(catalog.map((p) => p.program_name ?? "unspecified"))].sort();
+  const availableDisciplines = [...new Set(localizedCatalog.map((p) => p.discipline ?? "unspecified"))].sort();
+  const availableScopes = [...new Set(localizedCatalog.map((p) => p.profile_scope ?? "unspecified"))].sort();
+  const availableInstitutions = [...new Set(localizedCatalog.map((p) => p.institution ?? "unspecified"))].sort();
+  const availablePrograms = [...new Set(localizedCatalog.map((p) => p.program_name ?? "unspecified"))].sort();
 
   // Search flattens everything
   const searchResults = search.trim()
@@ -522,4 +537,3 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
 }
 
 // ── LibraryView ───────────────────────────────────────────────────────────────
-

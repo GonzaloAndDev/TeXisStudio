@@ -11,6 +11,7 @@ import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import { useVocabPacksStore } from "../stores/vocabularyPacks";
+import { ensureProfileLocale, localizeProfiles } from "../services/profile-i18n";
 import type { AcademicLevel, CloudFolder, LangPackEntry, ProfileInfo, ProfileStatus, VocabPackEntry } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
@@ -1140,7 +1141,7 @@ function StepLanguageSupport({
 }
 
 export default function WizardView() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { lang: savedUiLang, spellLang: savedSpellLang, setLang, setSpellLang } = useSettingsStore();
@@ -1170,10 +1171,22 @@ export default function WizardView() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const [apiProfiles, setApiProfiles] = useState<ProfileInfo[] | null>(null);
+  const [profileLocaleTick, setProfileLocaleTick] = useState(0);
   const builtinProfiles = useMemo(() => getBuiltinProfiles(t), [t]);
-  const profiles = apiProfiles ?? builtinProfiles;
+  const profiles = useMemo(
+    () => localizeProfiles(apiProfiles ?? builtinProfiles, i18n.language),
+    [apiProfiles, builtinProfiles, i18n.language, profileLocaleTick],
+  );
   const [outputPath, setOutputPath] = useState("");
   const [cloudFolders, setCloudFolders] = useState<CloudFolder[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    ensureProfileLocale(i18n.language).then(() => {
+      if (!cancelled) setProfileLocaleTick((tick) => tick + 1);
+    });
+    return () => { cancelled = true; };
+  }, [i18n.language]);
 
   // Resolver path por defecto + cargar perfiles reales al montar
   useEffect(() => {

@@ -1,15 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
-import { PLUGIN_REGISTRY, buildLatexInputBlock } from "@texisstudio/plugins";
+import { PLUGIN_REGISTRY, buildLatexInputBlock, setPluginLocale } from "@texisstudio/plugins";
 import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory } from "@texisstudio/plugins";
 import type { PluginFigureBlock } from "../types";
+import i18n from "../i18n";
 
 // ── Plugin catalog (lazy-instantiated) ────────────────────────────
 
 let _instances: Map<string, VisualDiagramPlugin> | null = null;
+let _instancesLocale: string | null = null;
 
 function getInstances(): Map<string, VisualDiagramPlugin> {
-  if (!_instances) {
+  const locale = i18n.language || "es";
+  if (!_instances || _instancesLocale !== locale) {
+    setPluginLocale(locale);
     _instances = new Map();
+    _instancesLocale = locale;
     for (const entry of PLUGIN_REGISTRY) {
       try {
         const instance = new entry.plugin();
