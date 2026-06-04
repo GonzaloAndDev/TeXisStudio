@@ -20,7 +20,8 @@ export function VocabularyPacksPanel() {
   const [repoError, setRepoError] = useState<string | null>(null);
   const [showAddRepo, setShowAddRepo] = useState(false);
   const [langFilter, setLangFilter] = useState<"all" | "es" | "en">("all");
-  const [kindFilter, setKindFilter] = useState<"all" | VocabPackKind>("all");
+  const [kindFilter] = useState<"all" | VocabPackKind>("all");
+  const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
 
   useEffect(() => { loadOfficialCatalog(); }, [loadOfficialCatalog]);
 
@@ -41,20 +42,18 @@ export function VocabularyPacksPanel() {
     ...officialPacks,
     ...customRepos.flatMap((repo) => (repo.packs ?? []).map((pack) => ({ ...pack, _repoId: repo.id }))),
   ];
+
+  // Collect available disciplines from packs (deduplicated)
+  const availableDisciplines = Array.from(
+    new Set(allPacksRaw.map((p) => p.discipline).filter(Boolean))
+  ).sort() as string[];
+
   const allPacks = allPacksRaw.filter((pack) => {
     const langOk = langFilter === "all" || (pack.base_language_hint ?? "").toLowerCase() === langFilter;
     const kindOk = kindFilter === "all" || (pack.pack_kind ?? "discipline") === kindFilter;
-    return langOk && kindOk;
+    const discOk = disciplineFilter === "all" || (pack.discipline ?? "").toLowerCase() === disciplineFilter.toLowerCase();
+    return langOk && kindOk && discOk;
   });
-
-  const kindOptions: Array<{ id: "all" | VocabPackKind; labelKey: string }> = [
-    { id: "all", labelKey: "library.all" },
-    { id: "general", labelKey: "vocabulary.kind_general" },
-    { id: "academic", labelKey: "vocabulary.kind_academic" },
-    { id: "discipline", labelKey: "vocabulary.kind_discipline" },
-    { id: "subject", labelKey: "vocabulary.kind_subject" },
-    { id: "program", labelKey: "vocabulary.kind_program" },
-  ];
 
   const inputStyle: React.CSSProperties = {
     padding: "6px 10px",
@@ -127,9 +126,39 @@ export function VocabularyPacksPanel() {
 
       {allPacksRaw.length > 0 && (
         <>
-          <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "wrap" }}>
+          {/* Discipline filter — most important for students */}
+          {availableDisciplines.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 4, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {t("vocabulary.filter_by_area")}
+              </div>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setDisciplineFilter("all")}
+                  className={`btn btn-sm ${disciplineFilter === "all" ? "btn-accent" : "btn-ghost"}`}
+                  style={{ fontSize: 11, padding: "2px 10px" }}
+                >
+                  {t("vocabulary.all_areas")}
+                </button>
+                {availableDisciplines.map((disc) => (
+                  <button
+                    key={disc}
+                    onClick={() => setDisciplineFilter(disciplineFilter === disc ? "all" : disc)}
+                    className={`btn btn-sm ${disciplineFilter === disc ? "btn-accent" : "btn-ghost"}`}
+                    style={{ fontSize: 11, padding: "2px 10px", textTransform: "capitalize" }}
+                  >
+                    {disc}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Language filter */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 6, flexWrap: "wrap" }}>
             {(["all", "es", "en"] as const).map((filter) => {
-              const count = filter === "all" ? allPacksRaw.length : allPacksRaw.filter((pack) => (pack.base_language_hint ?? "") === filter).length;
+              const base = disciplineFilter === "all" ? allPacksRaw : allPacksRaw.filter((p) => (p.discipline ?? "").toLowerCase() === disciplineFilter.toLowerCase());
+              const count = filter === "all" ? base.length : base.filter((pack) => (pack.base_language_hint ?? "") === filter).length;
               return (
                 <button
                   key={filter}
@@ -138,24 +167,6 @@ export function VocabularyPacksPanel() {
                   style={{ fontSize: 11, padding: "2px 10px" }}
                 >
                   {filter === "all" ? t("vocabulary.filter_all", { count }) : filter === "es" ? t("vocabulary.filter_spanish", { count }) : t("vocabulary.filter_english", { count })}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
-            {kindOptions.map((option) => {
-              const count = option.id === "all"
-                ? allPacksRaw.length
-                : allPacksRaw.filter((pack) => (pack.pack_kind ?? "discipline") === option.id).length;
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => setKindFilter(option.id)}
-                  className={`btn btn-sm ${kindFilter === option.id ? "btn-accent" : "btn-ghost"}`}
-                  style={{ fontSize: 11, padding: "2px 10px" }}
-                >
-                  {t(option.labelKey)} ({count})
                 </button>
               );
             })}

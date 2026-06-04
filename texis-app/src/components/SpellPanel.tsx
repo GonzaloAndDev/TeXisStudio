@@ -82,7 +82,7 @@ export function SpellPanel({ blocks, onReplace, onClose }: Props) {
     <aside style={{
       width: 280, flexShrink: 0, borderLeft: "1px solid var(--border-subtle)",
       background: "var(--bg-panel)", display: "flex", flexDirection: "column",
-      fontSize: "var(--fs-sm)",
+      fontSize: "var(--fs-sm)", position: "relative", zIndex: 10,
     }}>
       {/* Header */}
       <div style={{

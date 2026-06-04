@@ -7,7 +7,7 @@ import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
 import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconFile,
-  IconGlossaryEntry, IconHeading, IconImage, IconList, IconMore, IconPlus, IconRefresh,
+  IconGlossaryEntry, IconHeading, IconHome, IconImage, IconList, IconMore, IconPlus, IconRefresh,
   IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
@@ -625,7 +625,20 @@ export default function EditorView() {
   return (
     <>
       <TxAppbar
-        left={<><TxLogo /><TxBreadcrumb parts={[projectName, activeSection?.title ?? t("editor.section_fallback")] } /></>}
+        left={
+          <>
+            <button
+              className="btn btn-ghost btn-icon"
+              title={t("home.nav_projects")}
+              onClick={() => navigate("/")}
+              style={{ marginRight: 2 }}
+            >
+              <IconHome size={14} />
+            </button>
+            <TxLogo />
+            <TxBreadcrumb parts={[projectName, activeSection?.title ?? t("editor.section_fallback")]} />
+          </>
+        }
         center={null}
         right={
           <>
@@ -711,10 +724,10 @@ export default function EditorView() {
                 key={type}
                 className="btn btn-ghost btn-sm"
                 onClick={() => addBlock(type)}
-                title={tooltip ?? label}
-                style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+                title={label + (tooltip ? ` — ${tooltip}` : "")}
+                style={{ padding: "4px 7px", fontSize: "var(--fs-xs)", gap: 4 }}
               >
-                {icon}<span>{label}</span>
+                {icon}
               </button>
             ))}
 
@@ -893,7 +906,7 @@ export default function EditorView() {
               </div>
             ) : (
               <div style={{ textAlign: "center", color: "var(--fg-faint)", marginTop: 80 }}>
-                Selecciona una sección en el árbol
+                {t("editor.select_section")}
               </div>
             )}
           </div>

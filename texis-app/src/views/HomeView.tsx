@@ -103,15 +103,16 @@ function humanizeProfileId(id: string): string {
 }
 
 function NextStepBanner({ project, onClick }: { project: RecentProject; onClick: () => void }) {
+  const { t } = useTranslation();
   const ts = /^\d+$/.test(project.updated_at)
     ? parseInt(project.updated_at, 10) * 1000
     : Date.parse(project.updated_at);
   const diffH = isNaN(ts) ? 999 : (Date.now() - ts) / 3600000;
   const isRecent = diffH < 24;
-  const label = isRecent ? "Continúa donde lo dejaste" : "Retoma tu proyecto";
+  const label = isRecent ? t("home.continue_recent") : t("home.resume_project");
   const hint = isRecent
-    ? "Tu última sesión fue hace menos de un día."
-    : "Listo para que retomes el hilo.";
+    ? t("home.last_session_recent")
+    : t("home.resume_hint");
 
   return (
     <div
@@ -135,7 +136,7 @@ function NextStepBanner({ project, onClick }: { project: RecentProject; onClick:
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>{hint}</div>
       </div>
       <button className="btn btn-sm btn-accent" style={{ flexShrink: 0 }}>
-        Abrir
+        {t("home.open")}
       </button>
     </div>
   );
@@ -352,39 +353,39 @@ export default function HomeView() {
     if (hasTexLive) {
       return { text: `TeX Live ${latexInfo.texlive_year ?? ""} · biber`.trim(), dot: "var(--build-ok)" };
     }
-    return { text: backends.join(" · ") || "LaTeX listo", dot: "var(--build-ok)" };
+    return { text: backends.join(" · ") || t("home.latex_ready"), dot: "var(--build-ok)" };
   })();
 
   const latestProject = projectsLoading ? undefined : projects[0];
 
   const workMoments = [
     {
-      label: "Empezar",
-      hint: "Crea una tesis nueva o importa una existente.",
+      label: t("home.step_start"),
+      hint: t("home.step_start_hint"),
       icon: <IconPlus size={13} />,
       onClick: () => navigate("/new"),
     },
     {
-      label: "Configurar",
-      hint: "Elige perfil, universidad, grado e idioma.",
+      label: t("home.step_setup"),
+      hint: t("home.step_setup_hint"),
       icon: <IconFolder size={13} />,
       onClick: () => navigate("/library"),
     },
     {
-      label: "Escribir",
-      hint: latestProject ? "Vuelve a tu proyecto más reciente." : "Abre un proyecto para empezar a redactar.",
+      label: t("home.step_write"),
+      hint: latestProject ? t("home.step_write_hint_project") : t("home.step_write_hint_empty"),
       icon: <IconBook size={13} />,
       onClick: () => latestProject ? handleOpen(latestProject.path) : navigate("/new"),
     },
     {
-      label: "Revisar",
-      hint: "Ajusta idioma, ortografía y apoyos de escritura.",
+      label: t("home.step_review"),
+      hint: t("home.step_review_hint"),
       icon: <IconSearch size={13} />,
       onClick: () => navigate("/settings/text"),
     },
     {
-      label: "Entregar",
-      hint: latestProject ? "Compila, verifica el PDF y exporta tu entrega." : "Compila tu proyecto cuando ya tengas contenido.",
+      label: t("home.step_deliver"),
+      hint: latestProject ? t("home.step_deliver_hint_project") : t("home.step_deliver_hint_empty"),
       icon: <IconUpload size={13} />,
       onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : navigate("/new"),
     },
@@ -394,10 +395,10 @@ export default function HomeView() {
     <>
       {homeError && (
         <AppDialog
-          title="No se pudo completar la accion"
-          subtitle="TeXisStudio no modifico tu proyecto. Revisa el detalle y vuelve a intentarlo."
+          title={t("home.error_title")}
+          subtitle={t("home.error_subtitle")}
           onClose={() => setHomeError(null)}
-          footer={<button className="btn btn-accent btn-sm" onClick={() => setHomeError(null)}>Entendido</button>}
+          footer={<button className="btn btn-accent btn-sm" onClick={() => setHomeError(null)}>{t("home.error_dismiss")}</button>}
         >
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6 }}>
             {homeError}
@@ -406,21 +407,21 @@ export default function HomeView() {
       )}
       {importDialogOpen && (
         <AppDialog
-          title="Importar archivo TeX"
-          subtitle="Crea un proyecto TeXisStudio conservando el contenido LaTeX original para que puedas migrarlo gradualmente al editor visual."
+          title={t("home.import_title")}
+          subtitle={t("home.import_subtitle")}
           width={560}
           onClose={() => !importBusy && setImportDialogOpen(false)}
           footer={
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setImportDialogOpen(false)} disabled={importBusy}>
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 className="btn btn-accent btn-sm"
                 onClick={handleImportTex}
                 disabled={importBusy || !importTexPath || !importOutputPath || !importProjectName.trim()}
               >
-                {importBusy ? "Importando..." : "Crear proyecto importado"}
+                {importBusy ? t("home.import_busy") : t("home.import_create")}
               </button>
             </>
           }
@@ -428,49 +429,49 @@ export default function HomeView() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
-                Archivo .tex
+                {t("home.import_tex_label")}
               </label>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={importTexPath}
                   readOnly
-                  placeholder="Selecciona el archivo principal .tex"
+                  placeholder={t("home.import_tex_placeholder")}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
                 />
                 <button className="btn btn-sm" onClick={pickImportTexFile} disabled={importBusy}>
-                  Elegir
+                  {t("home.import_choose")}
                 </button>
               </div>
             </div>
             <div>
               <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
-                Carpeta destino
+                {t("home.import_folder_label")}
               </label>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={importOutputPath}
                   readOnly
-                  placeholder="Selecciona donde crear la carpeta del proyecto"
+                  placeholder={t("home.import_folder_placeholder")}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
                 />
                 <button className="btn btn-sm" onClick={pickImportOutputFolder} disabled={importBusy}>
-                  Elegir
+                  {t("home.import_choose")}
                 </button>
               </div>
             </div>
             <div>
               <label style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 5 }}>
-                Nombre del proyecto
+                {t("home.import_name_label")}
               </label>
               <input
                 value={importProjectName}
                 onChange={(e) => setImportProjectName(e.target.value)}
-                placeholder="tesis-importada"
+                placeholder={t("home.import_name_placeholder")}
                 disabled={importBusy}
                 style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}
               />
               <div style={{ marginTop: 6, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-                El original se guardara en <span style={{ fontFamily: "var(--font-mono)" }}>imports/source.tex</span> y el contenido entrara como LaTeX confirmado para no perder fidelidad.
+                {t("home.import_note")}
               </div>
             </div>
           </div>
@@ -492,7 +493,7 @@ export default function HomeView() {
 
       <div style={S.root}>
         <aside style={S.side}>
-          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>Ruta sugerida</div>
+          <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.guided_route")}</div>
           {workMoments.map(({ label, icon, onClick }) => (
             <div key={label} style={S.sideItem(false)} onClick={onClick}>
               {icon} {label}
