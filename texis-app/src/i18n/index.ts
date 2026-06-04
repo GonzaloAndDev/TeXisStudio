@@ -33,7 +33,7 @@ i18n
     resources: bundled,
     ns: ["t"],
     defaultNS: "t",
-    fallbackLng: "es",
+    fallbackLng: ["es", "en"],
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
@@ -46,8 +46,21 @@ export default i18n;
 
 /** Register a locale at runtime (called after installing a language pack). */
 export function registerDynamicLocale(id: string, data: Record<string, unknown>): void {
-  if (!i18n.hasResourceBundle(id, "t")) {
-    i18n.addResourceBundle(id, "t", data, true, true);
+  i18n.addResourceBundle(id, "t", data, true, true);
+}
+
+/** Register an installed remote locale from localStorage before switching to it. */
+export function ensureDynamicLocale(id: string): boolean {
+  if (i18n.hasResourceBundle(id, "t")) return true;
+
+  const raw = localStorage.getItem(`tx-lang-pack-ui:${id}`);
+  if (!raw) return false;
+
+  try {
+    registerDynamicLocale(id, JSON.parse(raw) as Record<string, unknown>);
+    return true;
+  } catch {
+    return false;
   }
 }
 

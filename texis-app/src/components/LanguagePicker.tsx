@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
+import { ensureDynamicLocale, SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 
@@ -41,10 +41,18 @@ export function LanguagePicker() {
   const current = allEntries.find((l) => l.code === lang) ?? allEntries[0];
 
   function pick(code: string) {
+    ensureDynamicLocale(code);
     setLang(code);
     i18n.changeLanguage(code);
     const spellCode = SPELL_CHECK_LANGS[code];
-    if (spellLang !== undefined) setSpellLang(spellCode ?? null);
+    const installedPack = installed.find((p) => p.id === code);
+    if (spellCode !== undefined) {
+      setSpellLang(spellCode);
+    } else if (installedPack?.entry.capabilities.spelling) {
+      setSpellLang(code);
+    } else if (spellLang !== undefined) {
+      setSpellLang(null);
+    }
     setOpen(false);
   }
 

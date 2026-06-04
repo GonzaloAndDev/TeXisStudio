@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import { IconSettings, IconBook, IconFolder, IconDownload } from "../components/Icons";
 import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
-import i18n, { registerDynamicLocale } from "../i18n/index";
+import i18n, { ensureDynamicLocale } from "../i18n/index";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import type { LangPackEntry } from "../types";
@@ -90,17 +90,13 @@ export default function SettingsView() {
     setInstallError(null);
     try {
       await installPack(entry);
-      // Register locale immediately so language picker reflects it
-      if (entry.capabilities.ui) {
-        const raw = localStorage.getItem(`tx-lang-pack-ui:${entry.id}`);
-        if (raw) registerDynamicLocale(entry.id, JSON.parse(raw));
-      }
     } catch (e) {
       setInstallError(String(e));
     }
   }
 
   function pickLang(code: string) {
+    ensureDynamicLocale(code);
     setLang(code);
     i18n.changeLanguage(code);
     const spellCode = SPELL_CHECK_LANGS[code];

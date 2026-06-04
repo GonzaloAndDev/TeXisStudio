@@ -6,6 +6,7 @@ import {
   uninstallPack,
   loadInstalledPacks,
 } from "../services/languagePacks";
+import { registerDynamicLocale } from "../i18n/index";
 
 interface LangPacksState {
   /** Remote catalog (null = not yet fetched) */
@@ -60,9 +61,12 @@ export const useLangPacksStore = create<LangPacksState>((set, get) => ({
     set({ installing: next });
 
     try {
-      await installPack(entry, (step) => {
+      const installedPack = await installPack(entry, (step) => {
         set((s) => ({ installProgress: { ...s.installProgress, [entry.id]: step } }));
       });
+      if (installedPack.ui_data) {
+        registerDynamicLocale(entry.id, installedPack.ui_data);
+      }
       set((s) => {
         const updated = new Set(s.installing);
         updated.delete(entry.id);
