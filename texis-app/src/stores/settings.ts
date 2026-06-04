@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persistUiLanguage, readStoredUiLanguage } from "../i18n/languageState";
 
 interface SettingsState {
   lang: string;
@@ -43,7 +44,7 @@ function save<T>(key: string, v: T): void {
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  lang: load("tx-lang", "es"),
+  lang: readStoredUiLanguage(),
   userMode: load("tx-user-mode", "basic"),
   uiScale: load("tx-ui-scale", "normal"),
   spellLang: load("tx-spell-lang", "es"),
@@ -57,8 +58,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   projectDir: load("tx-project-dir", ""),
 
   setLang: (lang) => {
-    save("tx-lang", lang);
-    set({ lang });
+    set({ lang: persistUiLanguage(lang) });
   },
   setUserMode: (userMode) => {
     save("tx-user-mode", userMode);

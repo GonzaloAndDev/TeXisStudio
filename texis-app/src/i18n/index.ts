@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 
 import es from "./locales/es.json";
 import en from "./locales/en.json";
@@ -10,6 +9,7 @@ import ja from "./locales/ja.json";
 import zh from "./locales/zh.json";
 
 import { getInstalledLocales } from "../services/languagePacks";
+import { persistUiLanguage, readStoredUiLanguage } from "./languageState";
 
 // Build initial resources from bundled + already-installed language packs
 const bundled: Record<string, { t: Record<string, unknown> }> = {
@@ -27,20 +27,19 @@ for (const { id, data } of installed) {
 }
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: bundled,
+    lng: persistUiLanguage(readStoredUiLanguage()),
     ns: ["t"],
     defaultNS: "t",
     fallbackLng: ["es", "en"],
-    detection: {
-      order: ["localStorage", "navigator"],
-      caches: ["localStorage"],
-      lookupLocalStorage: "tx-lang",
-    },
     interpolation: { escapeValue: false },
   });
+
+i18n.on("languageChanged", (language) => {
+  persistUiLanguage(language);
+});
 
 export default i18n;
 

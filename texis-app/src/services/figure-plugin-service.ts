@@ -10,7 +10,7 @@ let _instances: Map<string, VisualDiagramPlugin> | null = null;
 let _instancesLocale: string | null = null;
 
 function getInstances(): Map<string, VisualDiagramPlugin> {
-  const locale = i18n.language || "es";
+  const locale = i18n.resolvedLanguage || i18n.language || "es";
   if (!_instances || _instancesLocale !== locale) {
     setPluginLocale(locale);
     _instances = new Map();

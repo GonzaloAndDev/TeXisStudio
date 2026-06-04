@@ -1144,7 +1144,7 @@ export default function WizardView() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { lang: savedUiLang, spellLang: savedSpellLang, setLang, setSpellLang } = useSettingsStore();
+  const { lang: savedUiLang, spellLang: savedSpellLang, setSpellLang } = useSettingsStore();
   const { catalog, loadCatalog } = useLangPacksStore();
   const { officialPacks, loadOfficialCatalog, install: installVocabPack, isInstalled: isVocabInstalled } = useVocabPacksStore();
   const [step, setStep] = useState(0);
@@ -1316,9 +1316,6 @@ export default function WizardView() {
       };
       if (["es", "en"].includes(documentLanguage) || availableLanguages.some((entry) => entry.id === documentLanguage)) {
         setSpellLang(documentLanguage);
-      }
-      if (["es", "en"].includes(documentLanguage)) {
-        setLang(documentLanguage);
       }
       await api.saveProject(result.project_path, enriched);
       const saved = await api.getProject(result.project_path);

@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ensureDynamicLocale, SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
+import { normalizeUiLanguage } from "../i18n/languageState";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Unified language entry for the picker (bundled + community installed)
@@ -20,6 +21,11 @@ export function LanguagePicker() {
   const { installed } = useLangPacksStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const activeLanguage = normalizeUiLanguage(i18n.resolvedLanguage || i18n.language || lang);
+
+  useEffect(() => {
+    if (lang !== activeLanguage) setLang(activeLanguage);
+  }, [activeLanguage, lang, setLang]);
 
   // Build the combined list: bundled first, then installed community packs
   // (exclude community packs that duplicate a bundled ID, just in case)
@@ -38,7 +44,7 @@ export function LanguagePicker() {
     ...communityEntries,
   ];
 
-  const current = allEntries.find((l) => l.code === lang) ?? allEntries[0];
+  const current = allEntries.find((l) => l.code === activeLanguage) ?? allEntries[0];
 
   function pick(code: string) {
     ensureDynamicLocale(code);
@@ -85,7 +91,7 @@ export function LanguagePicker() {
               code={l.code}
               flag={l.flag}
               label={l.label}
-              active={l.code === lang}
+              active={l.code === activeLanguage}
               onPick={pick}
             />
           ))}
@@ -106,7 +112,7 @@ export function LanguagePicker() {
                   code={l.code}
                   flag={l.flag}
                   label={l.label}
-                  active={l.code === lang}
+                  active={l.code === activeLanguage}
                   onPick={pick}
                   community
                 />

@@ -5,6 +5,7 @@ import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import { IconSettings, IconBook, IconFolder, IconDownload } from "../components/Icons";
 import { SUPPORTED_LANGUAGES, SPELL_CHECK_LANGS } from "../i18n/index";
 import i18n, { ensureDynamicLocale } from "../i18n/index";
+import { normalizeUiLanguage } from "../i18n/languageState";
 import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import type { LangPackEntry } from "../types";
@@ -78,6 +79,11 @@ export default function SettingsView() {
   const [localEmail, setLocalEmail] = useState(userEmail);
   const [localProjectDir, setLocalProjectDir] = useState(projectDir);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const activeLanguage = normalizeUiLanguage(i18n.resolvedLanguage || i18n.language || lang);
+
+  useEffect(() => {
+    if (lang !== activeLanguage) setLang(activeLanguage);
+  }, [activeLanguage, lang, setLang]);
 
   // Load catalog when entering community section
   useEffect(() => {
@@ -96,15 +102,16 @@ export default function SettingsView() {
   }
 
   function pickLang(code: string) {
-    ensureDynamicLocale(code);
-    setLang(code);
-    i18n.changeLanguage(code);
-    const spellCode = SPELL_CHECK_LANGS[code];
-    const installedPack = installedPacks.find((p) => p.id === code);
+    const normalized = normalizeUiLanguage(code);
+    ensureDynamicLocale(normalized);
+    setLang(normalized);
+    i18n.changeLanguage(normalized);
+    const spellCode = SPELL_CHECK_LANGS[normalized];
+    const installedPack = installedPacks.find((p) => p.id === normalized);
     if (spellCode !== undefined) {
       setSpellLang(spellCode);
     } else if (installedPack?.entry.capabilities.spelling) {
-      setSpellLang(code);
+      setSpellLang(normalized);
     } else {
       setSpellLang(null);
     }
@@ -268,26 +275,26 @@ export default function SettingsView() {
                   {SUPPORTED_LANGUAGES.map((l) => (
                     <button
                       key={l.code}
-                      className={`btn ${lang === l.code ? "btn-accent" : "btn-ghost"}`}
+                      className={`btn ${activeLanguage === l.code ? "btn-accent" : "btn-ghost"}`}
                       style={{ gap: 6 }}
                       onClick={() => pickLang(l.code)}
                     >
                       <span style={{ fontSize: 18 }}>{l.flag}</span>
                       <span>{l.label}</span>
-                      {lang === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
+                      {activeLanguage === l.code && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
                     </button>
                   ))}
                   {/* Community-installed UI packs */}
                   {installedPacks.filter((p) => p.entry.capabilities.ui).map((p) => (
                     <button
                       key={p.id}
-                      className={`btn ${lang === p.id ? "btn-accent" : "btn-ghost"}`}
+                      className={`btn ${activeLanguage === p.id ? "btn-accent" : "btn-ghost"}`}
                       style={{ gap: 6 }}
                       onClick={() => pickLang(p.id)}
                     >
                       <span style={{ fontSize: 18 }}>{p.entry.flag}</span>
                       <span>{p.entry.native_name}</span>
-                      {lang === p.id && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
+                      {activeLanguage === p.id && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
                       <span style={{ fontSize: 9, color: "var(--fg-faint)", background: "var(--border-subtle)", padding: "1px 4px", borderRadius: 3 }}>{t("settings.installed_chip")}</span>
                     </button>
                   ))}
