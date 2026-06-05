@@ -1,256 +1,114 @@
-schema_version: "1.0.0"
-id: "mx.unam.posgrado"
-name: "UNAM — Posgrado"
-description: "Tesis y disertaciones de posgrado de la Universidad Nacional Autónoma de México. Basado en las directrices de la Coordinación de Estudios de Posgrado (CEP-UNAM): papel tamaño carta u oficio, márgenes 2.5 cm, interlineado 1.5, APA 7, portada con escudo oficial."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: mx.unam.posgrado
+name: mx.unam.posgrado
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-29"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-29'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://www.posgrado.unam.mx/alumnos/tesis-y-examen/"
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
+  - https://www.posgrado.unam.mx/alumnos/tesis-y-examen/
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
   review_interval_days: 365
 tags:
-  - unam
-  - posgrado
-  - maestria
-  - doctorado
-  - especialidad
-  - mexico
-  - apa
-  - xelatex
-
+- unam
+- posgrado
+- maestria
+- doctorado
+- especialidad
+- mexico
+- apa
+- xelatex
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 page_layout:
   top_margin_cm: 2.5
   bottom_margin_cm: 2.5
   left_margin_cm: 3.0
   right_margin_cm: 2.5
   line_spacing: 1.5
-
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-  - "cleveref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- hyperref
+- cleveref
 title_page_template:
-  template: |
-    \thispagestyle{empty}
-    \begin{titlepage}
-      \centering
-      \vspace*{0.8cm}
-      {\scshape\large {{ institution_name | latex_escape }}\par}
-      \vspace{0.2cm}
-      {\normalsize\scshape {{ faculty | latex_escape }}\par}
-      \vspace{0.8cm}
-      \rule{\textwidth}{0.4pt}
-      \vspace{0.8cm}
-      {\huge\bfseries {{ title | latex_escape }}\par}
-      \vspace{0.8cm}
-      \rule{\textwidth}{0.4pt}
-      \vspace{1cm}
-      {\large\itshape {{ doc_kind_label }}\par}
-      \vspace{0.3cm}
-      {\normalsize que para optar por el grado de\par}
-      \vspace{0.3cm}
-      {\large\bfseries {{ degree_label }}\par}
-      \vspace{1.5cm}
-      {\normalsize P\,R\,E\,S\,E\,N\,T\,A:\par}
-      \vspace{0.5cm}
-      {\large\bfseries {{ author | latex_escape }}\par}
-      \vspace{1.5cm}
-      {% if advisors %}
-      {\normalsize T\,U\,T\,O\,R\, P\,R\,I\,N\,C\,I\,P\,A\,L:\par}
-      \vspace{0.3cm}
-      {% for a in advisors %}
-      {\normalsize {{ a | latex_escape }}\par}
-      {% endfor %}
-      {% endif %}
-      {% if committee %}
-      \vspace{0.8cm}
-      {\normalsize C\,O\,M\,I\,T\,É\, T\,U\,T\,O\,R\,I\,A\,L:\par}
-      \vspace{0.3cm}
-      {% for m in committee %}
-      {\small {{ m.name | latex_escape }}{% if m.role is defined and m.role %} --- {\itshape {{ m.role | latex_escape }}}{% endif %}\par}
-      {% endfor %}
-      {% endif %}
-      \vfill
-      {\normalsize {{ city | latex_escape }}, {{ year }}\par}
-    \end{titlepage}
-
+  template: "\\thispagestyle{empty}\n\\begin{titlepage}\n  \\centering\n  \\vspace*{0.8cm}\n  {\\scshape\\large {{ institution_name | latex_escape }}\\par}\n  \\vspace{0.2cm}\n  {\\normalsize\\scshape {{ faculty | latex_escape }}\\par}\n  \\vspace{0.8cm}\n  \\rule{\\textwidth}{0.4pt}\n  \\vspace{0.8cm}\n  {\\huge\\bfseries {{ title | latex_escape }}\\par}\n  \\vspace{0.8cm}\n  \\rule{\\textwidth}{0.4pt}\n  \\vspace{1cm}\n  {\\large\\itshape {{ doc_kind_label }}\\par}\n  \\vspace{0.3cm}\n  {\\normalsize que para optar por el grado de\\par}\n  \\vspace{0.3cm}\n  {\\large\\bfseries {{ degree_label }}\\par}\n  \\vspace{1.5cm}\n  {\\normalsize P\\,R\\,E\\,S\\,E\\,N\\,T\\,A:\\par}\n  \\vspace{0.5cm}\n  {\\large\\bfseries {{ author | latex_escape }}\\par}\n  \\vspace{1.5cm}\n  {% if advisors %}\n  {\\normalsize T\\,U\\,T\\,O\\,R\\, P\\,R\\,I\\,N\\,C\\,I\\,P\\,A\\,L:\\par}\n  \\vspace{0.3cm}\n  {% for a in advisors %}\n  {\\normalsize {{ a | latex_escape }}\\par}\n  {% endfor %}\n  {% endif %}\n\
+    \  {% if committee %}\n  \\vspace{0.8cm}\n  {\\normalsize C\\,O\\,M\\,I\\,T\\,É\\, T\\,U\\,T\\,O\\,R\\,I\\,A\\,L:\\par}\n  \\vspace{0.3cm}\n  {% for m in committee %}\n  {\\small {{ m.name | latex_escape }}{% if m.role is defined and m.role %} --- {\\itshape {{ m.role | latex_escape }}}{% endif %}\\par}\n  {% endfor %}\n  {% endif %}\n  \\vfill\n  {\\normalsize {{ city | latex_escape }}, {{ year }}\\par}\n\\end{titlepage}\n"
 sections:
-  - id: "portada"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada UNAM incluye: escudo de la UNAM, nombre de la facultad o instituto, título del trabajo, tipo de tesis (para obtener el grado de Maestría/Doctorado en…), nombre del alumno, director de tesis, comité tutoral, lugar y año.
-      El perfil genera la portada automáticamente con los datos que configuraste al crear el proyecto.
-
-  - id: "dedicatoria"
-    element_id: "dedication"
-    placement: "front_matter"
-    required: false
-    title: "Dedicatoria"
-    guidance: |
-      Texto breve (1–5 líneas) dedicado a personas importantes. Es personal y opcional.
-      En la UNAM no lleva número de página y se imprime en página independiente.
-
-  - id: "agradecimientos"
-    element_id: "acknowledgements"
-    placement: "front_matter"
-    required: false
-    title: "Agradecimientos"
-    guidance: |
-      Menciona al director, comité tutoral, CONACYT/CONAHCyT (si hubo beca), laboratorio o grupo de investigación, y personas clave en el trabajo.
-      Incluye el número de proyecto o beca si aplica (ej. "Beca CONAHCyT No. XXXXXX").
-
-  - id: "resumen"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: true
-    title: "Resumen"
-    guidance: |
-      Resumen en español de 200–300 palabras. La CEP-UNAM lo exige en español.
-      Incluye: objetivo, metodología, resultados principales y conclusión.
-      Al final: 4–6 palabras clave separadas por punto y coma.
-
-  - id: "abstract"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: false
-    title: "Abstract"
-    guidance: |
-      Traducción del resumen al inglés. Muchos programas de doctorado de la UNAM lo requieren.
-      Formato idéntico al resumen en español.
-      Keywords: mismas que en español, en inglés.
-
-  - id: "tabla_contenidos"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice se genera automáticamente. Incluye capítulos, secciones y subsecciones.
-      La UNAM generalmente requiere también lista de figuras y lista de tablas si hay más de 5.
-
-  - id: "introduccion"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "chap:introduccion"
-    guidance: |
-      La introducción UNAM debe incluir:
-      1. Antecedentes y contexto del problema.
-      2. Planteamiento del problema y justificación.
-      3. Hipótesis o pregunta de investigación.
-      4. Objetivo general y objetivos específicos.
-      5. Alcances y limitaciones.
-      6. Estructura de la tesis (qué contiene cada capítulo).
-      Extensión recomendada: 4–8 páginas.
-
-  - id: "marco_teorico"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Marco Teórico"
-    label: "chap:marco"
-    guidance: |
-      Revisa y sintetiza la literatura relevante. En la UNAM el marco teórico debe:
-      • Citar fuentes primarias y actuales (últimos 10 años; clásicos si son fundamentales).
-      • Organizar las ideas de forma lógica, no como lista de resúmenes.
-      • Usar APA 7 para todas las citas — el sistema las genera automáticamente.
-      • Identificar el estado del arte y el hueco que llena tu investigación.
-
-  - id: "metodologia"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Metodología"
-    label: "chap:metodologia"
-    guidance: |
-      Describe la metodología con suficiente detalle para replicarse. Incluye:
-      • Tipo de investigación y diseño.
-      • Población, muestra y criterios de selección.
-      • Instrumentos y procedimientos.
-      • Análisis de datos (software, estadísticas o categorías cualitativas).
-      • Consideraciones éticas y consentimientos si aplica.
-
-  - id: "resultados"
-    element_id: "results"
-    placement: "body"
-    required: true
-    title: "Resultados"
-    label: "chap:resultados"
-    guidance: |
-      Presenta los hallazgos de forma objetiva. Usa tablas y figuras con referencias en el texto.
-      En la UNAM cada figura y tabla debe tener: número, título descriptivo (arriba para tablas, abajo para figuras) y fuente si aplica.
-      No interpretes los resultados aquí — eso va en la Discusión.
-
-  - id: "discusion"
-    element_id: "discussion"
-    placement: "body"
-    required: false
-    title: "Discusión"
-    label: "chap:discusion"
-    guidance: |
-      Interpreta los resultados en el contexto de tu pregunta de investigación y la literatura.
-      Compara con estudios previos, señala coincidencias y divergencias.
-      Discute implicaciones teóricas y prácticas.
-      Reconoce las limitaciones con honestidad.
-
-  - id: "conclusiones"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    label: "chap:conclusiones"
-    guidance: |
-      Responde directamente a tus objetivos e hipótesis. La CEP-UNAM espera:
-      • Síntesis de hallazgos principales.
-      • Contribuciones originales al campo.
-      • Recomendaciones para futuras investigaciones.
-      • Implicaciones para la práctica o la política (si aplica).
-      Extensión: 3–5 páginas. No introduzcas información nueva.
-
-  - id: "referencias"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      La lista de referencias se genera automáticamente en formato APA 7.
-      La UNAM exige APA 7 en la mayoría de los programas de posgrado.
-      Asegúrate de que cada fuente citada esté en el .bib, y viceversa.
-      Usa el importador DOI para obtener entradas completas y normalizadas.
-
-  - id: "anexos"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Anexos"
-    guidance: |
-      Material complementario que apoya el trabajo sin interrumpir el flujo principal:
-      instrumentos de recolección, tablas de datos crudos, código fuente, cartas de consentimiento.
-      Numera: Anexo A, Anexo B… Referencia cada uno desde el texto principal.
+- id: portada
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: dedicatoria
+  element_id: dedication
+  placement: front_matter
+  required: false
+- id: agradecimientos
+  element_id: acknowledgements
+  placement: front_matter
+  required: false
+- id: resumen
+  element_id: abstract_es
+  placement: front_matter
+  required: true
+- id: abstract
+  element_id: abstract_en
+  placement: front_matter
+  required: false
+- id: tabla_contenidos
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: introduccion
+  element_id: introduction
+  placement: body
+  required: true
+  label: chap:introduccion
+- id: marco_teorico
+  element_id: theoretical_framework
+  placement: body
+  required: false
+  label: chap:marco
+- id: metodologia
+  element_id: methodology
+  placement: body
+  required: true
+  label: chap:metodologia
+- id: resultados
+  element_id: results
+  placement: body
+  required: true
+  label: chap:resultados
+- id: discusion
+  element_id: discussion
+  placement: body
+  required: false
+  label: chap:discusion
+- id: conclusiones
+  element_id: conclusions
+  placement: body
+  required: true
+  label: chap:conclusiones
+- id: referencias
+  element_id: references
+  placement: back_matter
+  required: true
+- id: anexos
+  element_id: appendices
+  placement: appendix
+  required: false

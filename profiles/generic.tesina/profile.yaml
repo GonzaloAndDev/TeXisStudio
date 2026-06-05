@@ -1,107 +1,62 @@
-schema_version: "1.0.0"
-id: "generic.tesina"
-name: "Tesina genérica"
-description: "Versión simplificada para licenciatura: introducción, desarrollo y conclusiones. Clase book, XeLaTeX, biber, APA 7."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: generic.tesina
+name: generic.tesina
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-24"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-24'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
-    - "https://apastyle.apa.org/style-grammar-guidelines/paper-format/general-guidelines"
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
+  - https://apastyle.apa.org/style-grammar-guidelines/paper-format/general-guidelines
   review_interval_days: 730
 tags:
-  - tesina
-  - licenciatura
-  - apa
-  - xelatex
-
+- tesina
+- licenciatura
+- apa
+- xelatex
 document_class:
-  name: "book"
+  name: book
   options:
-    - "11pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 11pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- hyperref
 sections:
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    guidance: |
-      La portada se genera automáticamente con los datos institucionales configurados al crear el proyecto.
-      No necesitas escribir contenido aquí.
-
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    guidance: |
-      El índice se genera automáticamente desde tus secciones habilitadas.
-      No necesitas escribir nada aquí.
-
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    guidance: |
-      La introducción presenta el tema y motiva el trabajo. Para una tesina incluye:
-      1. Contexto breve del tema (de lo general a lo específico).
-      2. Problema o pregunta que aborda el trabajo.
-      3. Objetivo general.
-      4. Justificación: ¿por qué es relevante estudiarlo?
-      5. Breve descripción de cómo se organiza el documento.
-      Extensión típica: 1–3 páginas.
-
-  - id: "development"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: true
-    title: "Desarrollo"
-    guidance: |
-      El desarrollo es el cuerpo central del trabajo. Divídelo en subsecciones lógicas:
-      • Marco conceptual: define los conceptos clave con apoyo bibliográfico.
-      • Análisis o desarrollo del tema: argumento, propuesta o estudio central.
-      • Resultados o hallazgos si aplica.
-      Cada idea debe estar respaldada por fuentes. Usa bloques "Cita bibliográfica" para referenciar.
-      Extensión típica: 10–30 páginas.
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    guidance: |
-      Cierra el trabajo respondiendo directamente al objetivo planteado en la introducción:
-      • ¿Se logró el objetivo? ¿Qué se encontró?
-      • Reflexión sobre la relevancia del trabajo.
-      • Limitaciones encontradas.
-      • Recomendaciones o líneas de trabajo futuro.
-      Extensión típica: 1–2 páginas. No introduzcas información nueva aquí.
-
-  - id: "references"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    guidance: |
-      La lista de referencias se genera automáticamente desde tu archivo .bib al compilar.
-      Usa el importador DOI (Ctrl+[ > panel DOI) para agregar fuentes fácilmente.
-      El estilo APA 7 se aplica automáticamente.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: table_of_contents
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+- id: development
+  element_id: theoretical_framework
+  placement: body
+  required: true
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+- id: references
+  element_id: references
+  placement: back_matter
+  required: true

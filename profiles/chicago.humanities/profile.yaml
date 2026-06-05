@@ -1,156 +1,95 @@
-schema_version: "1.0.0"
-id: "chicago.humanities"
-name: "Chicago / Turabian — Humanidades"
-description: "Tesis y disertaciones en humanidades, ciencias sociales y artes con estilo Chicago Notes-Bibliography (17ª ed.) / Turabian 9ª ed. Las citas van en notas al pie de página numeradas, no entre paréntesis. Bibliografía al final ordenada alfabéticamente. Muy usado en filosofía, historia, literatura, ciencias sociales y derecho."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: chicago.humanities
+name: chicago.humanities
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-29"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-29'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://www.chicagomanualofstyle.org/book/ed17/frontmatter/toc.html"
-    - "https://www.press.uchicago.edu/books/turabian/turabian_citationguide.html"
+  - https://www.chicagomanualofstyle.org/book/ed17/frontmatter/toc.html
+  - https://www.press.uchicago.edu/books/turabian/turabian_citationguide.html
   review_interval_days: 730
 tags:
-  - chicago
-  - turabian
-  - humanidades
-  - ciencias-sociales
-  - historia
-  - filosofia
-  - notas-al-pie
-  - doctorado
-  - maestria
-
+- chicago
+- turabian
+- humanidades
+- ciencias-sociales
+- historia
+- filosofia
+- notas-al-pie
+- doctorado
+- maestria
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "chicago-notes"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: chicago-notes
 page_layout:
   top_margin_cm: 3.0
   bottom_margin_cm: 3.0
   left_margin_cm: 3.8
   right_margin_cm: 2.5
   line_spacing: 2.0
-
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "footmisc"
-  - "hyperref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- footmisc
+- hyperref
 sections:
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada Turabian incluye: título (centrado, un tercio desde arriba), nombre del autor, programa y universidad, ciudad y año. Sin número de página.
-      El perfil genera la portada con los datos del proyecto.
-
-  - id: "abstract"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: false
-    title: "Abstract"
-    guidance: |
-      Turabian recomienda un abstract de 150–350 palabras para disertaciones doctorales.
-      Incluye: tema, enfoque, argumento principal, metodología y conclusión.
-      Escríbelo en presente o en pasado — elige uno y sé consistente.
-
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice se genera automáticamente. En Chicago se incluyen los niveles de capítulo y sección, pero no subsecciones de nivel 3 en adelante.
-
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "chap:introduccion"
-    guidance: |
-      En humanidades la introducción presenta el argumento central (thesis statement), el corpus o fuentes principales, la metodología y la justificación.
-      Chicago permite un estilo más discursivo que otras disciplinas — puedes usar la primera persona y desarrollar el argumento con matices desde el inicio.
-      Las citas van en notas al pie numeradas, no entre paréntesis. El sistema las inserta automáticamente.
-
-  - id: "chapter_1"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Capítulo 1"
-    label: "chap:uno"
-    guidance: |
-      En humanidades los capítulos desarrollan el argumento de forma progresiva.
-      Cada capítulo debe tener un argumento propio que contribuya al argumento central de la tesis.
-      Usa notas al pie para citas textuales, referencias y comentarios amplios que interrumpirían el flujo del texto.
-      Las notas al pie cortas pueden ser citas; las largas pueden ser discusiones adicionales.
-
-  - id: "chapter_2"
-    element_id: "methodology"
-    placement: "body"
-    required: false
-    title: "Capítulo 2"
-    label: "chap:dos"
-    guidance: |
-      Segundo capítulo. Desarrolla el siguiente paso del argumento.
-      En historia o literatura, este capítulo puede analizar un corpus de textos, período histórico o conjunto de fuentes primarias.
-      Cita las fuentes primarias y secundarias con notas al pie. Para fuentes primarias recurrentes, usa abreviaciones en nota al pie tras la primera cita completa.
-
-  - id: "chapter_3"
-    element_id: "results"
-    placement: "body"
-    required: false
-    title: "Capítulo 3"
-    label: "chap:tres"
-    guidance: |
-      Tercer capítulo. Lleva el argumento a su punto de mayor desarrollo.
-      Puedes agregar o eliminar capítulos según la estructura de tu tesis — la mayoría de disertaciones en humanidades tienen 3–5 capítulos.
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    label: "chap:conclusiones"
-    guidance: |
-      Las conclusiones retoman el argumento central y lo enriquecen con lo aprendido en los capítulos.
-      Evita repetir lo ya dicho. Abre hacia las implicaciones más amplias, debates abiertos y posibles investigaciones futuras.
-      En humanidades es válido — y a veces necesario — concluir con matices o preguntas abiertas.
-
-  - id: "bibliography"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Bibliografía"
-    guidance: |
-      En Chicago Notes-Bibliography la lista final se llama "Bibliografía" (no "Referencias").
-      Se ordena alfabéticamente por apellido del autor.
-      La bibliografía se genera automáticamente desde tu .bib al compilar.
-      Incluye todas las fuentes citadas en notas al pie — y puedes incluir fuentes consultadas pero no citadas si añaden contexto.
-
-  - id: "appendices"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Apéndices"
-    guidance: |
-      En humanidades los apéndices suelen incluir: transcripciones de fuentes primarias, entrevistas completas, material visual adicional, cronologías o glosarios de términos especializados.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: abstract
+  element_id: abstract_en
+  placement: front_matter
+  required: false
+- id: table_of_contents
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+  label: chap:introduccion
+- id: chapter_1
+  element_id: theoretical_framework
+  placement: body
+  required: false
+  label: chap:uno
+- id: chapter_2
+  element_id: methodology
+  placement: body
+  required: false
+  label: chap:dos
+- id: chapter_3
+  element_id: results
+  placement: body
+  required: false
+  label: chap:tres
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+  label: chap:conclusiones
+- id: bibliography
+  element_id: references
+  placement: back_matter
+  required: true
+- id: appendices
+  element_id: appendices
+  placement: appendix
+  required: false

@@ -1,252 +1,112 @@
-schema_version: "1.0.0"
-id: "mx.ipn.esfm"
-name: "IPN ESFM — Física y Matemáticas"
-description: "Tesis de licenciatura y posgrado de la Escuela Superior de Física y Matemáticas del IPN. Diseñado para trabajos con alta densidad matemática: teoremas, lemas, corolarios, demostraciones, notación física y ecuaciones complejas. Bibliografía APA para trabajos generales, o estilo numérico para publicaciones de física."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: mx.ipn.esfm
+name: mx.ipn.esfm
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-29"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-29'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://www.esfm.ipn.mx/posgrado"
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
+  - https://www.esfm.ipn.mx/posgrado
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
   review_interval_days: 365
 tags:
-  - ipn
-  - esfm
-  - fisica
-  - matematicas
-  - posgrado
-  - licenciatura
-  - mexico
-  - apa
-  - xelatex
-  - teoremas
-  - demostraciones
-
+- ipn
+- esfm
+- fisica
+- matematicas
+- posgrado
+- licenciatura
+- mexico
+- apa
+- xelatex
+- teoremas
+- demostraciones
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 page_layout:
   top_margin_cm: 2.5
   bottom_margin_cm: 2.5
   left_margin_cm: 3.0
   right_margin_cm: 2.5
   line_spacing: 1.5
-
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "amsmath"
-  - "amssymb"
-  - "amsthm"
-  - "mathtools"
-  - "physics"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-  - "cleveref"
-  - "tikz"
-  - "xcolor"
-
+- fontspec
+- geometry
+- graphicx
+- amsmath
+- amssymb
+- amsthm
+- mathtools
+- physics
+- booktabs
+- csquotes
+- setspace
+- hyperref
+- cleveref
+- tikz
+- xcolor
 title_page_template:
-  template: |
-    \thispagestyle{empty}
-    \definecolor{ipnguinda}{RGB}{103,0,51}
-    \definecolor{ipnverde}{RGB}{0,104,55}
-    \definecolor{ipngris}{RGB}{88,88,91}
-    \begin{titlepage}
-    % ── Banda superior guinda ─────────────────────────────────────
-    \begin{tikzpicture}[remember picture, overlay]
-      \fill[ipnguinda] (current page.north west) rectangle
-        ([yshift=-2.4cm]current page.north east);
-      \fill[ipnverde]  ([yshift=-2.4cm]current page.north west) rectangle
-        ([yshift=-2.75cm]current page.north east);
-      \fill[ipnguinda] (current page.south west) rectangle
-        ([yshift=1.8cm]current page.south east);
-      \fill[ipnverde]  ([yshift=1.8cm]current page.south west) rectangle
-        ([yshift=2.15cm]current page.south east);
-      % Emblema IPN esquematizado (círculo + letras)
-      \node[draw=white, line width=1.5pt, circle, minimum size=1.4cm,
-            fill=ipnguinda!50!black, text=white, font=\bfseries\normalsize]
-        at ([xshift=2.2cm, yshift=-1.2cm]current page.north west) {IPN};
-    \end{tikzpicture}
-    \vspace*{2.6cm}
-    \begin{center}
-      {\color{ipnguinda}\normalsize\bfseries\scshape Instituto Politécnico Nacional\par}
-      \vspace{0.15cm}
-      {\color{ipngris}\small Escuela Superior de Física y Matemáticas\par}
-      \vspace{0.1cm}
-      {\color{ipngris}\footnotesize Departamento de Física\par}
-      \vspace{0.9cm}
-      % Línea decorativa
-      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}%
-      {\color{ipnguinda}\rule{0.1\textwidth}{1.5pt}}%
-      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}
-      \vspace{0.35cm}
-      \begin{minipage}{0.88\textwidth}
-        \centering
-        {\large\bfseries\color{ipnguinda} {{ title | latex_escape }}\par}
-      \end{minipage}
-      \vspace{0.35cm}
-      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}%
-      {\color{ipnguinda}\rule{0.1\textwidth}{1.5pt}}%
-      {\color{ipnverde}\rule{0.45\textwidth}{0.6pt}}
-      \vspace{0.8cm}
-      {\small\color{ipngris} {{ doc_kind_label }}\par}
-      \vspace{0.1cm}
-      {\footnotesize que para obtener el grado de\par}
-      \vspace{0.1cm}
-      {\normalsize\bfseries\color{ipnguinda} {{ degree_label }}\par}
-      \vspace{0.8cm}
-      {\footnotesize P\;R\;E\;S\;E\;N\;T\;A:\par}
-      \vspace{0.2cm}
-      {\normalsize\bfseries {{ author | latex_escape }}\par}
-      \vspace{0.8cm}
-      {% if advisors %}
-      {\footnotesize {{ advisor_label }}\par}
-      \vspace{0.15cm}
-      {% for a in advisors %}
-      {\small {{ a | latex_escape }}\par}
-      {% endfor %}
-      \vspace{0.5cm}
-      {% endif %}
-      \vfill
-      {\footnotesize\color{ipngris} {{ city | latex_escape }},~{{ year }}\par}
-    \end{center}
-    \end{titlepage}
-
+  template: "\\thispagestyle{empty}\n\\definecolor{ipnguinda}{RGB}{103,0,51}\n\\definecolor{ipnverde}{RGB}{0,104,55}\n\\definecolor{ipngris}{RGB}{88,88,91}\n\\begin{titlepage}\n% ── Banda superior guinda ─────────────────────────────────────\n\\begin{tikzpicture}[remember picture, overlay]\n  \\fill[ipnguinda] (current page.north west) rectangle\n    ([yshift=-2.4cm]current page.north east);\n  \\fill[ipnverde]  ([yshift=-2.4cm]current page.north west) rectangle\n    ([yshift=-2.75cm]current page.north east);\n  \\fill[ipnguinda] (current page.south west) rectangle\n    ([yshift=1.8cm]current page.south east);\n  \\fill[ipnverde]  ([yshift=1.8cm]current page.south west) rectangle\n    ([yshift=2.15cm]current page.south east);\n  % Emblema IPN esquematizado (círculo + letras)\n  \\node[draw=white, line width=1.5pt, circle, minimum size=1.4cm,\n        fill=ipnguinda!50!black, text=white, font=\\bfseries\\normalsize]\n    at ([xshift=2.2cm, yshift=-1.2cm]current page.north west) {IPN};\n\\\
+    end{tikzpicture}\n\\vspace*{2.6cm}\n\\begin{center}\n  {\\color{ipnguinda}\\normalsize\\bfseries\\scshape Instituto Politécnico Nacional\\par}\n  \\vspace{0.15cm}\n  {\\color{ipngris}\\small Escuela Superior de Física y Matemáticas\\par}\n  \\vspace{0.1cm}\n  {\\color{ipngris}\\footnotesize Departamento de Física\\par}\n  \\vspace{0.9cm}\n  % Línea decorativa\n  {\\color{ipnverde}\\rule{0.45\\textwidth}{0.6pt}}%\n  {\\color{ipnguinda}\\rule{0.1\\textwidth}{1.5pt}}%\n  {\\color{ipnverde}\\rule{0.45\\textwidth}{0.6pt}}\n  \\vspace{0.35cm}\n  \\begin{minipage}{0.88\\textwidth}\n    \\centering\n    {\\large\\bfseries\\color{ipnguinda} {{ title | latex_escape }}\\par}\n  \\end{minipage}\n  \\vspace{0.35cm}\n  {\\color{ipnverde}\\rule{0.45\\textwidth}{0.6pt}}%\n  {\\color{ipnguinda}\\rule{0.1\\textwidth}{1.5pt}}%\n  {\\color{ipnverde}\\rule{0.45\\textwidth}{0.6pt}}\n  \\vspace{0.8cm}\n  {\\small\\color{ipngris} {{ doc_kind_label }}\\par}\n  \\vspace{0.1cm}\n  {\\footnotesize que para obtener\
+    \ el grado de\\par}\n  \\vspace{0.1cm}\n  {\\normalsize\\bfseries\\color{ipnguinda} {{ degree_label }}\\par}\n  \\vspace{0.8cm}\n  {\\footnotesize P\\;R\\;E\\;S\\;E\\;N\\;T\\;A:\\par}\n  \\vspace{0.2cm}\n  {\\normalsize\\bfseries {{ author | latex_escape }}\\par}\n  \\vspace{0.8cm}\n  {% if advisors %}\n  {\\footnotesize {{ advisor_label }}\\par}\n  \\vspace{0.15cm}\n  {% for a in advisors %}\n  {\\small {{ a | latex_escape }}\\par}\n  {% endfor %}\n  \\vspace{0.5cm}\n  {% endif %}\n  \\vfill\n  {\\footnotesize\\color{ipngris} {{ city | latex_escape }},~{{ year }}\\par}\n\\end{center}\n\\end{titlepage}\n"
 sections:
-  - id: "portada"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada ESFM incluye: escudo del IPN, "Escuela Superior de Física y Matemáticas", título del trabajo, tipo de trabajo (Tesis para obtener el título/grado de…), nombre del alumno, director(es), lugar y año.
-      El perfil la genera con los datos del proyecto.
-
-  - id: "resumen"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: true
-    title: "Resumen"
-    guidance: |
-      Resumen de 150–250 palabras. En física y matemáticas debe ser preciso:
-      • El problema o pregunta central, expresado sin jerga innecesaria.
-      • El enfoque o método principal.
-      • El resultado más importante (con la medida o cota si aplica).
-      • La implicación o aplicación del resultado.
-      Evita ecuaciones en el resumen. Define los acrónimos que sí uses.
-
-  - id: "abstract"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: false
-    title: "Abstract"
-    guidance: |
-      Traducción al inglés del resumen. Recomendado si planeas publicar o presentar en congresos internacionales.
-
-  - id: "tabla_contenidos"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice se genera automáticamente. En trabajos matemáticos es común incluir también una lista de notaciones y símbolos antes de la introducción.
-
-  - id: "introduccion"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "chap:introduccion"
-    guidance: |
-      La introducción en física/matemáticas sitúa el trabajo en el contexto de la disciplina:
-      • Motivación: ¿por qué es interesante o relevante el problema?
-      • Antecedentes: trabajos previos directamente relacionados.
-      • Planteamiento preciso del problema o pregunta de investigación.
-      • Resultados principales (anuncia sin demostrar — eso va en el cuerpo).
-      • Estructura del documento.
-      Puedes usar notación matemática desde aquí, pero mantén el nivel accesible.
-
-  - id: "preliminares"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Preliminares"
-    label: "chap:preliminares"
-    guidance: |
-      Sección donde defines el lenguaje matemático que usarás en el resto del trabajo.
-      Incluye: definiciones fundamentales, notación, y resultados conocidos que necesitarás citar.
-      No demuestres resultados conocidos salvo que sean necesarios para establecer la notación exacta.
-      Usa los bloques de Teorema, Definición y Lema del editor para estructurar el contenido.
-      Ejemplo de estructura: "Definición 2.1 (Espacio de Hilbert)...", "Lema 2.3...", "Teorema 2.5 (Espectral)..."
-
-  - id: "desarrollo"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Desarrollo"
-    label: "chap:desarrollo"
-    guidance: |
-      El cuerpo principal del trabajo. En matemáticas puras: el desarrollo de la teoría con demostraciones completas.
-      En física: el desarrollo del modelo, la teoría o el experimento.
-      Estructura cada capítulo con proposiciones, lemas, teoremas y demostraciones.
-      Cada demostración debe cerrar explícitamente con □ o "∎" (el editor lo inserta automáticamente).
-      Las ecuaciones numeradas deben referenciarse desde el texto: usa \eqref{} o \cref{}.
-
-  - id: "resultados"
-    element_id: "results"
-    placement: "body"
-    required: false
-    title: "Resultados y Aplicaciones"
-    label: "chap:resultados"
-    guidance: |
-      Si tu trabajo tiene aplicaciones numéricas, computacionales o experimentales, preséntalas aquí.
-      Para física computacional: incluye los parámetros de simulación, convergencia y comparación con resultados analíticos o experimentales.
-      Para física experimental: presenta datos con incertidumbres, análisis estadístico y gráficas.
-
-  - id: "conclusiones"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    label: "chap:conclusiones"
-    guidance: |
-      Resume los resultados obtenidos y su relevancia.
-      En matemáticas: qué conjeturas se resolvieron, qué preguntas abre el trabajo.
-      En física: qué fenómenos se explicaron, qué predicciones hace el modelo.
-      Indica claramente qué es original en tu trabajo vs. qué es conocido.
-      Señala los problemas abiertos o extensiones naturales del trabajo.
-
-  - id: "referencias"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      Lista de referencias en APA 7 (generada automáticamente).
-      Para artículos de revistas de física/matemáticas usa el importador DOI — Crossref tiene la mayoría de artículos de Physical Review, Journal of Mathematical Physics, etc.
-      Para libros de texto clásicos (Rudin, Spivak, Peskin & Schroeder, etc.): añade la entrada manualmente al .bib si no están en Crossref.
-
-  - id: "apendices"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Apéndices"
-    guidance: |
-      Material técnico complementario: demostraciones largas que interrumpirían el flujo del argumento principal, cálculos detallados, código de simulación, tablas de datos experimentales.
+- id: portada
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: resumen
+  element_id: abstract_es
+  placement: front_matter
+  required: true
+- id: abstract
+  element_id: abstract_en
+  placement: front_matter
+  required: false
+- id: tabla_contenidos
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: introduccion
+  element_id: introduction
+  placement: body
+  required: true
+  label: chap:introduccion
+- id: preliminares
+  element_id: theoretical_framework
+  placement: body
+  required: false
+  label: chap:preliminares
+- id: desarrollo
+  element_id: methodology
+  placement: body
+  required: true
+  label: chap:desarrollo
+- id: resultados
+  element_id: results
+  placement: body
+  required: false
+  label: chap:resultados
+- id: conclusiones
+  element_id: conclusions
+  placement: body
+  required: true
+  label: chap:conclusiones
+- id: referencias
+  element_id: references
+  placement: back_matter
+  required: true
+- id: apendices
+  element_id: appendices
+  placement: appendix
+  required: false

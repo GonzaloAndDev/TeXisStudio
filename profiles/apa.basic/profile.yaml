@@ -1,116 +1,65 @@
-schema_version: "1.0.0"
-id: "apa.basic"
-name: "APA básico"
-description: "Perfil simplificado para trabajos académicos con estilo APA 7 estricto. Ideal para reportes, ensayos y artículos cortos."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: apa.basic
+name: apa.basic
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-24"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-24'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
-    - "https://apastyle.apa.org/style-grammar-guidelines/paper-format"
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
+  - https://apastyle.apa.org/style-grammar-guidelines/paper-format
   review_interval_days: 730
 tags:
-  - apa
-  - reporte
-  - ensayo
-  - articulo
-  - licenciatura
-
+- apa
+- reporte
+- ensayo
+- articulo
+- licenciatura
 document_class:
-  name: "article"
+  name: article
   options:
-    - "12pt"
-    - "letterpaper"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 12pt
+  - letterpaper
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- hyperref
 sections:
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada APA 7 se genera automáticamente con los datos del proyecto.
-      Incluye: título, autor(es), institución, materia, nombre del docente y fecha.
-      No necesitas escribir contenido aquí.
-
-  - id: "abstract_es"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: false
-    title: "Resumen"
-    guidance: |
-      El resumen APA 7 va en página separada con el encabezado "Resumen" (centrado, en negrita).
-      150–250 palabras que respondan: ¿qué se estudia?, ¿cómo?, ¿qué se encontró?, ¿qué significa?
-      Al final incluye 4–6 Palabras clave: en cursiva.
-      No cites referencias en el resumen.
-
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "sec:introduccion"
-    guidance: |
-      En APA 7, la introducción no lleva el encabezado "Introducción" — el perfil lo maneja automáticamente.
-      Debe presentar:
-      • El tema y su relevancia.
-      • Lo que se sabe hasta ahora (síntesis bibliográfica breve).
-      • El propósito u objetivo del trabajo.
-      • La pregunta o hipótesis si aplica.
-      Usa citas APA en texto: (Apellido, Año) o Apellido (Año) según el flujo.
-
-  - id: "development"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: true
-    title: "Desarrollo"
-    label: "sec:desarrollo"
-    guidance: |
-      Cuerpo principal del trabajo. Organiza con encabezados de nivel 2 y 3 según la complejidad.
-      Para ensayos: argumento principal, argumentos de apoyo con evidencia bibliográfica, contraargumentos.
-      Para reportes: marco conceptual, análisis, hallazgos.
-      Parafrasea las fuentes — evita citas textuales largas (úsalas solo cuando las palabras exactas importan).
-      Cita todo lo que no sea de tu propia elaboración.
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    label: "sec:conclusiones"
-    guidance: |
-      Sintetiza los puntos principales del trabajo:
-      • Responde la pregunta o propósito planteado en la introducción.
-      • Señala implicaciones de los hallazgos.
-      • Reconoce limitaciones.
-      • Sugiere líneas de trabajo o investigación futuras.
-      No incluyas citas nuevas aquí. Extensión: 1–2 páginas.
-
-  - id: "references"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      En APA 7 se llama "Referencias" (no "Bibliografía").
-      La lista se genera automáticamente desde tu .bib al compilar.
-      Reglas APA 7: ordenadas alfabéticamente, sangría francesa, URL o DOI al final de cada entrada.
-      Usa el importador DOI (Ctrl+[ > panel DOI) para agregar referencias con un clic.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: abstract_es
+  element_id: abstract_es
+  placement: front_matter
+  required: false
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+  label: sec:introduccion
+- id: development
+  element_id: theoretical_framework
+  placement: body
+  required: true
+  label: sec:desarrollo
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+  label: sec:conclusiones
+- id: references
+  element_id: references
+  placement: back_matter
+  required: true

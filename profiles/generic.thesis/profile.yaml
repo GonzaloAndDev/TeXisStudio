@@ -1,263 +1,107 @@
-schema_version: "1.0.0"
-id: "generic.thesis"
-name: "Tesis genérica"
-description: "Perfil base para tesis y trabajos académicos formales de licenciatura, especialidad, maestría, doctorado y posdoctorado. Clase book, XeLaTeX, biber, APA 7."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: generic.thesis
+name: generic.thesis
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-24"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-24'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
-    - "https://apastyle.apa.org/style-grammar-guidelines/paper-format/general-guidelines"
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
+  - https://apastyle.apa.org/style-grammar-guidelines/paper-format/general-guidelines
   review_interval_days: 730
 tags:
-  - tesis
-  - licenciatura
-  - especialidad
-  - maestria
-  - doctorado
-  - posdoctorado
-  - apa
-  - xelatex
-
+- tesis
+- licenciatura
+- especialidad
+- maestria
+- doctorado
+- posdoctorado
+- apa
+- xelatex
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- hyperref
 title_page_template:
-  template: |
-    \thispagestyle{empty}
-    \begin{titlepage}
-      \centering
-      \vspace*{1cm}
-      {\scshape\Large {{ institution_name | latex_escape }}\par}
-      {% if faculty is defined and faculty %}
-      \vspace{0.25cm}
-      {\large {{ faculty | latex_escape }}\par}
-      {% endif %}
-      {% if department is defined and department %}
-      \vspace{0.15cm}
-      {\normalsize {{ department | latex_escape }}\par}
-      {% endif %}
-      \vspace{1.4cm}
-      {\huge\bfseries {{ title | latex_escape }}\par}
-      \vspace{1.4cm}
-      {\large {{ doc_kind_label }}\par}
-      \vspace{0.3cm}
-      {\normalsize que para obtener el grado de\par}
-      {\normalsize\bfseries {{ degree_label }}\par}
-      \vspace{1.2cm}
-      {\normalsize Presenta:\par}
-      \vspace{0.3cm}
-      {\large\bfseries {{ author | latex_escape }}\par}
-      \vspace{1.2cm}
-      {% if advisors %}
-      {\normalsize {{ advisor_label }}\par}
-      \vspace{0.25cm}
-      {% for a in advisors %}
-      {\normalsize {{ a | latex_escape }}\par}
-      {% endfor %}
-      \vspace{0.5cm}
-      {% endif %}
-      \vfill
-      {\normalsize {{ city | latex_escape }}, {{ year }}\par}
-    \end{titlepage}
-
+  template: "\\thispagestyle{empty}\n\\begin{titlepage}\n  \\centering\n  \\vspace*{1cm}\n  {\\scshape\\Large {{ institution_name | latex_escape }}\\par}\n  {% if faculty is defined and faculty %}\n  \\vspace{0.25cm}\n  {\\large {{ faculty | latex_escape }}\\par}\n  {% endif %}\n  {% if department is defined and department %}\n  \\vspace{0.15cm}\n  {\\normalsize {{ department | latex_escape }}\\par}\n  {% endif %}\n  \\vspace{1.4cm}\n  {\\huge\\bfseries {{ title | latex_escape }}\\par}\n  \\vspace{1.4cm}\n  {\\large {{ doc_kind_label }}\\par}\n  \\vspace{0.3cm}\n  {\\normalsize que para obtener el grado de\\par}\n  {\\normalsize\\bfseries {{ degree_label }}\\par}\n  \\vspace{1.2cm}\n  {\\normalsize Presenta:\\par}\n  \\vspace{0.3cm}\n  {\\large\\bfseries {{ author | latex_escape }}\\par}\n  \\vspace{1.2cm}\n  {% if advisors %}\n  {\\normalsize {{ advisor_label }}\\par}\n  \\vspace{0.25cm}\n  {% for a in advisors %}\n  {\\normalsize {{ a | latex_escape }}\\par}\n  {% endfor %}\n  \\vspace{0.5cm}\n\
+    \  {% endif %}\n  \\vfill\n  {\\normalsize {{ city | latex_escape }}, {{ year }}\\par}\n\\end{titlepage}\n"
 sections:
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada la genera automáticamente el perfil con los datos institucionales que configuraste al crear el proyecto (nombre del estudiante, institución, título del trabajo, director de tesis, año).
-      No necesitas escribir contenido aquí.
-
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice de contenidos se genera automáticamente a partir de las secciones habilitadas en tu proyecto.
-      No necesitas escribir nada — solo asegúrate de que tus capítulos tengan títulos.
-
-  - id: "abstract_es"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: false
-    title: "Resumen"
-    guidance: |
-      El resumen presenta tu tesis en 150–250 palabras. Debe responder brevemente:
-      • ¿Cuál es el problema o pregunta de investigación?
-      • ¿Qué metodología usaste?
-      • ¿Cuáles son los resultados principales?
-      • ¿Cuál es la conclusión o aportación?
-      No cites referencias en el resumen. Escríbelo en pasado. Incluye 4–6 palabras clave al final.
-
-  - id: "abstract_en"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: false
-    title: "Abstract"
-    guidance: |
-      Traducción fiel del resumen al inglés, en el mismo formato (150–250 palabras).
-      Muchas instituciones de posgrado lo exigen para indexación internacional.
-      Keywords: mismas palabras clave que el resumen, en inglés.
-
-  - id: "dedication"
-    element_id: "dedication"
-    placement: "front_matter"
-    required: false
-    title: "Dedicatoria"
-    guidance: |
-      Texto breve (1–5 líneas) dedicado a personas importantes para el autor.
-      Es personal y opcional. Algunos ejemplos: "A mis padres, por su apoyo incondicional."
-      No lleva título explícito en la mayoría de estilos — el perfil lo maneja.
-
-  - id: "acknowledgements"
-    element_id: "acknowledgements"
-    placement: "front_matter"
-    required: false
-    title: "Agradecimientos"
-    guidance: |
-      Menciona a quienes contribuyeron a tu investigación: director(a), lectores, compañeros, instituciones, financiadores.
-      Sé específico: menciona el rol de cada persona u organización.
-      Extensión recomendada: media a una página.
-
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "sec:introduccion"
-    guidance: |
-      La introducción contextualiza tu trabajo y motiva al lector a seguir leyendo. Debe incluir:
-      1. Contexto general del tema (de lo amplio a lo específico).
-      2. Planteamiento del problema: ¿qué brecha o necesidad existe?
-      3. Pregunta de investigación o hipótesis.
-      4. Objetivo general y objetivos específicos.
-      5. Justificación: ¿por qué es relevante estudiar esto?
-      6. Alcances y limitaciones del estudio.
-      7. Breve descripción de la estructura de la tesis.
-      Extensión típica: 3–6 páginas.
-
-  - id: "theoretical_framework"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Marco Teórico"
-    label: "sec:marco"
-    guidance: |
-      El marco teórico sustenta tu investigación con la literatura existente. Debe:
-      • Revisar los conceptos y teorías clave relacionados con tu tema.
-      • Citar fuentes primarias y actuales (últimos 5–10 años para artículos; clásicos si son fundamentales).
-      • Organizar las ideas de forma lógica, no como lista de resúmenes.
-      • Identificar el estado del arte: ¿qué se sabe y qué falta saber?
-      • Posicionar tu trabajo dentro de la literatura: ¿qué aportas tú?
-      Usa el bloque "Cita bibliográfica" para cada referencia. Evita citas textuales excesivas — parafrasea y analiza.
-
-  - id: "methodology"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Metodología"
-    label: "sec:metodologia"
-    guidance: |
-      Describe cómo llevaste a cabo tu investigación con suficiente detalle para que pueda replicarse. Incluye:
-      • Tipo de investigación (cuantitativa, cualitativa, mixta; exploratoria, descriptiva, explicativa).
-      • Diseño: experimental, cuasiexperimental, estudio de caso, encuesta, etc.
-      • Población y muestra: criterios de selección, tamaño, técnica de muestreo.
-      • Instrumentos de recolección: cuestionarios, entrevistas, observación, experimentos.
-      • Procedimiento: pasos seguidos cronológicamente.
-      • Análisis de datos: software, estadísticas, categorías de análisis cualitativo.
-      • Consideraciones éticas si aplica.
-
-  - id: "results"
-    element_id: "results"
-    placement: "body"
-    required: true
-    title: "Resultados"
-    label: "sec:resultados"
-    guidance: |
-      Presenta los hallazgos de tu investigación de forma objetiva, sin interpretarlos aún. Guías:
-      • Organiza los resultados siguiendo el orden de tus objetivos o preguntas de investigación.
-      • Usa tablas y figuras para datos numéricos o comparativos — referencia cada una en el texto.
-      • No repitas en texto lo que ya muestra una tabla; comenta lo más relevante.
-      • Sé preciso con cifras: incluye unidades, porcentajes, valores estadísticos (p, r, χ², etc.).
-      • Para investigación cualitativa: presenta categorías con citas textuales ilustrativas.
-
-  - id: "discussion"
-    element_id: "discussion"
-    placement: "body"
-    required: false
-    title: "Discusión"
-    label: "sec:discusion"
-    guidance: |
-      Aquí interpretas tus resultados y los relacionas con la literatura. Es la sección más analítica. Debe:
-      • Explicar qué significan tus resultados en el contexto de tu pregunta de investigación.
-      • Comparar con estudios previos: ¿coinciden? ¿difieren? ¿por qué?
-      • Señalar resultados inesperados y ofrecer explicaciones posibles.
-      • Discutir implicaciones teóricas y prácticas de tus hallazgos.
-      • Reconocer las limitaciones del estudio con honestidad.
-      No presentes resultados nuevos aquí — solo interpreta los ya reportados.
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones"
-    label: "sec:conclusiones"
-    guidance: |
-      Las conclusiones cierran tu argumento y responden directamente a tus objetivos. Incluye:
-      • Respuesta a la pregunta de investigación / verificación de hipótesis.
-      • Síntesis de los hallazgos más importantes (sin repetir detalles de resultados).
-      • Aportaciones originales del trabajo.
-      • Recomendaciones para la práctica profesional o para futuras investigaciones.
-      • Reflexión final sobre la relevancia del trabajo.
-      Extensión recomendada: 2–4 páginas. No introduzcas información nueva.
-
-  - id: "references"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      La lista de referencias se genera automáticamente desde tu archivo .bib al compilar.
-      Asegúrate de que cada fuente citada en el texto esté en el .bib, y viceversa.
-      Para agregar referencias: usa el botón de importar DOI o edita el archivo references.bib directamente.
-      El estilo de citación (APA 7 en este perfil) lo aplica LaTeX automáticamente.
-
-  - id: "appendices"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Anexos"
-    guidance: |
-      Los anexos contienen material de apoyo que no cabe en el cuerpo principal pero que el lector puede necesitar verificar:
-      • Instrumentos de recolección (cuestionarios completos, guías de entrevista).
-      • Tablas de datos crudos.
-      • Código fuente o scripts.
-      • Mapas, planos, documentos legales.
-      • Cartas de autorización o consentimiento informado.
-      Cada anexo debe estar numerado (Anexo A, Anexo B…) y referenciado desde el texto principal.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: table_of_contents
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: abstract_es
+  element_id: abstract_es
+  placement: front_matter
+  required: false
+- id: abstract_en
+  element_id: abstract_en
+  placement: front_matter
+  required: false
+- id: dedication
+  element_id: dedication
+  placement: front_matter
+  required: false
+- id: acknowledgements
+  element_id: acknowledgements
+  placement: front_matter
+  required: false
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+  label: sec:introduccion
+- id: theoretical_framework
+  element_id: theoretical_framework
+  placement: body
+  required: false
+  label: sec:marco
+- id: methodology
+  element_id: methodology
+  placement: body
+  required: true
+  label: sec:metodologia
+- id: results
+  element_id: results
+  placement: body
+  required: true
+  label: sec:resultados
+- id: discussion
+  element_id: discussion
+  placement: body
+  required: false
+  label: sec:discusion
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+  label: sec:conclusiones
+- id: references
+  element_id: references
+  placement: back_matter
+  required: true
+- id: appendices
+  element_id: appendices
+  placement: appendix
+  required: false

@@ -1,343 +1,145 @@
-schema_version: "1.0.0"
-id: "generic.phd"
-name: "Tesis de posgrado"
-description: "Perfil para maestría y doctorado: revisión de literatura, estado del arte, planteamiento, experimentación, glosario y acrónimos. XeLaTeX, biber, APA 7."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: generic.phd
+name: generic.phd
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-24"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-24'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://apastyle.apa.org/products/publication-manual-7th-edition"
-    - "https://apastyle.apa.org/style-grammar-guidelines/student-and-professional/"
+  - https://apastyle.apa.org/products/publication-manual-7th-edition
+  - https://apastyle.apa.org/style-grammar-guidelines/student-and-professional/
   review_interval_days: 730
 tags:
-  - tesis
-  - maestria
-  - doctorado
-  - posgrado
-  - apa
-  - xelatex
-
+- tesis
+- maestria
+- doctorado
+- posgrado
+- apa
+- xelatex
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "openany"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "apa"
-
+  - 12pt
+  - letterpaper
+  - openany
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: apa
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-  - "listings"
-  - "algorithm"
-  - "algpseudocode"
-  - "amsthm"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- csquotes
+- setspace
+- hyperref
+- listings
+- algorithm
+- algpseudocode
+- amsthm
 sections:
-  # ── Portada y preliminares ──────────────────────────────────────
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada se genera automáticamente con los datos del proyecto.
-      Para posgrado, configura en los metadatos: nombre completo, director, codirector (si aplica) y comité sinodal.
-      No necesitas escribir contenido aquí.
-
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice de contenidos se genera automáticamente.
-      No necesitas escribir nada aquí.
-
-  - id: "list_of_figures"
-    element_id: "list_of_figures"
-    placement: "front_matter"
-    required: false
-    title: null
-    guidance: |
-      La lista de figuras se genera automáticamente desde todas las figuras con título en tu tesis.
-      Activa esta sección si tienes 5 o más figuras.
-
-  - id: "list_of_tables"
-    element_id: "list_of_tables"
-    placement: "front_matter"
-    required: false
-    title: null
-    guidance: |
-      La lista de tablas se genera automáticamente desde todas las tablas con título.
-      Activa esta sección si tienes 5 o más tablas.
-
-  - id: "list_of_algorithms"
-    element_id: "list_of_algorithms"
-    placement: "front_matter"
-    required: false
-    title: null
-    guidance: |
-      Lista de algoritmos generada automáticamente para tesis computacionales o de ingeniería.
-      Solo activa si presentas 3 o más pseudocódigos o algoritmos numerados.
-
-  - id: "acronyms"
-    element_id: "acronyms"
-    placement: "front_matter"
-    required: false
-    title: "Lista de Abreviaturas y Acrónimos"
-    guidance: |
-      Lista todos los acrónimos y abreviaturas usados en la tesis con su significado completo.
-      Formato: SIGLA — Significado completo (ej. CNN — Convolutional Neural Network).
-      Ordena alfabéticamente. Define también la primera vez que cada sigla aparece en el texto.
-
-  - id: "abstract_es"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: true
-    title: "Resumen"
-    guidance: |
-      El resumen de posgrado responde en 250–350 palabras:
-      • Motivación: ¿por qué es importante este problema?
-      • Problema: ¿qué pregunta o hipótesis abordas?
-      • Método: enfoque y técnica principal.
-      • Contribución: resultados y aportación original al estado del arte.
-      • Impacto: implicaciones teóricas o prácticas.
-      Sin citas. Sin ecuaciones. 5–8 Palabras clave al final.
-
-  - id: "abstract_en"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: true
-    title: "Abstract"
-    guidance: |
-      Traducción precisa del resumen al inglés. No una traducción automática — revísala.
-      Keywords: en inglés, preferiblemente términos del tesauro de tu disciplina.
-      Obligatorio para posgrado — es la versión que aparece en repositorios internacionales.
-
-  - id: "dedication"
-    element_id: "dedication"
-    placement: "front_matter"
-    required: false
-    title: "Dedicatoria"
-    guidance: |
-      Texto breve y personal. Dedica el trabajo a quienes más lo merecen.
-      Sin formato especial — el perfil lo centra en página separada.
-
-  - id: "acknowledgements"
-    element_id: "acknowledgements"
-    placement: "front_matter"
-    required: false
-    title: "Agradecimientos"
-    guidance: |
-      Agradece formalmente a quienes contribuyeron al trabajo:
-      • Director(a) y codirector(a) de tesis.
-      • Comité sinodal / revisores.
-      • Financiadores: becas, proyectos, instituciones (obligatorio para proyectos con apoyo externo).
-      • Colaboradores técnicos, laboratorios, empresas.
-      • Familia y apoyo personal (al final, de forma breve).
-      Extensión: media a una página.
-
-  # ── Cuerpo principal ────────────────────────────────────────────
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "sec:introduccion"
-    guidance: |
-      La introducción de una tesis de posgrado es más exigente que la de licenciatura. Debe:
-      1. Contextualizar el problema en el estado del arte actual.
-      2. Identificar la brecha de conocimiento específica que tu tesis atiende.
-      3. Enunciar claramente la hipótesis o pregunta de investigación.
-      4. Listar los objetivos (general y específicos).
-      5. Describir la contribución original (¿qué es nuevo en tu trabajo?).
-      6. Justificar el alcance y delimitaciones.
-      7. Describir la organización de los capítulos.
-      Un comité de doctorado evaluará si la contribución es original e independiente. Sé preciso.
-      Extensión típica: 5–10 páginas.
-
-  - id: "literature_review"
-    element_id: "literature_review"
-    placement: "body"
-    required: true
-    title: "Revisión de Literatura y Estado del Arte"
-    label: "sec:literatura"
-    guidance: |
-      Esta es la sección que demuestra tu dominio del campo. Debe:
-      • Cubrir sistemáticamente los trabajos relevantes de los últimos 5–10 años (clásicos pueden ser más antiguos).
-      • Organizar por temas, enfoques o cronología — no como lista de resúmenes.
-      • Comparar críticamente las propuestas: fortalezas, debilidades, limitaciones.
-      • Identificar el vacío que tu tesis llena ("ningún trabajo anterior ha abordado X").
-      • Terminar con una tabla comparativa de trabajos relacionados si es posible.
-      Para doctorado: esta revisión debe ser exhaustiva y cubrir todas las vertientes del problema.
-      Estrategia: busca en Scopus, WoS, ACM DL, IEEE Xplore. Usa el importador DOI para cada artículo.
-
-  - id: "theoretical_framework"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: false
-    title: "Marco Teórico"
-    label: "sec:marco"
-    guidance: |
-      Desarrolla los fundamentos teóricos y matemáticos necesarios para entender tu propuesta.
-      A diferencia de la revisión de literatura, aquí profundizas en los conceptos clave:
-      • Definiciones formales y notación matemática.
-      • Modelos teóricos en los que se basa tu trabajo.
-      • Teoremas o propiedades relevantes (con citas o demostración si es original).
-      Activa esta sección si tu tesis requiere más de 5–6 páginas de base teórica.
-
-  - id: "problem_statement"
-    element_id: "problem_statement"
-    placement: "body"
-    required: true
-    title: "Planteamiento del Problema e Hipótesis"
-    label: "sec:problema"
-    guidance: |
-      Define formalmente el problema que tu tesis resuelve:
-      • Formulación precisa: en ciencias exactas, usa notación matemática si aplica.
-      • Hipótesis o conjeturas de investigación (para doctorado: hipótesis verificable y falsable).
-      • Supuestos y restricciones del modelo.
-      • Por qué el problema es difícil: complejidad computacional, falta de datos, ambigüedad teórica.
-      • Criterios de evaluación: ¿cómo medirás el éxito de tu propuesta?
-      Esta sección debe poder leerse de forma independiente como una especificación del problema.
-
-  - id: "methodology"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Metodología"
-    label: "sec:metodologia"
-    guidance: |
-      Describe el enfoque metodológico con el rigor exigido por el nivel de posgrado:
-      • Paradigma de investigación: positivista, constructivista, mixto.
-      • Tipo de investigación: experimental, cuasiexperimental, estudio de caso, simulación, modelado.
-      • Diseño específico de la investigación.
-      • Fuentes de datos: origen, características, proceso de recolección o generación.
-      • Pipeline o proceso completo desde datos hasta resultados.
-      • Herramientas, lenguajes, bibliotecas y versiones específicas.
-      Suficiente detalle para replicabilidad completa.
-
-  - id: "experimentation"
-    element_id: "experimentation"
-    placement: "body"
-    required: false
-    title: "Experimentación y Desarrollo"
-    label: "sec:experimentacion"
-    guidance: |
-      Documenta el proceso de desarrollo o experimentación en detalle:
-      • Configuración experimental: hardware, hiperparámetros, condiciones de prueba.
-      • Experimentos realizados y su propósito (ablation study, comparación de variantes).
-      • Observaciones intermedias relevantes (no solo el resultado final).
-      • Decisiones tomadas durante el proceso y su justificación.
-      Activa esta sección si tu trabajo tiene componente experimental significativo
-      separable de la metodología general.
-
-  - id: "results"
-    element_id: "results"
-    placement: "body"
-    required: true
-    title: "Resultados"
-    label: "sec:resultados"
-    guidance: |
-      Presenta los resultados con el rigor estadístico que exige el posgrado:
-      • Organiza por objetivo o hipótesis.
-      • Para resultados cuantitativos: media, desviación estándar, intervalos de confianza, significancia estadística.
-      • Tablas comparativas con baseline, variantes propias y estado del arte.
-      • Figuras con error bars cuando aplique.
-      • Para resultados cualitativos: saturación teórica, triangulación, citas representativas.
-      No interpretes aquí — solo presenta los datos.
-
-  - id: "discussion"
-    element_id: "discussion"
-    placement: "body"
-    required: true
-    title: "Discusión"
-    label: "sec:discusion"
-    guidance: |
-      La discusión de una tesis de posgrado debe demostrar madurez científica:
-      • Interpreta cada resultado en relación a tu hipótesis.
-      • Compara con los trabajos del estado del arte: ¿superas, iguales o quedas por debajo?
-      • Explica las discrepancias con fundamento teórico.
-      • Discute las implicaciones teóricas: ¿qué significa para el campo?
-      • Discute las implicaciones prácticas: ¿qué aplicaciones se derivan?
-      • Limitaciones honestas: no ocultes las debilidades, el comité las verá de todos modos.
-      • Amenazas a la validez si aplica (validez interna, externa, de constructo).
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones y Trabajo Futuro"
-    label: "sec:conclusiones"
-    guidance: |
-      Cierra la tesis con visión de investigador:
-      • Responde directamente a cada objetivo específico planteado.
-      • Enuncia claramente la contribución original al conocimiento.
-      • Para doctorado: demuestra que el aporte cumple el criterio de originalidad e independencia.
-      • Trabajo futuro específico y realista: problemas abiertos, extensiones, aplicaciones.
-      • Reflexión final sobre el impacto del trabajo en la disciplina.
-      Extensión típica: 3–5 páginas.
-
-  # ── Material final ──────────────────────────────────────────────
-  - id: "references"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      La lista de referencias se genera automáticamente desde tu .bib al compilar con APA 7.
-      Para posgrado se esperan 80–200+ referencias de alta calidad (artículos indexados, libros técnicos).
-      Usa el importador DOI para agregar artículos desde Crossref con un clic.
-      Evita referencias a blogs, Wikipedia o sitios sin revisión por pares como fuentes primarias.
-
-  - id: "publications"
-    element_id: "publications"
-    placement: "back_matter"
-    required: false
-    title: "Publicaciones Derivadas"
-    guidance: |
-      Lista los trabajos publicados o enviados derivados de esta tesis:
-      • Artículos en revistas indexadas (Q1, Q2, Scopus, WoS).
-      • Ponencias en congresos nacionales e internacionales.
-      • Capítulos de libro, patentes, reportes técnicos.
-      Para cada uno: referencia completa + estado (publicado / aceptado / enviado / en preparación).
-      Las publicaciones previas son señal de calidad y pueden aligerar la defensa.
-
-  # ── Anexos ──────────────────────────────────────────────────────
-  - id: "glossary"
-    element_id: "glossary"
-    placement: "appendix"
-    required: false
-    title: "Glosario"
-    guidance: |
-      Define términos especializados que un lector no experto en tu subespecialidad necesitaría conocer.
-      Formato: Término — Definición concisa.
-      No incluyas términos que ya se definieron en el Marco Teórico — el glosario es para términos recurrentes pero no centrales.
-
-  - id: "appendices"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Anexos"
-    guidance: |
-      Material técnico complementario que no pertenece al flujo principal:
-      • Demostraciones matemáticas largas o secundarias.
-      • Código fuente (módulos principales, scripts de experimentos).
-      • Tablas de datos completos o resultados adicionales.
-      • Instrumentos de recolección de datos.
-      • Cartas de aprobación ética, convenios de confidencialidad.
-      Numera: Apéndice A, B… con títulos descriptivos.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: table_of_contents
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: list_of_figures
+  element_id: list_of_figures
+  placement: front_matter
+  required: false
+- id: list_of_tables
+  element_id: list_of_tables
+  placement: front_matter
+  required: false
+- id: list_of_algorithms
+  element_id: list_of_algorithms
+  placement: front_matter
+  required: false
+- id: acronyms
+  element_id: acronyms
+  placement: front_matter
+  required: false
+- id: abstract_es
+  element_id: abstract_es
+  placement: front_matter
+  required: true
+- id: abstract_en
+  element_id: abstract_en
+  placement: front_matter
+  required: true
+- id: dedication
+  element_id: dedication
+  placement: front_matter
+  required: false
+- id: acknowledgements
+  element_id: acknowledgements
+  placement: front_matter
+  required: false
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+  label: sec:introduccion
+- id: literature_review
+  element_id: literature_review
+  placement: body
+  required: true
+  label: sec:literatura
+- id: theoretical_framework
+  element_id: theoretical_framework
+  placement: body
+  required: false
+  label: sec:marco
+- id: problem_statement
+  element_id: problem_statement
+  placement: body
+  required: true
+  label: sec:problema
+- id: methodology
+  element_id: methodology
+  placement: body
+  required: true
+  label: sec:metodologia
+- id: experimentation
+  element_id: experimentation
+  placement: body
+  required: false
+  label: sec:experimentacion
+- id: results
+  element_id: results
+  placement: body
+  required: true
+  label: sec:resultados
+- id: discussion
+  element_id: discussion
+  placement: body
+  required: true
+  label: sec:discusion
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+  label: sec:conclusiones
+- id: references
+  element_id: references
+  placement: back_matter
+  required: true
+- id: publications
+  element_id: publications
+  placement: back_matter
+  required: false
+- id: glossary
+  element_id: glossary
+  placement: appendix
+  required: false
+- id: appendices
+  element_id: appendices
+  placement: appendix
+  required: false

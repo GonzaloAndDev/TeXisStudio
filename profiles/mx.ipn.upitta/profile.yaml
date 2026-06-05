@@ -1,192 +1,111 @@
-schema_version: "1.0.0"
-id: "mx.ipn.upitta"
-name: "IPN UPITTA — Tecnologías Avanzadas"
-description: "Tesis de la Unidad Profesional Interdisciplinaria de Tecnologías Avanzadas del IPN. Orientado a mecatrónica, sistemas inteligentes, automatización, robótica y tecnologías emergentes. Carácter interdisciplinario: integra ingeniería, computación y ciencias básicas. Bibliografía IEEE numérica."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: mx.ipn.upitta
+name: mx.ipn.upitta
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-29"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-29'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://www.upitta.ipn.mx"
-    - "https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/"
+  - https://www.upitta.ipn.mx
+  - https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/
   review_interval_days: 365
 tags:
-  - ipn
-  - upitta
-  - mecatronica
-  - automatizacion
-  - robotica
-  - sistemas-inteligentes
-  - interdisciplinario
-  - posgrado
-  - licenciatura
-  - mexico
-  - ieee
-  - xelatex
-
+- ipn
+- upitta
+- mecatronica
+- automatizacion
+- robotica
+- sistemas-inteligentes
+- interdisciplinario
+- posgrado
+- licenciatura
+- mexico
+- ieee
+- xelatex
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "ieee"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: ieee
 page_layout:
   top_margin_cm: 2.5
   bottom_margin_cm: 2.5
   left_margin_cm: 3.0
   right_margin_cm: 2.5
   line_spacing: 1.5
-
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "amsmath"
-  - "booktabs"
-  - "array"
-  - "longtable"
-  - "float"
-  - "caption"
-  - "subcaption"
-  - "csquotes"
-  - "setspace"
-  - "algorithm2e"
-  - "listings"
-  - "tikz"
-  - "hyperref"
-  - "cleveref"
-
+- fontspec
+- geometry
+- graphicx
+- amsmath
+- booktabs
+- array
+- longtable
+- float
+- caption
+- subcaption
+- csquotes
+- setspace
+- algorithm2e
+- listings
+- tikz
+- hyperref
+- cleveref
 sections:
-  - id: "portada"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada UPITTA incluye: escudo del IPN, "Unidad Profesional Interdisciplinaria de Tecnologías Avanzadas", título del trabajo, tipo de tesis, nombre del alumno, directores, lugar y año.
-
-  - id: "resumen"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: true
-    title: "Resumen"
-    guidance: |
-      Resumen técnico en español de 200–250 palabras. El carácter interdisciplinario de la UPITTA implica que el resumen debe ser comprensible para lectores de distintas áreas (ingeniería, computación, matemáticas aplicadas).
-      Incluye: problema técnico, solución propuesta, tecnologías clave y resultado principal medible.
-
-  - id: "abstract"
-    element_id: "abstract_en"
-    placement: "front_matter"
-    required: true
-    title: "Abstract"
-    guidance: |
-      Traducción al inglés. Requerida por la UPITTA para todos los trabajos de titulación y posgrado.
-      Keywords en inglés: 5–8 términos técnicos relevantes.
-
-  - id: "tabla_contenidos"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      Índice generado automáticamente. Incluye lista de figuras y lista de tablas si hay más de 5 de cada tipo.
-
-  - id: "introduccion"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "chap:introduccion"
-    guidance: |
-      Contextualiza el problema desde la perspectiva interdisciplinaria de la UPITTA:
-      • El área tecnológica y su relevancia (mecatrónica, IA, automatización, etc.).
-      • El problema específico y su impacto (industrial, social, científico).
-      • Trabajos relacionados más importantes (cita con número IEEE: [1], [2]).
-      • Objetivo general y objetivos específicos.
-      • Contribución concreta: ¿qué propones que no existe o no funciona bien?
-      • Organización del documento.
-
-  - id: "estado_arte"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: true
-    title: "Estado del Arte y Marco Teórico"
-    label: "chap:estado_arte"
-    guidance: |
-      Combinación del estado del arte y el marco teórico, apropiada para trabajos interdisciplinarios:
-      • Revisa los trabajos previos más relevantes en cada área que toca tu proyecto.
-      • Presenta las teorías o modelos matemáticos en los que se basa tu solución.
-      • Tablas comparativas de soluciones existentes vs. la tuya.
-      • Identifica claramente el nicho o la mejora que tu trabajo aporta.
-      En UPITTA el enfoque interdisciplinario es una fortaleza — muestra cómo integras distintas áreas.
-
-  - id: "diseno"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Diseño del Sistema"
-    label: "chap:diseno"
-    guidance: |
-      Presenta la arquitectura o diseño completo del sistema antes de implementarlo:
-      • Arquitectura general: diagrama de bloques o de componentes.
-      • Modelo matemático o dinámico (para sistemas de control, robótica, etc.).
-      • Selección y justificación de tecnologías (sensores, actuadores, plataformas, algoritmos).
-      • Diagramas de flujo o máquinas de estado si aplica.
-      • Restricciones de diseño: energía, tamaño, costo, tiempo de respuesta.
-      El diseño debe ser independiente de la implementación.
-
-  - id: "implementacion"
-    element_id: "results"
-    placement: "body"
-    required: true
-    title: "Implementación y Resultados"
-    label: "chap:implementacion"
-    guidance: |
-      Describe la implementación y presenta los resultados experimentales:
-      • Entorno de desarrollo: hardware, software, versiones.
-      • Implementación por módulos o subsistemas.
-      • Pruebas de integración: ¿el sistema completo funciona como el diseño predice?
-      • Resultados cuantitativos: métricas (precisión, tiempo de respuesta, consumo, error RMS, etc.).
-      • Comparación con el estado del arte o con la línea base.
-      En UPITTA se valoran las pruebas en condiciones reales o cuasi-reales.
-
-  - id: "conclusiones"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones y Trabajo Futuro"
-    label: "chap:conclusiones"
-    guidance: |
-      Cierra el trabajo con rigor técnico e interdisciplinario:
-      • Objetivos cumplidos vs. planteados (con evidencia cuantitativa).
-      • Contribuciones originales (técnicas, metodológicas, o de integración disciplinar).
-      • Limitaciones del sistema o del estudio.
-      • Trabajo futuro: mejoras, extensiones, posibles aplicaciones industriales o de investigación.
-      Menciona si el trabajo derivó o puede derivar en publicaciones o patentes.
-
-  - id: "referencias"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      Referencias numéricas IEEE en orden de aparición (generadas automáticamente).
-      Usa el importador DOI para artículos de IEEE Xplore, ACM DL, etc.
-      Incluye el DOI en cada referencia — es requisito IEEE.
-
-  - id: "anexos"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Anexos"
-    guidance: |
-      Código fuente completo, datasheets de componentes, planos mecánicos o eléctricos, procedimientos de calibración, manuales de usuario, datos crudos de experimentos.
+- id: portada
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: resumen
+  element_id: abstract_es
+  placement: front_matter
+  required: true
+- id: abstract
+  element_id: abstract_en
+  placement: front_matter
+  required: true
+- id: tabla_contenidos
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: introduccion
+  element_id: introduction
+  placement: body
+  required: true
+  label: chap:introduccion
+- id: estado_arte
+  element_id: theoretical_framework
+  placement: body
+  required: true
+  label: chap:estado_arte
+- id: diseno
+  element_id: methodology
+  placement: body
+  required: true
+  label: chap:diseno
+- id: implementacion
+  element_id: results
+  placement: body
+  required: true
+  label: chap:implementacion
+- id: conclusiones
+  element_id: conclusions
+  placement: body
+  required: true
+  label: chap:conclusiones
+- id: referencias
+  element_id: references
+  placement: back_matter
+  required: true
+- id: anexos
+  element_id: appendices
+  placement: appendix
+  required: false

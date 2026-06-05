@@ -1,193 +1,94 @@
-schema_version: "1.0.0"
-id: "engineering.basic"
-name: "Ingeniería / Reporte técnico"
-description: "Reporte técnico con secciones de planteamiento, diseño, implementación y pruebas. Bibliografía IEEE. Ideal para tesis de ingeniería y residencia profesional."
-author: "Gonzalo Andrade Estrella"
-version: "1.0.0"
-license: "AGPL-3.0"
+schema_version: 1.0.0
+id: engineering.basic
+name: engineering.basic
+author: Gonzalo Andrade Estrella
+version: 1.0.0
+license: AGPL-3.0
 status: reviewed
 verification:
-  verified_at: "2026-05-24"
-  verified_by: "Gonzalo Andrade Estrella"
+  verified_at: '2026-05-24'
+  verified_by: Gonzalo Andrade Estrella
   source_urls:
-    - "https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/"
-    - "https://www.ieee.org/publications/authors/author-guidelines.html"
+  - https://ieeeauthorcenter.ieee.org/write-for-ieee-publications/use-ieee-publication-recommendations/
+  - https://www.ieee.org/publications/authors/author-guidelines.html
   review_interval_days: 365
 tags:
-  - ingenieria
-  - tecnico
-  - ieee
-  - tesis
-  - licenciatura
-  - maestria
-
+- ingenieria
+- tecnico
+- ieee
+- tesis
+- licenciatura
+- maestria
 document_class:
-  name: "book"
+  name: book
   options:
-    - "12pt"
-    - "letterpaper"
-    - "oneside"
-
-latex_engine: "xelatex"
-compiler: "latexmk"
-bibliography_backend: "biber"
-bibliography_style: "ieee"
-
+  - 12pt
+  - letterpaper
+  - oneside
+latex_engine: xelatex
+compiler: latexmk
+bibliography_backend: biber
+bibliography_style: ieee
 packages:
-  - "fontspec"
-  - "geometry"
-  - "graphicx"
-  - "booktabs"
-  - "array"
-  - "longtable"
-  - "float"
-  - "caption"
-  - "csquotes"
-  - "setspace"
-  - "hyperref"
-
+- fontspec
+- geometry
+- graphicx
+- booktabs
+- array
+- longtable
+- float
+- caption
+- csquotes
+- setspace
+- hyperref
 sections:
-  - id: "title_page"
-    element_id: "title_page"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      La portada se genera automáticamente con los datos del proyecto.
-      No necesitas escribir contenido aquí.
-
-  - id: "table_of_contents"
-    element_id: "table_of_contents"
-    placement: "front_matter"
-    required: true
-    title: null
-    guidance: |
-      El índice se genera automáticamente.
-      No necesitas escribir nada aquí.
-
-  - id: "abstract_es"
-    element_id: "abstract_es"
-    placement: "front_matter"
-    required: false
-    title: "Resumen"
-    guidance: |
-      Resumen técnico de 150–250 palabras. En ingeniería debe ser concreto:
-      • Problema que resuelve el trabajo.
-      • Enfoque o tecnología utilizada.
-      • Resultado principal (métrica, rendimiento, mejora).
-      • Conclusión o aportación clave.
-      Sin referencias, sin ecuaciones, sin acrónimos sin definir.
-
-  - id: "introduction"
-    element_id: "introduction"
-    placement: "body"
-    required: true
-    title: "Introducción"
-    label: "sec:introduccion"
-    guidance: |
-      Contextualiza el problema técnico y motiva el trabajo:
-      • Contexto: área tecnológica, industria o aplicación.
-      • Motivación: ¿por qué es importante resolver este problema?
-      • Trabajos relacionados: brevísima revisión de soluciones existentes y sus limitaciones.
-      • Objetivo y contribución específica del trabajo.
-      • Organización del documento.
-      En IEEE, las citas van numéricas: [1], [2], [3].
-
-  - id: "problem_statement"
-    element_id: "theoretical_framework"
-    placement: "body"
-    required: true
-    title: "Planteamiento del problema"
-    label: "sec:planteamiento"
-    guidance: |
-      Define el problema técnico con precisión formal:
-      • Descripción detallada del problema: síntomas, contexto, restricciones.
-      • Requerimientos funcionales y no funcionales.
-      • Criterios de éxito: ¿cómo sabrás que lo resolviste?
-      • Alcance y limitaciones del proyecto.
-      • Marco teórico mínimo necesario: conceptos, modelos o teorías en los que se basa la solución.
-      Usa diagramas, tablas de requerimientos y casos de uso si aplica.
-
-  - id: "design"
-    element_id: "methodology"
-    placement: "body"
-    required: true
-    title: "Diseño y arquitectura"
-    label: "sec:diseno"
-    guidance: |
-      Presenta la solución propuesta antes de implementarla:
-      • Arquitectura del sistema (diagrama de componentes, capas, módulos).
-      • Decisiones de diseño y justificación de tecnologías elegidas.
-      • Diagrama de flujo o algoritmo principal.
-      • Modelo de datos si aplica (ER, esquema de BD).
-      • Interfaz de usuario (wireframes o mockups si aplica).
-      El diseño debe ser independiente de la implementación — un tercero debería poder implementarlo desde esta sección.
-
-  - id: "implementation"
-    element_id: "results"
-    placement: "body"
-    required: true
-    title: "Implementación"
-    label: "sec:implementacion"
-    guidance: |
-      Describe cómo se construyó la solución:
-      • Entorno de desarrollo: lenguajes, frameworks, plataformas, versiones.
-      • Descripción de los módulos o componentes implementados.
-      • Fragmentos de código relevantes (solo los más ilustrativos, no todo el código).
-      • Desafíos de implementación y soluciones adoptadas.
-      • Configuración de infraestructura si aplica (servidores, contenedores, BD).
-      El código completo va en Anexos — aquí solo lo más representativo.
-
-  - id: "testing"
-    element_id: "discussion"
-    placement: "body"
-    required: false
-    title: "Pruebas y validación"
-    label: "sec:pruebas"
-    guidance: |
-      Demuestra que la solución funciona y cumple los requerimientos:
-      • Plan de pruebas: tipos (unitarias, integración, sistema, aceptación).
-      • Casos de prueba: entrada, acción, resultado esperado, resultado obtenido.
-      • Métricas de rendimiento si aplica (tiempo de respuesta, uso de memoria, precisión).
-      • Comparación con la línea base o trabajos relacionados.
-      • Análisis de resultados: ¿qué funcionó? ¿qué no? ¿por qué?
-      Presenta resultados en tablas o gráficas cuando sea posible.
-
-  - id: "conclusions"
-    element_id: "conclusions"
-    placement: "body"
-    required: true
-    title: "Conclusiones y trabajo futuro"
-    label: "sec:conclusiones"
-    guidance: |
-      Cierra el trabajo con rigor técnico:
-      • Revisión de los objetivos logrados vs. los planteados.
-      • Contribuciones originales del trabajo.
-      • Limitaciones técnicas identificadas.
-      • Trabajo futuro: mejoras concretas, extensiones posibles, problemas abiertos.
-      En IEEE es común mencionar posibles publicaciones o aplicaciones industriales.
-
-  - id: "references"
-    element_id: "references"
-    placement: "back_matter"
-    required: true
-    title: "Referencias"
-    guidance: |
-      En IEEE las referencias son numéricas y aparecen en orden de primera mención.
-      La lista se genera automáticamente desde tu .bib al compilar.
-      Para artículos y conferencias IEEE: usa el importador DOI para obtener la entrada correcta.
-      Asegúrate de incluir el DOI en cada referencia — IEEE lo exige.
-
-  - id: "appendices"
-    element_id: "appendices"
-    placement: "appendix"
-    required: false
-    title: "Anexos"
-    guidance: |
-      Material técnico complementario:
-      • Código fuente completo (módulos principales).
-      • Scripts de instalación y configuración.
-      • Manuales de usuario o técnicos.
-      • Diagramas detallados (ERD completo, diagramas de secuencia, etc.).
-      • Datos de prueba o datasets.
-      Numera: Apéndice A, B… y refiérelos desde el texto principal.
+- id: title_page
+  element_id: title_page
+  placement: front_matter
+  required: true
+- id: table_of_contents
+  element_id: table_of_contents
+  placement: front_matter
+  required: true
+- id: abstract_es
+  element_id: abstract_es
+  placement: front_matter
+  required: false
+- id: introduction
+  element_id: introduction
+  placement: body
+  required: true
+  label: sec:introduccion
+- id: problem_statement
+  element_id: theoretical_framework
+  placement: body
+  required: true
+  label: sec:planteamiento
+- id: design
+  element_id: methodology
+  placement: body
+  required: true
+  label: sec:diseno
+- id: implementation
+  element_id: results
+  placement: body
+  required: true
+  label: sec:implementacion
+- id: testing
+  element_id: discussion
+  placement: body
+  required: false
+  label: sec:pruebas
+- id: conclusions
+  element_id: conclusions
+  placement: body
+  required: true
+  label: sec:conclusiones
+- id: references
+  element_id: references
+  placement: back_matter
+  required: true
+- id: appendices
+  element_id: appendices
+  placement: appendix
+  required: false
