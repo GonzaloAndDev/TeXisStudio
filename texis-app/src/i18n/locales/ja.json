@@ -774,7 +774,30 @@
     "selected_chip": "選択済み",
     "installed_chip": "インストール済み",
     "sections_count_suffix": "セクション",
-    "tab_plugins": "プラグイン"
+    "tab_plugins": "プラグイン",
+    "placement": {
+      "front_matter": "前付",
+      "body": "本文",
+      "back_matter": "後付",
+      "appendix": "付録"
+    },
+    "section_element": {
+      "title_page": "タイトルページ",
+      "abstract": "要旨",
+      "acknowledgements": "謝辞",
+      "table_of_contents": "目次",
+      "list_of_figures": "図一覧",
+      "list_of_tables": "表一覧",
+      "introduction": "序論",
+      "theoretical_framework": "理論的枠組み",
+      "methodology": "方法論",
+      "results": "結果",
+      "discussion": "考察",
+      "conclusions": "結論",
+      "references": "参考文献",
+      "appendix": "付録",
+      "appendix_a": "付録A"
+    }
   },
   "progress": {
     "status_draft": "下書き",
@@ -1108,7 +1131,15 @@
     "compile_error": "コンパイル中にエラーが発生しました。",
     "compiling_statusbar": "コンパイル中… ({{count}} 行)",
     "backends_available": "{{backends}} が利用可能",
-    "latex_not_installed_status": "⚠ LaTeX はインストールされていません"
+    "latex_not_installed_status": "⚠ LaTeX はインストールされていません",
+    "preflight_action_compile": "コンパイル",
+    "preflight_action_export": "提出物をエクスポート",
+    "preflight_title": "{{action}}前の確認",
+    "preflight_has_errors": "続行前に{{count}}件のエラーを修正してください。",
+    "preflight_has_warnings": "{{count}}件の警告が見つかりました。続行できます。",
+    "preflight_errors_section": "エラー ({{count}})",
+    "preflight_warnings_section": "警告 ({{count}})",
+    "preflight_suggestions_section": "提案 ({{count}})"
   },
   "community_profile": {
     "audience_label": "対象者",
@@ -2278,5 +2309,12 @@
       "experimental": "実験的",
       "draft": "下書き"
     }
+  },
+  "welcome": {
+    "heading": "言語を選択",
+    "subheading": "後から設定で変更できます。",
+    "more_languages": "他の言語",
+    "loading_more": "他の言語を読み込み中…",
+    "skip": "スキップ"
   }
 }

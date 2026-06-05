@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   IconCheck,
   IconErr,
@@ -243,11 +244,12 @@ export function DeliveryCheckModal({
   onClose: () => void;
   onGoToSection: (sectionId: string) => void;
 }) {
+  const { t } = useTranslation();
   const errors = report.issues.filter((i) => i.severity === "Error");
   const warnings = report.issues.filter((i) => i.severity === "Warning");
   const suggestions = report.issues.filter((i) => i.severity === "Suggestion");
   const hasErrors = errors.length > 0;
-  const actionLabel = pendingAction === "compile" ? "Compilar" : "Exportar entrega";
+  const actionLabel = pendingAction === "compile" ? t("compile.preflight_action_compile") : t("compile.preflight_action_export");
 
   return (
     <div
@@ -294,12 +296,12 @@ export function DeliveryCheckModal({
           )}
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: "var(--fs-md)", color: "var(--fg-strong)" }}>
-              Verificación antes de {actionLabel.toLowerCase()}
+              {t("compile.preflight_title", { action: actionLabel })}
             </div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>
               {hasErrors
-                ? `Corrige ${errors.length} error${errors.length > 1 ? "es" : ""} antes de continuar.`
-                : `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""} encontrada${warnings.length !== 1 ? "s" : ""}. Puedes continuar de todos modos.`}
+                ? t("compile.preflight_has_errors", { count: errors.length })
+                : t("compile.preflight_has_warnings", { count: warnings.length })}
             </div>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>
@@ -311,7 +313,7 @@ export function DeliveryCheckModal({
           {errors.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-err)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Errores ({errors.length})
+                {t("compile.preflight_errors_section", { count: errors.length })}
               </div>
               {errors.map((issue, i) => (
                 <IssueRow
@@ -325,7 +327,7 @@ export function DeliveryCheckModal({
           {warnings.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--build-warn)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Advertencias ({warnings.length})
+                {t("compile.preflight_warnings_section", { count: warnings.length })}
               </div>
               {warnings.map((issue, i) => (
                 <IssueRow
@@ -339,7 +341,7 @@ export function DeliveryCheckModal({
           {suggestions.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Sugerencias ({suggestions.length})
+                {t("compile.preflight_suggestions_section", { count: suggestions.length })}
               </div>
               {suggestions.map((issue, i) => (
                 <IssueRow

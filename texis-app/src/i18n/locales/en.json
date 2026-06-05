@@ -774,7 +774,30 @@
     "selected_chip": "selected",
     "installed_chip": "installed",
     "sections_count_suffix": "sections",
-    "tab_plugins": "Plugins"
+    "tab_plugins": "Plugins",
+    "placement": {
+      "front_matter": "Front Matter",
+      "body": "Body",
+      "back_matter": "Back Matter",
+      "appendix": "Appendix"
+    },
+    "section_element": {
+      "title_page": "Title Page",
+      "abstract": "Abstract",
+      "acknowledgements": "Acknowledgements",
+      "table_of_contents": "Table of Contents",
+      "list_of_figures": "List of Figures",
+      "list_of_tables": "List of Tables",
+      "introduction": "Introduction",
+      "theoretical_framework": "Theoretical Framework",
+      "methodology": "Methodology",
+      "results": "Results",
+      "discussion": "Discussion",
+      "conclusions": "Conclusions",
+      "references": "References",
+      "appendix": "Appendix",
+      "appendix_a": "Appendix A"
+    }
   },
   "progress": {
     "status_draft": "Draft",
@@ -1139,7 +1162,15 @@
     "compile_error": "Compilation error",
     "compiling_statusbar": "Compiling… ({{count}} lines)",
     "backends_available": "{{backends}} available",
-    "latex_not_installed_status": "⚠ LaTeX not installed"
+    "latex_not_installed_status": "⚠ LaTeX not installed",
+    "preflight_action_compile": "Compile",
+    "preflight_action_export": "Export submission",
+    "preflight_title": "Pre-{{action}} check",
+    "preflight_has_errors": "Fix {{count}} error(s) before continuing.",
+    "preflight_has_warnings": "{{count}} warning(s) found. You can continue anyway.",
+    "preflight_errors_section": "Errors ({{count}})",
+    "preflight_warnings_section": "Warnings ({{count}})",
+    "preflight_suggestions_section": "Suggestions ({{count}})"
   },
   "community_profile": {
     "audience_label": "Who it is for",
@@ -2278,5 +2309,12 @@
       "experimental": "experimental",
       "draft": "draft"
     }
+  },
+  "welcome": {
+    "heading": "Select your language",
+    "subheading": "You can change this later in Settings.",
+    "more_languages": "More languages",
+    "loading_more": "Loading more languages…",
+    "skip": "Skip"
   }
 }

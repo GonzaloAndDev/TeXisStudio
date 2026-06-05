@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { copyFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
@@ -40,6 +40,11 @@ export default defineConfig(async () => ({
     watch: {
       ignored: ["**/src-tauri/**"],
     },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    globals: true,
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
   build: {

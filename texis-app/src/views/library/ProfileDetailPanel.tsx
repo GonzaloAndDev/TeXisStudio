@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { IconDownload, IconEdit, IconPlus, IconTrash, IconX } from "../../components/Icons";
 import type { ProfileInfo, ProfileSectionInfo } from "../../types";
-import { PLACEMENT_COLOR, PLACEMENT_LABEL } from "./constants";
+import { PLACEMENT_COLOR } from "./constants";
 import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
 import { useSettingsStore } from "../../stores/settings";
 
@@ -150,7 +150,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
           return (
             <div key={placement} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: PLACEMENT_COLOR[placement] ?? "var(--fg-faint)", marginBottom: 6 }}>
-                {PLACEMENT_LABEL[placement] ?? placement}
+                {t(`library.placement.${placement}`, { defaultValue: placement })}
               </div>
               {secs.map((s) => (
                 <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", borderRadius: "var(--r-sm)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", marginBottom: 4 }}>

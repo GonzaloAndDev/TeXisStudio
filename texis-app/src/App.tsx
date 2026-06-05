@@ -9,6 +9,8 @@ import {
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
 
+import { WELCOME_SHOWN_KEY } from "./views/WelcomeView";
+
 const AboutView = lazy(() => import("./views/AboutView"));
 const CompileView = lazy(() => import("./views/CompileView"));
 const EditorView = lazy(() => import("./views/EditorView"));
@@ -18,6 +20,7 @@ const ProfileWizardView = lazy(() => import("./views/ProfileWizardView"));
 const ProgressView = lazy(() => import("./views/ProgressView"));
 const SetupLatexView = lazy(() => import("./views/SetupLatexView"));
 const SettingsView = lazy(() => import("./views/SettingsView"));
+const WelcomeView = lazy(() => import("./views/WelcomeView"));
 const WizardView = lazy(() => import("./views/WizardView"));
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -38,16 +41,16 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-app)", color: "var(--fg-default)", padding: 24 }}>
         <div style={{ width: "min(620px, 100%)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: 20, boxShadow: "var(--shadow-soft)" }}>
           <h1 style={{ margin: "0 0 8px", fontSize: "var(--fs-xl)", fontFamily: "var(--font-display)", fontWeight: 500 }}>
-            La vista no pudo cargarse
+            Something went wrong
           </h1>
           <p style={{ margin: "0 0 14px", color: "var(--fg-muted)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
-            TeXisStudio mantuvo tus archivos intactos. Vuelve al inicio e intenta abrir el proyecto otra vez.
+            TeXisStudio kept your files intact. Go back home and try reopening the project.
           </p>
           <pre style={{ maxHeight: 160, overflow: "auto", whiteSpace: "pre-wrap", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", padding: 12, color: "var(--build-err)", fontSize: "var(--fs-xs)" }}>
             {this.state.error.message}
           </pre>
           <button className="btn btn-accent btn-sm" onClick={() => { window.location.href = "/"; }}>
-            Volver al inicio
+            Back to home
           </button>
         </div>
       </div>
@@ -193,6 +196,17 @@ const DEMO_PROJECT: ProjectModel = {
   ],
 };
 
+// Redirects to /welcome on first launch (before language is selected).
+function HomeGate() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!localStorage.getItem(WELCOME_SHOWN_KEY)) {
+      navigate("/welcome", { replace: true });
+    }
+  }, [navigate]);
+  return <HomeView />;
+}
+
 // Carga el proyecto demo al navegar a /demo
 function DemoLoader() {
   const navigate = useNavigate();
@@ -207,7 +221,8 @@ function DemoLoader() {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      <Route path="/" element={<HomeView />} />
+      <Route path="/" element={<HomeGate />} />
+      <Route path="/welcome" element={<WelcomeView />} />
       <Route path="/new" element={<WizardView />} />
       <Route path="/demo" element={<DemoLoader />} />
       <Route path="/project/:id" element={<EditorView />} />
@@ -240,7 +255,7 @@ export default function App() {
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
               background: "var(--bg-app)", color: "var(--fg-muted)", fontSize: "var(--fs-sm)",
             }}>
-              Cargando vista…
+              Loading…
             </div>
           }
         >

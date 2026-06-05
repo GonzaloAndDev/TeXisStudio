@@ -774,7 +774,30 @@
     "selected_chip": "seleccionado",
     "installed_chip": "instalado",
     "sections_count_suffix": "secciones",
-    "tab_plugins": "Plugins"
+    "tab_plugins": "Plugins",
+    "placement": {
+      "front_matter": "Preliminares",
+      "body": "Cuerpo",
+      "back_matter": "Material final",
+      "appendix": "Anexos"
+    },
+    "section_element": {
+      "title_page": "Portada",
+      "abstract": "Resumen",
+      "acknowledgements": "Agradecimientos",
+      "table_of_contents": "Tabla de contenidos",
+      "list_of_figures": "Lista de figuras",
+      "list_of_tables": "Lista de tablas",
+      "introduction": "Introducción",
+      "theoretical_framework": "Marco teórico",
+      "methodology": "Metodología",
+      "results": "Resultados",
+      "discussion": "Discusión",
+      "conclusions": "Conclusiones",
+      "references": "Referencias",
+      "appendix": "Apéndice",
+      "appendix_a": "Apéndice A"
+    }
   },
   "progress": {
     "status_draft": "Borrador",
@@ -1139,7 +1162,15 @@
     "compile_error": "Error de compilación",
     "compiling_statusbar": "Compilando… ({{count}} líneas)",
     "backends_available": "{{backends}} disponibles",
-    "latex_not_installed_status": "⚠ LaTeX no instalado"
+    "latex_not_installed_status": "⚠ LaTeX no instalado",
+    "preflight_action_compile": "Compilar",
+    "preflight_action_export": "Exportar entrega",
+    "preflight_title": "Verificación antes de {{action}}",
+    "preflight_has_errors": "Corrige {{count}} error(es) antes de continuar.",
+    "preflight_has_warnings": "{{count}} advertencia(s) encontrada(s). Puedes continuar.",
+    "preflight_errors_section": "Errores ({{count}})",
+    "preflight_warnings_section": "Advertencias ({{count}})",
+    "preflight_suggestions_section": "Sugerencias ({{count}})"
   },
   "community_profile": {
     "audience_label": "Para quién sirve",
@@ -2278,5 +2309,12 @@
       "experimental": "experimental",
       "draft": "borrador"
     }
+  },
+  "welcome": {
+    "heading": "Selecciona tu idioma",
+    "subheading": "Puedes cambiarlo después en Ajustes.",
+    "more_languages": "Más idiomas",
+    "loading_more": "Cargando más idiomas…",
+    "skip": "Omitir"
   }
 }

@@ -774,7 +774,30 @@
     "selected_chip": "sélectionné",
     "installed_chip": "installé",
     "sections_count_suffix": "rubriques",
-    "tab_plugins": "Plugins"
+    "tab_plugins": "Plugins",
+    "placement": {
+      "front_matter": "Pages liminaires",
+      "body": "Corps",
+      "back_matter": "Matière finale",
+      "appendix": "Annexes"
+    },
+    "section_element": {
+      "title_page": "Page de titre",
+      "abstract": "Résumé",
+      "acknowledgements": "Remerciements",
+      "table_of_contents": "Table des matières",
+      "list_of_figures": "Liste des figures",
+      "list_of_tables": "Liste des tableaux",
+      "introduction": "Introduction",
+      "theoretical_framework": "Cadre théorique",
+      "methodology": "Méthodologie",
+      "results": "Résultats",
+      "discussion": "Discussion",
+      "conclusions": "Conclusions",
+      "references": "Références",
+      "appendix": "Annexe",
+      "appendix_a": "Annexe A"
+    }
   },
   "progress": {
     "status_draft": "Brouillon",
@@ -1108,7 +1131,15 @@
     "compile_error": "Erreur lors de la compilation.",
     "compiling_statusbar": "Compilation… ({{count}} lignes)",
     "backends_available": "{{backends}} disponible(s)",
-    "latex_not_installed_status": "⚠ LaTeX non installé"
+    "latex_not_installed_status": "⚠ LaTeX non installé",
+    "preflight_action_compile": "Compiler",
+    "preflight_action_export": "Exporter la soumission",
+    "preflight_title": "Vérification avant {{action}}",
+    "preflight_has_errors": "Corrigez {{count}} erreur(s) avant de continuer.",
+    "preflight_has_warnings": "{{count}} avertissement(s) trouvé(s). Vous pouvez continuer quand même.",
+    "preflight_errors_section": "Erreurs ({{count}})",
+    "preflight_warnings_section": "Avertissements ({{count}})",
+    "preflight_suggestions_section": "Suggestions ({{count}})"
   },
   "community_profile": {
     "audience_label": "Pour qui",
@@ -2278,5 +2309,12 @@
       "experimental": "expérimental",
       "draft": "brouillon"
     }
+  },
+  "welcome": {
+    "heading": "Choisissez votre langue",
+    "subheading": "Vous pouvez le modifier plus tard dans les Paramètres.",
+    "more_languages": "Plus de langues",
+    "loading_more": "Chargement de plus de langues…",
+    "skip": "Ignorer"
   }
 }

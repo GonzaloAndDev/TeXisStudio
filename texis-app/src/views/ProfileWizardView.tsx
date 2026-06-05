@@ -499,7 +499,7 @@ export default function ProfileWizardView() {
                             background: PLACEMENT_COLOR[entry.placement] ?? "var(--fg-faint)",
                           }}
                         />
-                        {entry.label}
+                        {t(`library.section_element.${entry.id}`, { defaultValue: entry.label })}
                         {alreadyAdded && <IconCheck size={10} style={{ marginLeft: "auto", opacity: 0.5 }} />}
                       </button>
                     );

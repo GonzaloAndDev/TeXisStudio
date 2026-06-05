@@ -774,7 +774,30 @@
     "selected_chip": "ausgewählt",
     "installed_chip": "installiert",
     "sections_count_suffix": "Abschnitte",
-    "tab_plugins": "Plugins"
+    "tab_plugins": "Plugins",
+    "placement": {
+      "front_matter": "Vorderteil",
+      "body": "Hauptteil",
+      "back_matter": "Anhang",
+      "appendix": "Appendix"
+    },
+    "section_element": {
+      "title_page": "Titelseite",
+      "abstract": "Zusammenfassung",
+      "acknowledgements": "Danksagung",
+      "table_of_contents": "Inhaltsverzeichnis",
+      "list_of_figures": "Abbildungsverzeichnis",
+      "list_of_tables": "Tabellenverzeichnis",
+      "introduction": "Einleitung",
+      "theoretical_framework": "Theoretischer Rahmen",
+      "methodology": "Methodik",
+      "results": "Ergebnisse",
+      "discussion": "Diskussion",
+      "conclusions": "Schlussfolgerungen",
+      "references": "Literaturverzeichnis",
+      "appendix": "Anhang",
+      "appendix_a": "Anhang A"
+    }
   },
   "progress": {
     "status_draft": "Entwurf",
@@ -1108,7 +1131,15 @@
     "compile_error": "Fehler beim Kompilieren.",
     "compiling_statusbar": "Kompilieren… ({{count}} Zeilen)",
     "backends_available": "{{backends}} verfügbar",
-    "latex_not_installed_status": "⚠ LaTeX nicht installiert"
+    "latex_not_installed_status": "⚠ LaTeX nicht installiert",
+    "preflight_action_compile": "Kompilieren",
+    "preflight_action_export": "Abgabe exportieren",
+    "preflight_title": "Prüfung vor {{action}}",
+    "preflight_has_errors": "Korrigiere {{count}} Fehler bevor du fortfährst.",
+    "preflight_has_warnings": "{{count}} Warnung(en) gefunden. Du kannst trotzdem fortfahren.",
+    "preflight_errors_section": "Fehler ({{count}})",
+    "preflight_warnings_section": "Warnungen ({{count}})",
+    "preflight_suggestions_section": "Vorschläge ({{count}})"
   },
   "community_profile": {
     "audience_label": "Für wen es ist",
@@ -2278,5 +2309,12 @@
       "experimental": "experimentell",
       "draft": "Entwurf"
     }
+  },
+  "welcome": {
+    "heading": "Sprache auswählen",
+    "subheading": "Du kannst dies später in den Einstellungen ändern.",
+    "more_languages": "Weitere Sprachen",
+    "loading_more": "Weitere Sprachen werden geladen…",
+    "skip": "Überspringen"
   }
 }

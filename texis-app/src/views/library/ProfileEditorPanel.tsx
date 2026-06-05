@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { IconCheck, IconPlus, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { ProfileInfo, ProfileSectionInfo, ProfileUpdatePayload } from "../../types";
-import { KNOWN_SECTION_ELEMENTS, PLACEMENT_LABEL, PLACEMENT_COLOR } from "./constants";
+import { KNOWN_SECTION_ELEMENTS, PLACEMENT_COLOR } from "./constants";
 
 // ── ProfileEditorPanel ────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
             <div style={{ padding: "10px 12px", borderRadius: "var(--r-md)", background: "var(--accent-tint)", border: "1px solid var(--accent-soft)", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
               <label style={labelStyle}>{t("library.section_type")}</label>
               <select value={newSectionEl} onChange={(e) => setNewSectionEl(e.target.value)} style={fieldStyle}>
-                {KNOWN_SECTION_ELEMENTS.map((el) => <option key={el.id} value={el.id}>{el.label} ({PLACEMENT_LABEL[el.placement] ?? el.placement})</option>)}
+                {KNOWN_SECTION_ELEMENTS.map((el) => <option key={el.id} value={el.id}>{t(`library.section_element.${el.id}`, { defaultValue: el.id })} ({t(`library.placement.${el.placement}`, { defaultValue: el.placement })})</option>)}
               </select>
               <div style={{ display: "flex", gap: 6 }}>
                 <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={addSection}><IconCheck size={11} sw={2.5} /> {t("library.add_section")}</button>
@@ -163,7 +163,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <select value={sec.placement} onChange={(e) => changePlacement(i, e.target.value)} style={{ ...fieldStyle, padding: "3px 6px", fontSize: 11, flex: 1 }}>
-                  {["front_matter", "body", "back_matter", "appendix"].map((p) => <option key={p} value={p}>{PLACEMENT_LABEL[p]}</option>)}
+                  {["front_matter", "body", "back_matter", "appendix"].map((p) => <option key={p} value={p}>{t(`library.placement.${p}`)}</option>)}
                 </select>
                 <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--fg-muted)", cursor: "pointer", flexShrink: 0 }}>
                   <input type="checkbox" checked={sec.required} onChange={() => toggleRequired(i)} style={{ accentColor: "var(--accent)" }} />

@@ -774,7 +774,30 @@
     "selected_chip": "已选择",
     "installed_chip": "已安装",
     "sections_count_suffix": "章节",
-    "tab_plugins": "插件"
+    "tab_plugins": "插件",
+    "placement": {
+      "front_matter": "前置部分",
+      "body": "正文",
+      "back_matter": "后置部分",
+      "appendix": "附录"
+    },
+    "section_element": {
+      "title_page": "标题页",
+      "abstract": "摘要",
+      "acknowledgements": "致谢",
+      "table_of_contents": "目录",
+      "list_of_figures": "图目录",
+      "list_of_tables": "表目录",
+      "introduction": "引言",
+      "theoretical_framework": "理论框架",
+      "methodology": "研究方法",
+      "results": "结果",
+      "discussion": "讨论",
+      "conclusions": "结论",
+      "references": "参考文献",
+      "appendix": "附录",
+      "appendix_a": "附录A"
+    }
   },
   "progress": {
     "status_draft": "草稿",
@@ -1108,7 +1131,15 @@
     "compile_error": "编译时出错。",
     "compiling_statusbar": "正在编译…（{{count}}行）",
     "backends_available": "{{backends}}可用",
-    "latex_not_installed_status": "⚠ LaTeX 未安装"
+    "latex_not_installed_status": "⚠ LaTeX 未安装",
+    "preflight_action_compile": "编译",
+    "preflight_action_export": "导出提交",
+    "preflight_title": "{{action}}前检查",
+    "preflight_has_errors": "继续前请修复 {{count}} 个错误。",
+    "preflight_has_warnings": "发现 {{count}} 个警告，可继续操作。",
+    "preflight_errors_section": "错误 ({{count}})",
+    "preflight_warnings_section": "警告 ({{count}})",
+    "preflight_suggestions_section": "建议 ({{count}})"
   },
   "community_profile": {
     "audience_label": "它是给谁的",
@@ -2278,5 +2309,12 @@
       "experimental": "实验性",
       "draft": "草稿"
     }
+  },
+  "welcome": {
+    "heading": "选择语言",
+    "subheading": "您可以稍后在设置中更改。",
+    "more_languages": "更多语言",
+    "loading_more": "正在加载更多语言…",
+    "skip": "跳过"
   }
 }
