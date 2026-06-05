@@ -41,6 +41,7 @@ type ProfileSectionMessages = {
 type ProfileMessages = {
   name?: string;
   description?: string;
+  meta?: string;
   institution?: string;
   department?: string;
   faculty?: string;
@@ -226,6 +227,7 @@ export function localizeProfile(profile: ProfileInfo, language?: string): Profil
     ...profile,
     name: messages.name ?? profile.name,
     description: messages.description ?? profile.description,
+    meta: messages.meta ?? profile.meta,
     sections,
   };
 }
