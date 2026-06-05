@@ -700,7 +700,7 @@
     "delete_profile_title": "Supprimer le profil ?",
     "delete_profile_body_before": "Cette action supprimera",
     "delete_profile_body_after": "Cette action est irréversible.",
-    "sidebar_counts": "{{profiles}} profils · {{elements}} éléments",
+    "sidebar_counts": "{{profiles}} profils installés",
     "installed_profiles": "Profils installés",
     "profile_count_hint": "{{count}} profils · cliquez pour voir les détails",
     "import_profile_title": "Importer un profil depuis un répertoire",

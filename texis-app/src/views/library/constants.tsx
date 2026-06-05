@@ -1,21 +1,6 @@
-import { IconCode, IconDoc, IconHeading, IconImage, IconList, IconSigma, IconTable, IconText } from "../../components/Icons";
-
 // Constantes y helpers compartidos entre los sub-componentes de LibraryView
 
 // Constantes y helpers compartidos entre los sub-componentes de LibraryView
-
-// ── Catálogo de elementos ──────────────────────────────────────────────────────
-
-export const BLOCK_CATALOG = [
-  { type: "paragraph", icon: <IconText size={16} />, tags: ["text", "content"] },
-  { type: "heading", icon: <IconHeading size={16} />, tags: ["structure", "navigation"] },
-  { type: "figure", icon: <IconImage size={16} />, tags: ["image", "graphic"] },
-  { type: "table", icon: <IconTable size={16} />, tags: ["data", "statistics"] },
-  { type: "equation", icon: <IconSigma size={16} />, tags: ["mathematics", "formula"] },
-  { type: "list", icon: <IconList size={16} />, tags: ["list", "enumeration"] },
-  { type: "citation", icon: <IconDoc size={16} />, tags: ["bibliography", "reference"] },
-  { type: "raw_latex", icon: <IconCode size={16} />, tags: ["advanced", "custom"] },
-];
 
 export const PLACEMENT_LABEL: Record<string, string> = {
   front_matter: "Preliminares", body: "Cuerpo", back_matter: "Material final", appendix: "Anexos",

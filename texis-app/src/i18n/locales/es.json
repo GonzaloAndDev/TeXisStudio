@@ -700,7 +700,7 @@
     "delete_profile_title": "¿Eliminar perfil?",
     "delete_profile_body_before": "Se eliminará",
     "delete_profile_body_after": "Esta acción no se puede deshacer.",
-    "sidebar_counts": "{{profiles}} perfiles · {{elements}} elementos",
+    "sidebar_counts": "{{profiles}} perfiles instalados",
     "installed_profiles": "Perfiles instalados",
     "profile_count_hint": "{{count}} perfiles · haz clic para ver detalle",
     "import_profile_title": "Importar perfil desde directorio",

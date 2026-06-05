@@ -700,7 +700,7 @@
     "delete_profile_title": "Profil löschen?",
     "delete_profile_body_before": "Dies wird gelöscht",
     "delete_profile_body_after": "Diese Aktion kann nicht rückgängig gemacht werden.",
-    "sidebar_counts": "{{profiles}}-Profile · {{elements}}-Elemente",
+    "sidebar_counts": "{{profiles}} installierte Profile",
     "installed_profiles": "Installierte Profile",
     "profile_count_hint": "{{count}}-Profile · Klicken Sie hier, um Details anzuzeigen",
     "import_profile_title": "Profil aus Verzeichnis importieren",

@@ -700,7 +700,7 @@
     "delete_profile_title": "Delete profile?",
     "delete_profile_body_before": "This will delete",
     "delete_profile_body_after": "This action cannot be undone.",
-    "sidebar_counts": "{{profiles}} profiles · {{elements}} elements",
+    "sidebar_counts": "{{profiles}} installed profiles",
     "installed_profiles": "Installed profiles",
     "profile_count_hint": "{{count}} profiles · click to view details",
     "import_profile_title": "Import profile from directory",

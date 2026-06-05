@@ -700,7 +700,7 @@
     "delete_profile_title": "删除个人资料？",
     "delete_profile_body_before": "这将删除",
     "delete_profile_body_after": "此操作无法撤消。",
-    "sidebar_counts": "{{profiles}} 型材 · {{elements}} 元件",
+    "sidebar_counts": "已安装 {{profiles}} 个配置文件",
     "installed_profiles": "已安装的配置文件",
     "profile_count_hint": "{{count}}个人资料·点击查看详情",
     "import_profile_title": "从目录导入配置文件",

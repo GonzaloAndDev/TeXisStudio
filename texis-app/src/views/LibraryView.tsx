@@ -2,21 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
-import { IconCode, IconFolder, IconGlobe, IconGrid, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
+import { IconCode, IconFolder, IconGlobe, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { ensureProfileLocale, localizeProfile, localizeProfiles } from "../services/profile-i18n";
 import { useSettingsStore } from "../stores/settings";
 import type { ProfileInfo } from "../types";
-import { BLOCK_CATALOG } from "./library/constants";
 import { ProfileCard } from "./library/ProfileCard";
 import { ProfileDetailPanel } from "./library/ProfileDetailPanel";
 import { ProfileEditorPanel } from "./library/ProfileEditorPanel";
-import { ElementsTab } from "./library/ElementsTab";
 import { StylesTab } from "./library/StylesTab";
 import { CommunityTab } from "./library/CommunityTab";
 import { PluginsTab } from "./library/PluginsTab";
 
-type LibTab = "profiles" | "community" | "styles" | "elements" | "plugins";
+type LibTab = "profiles" | "community" | "styles" | "plugins";
 
 const COUNTRY_KEYS: Record<string, string> = {
   mx: "library.country_mx", us: "library.country_us", uk: "library.country_uk", ca: "library.country_ca",
@@ -157,7 +155,6 @@ export default function LibraryView() {
     { id: "profiles",  label: t("library.tab_profiles"),  icon: <IconFolder size={13} /> },
     { id: "community", label: t("library.tab_community"), icon: <IconGlobe size={13} /> },
     { id: "styles",    label: t("library.tab_styles"),   icon: <IconLayers size={13} /> },
-    { id: "elements",  label: t("library.tab_elements"), icon: <IconGrid size={13} /> },
     { id: "plugins",   label: t("library.tab_plugins"),  icon: <IconCode size={13} /> },
   ];
 
@@ -206,7 +203,7 @@ export default function LibraryView() {
           <div style={{ flex: 1 }} />
           <div style={{ padding: "10px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
             <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 1.0</div>
-            {t("library.sidebar_counts", { profiles: profiles.length, elements: BLOCK_CATALOG.length })}
+            {t("library.sidebar_counts", { profiles: profiles.length })}
           </div>
         </div>
 
@@ -308,8 +305,6 @@ export default function LibraryView() {
         )}
 
         {tab === "styles" && <StylesTab />}
-
-        {tab === "elements" && <ElementsTab />}
 
         {tab === "plugins" && <PluginsTab />}
       </div>

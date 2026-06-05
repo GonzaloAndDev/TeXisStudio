@@ -700,7 +700,7 @@
     "delete_profile_title": "プロフィールを削除しますか?",
     "delete_profile_body_before": "これにより削除されます",
     "delete_profile_body_after": "この操作は元に戻すことができません。",
-    "sidebar_counts": "{{profiles}} プロファイル · {{elements}} 要素",
+    "sidebar_counts": "インストール済みプロフィール {{profiles}} 件",
     "installed_profiles": "インストールされているプロファイル",
     "profile_count_hint": "{{count}} プロフィール · クリックして詳細を表示",
     "import_profile_title": "ディレクトリからプロファイルをインポート",
