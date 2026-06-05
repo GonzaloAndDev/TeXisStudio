@@ -144,12 +144,68 @@ function profileMessages(id: string, language?: string): ProfileMessages | undef
   return undefined;
 }
 
+const SECTION_KEY_ALIASES: Record<string, string[]> = {
+  abstract: ["resumen", "abstract_ingles", "abstract_en", "summary"],
+  acknowledgements: ["agradecimientos", "acknowledgments"],
+  anexos: ["appendices", "apendices", "appendix"],
+  apendices: ["appendices", "anexos", "appendix"],
+  appendices: ["apendices", "anexos", "appendix"],
+  conclusiones: ["conclusion", "conclusions"],
+  conclusion: ["conclusiones", "conclusions"],
+  conclusions: ["conclusiones", "conclusion"],
+  discusion: ["discussion"],
+  discussion: ["discusion"],
+  indice: ["table_of_contents", "toc", "contents"],
+  introduccion: ["introduction", "intro"],
+  introduction: ["introduccion", "intro"],
+  material_y_metodos: ["materiales_metodos", "materials_and_methods", "methodology", "methods"],
+  materiales_metodos: ["material_y_metodos", "materials_and_methods", "methodology", "methods"],
+  materials_and_methods: ["materiales_metodos", "material_y_metodos", "methodology", "methods"],
+  metodologia: ["methodology", "methods", "materials_and_methods", "materiales_metodos"],
+  methodology: ["metodologia", "methods", "materials_and_methods", "materiales_metodos"],
+  portada: ["title_page", "cover"],
+  referencias: ["references", "bibliography"],
+  references: ["referencias", "bibliography"],
+  resultados: ["results"],
+  results: ["resultados"],
+  resumen: ["abstract", "summary"],
+  table_of_contents: ["indice", "toc", "contents"],
+  title_page: ["portada", "cover"],
+};
+
+function normalizeSectionKey(value?: string): string | null {
+  if (!value) return null;
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized || null;
+}
+
+function sectionKeyCandidates(values: Array<string | undefined>): string[] {
+  const candidates = new Set<string>();
+  const add = (value?: string) => {
+    const key = normalizeSectionKey(value);
+    if (!key || candidates.has(key)) return;
+    candidates.add(key);
+    for (const alias of SECTION_KEY_ALIASES[key] ?? []) add(alias);
+  };
+  values.forEach(add);
+  return [...candidates];
+}
+
 function sectionMessages(
   messages: ProfileMessages | undefined,
   section: ProfileSectionInfo,
 ): ProfileSectionMessages | undefined {
   if (!messages?.sections) return undefined;
-  return messages.sections[section.id] ?? messages.sections[section.element_id];
+  for (const candidate of sectionKeyCandidates([section.id, section.element_id, section.title])) {
+    const localized = messages.sections[candidate];
+    if (localized) return localized;
+  }
+  return undefined;
 }
 
 export function localizeProfile(profile: ProfileInfo, language?: string): ProfileInfo {

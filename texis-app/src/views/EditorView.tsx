@@ -28,6 +28,57 @@ import { CitationPickerModal } from "./editor/CitationPickerModal";
 import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
+
+const SECTION_KEY_ALIASES: Record<string, string[]> = {
+  abstract: ["resumen", "abstract_ingles", "abstract_en", "summary"],
+  acknowledgements: ["agradecimientos", "acknowledgments"],
+  anexos: ["appendices", "apendices", "appendix"],
+  apendices: ["appendices", "anexos", "appendix"],
+  appendices: ["apendices", "anexos", "appendix"],
+  conclusiones: ["conclusion", "conclusions"],
+  conclusion: ["conclusiones", "conclusions"],
+  conclusions: ["conclusiones", "conclusion"],
+  discusion: ["discussion"],
+  discussion: ["discusion"],
+  indice: ["table_of_contents", "toc", "contents"],
+  introduccion: ["introduction", "intro"],
+  introduction: ["introduccion", "intro"],
+  material_y_metodos: ["materiales_metodos", "materials_and_methods", "methodology", "methods"],
+  materiales_metodos: ["material_y_metodos", "materials_and_methods", "methodology", "methods"],
+  materials_and_methods: ["materiales_metodos", "material_y_metodos", "methodology", "methods"],
+  methodology: ["metodologia", "materials_and_methods", "materiales_metodos", "methods"],
+  portada: ["title_page", "cover"],
+  referencias: ["references", "bibliography"],
+  references: ["referencias", "bibliography"],
+  resultados: ["results"],
+  results: ["resultados"],
+  resumen: ["abstract", "summary"],
+  table_of_contents: ["indice", "toc", "contents"],
+  title_page: ["portada", "cover"],
+};
+
+function normalizeSectionKey(value?: string): string | null {
+  if (!value) return null;
+  const normalized = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized || null;
+}
+
+function sectionKeyCandidates(values: Array<string | undefined>): Set<string> {
+  const candidates = new Set<string>();
+  const add = (value?: string) => {
+    const key = normalizeSectionKey(value);
+    if (!key || candidates.has(key)) return;
+    candidates.add(key);
+    for (const alias of SECTION_KEY_ALIASES[key] ?? []) add(alias);
+  };
+  values.forEach(add);
+  return candidates;
+}
 import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
 import type { VisualKind } from "../types";
 // ── Utilidades ────────────────────────────────────────────────────
@@ -240,16 +291,17 @@ export default function EditorView() {
   useEffect(() => {
     const pid = activeProject?.profile_id;
     if (!pid) return;
+    const profileLanguage = i18n.resolvedLanguage || i18n.language;
     let cancelled = false;
     (async () => {
-      await ensureProfileLocale(i18n.language);
+      await ensureProfileLocale(profileLanguage);
       const p = await api.getProfileDetail(pid);
       if (cancelled) return;
-      setProfileSections(localizeProfile(p, i18n.language).sections ?? []);
+      setProfileSections(localizeProfile(p, profileLanguage).sections ?? []);
       setProfileMaxWords(p.max_words);
     })().catch(() => {});
     return () => { cancelled = true; };
-  }, [activeProject?.profile_id, i18n.language]);
+  }, [activeProject?.profile_id, i18n.language, i18n.resolvedLanguage]);
 
   // Sincronizar localBlocks cuando cambia la sección activa
   useEffect(() => {
@@ -585,13 +637,22 @@ export default function EditorView() {
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
 
-  // Returns the localized section title (from profileSections) falling back to the raw title or element_id
-  const localizedSectionTitle = useCallback(
+  const localizedProfileSection = useCallback(
     (s: { id: string; element_id: string; title?: string }) => {
-      const loc = profileSections.find((ps) => ps.element_id === s.element_id);
-      return loc?.title ?? s.title ?? s.element_id;
+      const sectionKeys = sectionKeyCandidates([s.id, s.element_id, s.title]);
+      return profileSections.find((ps) => {
+        const profileKeys = sectionKeyCandidates([ps.id, ps.element_id, ps.title]);
+        return [...sectionKeys].some((key) => profileKeys.has(key));
+      });
     },
     [profileSections],
+  );
+
+  // Returns the localized section title from the active profile i18n.
+  const localizedSectionTitle = useCallback(
+    (s: { id: string; element_id: string; title?: string }) =>
+      localizedProfileSection(s)?.title ?? s.title ?? s.element_id,
+    [localizedProfileSection],
   );
 
   const bodyWordCount = activeProject.sections
@@ -863,7 +924,7 @@ export default function EditorView() {
                 )}
 
                 <SectionGuidancePanel
-                  guidance={profileSections.find((ps) => ps.element_id === activeSection.element_id)?.guidance}
+                  guidance={localizedProfileSection(activeSection)?.guidance}
                 />
 
                 <SectionStatusBar
@@ -933,7 +994,7 @@ export default function EditorView() {
           wordCount={bodyWordCount}
           blockCount={localBlocks.length}
           maxWords={profileMaxWords}
-          activeSection={activeSection}
+          activeSection={activeSection ? { ...activeSection, title: localizedSectionTitle(activeSection) } : undefined}
           userMode={userMode}
           onSave={saveMetadata}
           onCompile={() => navigate(`/project/${encodedPath}/compile`)}
