@@ -7,30 +7,14 @@ import { IconCode, IconDoc, IconHeading, IconImage, IconList, IconSigma, IconTab
 // ── Catálogo de elementos ──────────────────────────────────────────────────────
 
 export const BLOCK_CATALOG = [
-  { type: "paragraph", name: "Párrafo", icon: <IconText size={16} />,
-    description: "Bloque de texto libre. Soporte para énfasis, citas en línea y LaTeX inline.",
-    latex_output: "Texto escapado directamente en el documento.", tags: ["texto", "contenido"] },
-  { type: "heading", name: "Título / Encabezado", icon: <IconHeading size={16} />,
-    description: "Encabezado de sección: section (H1), subsection (H2) o subsubsection (H3).",
-    latex_output: "\\section{}, \\subsection{}, \\subsubsection{}", tags: ["estructura", "navegación"] },
-  { type: "figure", name: "Figura", icon: <IconImage size={16} />,
-    description: "Imagen con leyenda, fuente y etiqueta para referencia cruzada. Anchos: 50%, 75%, 100%.",
-    latex_output: "Entorno figure + \\includegraphics + \\caption + \\label", tags: ["imagen", "gráfico"] },
-  { type: "table", name: "Tabla", icon: <IconTable size={16} />,
-    description: "Tabla con encabezados, filas, leyenda y fuente. Estilos: simple, booktabs, wide, longtable.",
-    latex_output: "Entorno table + tabular/longtable + \\caption", tags: ["datos", "estadísticas"] },
-  { type: "equation", name: "Ecuación", icon: <IconSigma size={16} />,
-    description: "Fórmula matemática numerada o no. Se escribe en LaTeX math puro.",
-    latex_output: "Entorno equation o equation* + \\label opcional", tags: ["matemáticas", "fórmula"] },
-  { type: "list", name: "Lista", icon: <IconList size={16} />,
-    description: "Lista con viñetas (itemize), numerada (enumerate) o descriptiva (description).",
-    latex_output: "\\begin{itemize/enumerate/description}", tags: ["lista", "enumeración"] },
-  { type: "citation", name: "Cita bibliográfica", icon: <IconDoc size={16} />,
-    description: "Cita parentética, narrativa o múltiple. Vinculada a la clave BibTeX del .bib.",
-    latex_output: "\\parencite{}, \\textcite{}, \\cite{}", tags: ["bibliografía", "referencia"] },
-  { type: "raw_latex", name: "LaTeX directo", icon: <IconCode size={16} />,
-    description: "Fragmento LaTeX arbitrario para casos avanzados. Requiere confirmación del usuario.",
-    latex_output: "Verbatim — sin escapar. Úsalo con cuidado.", tags: ["avanzado", "personalizado"] },
+  { type: "paragraph", icon: <IconText size={16} />, tags: ["text", "content"] },
+  { type: "heading", icon: <IconHeading size={16} />, tags: ["structure", "navigation"] },
+  { type: "figure", icon: <IconImage size={16} />, tags: ["image", "graphic"] },
+  { type: "table", icon: <IconTable size={16} />, tags: ["data", "statistics"] },
+  { type: "equation", icon: <IconSigma size={16} />, tags: ["mathematics", "formula"] },
+  { type: "list", icon: <IconList size={16} />, tags: ["list", "enumeration"] },
+  { type: "citation", icon: <IconDoc size={16} />, tags: ["bibliography", "reference"] },
+  { type: "raw_latex", icon: <IconCode size={16} />, tags: ["advanced", "custom"] },
 ];
 
 export const PLACEMENT_LABEL: Record<string, string> = {
@@ -209,11 +193,6 @@ export const COUNTRY_LABEL: Record<string, string> = {
   generic: "Genérico",
 };
 
-export const TYPE_LABEL: Record<string, string> = {
-  author_date: "Autor-Fecha", numeric: "Numérico",
-  notes_bibliography: "Notas-Bibliog.", author_page: "Autor-Página",
-};
-
 export const ACADEMIC_LEVEL_LABEL: Record<string, string> = {
   bachillerato: "Bachillerato",
   tecnico: "Técnico",
@@ -240,4 +219,3 @@ export const DISCIPLINE_LABEL: Record<string, string> = {
   computing: "Computación",
   natural_sciences: "Ciencias naturales",
 };
-

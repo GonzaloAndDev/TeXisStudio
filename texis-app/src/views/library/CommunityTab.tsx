@@ -10,55 +10,12 @@ import { AiHelpButton } from "../../components/AiHelpButton";
 
 // ── Helpers de localización ───────────────────────────────────────────────────
 
-const CONTINENT_LABEL: Record<string, string> = {
-  america: "América", europe: "Europa", asia: "Asia", generic: "Genérico",
-};
 const CONTINENT_ABBR: Record<string, string> = {
   america: "AM", europe: "EU", asia: "AS", generic: "GN",
 };
 const CONTINENT_COLOR: Record<string, string> = {
   america: "#4338CA", europe: "#0369A1", asia: "#B45309", generic: "#4F7A68",
 };
-const COUNTRY_LABEL: Record<string, string> = {
-  mexico: "México", usa: "Estados Unidos", canada: "Canadá",
-  brazil: "Brasil", argentina: "Argentina", chile: "Chile",
-  uk: "Reino Unido", germany: "Alemania", spain: "España",
-  netherlands: "Países Bajos", italy: "Italia", sweden: "Suecia",
-  france: "Francia",
-  china: "China", japan: "Japón", south_korea: "Corea del Sur",
-  singapore: "Singapur", india: "India",
-  generic: "Genérico",
-};
-
-
-const ACADEMIC_LEVEL_LABEL: Record<string, string> = {
-  bachillerato: "Bachillerato",
-  tecnico: "Técnico",
-  licenciatura: "Licenciatura",
-  especialidad: "Especialidad",
-  maestria: "Maestría",
-  doctorado: "Doctorado",
-  posdoctorado: "Posdoctorado",
-};
-
-const PROFILE_SCOPE_LABEL: Record<string, string> = {
-  institutional: "Institucional",
-  degree_specific: "Por grado",
-  program_specific: "Por programa",
-  discipline_specific: "Por área",
-};
-
-const DISCIPLINE_LABEL: Record<string, string> = {
-  all_disciplines: "Todas las disciplinas",
-  engineering: "Ingeniería",
-  social_sciences: "Ciencias sociales",
-  humanities: "Humanidades",
-  health_sciences: "Ciencias de la salud",
-  computing: "Computación",
-  natural_sciences: "Ciencias naturales",
-};
-
-
 // ── CommunityTab ──────────────────────────────────────────────────────────────
 
 // CatalogProfile and catalog URL are now in services/profileCatalog.ts
@@ -160,7 +117,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         console.warn(`[LibraryView] ${result.skippedCount} perfil(es) omitido(s) en el catálogo por validación.`);
       }
     } catch (e) {
-      setCatError(`No se pudo cargar el catálogo: ${e}. Verifica tu conexión.`);
+      setCatError(t("community.catalog_load_error", { error: String(e) }));
     } finally {
       setCatLoading(false);
     }
@@ -173,7 +130,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     try {
       const installed = await api.fetchRemoteProfile(cp.download_url, cp.sha256 ?? undefined);
       onInstalled(installed);
-      setOpSuccess(`✓ "${installed.name}" instalado correctamente.`);
+      setOpSuccess(t("community.install_success", { name: installed.name }));
     } catch (e) { setOpError(String(e)); }
     finally { setDownloading(null); }
   }
@@ -185,7 +142,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     try {
       const installed = await api.fetchRemoteProfile(url);
       onInstalled(installed);
-      setOpSuccess(`✓ "${installed.name}" instalado correctamente.`);
+      setOpSuccess(t("community.install_success", { name: installed.name }));
       setCustomUrl("");
     } catch (e) { setOpError(String(e)); }
     finally { setFetchingCustom(false); }
@@ -262,6 +219,11 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     : [];
 
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  const academicLevelLabel = (level: string) => t(`community.academic_level.${level}`, { defaultValue: level });
+  const disciplineLabel = (value: string) => t(`community.discipline.${value}`, { defaultValue: value });
+  const profileScopeLabel = (value: string) => t(`community.profile_scope.${value}`, { defaultValue: value });
+  const continentLabel = (value: string) => t(`community.continent.${value}`, { defaultValue: value });
+  const countryLabel = (value: string) => t(`community.country.${value}`, { defaultValue: value });
 
   // Profile card for community
   const renderProfileCard = (cp: CatalogProfile) => {
@@ -274,9 +236,9 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         isInstalled={isInstalled}
         isDownloading={isDownloading}
         onInstall={() => handleInstall(cp)}
-        academicLevelLabel={(level) => ACADEMIC_LEVEL_LABEL[level] ?? level}
-        disciplineLabel={(value) => DISCIPLINE_LABEL[value] ?? value}
-        profileScopeLabel={(value) => PROFILE_SCOPE_LABEL[value] ?? value}
+        academicLevelLabel={academicLevelLabel}
+        disciplineLabel={disciplineLabel}
+        profileScopeLabel={profileScopeLabel}
       />
     );
   };
@@ -307,11 +269,10 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
               border: "1px solid var(--accent-soft)",
             }}>
               <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 6 }}>
-                No necesitas saber el nombre exacto del perfil
+                {t("community.guided_hint_title")}
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                Empieza por tu institución o por una combinación parecida de grado, área y estilo de citas.
-                Si no existe una coincidencia exacta, conviene arrancar con una base institucional simple y ajustar después.
+                {t("community.guided_hint_body")}
               </div>
             </div>
             <div style={{
@@ -405,19 +366,19 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
           <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
             <option value="all">{t("community.all_degrees")}</option>
             {availableLevels.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_degree") : (ACADEMIC_LEVEL_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_degree") : academicLevelLabel(value)}</option>
             ))}
           </select>
           <select value={disciplineFilter} onChange={(e) => { setDisciplineFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
             <option value="all">{t("community.all_areas")}</option>
             {availableDisciplines.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_area") : (DISCIPLINE_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_area") : disciplineLabel(value)}</option>
             ))}
           </select>
           <select value={scopeFilter} onChange={(e) => { setScopeFilter(e.target.value); setNavContinent(null); setNavCountry(null); }} style={{ padding: "7px 10px", borderRadius: "var(--r-md)", border: "1px solid var(--border-firm)", background: "var(--bg-panel)", color: "var(--fg-strong)" }}>
             <option value="all">{t("community.all_scopes")}</option>
             {availableScopes.map((value) => (
-              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_scope") : (PROFILE_SCOPE_LABEL[value] ?? value)}</option>
+              <option key={value} value={value}>{value === "unspecified" ? t("community.unspecified_scope") : profileScopeLabel(value)}</option>
             ))}
           </select>
         </div>
@@ -442,17 +403,17 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
             {/* Breadcrumb */}
             {(navContinent || navCountry) && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 18, fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
-                <span style={{ cursor: "pointer", color: "var(--accent)" }} onClick={() => { setNavContinent(null); setNavCountry(null); }}>Todos</span>
+                <span style={{ cursor: "pointer", color: "var(--accent)" }} onClick={() => { setNavContinent(null); setNavCountry(null); }}>{t("community.breadcrumb_all")}</span>
                 {navContinent && (
                   <>
                     <span>›</span>
-                    <span style={{ cursor: navCountry ? "pointer" : "default", color: navCountry ? "var(--accent)" : "var(--fg-strong)", fontWeight: navCountry ? 400 : 500 }} onClick={() => { if (navCountry) setNavCountry(null); }}>{CONTINENT_LABEL[navContinent] ?? navContinent}</span>
+                    <span style={{ cursor: navCountry ? "pointer" : "default", color: navCountry ? "var(--accent)" : "var(--fg-strong)", fontWeight: navCountry ? 400 : 500 }} onClick={() => { if (navCountry) setNavCountry(null); }}>{continentLabel(navContinent)}</span>
                   </>
                 )}
                 {navCountry && (
                   <>
                     <span>›</span>
-                    <span style={{ color: "var(--fg-strong)", fontWeight: 500 }}>{COUNTRY_LABEL[navCountry] ?? navCountry}</span>
+                    <span style={{ color: "var(--fg-strong)", fontWeight: 500 }}>{countryLabel(navCountry)}</span>
                   </>
                 )}
               </div>
@@ -473,9 +434,9 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                       <div style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: `${color}18`, color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
                         <IconMap size={16} />
                       </div>
-                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>{CONTINENT_LABEL[continent] ?? continent}</div>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>{continentLabel(continent)}</div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfiles</span>
+                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("community.profile_count", { count })}</span>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color, fontWeight: 700, background: `${color}14`, padding: "1px 5px", borderRadius: "var(--r-xs)" }}>{CONTINENT_ABBR[continent] ?? continent.slice(0,2).toUpperCase()}</span>
                       </div>
                     </div>
@@ -500,8 +461,8 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                         <IconBuilding size={13} />
                       </div>
                       <div>
-                        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{COUNTRY_LABEL[country] ?? country}</div>
-                        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{count} perfiles</div>
+                        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{countryLabel(country)}</div>
+                        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("community.profile_count", { count })}</div>
                       </div>
                     </div>
                   );

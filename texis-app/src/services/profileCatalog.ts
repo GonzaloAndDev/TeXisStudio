@@ -15,6 +15,9 @@
 import type { AcademicLevel, ProfileStatus } from "../types";
 
 export const PROFILE_CATALOG_URL =
+  "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio-Profiles/main/catalog.json";
+
+export const PROFILE_CATALOG_FALLBACK_URL =
   "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download/catalog.json";
 
 /** Hosts from which profile catalog and profile ZIPs may be served. */
@@ -254,6 +257,24 @@ function validateEntry(raw: unknown, warnings: string[]): CatalogProfile | null 
 export async function fetchProfileCatalog(
   url: string = PROFILE_CATALOG_URL,
 ): Promise<ProfileCatalog> {
+  const urls = url === PROFILE_CATALOG_URL
+    ? [PROFILE_CATALOG_URL, PROFILE_CATALOG_FALLBACK_URL]
+    : [url];
+  let lastError: unknown = null;
+
+  for (const candidate of urls) {
+    try {
+      return await fetchProfileCatalogFromUrl(candidate);
+    } catch (e) {
+      lastError = e;
+      console.warn(`[profileCatalog] Could not load catalog from ${candidate}:`, e);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+async function fetchProfileCatalogFromUrl(url: string): Promise<ProfileCatalog> {
   validateCatalogUrl(url);
 
   const res = await fetch(url);

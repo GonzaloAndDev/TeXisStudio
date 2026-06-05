@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
-import { IconFolder, IconGlobe, IconGrid, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
+import { IconCode, IconFolder, IconGlobe, IconGrid, IconLayers, IconPlus, IconSearch, IconTrash, IconUpload } from "../components/Icons";
 import { api } from "../lib/tauri";
 import { ensureProfileLocale, localizeProfile, localizeProfiles } from "../services/profile-i18n";
 import { useSettingsStore } from "../stores/settings";
@@ -14,8 +14,9 @@ import { ProfileEditorPanel } from "./library/ProfileEditorPanel";
 import { ElementsTab } from "./library/ElementsTab";
 import { StylesTab } from "./library/StylesTab";
 import { CommunityTab } from "./library/CommunityTab";
+import { PluginsTab } from "./library/PluginsTab";
 
-type LibTab = "profiles" | "community" | "styles" | "elements";
+type LibTab = "profiles" | "community" | "styles" | "elements" | "plugins";
 
 const COUNTRY_KEYS: Record<string, string> = {
   mx: "library.country_mx", us: "library.country_us", uk: "library.country_uk", ca: "library.country_ca",
@@ -157,6 +158,7 @@ export default function LibraryView() {
     { id: "community", label: t("library.tab_community"), icon: <IconGlobe size={13} /> },
     { id: "styles",    label: t("library.tab_styles"),   icon: <IconLayers size={13} /> },
     { id: "elements",  label: t("library.tab_elements"), icon: <IconGrid size={13} /> },
+    { id: "plugins",   label: t("library.tab_plugins"),  icon: <IconCode size={13} /> },
   ];
 
   return (
@@ -308,6 +310,8 @@ export default function LibraryView() {
         {tab === "styles" && <StylesTab />}
 
         {tab === "elements" && <ElementsTab />}
+
+        {tab === "plugins" && <PluginsTab />}
       </div>
 
       <TxStatusbar items={[

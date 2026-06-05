@@ -773,7 +773,8 @@
     "bib_style_chicago_authordate": "芝加哥 17（作者-年）",
     "selected_chip": "已选择",
     "installed_chip": "已安装",
-    "sections_count_suffix": "章节"
+    "sections_count_suffix": "章节",
+    "tab_plugins": "插件"
   },
   "progress": {
     "status_draft": "草稿",
@@ -1178,7 +1179,192 @@
     "select_style_detail": "选择样式以查看详细信息",
     "order_hint_line_1": "使用▲▼更改顺序。",
     "order_hint_line_2": "顺序决定创建项目时的下拉列表。",
-    "add_custom_style": "添加自定义样式"
+    "add_custom_style": "添加自定义样式",
+    "id_required": "ID *",
+    "biblatex_style_required": "Biblatex 样式 *",
+    "references_default_title": "References",
+    "biblatex_label": "biblatex",
+    "citation_label": "引用",
+    "types": {
+      "author_date": "作者-年份",
+      "numeric": "数字式",
+      "notes_bibliography": "注释-书目",
+      "author_page": "作者-页码"
+    },
+    "builtins": {
+      "apa7": {
+        "name": "APA 7",
+        "full_name": "American Psychological Association 第7版",
+        "disciplines": [
+          "Psychology",
+          "Education",
+          "Social sciences",
+          "Nursing",
+          "Communication"
+        ],
+        "description": "The most widely used style globally. Required in many psychology, education, and social science programs. Seventh edition (2020).",
+        "regions_primary": [
+          "United States",
+          "Canada",
+          "Latin America",
+          "Australia"
+        ],
+        "in_text_format": "（作者，年份）",
+        "bibliography_title": "参考文献"
+      },
+      "vancouver": {
+        "name": "Vancouver",
+        "full_name": "Vancouver / ICMJE Recommendations",
+        "disciplines": [
+          "医学",
+          "护理",
+          "药学",
+          "牙医学",
+          "健康科学"
+        ],
+        "description": "Required numeric style for health sciences. References are ordered by appearance. Standard in MEDLINE/PubMed journals.",
+        "regions_primary": [
+          "Global, medical and health sciences"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      },
+      "ieee": {
+        "name": "IEEE",
+        "full_name": "IEEE Citation Style",
+        "disciplines": [
+          "电气工程",
+          "计算机",
+          "电信",
+          "机器人",
+          "电子"
+        ],
+        "description": "Standard numeric style for engineering, computing, and technology. Widely adopted in engineering schools.",
+        "regions_primary": [
+          "Global, engineering and technology"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      },
+      "chicago17_notes": {
+        "name": "Chicago 17（注释）",
+        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "disciplines": [
+          "History",
+          "Literature",
+          "Arts",
+          "Philosophy",
+          "Religious studies"
+        ],
+        "description": "Notes and bibliography system for the humanities. Citations appear in footnotes.",
+        "regions_primary": [
+          "United States",
+          "United Kingdom",
+          "Canada, humanities"
+        ],
+        "in_text_format": "脚注¹",
+        "bibliography_title": "参考书目"
+      },
+      "chicago17_authordate": {
+        "name": "Chicago 17（作者-年份）",
+        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "disciplines": [
+          "Economics",
+          "Political science",
+          "Sociology",
+          "Anthropology",
+          "Geography"
+        ],
+        "description": "Chicago author-date variant, preferred in social sciences and economics.",
+        "regions_primary": [
+          "United States",
+          "Canada, social sciences"
+        ],
+        "in_text_format": "（作者 年份）",
+        "bibliography_title": "参考文献"
+      },
+      "mla9": {
+        "name": "MLA 9",
+        "full_name": "MLA Handbook 第9版",
+        "disciplines": [
+          "Literature",
+          "Language",
+          "Linguistics",
+          "Cultural studies",
+          "Rhetoric"
+        ],
+        "description": "Standard for language, literature, and cultural studies in North America. Ninth edition (2021).",
+        "regions_primary": [
+          "United States",
+          "Canada, language and literature"
+        ],
+        "in_text_format": "（作者 页码）",
+        "bibliography_title": "引用作品"
+      },
+      "harvard": {
+        "name": "Harvard",
+        "full_name": "Harvard Referencing Style",
+        "disciplines": [
+          "商业",
+          "管理",
+          "经济学",
+          "社会科学"
+        ],
+        "description": "Author-date style similar to APA. Widely used in UK and Australian universities.",
+        "regions_primary": [
+          "United Kingdom",
+          "Australia",
+          "Ireland",
+          "South Africa"
+        ],
+        "in_text_format": "（作者 年份）",
+        "bibliography_title": "参考文献"
+      },
+      "mhra": {
+        "name": "MHRA",
+        "full_name": "Modern Humanities Research Association Style Guide 第3版",
+        "disciplines": [
+          "Humanities",
+          "History",
+          "Literature",
+          "Philosophy",
+          "Linguistics"
+        ],
+        "description": "UK humanities standard similar to Chicago Notes.",
+        "regions_primary": [
+          "United Kingdom",
+          "Ireland, humanities"
+        ],
+        "in_text_format": "脚注¹",
+        "bibliography_title": "参考书目"
+      },
+      "abnt": {
+        "name": "ABNT",
+        "full_name": "ABNT NBR 6023:2018",
+        "disciplines": [
+          "All disciplines (Brazil)"
+        ],
+        "description": "National standard for academic work in Brazilian universities.",
+        "regions_primary": [
+          "Brazil, required"
+        ],
+        "in_text_format": "（作者，年份）",
+        "bibliography_title": "参考文献"
+      },
+      "gb7714": {
+        "name": "GB/T 7714",
+        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "disciplines": [
+          "All disciplines (China)"
+        ],
+        "description": "National standard for theses in Chinese. Required in Chinese universities.",
+        "regions_primary": [
+          "China, required"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      }
+    }
   },
   "block_editor": {
     "insert_cross_reference": "⌗ 插入交叉引用 ({{count}})",
@@ -1557,7 +1743,65 @@
     "browser_warning": "真实下载仅在桌面应用中可用。浏览器中为模拟。",
     "install_from_url_title": "从 URL 安装",
     "install_from_url_hint": "粘贴包含有效profile.yaml的.zip的URL。",
-    "install_btn": "安装"
+    "install_btn": "安装",
+    "guided_hint_title": "你不需要知道准确的配置名称",
+    "guided_hint_body": "先从你的机构，或学位、领域和引用样式的相近组合开始。如果没有完全匹配，可以先使用简单的机构基础配置，再逐步调整。",
+    "catalog_load_error": "无法加载目录：{{error}}。请检查连接。",
+    "install_success": "“{{name}}”已成功安装。",
+    "breadcrumb_all": "全部",
+    "profile_count_one": "{{count}} 个配置",
+    "profile_count_other": "{{count}} 个配置",
+    "continent": {
+      "america": "美洲",
+      "europe": "欧洲",
+      "asia": "亚洲",
+      "generic": "通用"
+    },
+    "country": {
+      "mexico": "墨西哥",
+      "usa": "美国",
+      "canada": "加拿大",
+      "brazil": "巴西",
+      "argentina": "阿根廷",
+      "chile": "智利",
+      "uk": "英国",
+      "germany": "德国",
+      "spain": "西班牙",
+      "netherlands": "荷兰",
+      "italy": "意大利",
+      "sweden": "瑞典",
+      "france": "法国",
+      "china": "中国",
+      "japan": "日本",
+      "south_korea": "韩国",
+      "singapore": "新加坡",
+      "india": "印度",
+      "generic": "通用"
+    },
+    "academic_level": {
+      "bachillerato": "高中",
+      "tecnico": "技术学位",
+      "licenciatura": "本科",
+      "especialidad": "专科/专业化",
+      "maestria": "硕士",
+      "doctorado": "博士",
+      "posdoctorado": "博士后"
+    },
+    "profile_scope": {
+      "institutional": "机构",
+      "degree_specific": "按学位",
+      "program_specific": "按项目",
+      "discipline_specific": "按领域"
+    },
+    "discipline": {
+      "all_disciplines": "所有学科",
+      "engineering": "工程",
+      "social_sciences": "社会科学",
+      "humanities": "人文学科",
+      "health_sciences": "健康科学",
+      "computing": "计算机",
+      "natural_sciences": "自然科学"
+    }
   },
   "about": {
     "title": "关于",
@@ -1927,8 +2171,68 @@
   "elements_tab": {
     "title": "元素",
     "subtitle": "编辑器中可用的内容块。点击查看详情。",
-    "latex_output_label": "LaTeX输出",
-    "internal_type_label": "内部类型"
+    "latex_output_label": "LaTeX 输出",
+    "internal_type_label": "内部类型",
+    "blocks": {
+      "paragraph": {
+        "name": "段落",
+        "description": "自由文本块。支持强调、行内引用和行内 LaTeX。",
+        "latex_output": "转义后的文本直接写入文档。"
+      },
+      "heading": {
+        "name": "标题 / 标题栏",
+        "description": "章节标题：section (H1)、subsection (H2) 或 subsubsection (H3)。",
+        "latex_output": "\\section{}, \\subsection{}, \\subsubsection{}"
+      },
+      "figure": {
+        "name": "图",
+        "description": "带标题、来源和交叉引用标签的图片。宽度：50%、75%、100%。",
+        "latex_output": "figure 环境 + \\includegraphics + \\caption + \\label"
+      },
+      "table": {
+        "name": "表格",
+        "description": "包含表头、行、标题和来源的表格。样式：simple、booktabs、wide、longtable。",
+        "latex_output": "table 环境 + tabular/longtable + \\caption"
+      },
+      "equation": {
+        "name": "公式",
+        "description": "带编号或不带编号的数学公式。使用纯 LaTeX 数学语法编写。",
+        "latex_output": "equation 或 equation* 环境 + 可选 \\label"
+      },
+      "list": {
+        "name": "列表",
+        "description": "项目符号列表 (itemize)、编号列表 (enumerate) 或描述列表 (description)。",
+        "latex_output": "\\begin{itemize/enumerate/description}"
+      },
+      "citation": {
+        "name": "文献引用",
+        "description": "与 .bib 文件中的 BibTeX 键关联的括号式、叙述式或多重引用。",
+        "latex_output": "\\parencite{}, \\textcite{}, \\cite{}"
+      },
+      "raw_latex": {
+        "name": "原始 LaTeX",
+        "description": "高级场景使用的任意 LaTeX 片段。需要用户确认。",
+        "latex_output": "Verbatim，不转义。请谨慎使用。"
+      }
+    },
+    "tags": {
+      "text": "文本",
+      "content": "内容",
+      "structure": "结构",
+      "navigation": "导航",
+      "image": "图片",
+      "graphic": "图形",
+      "data": "数据",
+      "statistics": "统计",
+      "mathematics": "数学",
+      "formula": "公式",
+      "list": "列表",
+      "enumeration": "枚举",
+      "bibliography": "参考文献",
+      "reference": "引用",
+      "advanced": "高级",
+      "custom": "自定义"
+    }
   },
   "readiness": {
     "panel_title": "项目进度",
@@ -1960,5 +2264,17 @@
     "quality_raw_latex": "最终提交前迁移或手动审查导入的LaTeX块",
     "quality_plugin_warnings": "最终提交前解决图形或插件警告",
     "quality_profile": "正式提交时使用机构或自定义模板"
+  },
+  "plugins_tab": {
+    "title": "插件",
+    "subtitle": "可用于插入图形和示意图的 {{count}} 个可视化插件。",
+    "search_placeholder": "按名称、包或类别搜索…",
+    "no_results": "没有匹配的插件。",
+    "quality": {
+      "stable": "稳定",
+      "beta": "测试版",
+      "experimental": "实验性",
+      "draft": "草稿"
+    }
   }
 }

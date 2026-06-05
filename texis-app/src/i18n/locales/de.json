@@ -773,7 +773,8 @@
     "bib_style_chicago_authordate": "Chicago 17 (Autor-Jahr)",
     "selected_chip": "ausgewählt",
     "installed_chip": "installiert",
-    "sections_count_suffix": "Abschnitte"
+    "sections_count_suffix": "Abschnitte",
+    "tab_plugins": "Plugins"
   },
   "progress": {
     "status_draft": "Entwurf",
@@ -1178,7 +1179,192 @@
     "select_style_detail": "Wählen Sie einen Stil aus, um Details anzuzeigen",
     "order_hint_line_1": "Verwenden Sie ▲▼, um die Reihenfolge zu ändern.",
     "order_hint_line_2": "Die Reihenfolge bestimmt das Dropdown beim Erstellen eines Projekts.",
-    "add_custom_style": "Benutzerdefinierten Stil hinzufügen"
+    "add_custom_style": "Benutzerdefinierten Stil hinzufügen",
+    "id_required": "ID *",
+    "biblatex_style_required": "Biblatex-Stil *",
+    "references_default_title": "References",
+    "biblatex_label": "biblatex",
+    "citation_label": "Zitat",
+    "types": {
+      "author_date": "Autor-Jahr",
+      "numeric": "Numerisch",
+      "notes_bibliography": "Fußnoten-Biblio.",
+      "author_page": "Autor-Seite"
+    },
+    "builtins": {
+      "apa7": {
+        "name": "APA 7",
+        "full_name": "American Psychological Association, 7. Ausgabe",
+        "disciplines": [
+          "Psychology",
+          "Education",
+          "Social sciences",
+          "Nursing",
+          "Communication"
+        ],
+        "description": "The most widely used style globally. Required in many psychology, education, and social science programs. Seventh edition (2020).",
+        "regions_primary": [
+          "United States",
+          "Canada",
+          "Latin America",
+          "Australia"
+        ],
+        "in_text_format": "(Autor, Jahr)",
+        "bibliography_title": "Literatur"
+      },
+      "vancouver": {
+        "name": "Vancouver",
+        "full_name": "Vancouver / ICMJE Recommendations",
+        "disciplines": [
+          "Medizin",
+          "Pflege",
+          "Pharmazie",
+          "Zahnmedizin",
+          "Gesundheitswissenschaften"
+        ],
+        "description": "Required numeric style for health sciences. References are ordered by appearance. Standard in MEDLINE/PubMed journals.",
+        "regions_primary": [
+          "Global, medical and health sciences"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "Literatur"
+      },
+      "ieee": {
+        "name": "IEEE",
+        "full_name": "IEEE Citation Style",
+        "disciplines": [
+          "Elektrotechnik",
+          "Informatik",
+          "Telekommunikation",
+          "Robotik",
+          "Elektronik"
+        ],
+        "description": "Standard numeric style for engineering, computing, and technology. Widely adopted in engineering schools.",
+        "regions_primary": [
+          "Global, engineering and technology"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "Literatur"
+      },
+      "chicago17_notes": {
+        "name": "Chicago 17 (Fußnoten)",
+        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "disciplines": [
+          "History",
+          "Literature",
+          "Arts",
+          "Philosophy",
+          "Religious studies"
+        ],
+        "description": "Notes and bibliography system for the humanities. Citations appear in footnotes.",
+        "regions_primary": [
+          "United States",
+          "United Kingdom",
+          "Canada, humanities"
+        ],
+        "in_text_format": "Fußnote¹",
+        "bibliography_title": "Bibliografie"
+      },
+      "chicago17_authordate": {
+        "name": "Chicago 17 (Autor-Jahr)",
+        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "disciplines": [
+          "Economics",
+          "Political science",
+          "Sociology",
+          "Anthropology",
+          "Geography"
+        ],
+        "description": "Chicago author-date variant, preferred in social sciences and economics.",
+        "regions_primary": [
+          "United States",
+          "Canada, social sciences"
+        ],
+        "in_text_format": "(Autor Jahr)",
+        "bibliography_title": "Literatur"
+      },
+      "mla9": {
+        "name": "MLA 9",
+        "full_name": "MLA Handbook, 9. Ausgabe",
+        "disciplines": [
+          "Literature",
+          "Language",
+          "Linguistics",
+          "Cultural studies",
+          "Rhetoric"
+        ],
+        "description": "Standard for language, literature, and cultural studies in North America. Ninth edition (2021).",
+        "regions_primary": [
+          "United States",
+          "Canada, language and literature"
+        ],
+        "in_text_format": "(Autor Seite)",
+        "bibliography_title": "Zitierte Werke"
+      },
+      "harvard": {
+        "name": "Harvard",
+        "full_name": "Harvard Referencing Style",
+        "disciplines": [
+          "Wirtschaft",
+          "Management",
+          "Ökonomie",
+          "Sozialwissenschaften"
+        ],
+        "description": "Author-date style similar to APA. Widely used in UK and Australian universities.",
+        "regions_primary": [
+          "United Kingdom",
+          "Australia",
+          "Ireland",
+          "South Africa"
+        ],
+        "in_text_format": "(Autor Jahr)",
+        "bibliography_title": "Literatur"
+      },
+      "mhra": {
+        "name": "MHRA",
+        "full_name": "Modern Humanities Research Association Style Guide, 3. Ausgabe",
+        "disciplines": [
+          "Humanities",
+          "History",
+          "Literature",
+          "Philosophy",
+          "Linguistics"
+        ],
+        "description": "UK humanities standard similar to Chicago Notes.",
+        "regions_primary": [
+          "United Kingdom",
+          "Ireland, humanities"
+        ],
+        "in_text_format": "Fußnote¹",
+        "bibliography_title": "Bibliografie"
+      },
+      "abnt": {
+        "name": "ABNT",
+        "full_name": "ABNT NBR 6023:2018",
+        "disciplines": [
+          "All disciplines (Brazil)"
+        ],
+        "description": "National standard for academic work in Brazilian universities.",
+        "regions_primary": [
+          "Brazil, required"
+        ],
+        "in_text_format": "(AUTOR, Jahr)",
+        "bibliography_title": "Literatur"
+      },
+      "gb7714": {
+        "name": "GB/T 7714",
+        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "disciplines": [
+          "All disciplines (China)"
+        ],
+        "description": "National standard for theses in Chinese. Required in Chinese universities.",
+        "regions_primary": [
+          "China, required"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "Literatur"
+      }
+    }
   },
   "block_editor": {
     "insert_cross_reference": "⌗ Querverweis einfügen ({{count}})",
@@ -1557,7 +1743,65 @@
     "browser_warning": "Echte Downloads funktionieren nur in der Desktop-App. Im Browser simuliert.",
     "install_from_url_title": "Aus URL installieren",
     "install_from_url_hint": "Fügen Sie die URL eines .zip mit einer gültigen profile.yaml ein.",
-    "install_btn": "Installieren"
+    "install_btn": "Installieren",
+    "guided_hint_title": "Sie müssen den genauen Profilnamen nicht kennen",
+    "guided_hint_body": "Beginnen Sie mit Ihrer Institution oder einer ähnlichen Kombination aus Abschluss, Fachgebiet und Zitierstil. Wenn es keine exakte Übereinstimmung gibt, starten Sie mit einer einfachen institutionellen Basis und passen sie danach an.",
+    "catalog_load_error": "Katalog konnte nicht geladen werden: {{error}}. Prüfen Sie Ihre Verbindung.",
+    "install_success": "„{{name}}“ wurde erfolgreich installiert.",
+    "breadcrumb_all": "Alle",
+    "profile_count_one": "{{count}} Profil",
+    "profile_count_other": "{{count}} Profile",
+    "continent": {
+      "america": "Amerika",
+      "europe": "Europa",
+      "asia": "Asien",
+      "generic": "Generisch"
+    },
+    "country": {
+      "mexico": "Mexiko",
+      "usa": "Vereinigte Staaten",
+      "canada": "Kanada",
+      "brazil": "Brasilien",
+      "argentina": "Argentinien",
+      "chile": "Chile",
+      "uk": "Vereinigtes Königreich",
+      "germany": "Deutschland",
+      "spain": "Spanien",
+      "netherlands": "Niederlande",
+      "italy": "Italien",
+      "sweden": "Schweden",
+      "france": "Frankreich",
+      "china": "China",
+      "japan": "Japan",
+      "south_korea": "Südkorea",
+      "singapore": "Singapur",
+      "india": "Indien",
+      "generic": "Generisch"
+    },
+    "academic_level": {
+      "bachillerato": "Gymnasium",
+      "tecnico": "Technischer Abschluss",
+      "licenciatura": "Bachelor",
+      "especialidad": "Spezialisierung",
+      "maestria": "Master",
+      "doctorado": "Promotion",
+      "posdoctorado": "Postdoc"
+    },
+    "profile_scope": {
+      "institutional": "Institutionell",
+      "degree_specific": "Nach Abschluss",
+      "program_specific": "Nach Studienprogramm",
+      "discipline_specific": "Nach Fachgebiet"
+    },
+    "discipline": {
+      "all_disciplines": "Alle Disziplinen",
+      "engineering": "Ingenieurwesen",
+      "social_sciences": "Sozialwissenschaften",
+      "humanities": "Geisteswissenschaften",
+      "health_sciences": "Gesundheitswissenschaften",
+      "computing": "Informatik",
+      "natural_sciences": "Naturwissenschaften"
+    }
   },
   "about": {
     "title": "Über TeXisStudio",
@@ -1926,9 +2170,69 @@
   },
   "elements_tab": {
     "title": "Elemente",
-    "subtitle": "Im Editor verfügbare Inhaltsblöcke. Klicken, um Details anzuzeigen.",
+    "subtitle": "Im Editor verfügbare Inhaltsblöcke. Klicken Sie für Details.",
     "latex_output_label": "LaTeX-Ausgabe",
-    "internal_type_label": "Interner Typ"
+    "internal_type_label": "Interner Typ",
+    "blocks": {
+      "paragraph": {
+        "name": "Absatz",
+        "description": "Freier Textblock. Unterstützt Hervorhebung, Inline-Zitate und Inline-LaTeX.",
+        "latex_output": "Maskierter Text direkt im Dokument."
+      },
+      "heading": {
+        "name": "Titel / Überschrift",
+        "description": "Abschnittsüberschrift: section (H1), subsection (H2) oder subsubsection (H3).",
+        "latex_output": "\\section{}, \\subsection{}, \\subsubsection{}"
+      },
+      "figure": {
+        "name": "Abbildung",
+        "description": "Bild mit Beschriftung, Quelle und Label für Querverweise. Breiten: 50 %, 75 %, 100 %.",
+        "latex_output": "figure-Umgebung + \\includegraphics + \\caption + \\label"
+      },
+      "table": {
+        "name": "Tabelle",
+        "description": "Tabelle mit Kopfzeilen, Zeilen, Beschriftung und Quelle. Stile: simple, booktabs, wide, longtable.",
+        "latex_output": "table-Umgebung + tabular/longtable + \\caption"
+      },
+      "equation": {
+        "name": "Gleichung",
+        "description": "Nummerierte oder unnummerierte mathematische Formel. In reinem LaTeX-Math geschrieben.",
+        "latex_output": "equation- oder equation*-Umgebung + optionales \\label"
+      },
+      "list": {
+        "name": "Liste",
+        "description": "Aufzählung (itemize), nummerierte Liste (enumerate) oder Beschreibungsliste (description).",
+        "latex_output": "\\begin{itemize/enumerate/description}"
+      },
+      "citation": {
+        "name": "Literaturzitat",
+        "description": "Klammer-, narrative oder Mehrfachzitate mit einem BibTeX-Schlüssel aus der .bib-Datei.",
+        "latex_output": "\\parencite{}, \\textcite{}, \\cite{}"
+      },
+      "raw_latex": {
+        "name": "Direktes LaTeX",
+        "description": "Beliebiges LaTeX-Fragment für fortgeschrittene Fälle. Erfordert Bestätigung.",
+        "latex_output": "Verbatim, nicht maskiert. Mit Vorsicht verwenden."
+      }
+    },
+    "tags": {
+      "text": "Text",
+      "content": "Inhalt",
+      "structure": "Struktur",
+      "navigation": "Navigation",
+      "image": "Bild",
+      "graphic": "Grafik",
+      "data": "Daten",
+      "statistics": "Statistik",
+      "mathematics": "Mathematik",
+      "formula": "Formel",
+      "list": "Liste",
+      "enumeration": "Aufzählung",
+      "bibliography": "Bibliografie",
+      "reference": "Referenz",
+      "advanced": "fortgeschritten",
+      "custom": "benutzerdefiniert"
+    }
   },
   "readiness": {
     "panel_title": "Projektfortschritt",
@@ -1960,5 +2264,17 @@
     "quality_raw_latex": "Importierte LaTeX-Blöcke vor der Endabgabe migrieren oder manuell prüfen",
     "quality_plugin_warnings": "Abbildungs- oder Plugin-Warnungen vor der Endabgabe beheben",
     "quality_profile": "Ein institutionelles oder benutzerdefiniertes Profil für formale Abgaben verwenden"
+  },
+  "plugins_tab": {
+    "title": "Plugins",
+    "subtitle": "{{count}} visuelle Plugins zum Einfügen von Abbildungen und Diagrammen verfügbar.",
+    "search_placeholder": "Nach Name, Paket oder Kategorie suchen…",
+    "no_results": "Keine Plugins für diese Suche.",
+    "quality": {
+      "stable": "stabil",
+      "beta": "Beta",
+      "experimental": "experimentell",
+      "draft": "Entwurf"
+    }
   }
 }

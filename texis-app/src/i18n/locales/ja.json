@@ -773,7 +773,8 @@
     "profile_name_required": "プロファイル名は必須です。",
     "selected_chip": "選択済み",
     "installed_chip": "インストール済み",
-    "sections_count_suffix": "セクション"
+    "sections_count_suffix": "セクション",
+    "tab_plugins": "プラグイン"
   },
   "progress": {
     "status_draft": "下書き",
@@ -1178,7 +1179,192 @@
     "select_style_detail": "詳細を表示するにはスタイルを選択してください",
     "order_hint_line_1": "▲▼を使用して順序を変更します。",
     "order_hint_line_2": "順序によって、プロジェクト作成時のドロップダウンが決まります。",
-    "add_custom_style": "カスタム スタイルを追加"
+    "add_custom_style": "カスタム スタイルを追加",
+    "id_required": "ID *",
+    "biblatex_style_required": "Biblatex スタイル *",
+    "references_default_title": "References",
+    "biblatex_label": "biblatex",
+    "citation_label": "引用",
+    "types": {
+      "author_date": "著者-年",
+      "numeric": "番号式",
+      "notes_bibliography": "注-参考文献",
+      "author_page": "著者-ページ"
+    },
+    "builtins": {
+      "apa7": {
+        "name": "APA 7",
+        "full_name": "American Psychological Association 第7版",
+        "disciplines": [
+          "Psychology",
+          "Education",
+          "Social sciences",
+          "Nursing",
+          "Communication"
+        ],
+        "description": "The most widely used style globally. Required in many psychology, education, and social science programs. Seventh edition (2020).",
+        "regions_primary": [
+          "United States",
+          "Canada",
+          "Latin America",
+          "Australia"
+        ],
+        "in_text_format": "（著者, 年）",
+        "bibliography_title": "参考文献"
+      },
+      "vancouver": {
+        "name": "Vancouver",
+        "full_name": "Vancouver / ICMJE Recommendations",
+        "disciplines": [
+          "医学",
+          "看護",
+          "薬学",
+          "歯学",
+          "健康科学"
+        ],
+        "description": "Required numeric style for health sciences. References are ordered by appearance. Standard in MEDLINE/PubMed journals.",
+        "regions_primary": [
+          "Global, medical and health sciences"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      },
+      "ieee": {
+        "name": "IEEE",
+        "full_name": "IEEE Citation Style",
+        "disciplines": [
+          "電気工学",
+          "コンピューティング",
+          "通信",
+          "ロボット工学",
+          "電子工学"
+        ],
+        "description": "Standard numeric style for engineering, computing, and technology. Widely adopted in engineering schools.",
+        "regions_primary": [
+          "Global, engineering and technology"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      },
+      "chicago17_notes": {
+        "name": "Chicago 17（注）",
+        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "disciplines": [
+          "History",
+          "Literature",
+          "Arts",
+          "Philosophy",
+          "Religious studies"
+        ],
+        "description": "Notes and bibliography system for the humanities. Citations appear in footnotes.",
+        "regions_primary": [
+          "United States",
+          "United Kingdom",
+          "Canada, humanities"
+        ],
+        "in_text_format": "脚注¹",
+        "bibliography_title": "参考文献"
+      },
+      "chicago17_authordate": {
+        "name": "Chicago 17（著者-年）",
+        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "disciplines": [
+          "Economics",
+          "Political science",
+          "Sociology",
+          "Anthropology",
+          "Geography"
+        ],
+        "description": "Chicago author-date variant, preferred in social sciences and economics.",
+        "regions_primary": [
+          "United States",
+          "Canada, social sciences"
+        ],
+        "in_text_format": "（著者 年）",
+        "bibliography_title": "参考文献"
+      },
+      "mla9": {
+        "name": "MLA 9",
+        "full_name": "MLA Handbook 第9版",
+        "disciplines": [
+          "Literature",
+          "Language",
+          "Linguistics",
+          "Cultural studies",
+          "Rhetoric"
+        ],
+        "description": "Standard for language, literature, and cultural studies in North America. Ninth edition (2021).",
+        "regions_primary": [
+          "United States",
+          "Canada, language and literature"
+        ],
+        "in_text_format": "（著者 ページ）",
+        "bibliography_title": "引用文献"
+      },
+      "harvard": {
+        "name": "Harvard",
+        "full_name": "Harvard Referencing Style",
+        "disciplines": [
+          "ビジネス",
+          "経営",
+          "経済学",
+          "社会科学"
+        ],
+        "description": "Author-date style similar to APA. Widely used in UK and Australian universities.",
+        "regions_primary": [
+          "United Kingdom",
+          "Australia",
+          "Ireland",
+          "South Africa"
+        ],
+        "in_text_format": "（著者 年）",
+        "bibliography_title": "参考文献"
+      },
+      "mhra": {
+        "name": "MHRA",
+        "full_name": "Modern Humanities Research Association Style Guide 第3版",
+        "disciplines": [
+          "Humanities",
+          "History",
+          "Literature",
+          "Philosophy",
+          "Linguistics"
+        ],
+        "description": "UK humanities standard similar to Chicago Notes.",
+        "regions_primary": [
+          "United Kingdom",
+          "Ireland, humanities"
+        ],
+        "in_text_format": "脚注¹",
+        "bibliography_title": "参考文献"
+      },
+      "abnt": {
+        "name": "ABNT",
+        "full_name": "ABNT NBR 6023:2018",
+        "disciplines": [
+          "All disciplines (Brazil)"
+        ],
+        "description": "National standard for academic work in Brazilian universities.",
+        "regions_primary": [
+          "Brazil, required"
+        ],
+        "in_text_format": "（著者, 年）",
+        "bibliography_title": "参考文献"
+      },
+      "gb7714": {
+        "name": "GB/T 7714",
+        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "disciplines": [
+          "All disciplines (China)"
+        ],
+        "description": "National standard for theses in Chinese. Required in Chinese universities.",
+        "regions_primary": [
+          "China, required"
+        ],
+        "in_text_format": "[1]",
+        "bibliography_title": "参考文献"
+      }
+    }
   },
   "block_editor": {
     "insert_cross_reference": "⌗ 相互参照 ({{count}}) を挿入",
@@ -1557,7 +1743,65 @@
     "browser_warning": "実際のダウンロードはデスクトップアプリのみ機能します。ブラウザではシミュレーションです。",
     "install_from_url_title": "URLからインストール",
     "install_from_url_hint": "有効なprofile.yamlを含む.zipのURLを貼り付けてください。",
-    "install_btn": "インストール"
+    "install_btn": "インストール",
+    "guided_hint_title": "正確なプロフィール名を知っている必要はありません",
+    "guided_hint_body": "まず所属機関、または学位・分野・引用スタイルの近い組み合わせから始めてください。完全一致がない場合は、シンプルな機関ベースのプロフィールを出発点にして後で調整します。",
+    "catalog_load_error": "カタログを読み込めませんでした: {{error}}。接続を確認してください。",
+    "install_success": "「{{name}}」をインストールしました。",
+    "breadcrumb_all": "すべて",
+    "profile_count_one": "{{count}} 件のプロフィール",
+    "profile_count_other": "{{count}} 件のプロフィール",
+    "continent": {
+      "america": "アメリカ",
+      "europe": "ヨーロッパ",
+      "asia": "アジア",
+      "generic": "汎用"
+    },
+    "country": {
+      "mexico": "メキシコ",
+      "usa": "アメリカ合衆国",
+      "canada": "カナダ",
+      "brazil": "ブラジル",
+      "argentina": "アルゼンチン",
+      "chile": "チリ",
+      "uk": "英国",
+      "germany": "ドイツ",
+      "spain": "スペイン",
+      "netherlands": "オランダ",
+      "italy": "イタリア",
+      "sweden": "スウェーデン",
+      "france": "フランス",
+      "china": "中国",
+      "japan": "日本",
+      "south_korea": "韓国",
+      "singapore": "シンガポール",
+      "india": "インド",
+      "generic": "汎用"
+    },
+    "academic_level": {
+      "bachillerato": "高校",
+      "tecnico": "技術課程",
+      "licenciatura": "学士",
+      "especialidad": "専門課程",
+      "maestria": "修士",
+      "doctorado": "博士",
+      "posdoctorado": "ポスドク"
+    },
+    "profile_scope": {
+      "institutional": "機関別",
+      "degree_specific": "学位別",
+      "program_specific": "プログラム別",
+      "discipline_specific": "分野別"
+    },
+    "discipline": {
+      "all_disciplines": "すべての分野",
+      "engineering": "工学",
+      "social_sciences": "社会科学",
+      "humanities": "人文学",
+      "health_sciences": "健康科学",
+      "computing": "コンピューティング",
+      "natural_sciences": "自然科学"
+    }
   },
   "about": {
     "title": "このアプリについて",
@@ -1640,9 +1884,69 @@
   },
   "elements_tab": {
     "title": "要素",
-    "subtitle": "エディターで利用可能なコンテンツブロック。詳細はクリックしてください。",
-    "latex_output_label": "LaTeX出力",
-    "internal_type_label": "内部型"
+    "subtitle": "エディタで使えるコンテンツブロックです。クリックすると詳細を表示します。",
+    "latex_output_label": "LaTeX 出力",
+    "internal_type_label": "内部タイプ",
+    "blocks": {
+      "paragraph": {
+        "name": "段落",
+        "description": "自由入力のテキストブロックです。強調、インライン引用、インライン LaTeX に対応します。",
+        "latex_output": "エスケープ済みテキストを文書へ直接出力します。"
+      },
+      "heading": {
+        "name": "タイトル / 見出し",
+        "description": "セクション見出し: section (H1)、subsection (H2)、subsubsection (H3)。",
+        "latex_output": "\\section{}, \\subsection{}, \\subsubsection{}"
+      },
+      "figure": {
+        "name": "図",
+        "description": "キャプション、出典、相互参照用ラベル付きの画像です。幅: 50%、75%、100%。",
+        "latex_output": "figure 環境 + \\includegraphics + \\caption + \\label"
+      },
+      "table": {
+        "name": "表",
+        "description": "ヘッダー、行、キャプション、出典を含む表です。スタイル: simple、booktabs、wide、longtable。",
+        "latex_output": "table 環境 + tabular/longtable + \\caption"
+      },
+      "equation": {
+        "name": "数式",
+        "description": "番号付きまたは番号なしの数式です。純粋な LaTeX 数式として記述します。",
+        "latex_output": "equation または equation* 環境 + 任意の \\label"
+      },
+      "list": {
+        "name": "リスト",
+        "description": "箇条書き (itemize)、番号付き (enumerate)、説明リスト (description)。",
+        "latex_output": "\\begin{itemize/enumerate/description}"
+      },
+      "citation": {
+        "name": "文献引用",
+        "description": ".bib ファイルの BibTeX キーに紐づく括弧付き、本文中、または複数引用です。",
+        "latex_output": "\\parencite{}, \\textcite{}, \\cite{}"
+      },
+      "raw_latex": {
+        "name": "直接 LaTeX",
+        "description": "高度な用途向けの任意の LaTeX 断片です。ユーザー確認が必要です。",
+        "latex_output": "Verbatim、エスケープなし。注意して使用してください。"
+      }
+    },
+    "tags": {
+      "text": "テキスト",
+      "content": "コンテンツ",
+      "structure": "構造",
+      "navigation": "ナビゲーション",
+      "image": "画像",
+      "graphic": "グラフィック",
+      "data": "データ",
+      "statistics": "統計",
+      "mathematics": "数学",
+      "formula": "数式",
+      "list": "リスト",
+      "enumeration": "列挙",
+      "bibliography": "参考文献",
+      "reference": "参照",
+      "advanced": "高度",
+      "custom": "カスタム"
+    }
   },
   "setup_latex": {
     "nav_title": "PDF 生成の準備",
@@ -1960,5 +2264,17 @@
     "quality_raw_latex": "最終提出前にインポートされたLaTeXブロックを移行または手動確認する",
     "quality_plugin_warnings": "最終提出前に図またはプラグインの警告を解決する",
     "quality_profile": "正式な提出には機関または独自プロファイルを使用する"
+  },
+  "plugins_tab": {
+    "title": "プラグイン",
+    "subtitle": "図やダイアグラムを挿入できるビジュアルプラグインが {{count}} 件あります。",
+    "search_placeholder": "名前、パッケージ、カテゴリで検索…",
+    "no_results": "検索に一致するプラグインはありません。",
+    "quality": {
+      "stable": "安定",
+      "beta": "ベータ",
+      "experimental": "実験的",
+      "draft": "下書き"
+    }
   }
 }
