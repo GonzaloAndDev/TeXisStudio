@@ -41,7 +41,7 @@ interface Props {
 }
 
 export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [search, setSearch]                 = useState("");
   const [selectedCategory, setSelectedCategory] = useState<PluginCategory | "all">("all");
   const [qualityFilter, setQualityFilter]   = useState<QualityFilter>("all");
@@ -63,7 +63,7 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
   useEffect(() => {
     try { setPlugins(listPlugins()); }
     catch (e) { setError(t("figure_picker.error_load", { error: String(e) })); }
-  }, [t]);
+  }, [i18n.language, t]);
 
   const categoryGroups = useMemo(() => groupPluginsByCategory(plugins), [plugins]);
 
