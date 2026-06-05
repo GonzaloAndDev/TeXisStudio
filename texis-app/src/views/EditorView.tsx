@@ -585,6 +585,15 @@ export default function EditorView() {
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
 
+  // Returns the localized section title (from profileSections) falling back to the raw title or element_id
+  const localizedSectionTitle = useCallback(
+    (s: { id: string; element_id: string; title?: string }) => {
+      const loc = profileSections.find((ps) => ps.element_id === s.element_id);
+      return loc?.title ?? s.title ?? s.element_id;
+    },
+    [profileSections],
+  );
+
   const bodyWordCount = activeProject.sections
     .filter((s) => s.placement === "body")
     .reduce((acc, s) => acc + countWords(s.id === activeSectionId ? localBlocks : s.blocks), 0);
@@ -642,7 +651,7 @@ export default function EditorView() {
               <IconHome size={14} />
             </button>
             <TxLogo />
-            <TxBreadcrumb parts={[projectName, activeSection?.title ?? t("editor.section_fallback")]} />
+            <TxBreadcrumb parts={[projectName, activeSection ? localizedSectionTitle(activeSection) : t("editor.section_fallback")]} />
           </>
         }
         center={null}
@@ -706,10 +715,10 @@ export default function EditorView() {
                       key={s.id}
                       style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
                       onClick={() => setActiveSectionId(s.id)}
-                      title={`${s.title ?? s.element_id} · ${STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus}`}
+                      title={`${localizedSectionTitle(s)} · ${STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus}`}
                     >
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title ?? s.element_id}</span>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{localizedSectionTitle(s)}</span>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
                         {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
                       </span>
@@ -839,7 +848,7 @@ export default function EditorView() {
                   )}
                 </div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--fg-strong)", margin: "4px 0 16px", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
-                  {activeSection.title ?? activeSection.element_id}
+                  {localizedSectionTitle(activeSection)}
                 </div>
 
                 {userMode === "basic" && (
