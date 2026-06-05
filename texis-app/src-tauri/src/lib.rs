@@ -45,6 +45,7 @@ pub fn run() {
             commands::system::run_system_doctor,
             commands::system::check_profile_lock,
             commands::system::create_profile_lock,
+            commands::remote::fetch_profile_catalog,
             commands::remote::fetch_remote_profile,
             commands::doi::import_doi,
             commands::doi::import_dois_batch,

@@ -1777,7 +1777,7 @@
     "install_btn": "Install",
     "guided_hint_title": "You do not need the exact profile name",
     "guided_hint_body": "Start with your institution or a close combination of degree, field, and citation style. If there is no exact match, begin with a simple institutional base and adjust it afterward.",
-    "catalog_load_error": "Could not load the catalog: {{error}}. Check your connection.",
+    "catalog_load_error": "Could not load the profile catalog. Check your connection or try again.",
     "install_success": "\"{{name}}\" installed successfully.",
     "breadcrumb_all": "All",
     "profile_count_one": "{{count}} profile",
@@ -1832,7 +1832,9 @@
       "health_sciences": "Health sciences",
       "computing": "Computing",
       "natural_sciences": "Natural sciences"
-    }
+    },
+    "status_verified_label": "Verified",
+    "status_reviewed_label": "Reviewed"
   },
   "about": {
     "title": "About",

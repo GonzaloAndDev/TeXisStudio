@@ -117,7 +117,8 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
         console.warn(`[LibraryView] ${result.skippedCount} perfil(es) omitido(s) en el catálogo por validación.`);
       }
     } catch (e) {
-      setCatError(t("community.catalog_load_error", { error: String(e) }));
+      console.error("[CommunityTab] Could not load profile catalog:", e);
+      setCatError(t("community.catalog_load_error"));
     } finally {
       setCatLoading(false);
     }
@@ -285,8 +286,8 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                 {t("community.confidence_title")}
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.7 }}>
-                <strong style={{ color: "var(--fg-strong)" }}>Verified</strong> {t("community.confidence_body_verified")}
-                <strong style={{ color: "var(--fg-strong)" }}> Reviewed</strong> {t("community.confidence_body_reviewed")}
+                <strong style={{ color: "var(--fg-strong)" }}>{t("community.status_verified_label")}</strong> {t("community.confidence_body_verified")}
+                <strong style={{ color: "var(--fg-strong)" }}> {t("community.status_reviewed_label")}</strong> {t("community.confidence_body_reviewed")}
                 {" "}{t("community.confidence_tip")}
               </div>
             </div>

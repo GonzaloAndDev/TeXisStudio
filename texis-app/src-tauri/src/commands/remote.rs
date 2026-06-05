@@ -14,6 +14,8 @@ const MAX_ZIP_BYTES: usize = 10 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES: u64 = 50 * 1024 * 1024;
 /// Número máximo de entradas en el ZIP.
 const MAX_ZIP_ENTRIES: usize = 200;
+/// Tamaño máximo para el catálogo JSON de perfiles: 2 MB.
+const MAX_CATALOG_BYTES: u64 = 2 * 1024 * 1024;
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
@@ -31,6 +33,75 @@ fn profiles_dir(app: &tauri::AppHandle) -> PathBuf {
         .and_then(|p| p.parent())
         .map(|root| root.join("profiles"))
         .unwrap_or_else(|| PathBuf::from("profiles"))
+}
+
+fn validate_remote_url(url: &str) -> Result<reqwest::Url, String> {
+    let parsed = reqwest::Url::parse(url).map_err(|e| format!("URL inválida '{}': {}", url, e))?;
+    if parsed.scheme() != "https" {
+        return Err("Solo se permiten descargas mediante HTTPS.".to_string());
+    }
+
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "La URL no contiene un host válido.".to_string())?;
+    let allowed = matches!(
+        host,
+        "github.com"
+            | "raw.githubusercontent.com"
+            | "objects.githubusercontent.com"
+            | "releases.githubusercontent.com"
+    );
+    if !allowed {
+        return Err(format!("El host '{}' no está permitido para perfiles remotos.", host));
+    }
+    if parsed.path().contains("..") {
+        return Err("La URL contiene una ruta inválida.".to_string());
+    }
+
+    Ok(parsed)
+}
+
+#[tauri::command]
+pub async fn fetch_profile_catalog(url: String) -> Result<Value, String> {
+    let parsed = validate_remote_url(&url)?;
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .redirect(reqwest::redirect::Policy::limited(5))
+        .build()
+        .map_err(err)?;
+
+    let response = client
+        .get(parsed)
+        .send()
+        .await
+        .map_err(|e| format!("Error descargando catálogo desde '{}': {}", url, e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "El servidor respondió {} para '{}'.",
+            response.status(),
+            url
+        ));
+    }
+    if let Some(len) = response.content_length() {
+        if len > MAX_CATALOG_BYTES {
+            return Err(format!(
+                "El catálogo es demasiado grande ({} bytes, máximo {} bytes).",
+                len, MAX_CATALOG_BYTES
+            ));
+        }
+    }
+
+    let bytes = response.bytes().await.map_err(err)?;
+    if bytes.len() as u64 > MAX_CATALOG_BYTES {
+        return Err(format!(
+            "El catálogo supera el tamaño máximo permitido ({} bytes).",
+            MAX_CATALOG_BYTES
+        ));
+    }
+
+    serde_json::from_slice(&bytes)
+        .map_err(|e| format!("El catálogo de perfiles no es JSON válido: {}", e))
 }
 
 fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
@@ -72,13 +143,7 @@ pub async fn fetch_remote_profile(
     expected_sha256: Option<String>,
 ) -> Result<Value, String> {
     // 0. Validar URL con parser formal — exigir HTTPS y host presente
-    let parsed = reqwest::Url::parse(&url).map_err(|e| format!("URL inválida '{}': {}", url, e))?;
-    if parsed.scheme() != "https" {
-        return Err("Solo se permiten descargas mediante HTTPS.".to_string());
-    }
-    if parsed.host().is_none() {
-        return Err("La URL no contiene un host válido.".to_string());
-    }
+    let parsed = validate_remote_url(&url)?;
 
     // 1. Descargar ZIP con timeout y límite de tamaño
     let client = reqwest::Client::builder()

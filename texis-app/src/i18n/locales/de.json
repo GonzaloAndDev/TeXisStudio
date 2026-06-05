@@ -1746,7 +1746,7 @@
     "install_btn": "Installieren",
     "guided_hint_title": "Sie müssen den genauen Profilnamen nicht kennen",
     "guided_hint_body": "Beginnen Sie mit Ihrer Institution oder einer ähnlichen Kombination aus Abschluss, Fachgebiet und Zitierstil. Wenn es keine exakte Übereinstimmung gibt, starten Sie mit einer einfachen institutionellen Basis und passen sie danach an.",
-    "catalog_load_error": "Katalog konnte nicht geladen werden: {{error}}. Prüfen Sie Ihre Verbindung.",
+    "catalog_load_error": "Der Profilkatalog konnte nicht geladen werden. Prüfen Sie Ihre Verbindung oder versuchen Sie es erneut.",
     "install_success": "„{{name}}“ wurde erfolgreich installiert.",
     "breadcrumb_all": "Alle",
     "profile_count_one": "{{count}} Profil",
@@ -1801,7 +1801,9 @@
       "health_sciences": "Gesundheitswissenschaften",
       "computing": "Informatik",
       "natural_sciences": "Naturwissenschaften"
-    }
+    },
+    "status_verified_label": "Verifiziert",
+    "status_reviewed_label": "Geprüft"
   },
   "about": {
     "title": "Über TeXisStudio",

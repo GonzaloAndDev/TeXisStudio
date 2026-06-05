@@ -13,12 +13,13 @@
  */
 
 import type { AcademicLevel, ProfileStatus } from "../types";
+import { api } from "../lib/tauri";
 
 export const PROFILE_CATALOG_URL =
-  "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio-Profiles/main/catalog.json";
+  "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download/catalog.json";
 
 export const PROFILE_CATALOG_FALLBACK_URL =
-  "https://github.com/GonzaloAndDev/TeXisStudio-Profiles/releases/latest/download/catalog.json";
+  "https://raw.githubusercontent.com/GonzaloAndDev/TeXisStudio-Profiles/main/catalog.json";
 
 /** Hosts from which profile catalog and profile ZIPs may be served. */
 const ALLOWED_CATALOG_HOSTS = new Set([
@@ -277,25 +278,7 @@ export async function fetchProfileCatalog(
 async function fetchProfileCatalogFromUrl(url: string): Promise<ProfileCatalog> {
   validateCatalogUrl(url);
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} al obtener catálogo de perfiles desde "${url}"`);
-  }
-
-  // Validate content-type loosely (GitHub releases serve application/octet-stream)
-  const contentType = res.headers.get("content-type") ?? "";
-  if (contentType && !contentType.includes("json") && !contentType.includes("octet-stream")) {
-    throw new Error(
-      `Tipo de contenido inesperado: "${contentType}". Se esperaba JSON.`,
-    );
-  }
-
-  let data: unknown;
-  try {
-    data = await res.json();
-  } catch (e) {
-    throw new Error(`El catálogo de perfiles no es JSON válido: ${e}`);
-  }
+  const data = await loadCatalogJson(url);
 
   if (!data || typeof data !== "object") {
     throw new Error("El catálogo de perfiles no tiene la estructura esperada (no es un objeto)");
@@ -321,9 +304,39 @@ async function fetchProfileCatalogFromUrl(url: string): Promise<ProfileCatalog> 
   }
 
   const skippedCount = rawCount - profiles.length;
+  if (rawCount > 0 && profiles.length === 0) {
+    throw new Error(
+      "El catálogo no contiene perfiles instalables válidos. Revisa que incluya download_url.",
+    );
+  }
   if (skippedCount > 0) {
     console.warn(`[profileCatalog] ${skippedCount} entrada(s) omitida(s) por validación.`);
   }
 
   return { profiles, rawCount, skippedCount, warnings };
+}
+
+async function loadCatalogJson(url: string): Promise<unknown> {
+  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    return api.fetchProfileCatalog(url);
+  }
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} al obtener catálogo de perfiles desde "${url}"`);
+  }
+
+  // Validate content-type loosely (GitHub releases serve application/octet-stream)
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType && !contentType.includes("json") && !contentType.includes("octet-stream")) {
+    throw new Error(
+      `Tipo de contenido inesperado: "${contentType}". Se esperaba JSON.`,
+    );
+  }
+
+  try {
+    return await res.json();
+  } catch (e) {
+    throw new Error(`El catálogo de perfiles no es JSON válido: ${e}`);
+  }
 }

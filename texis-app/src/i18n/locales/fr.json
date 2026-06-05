@@ -1734,7 +1734,7 @@
     "empty_catalog": "Le catalogue est vide.",
     "no_filter_matches": "Aucun profil ne correspond aux filtres actuels.",
     "heading": "Communauté",
-    "heading_desc": "Profils par institution, niveau, domaine et programme. Nécessite une connexion internet.",
+    "heading_desc": "Profils par établissement, niveau, domaine et programme. Nécessite une connexion Internet.",
     "refresh": "Actualiser",
     "confidence_title": "Comment interpréter le niveau de confiance",
     "confidence_body_verified": "indique des preuves solides.",
@@ -1746,7 +1746,7 @@
     "install_btn": "Installer",
     "guided_hint_title": "Vous n’avez pas besoin du nom exact du profil",
     "guided_hint_body": "Commencez par votre institution ou par une combinaison proche de diplôme, domaine et style de citation. S’il n’existe pas de correspondance exacte, partez d’une base institutionnelle simple puis ajustez-la.",
-    "catalog_load_error": "Impossible de charger le catalogue : {{error}}. Vérifiez votre connexion.",
+    "catalog_load_error": "Impossible de charger le catalogue de profils. Vérifiez votre connexion ou réessayez.",
     "install_success": "« {{name}} » installé correctement.",
     "breadcrumb_all": "Tous",
     "profile_count_one": "{{count}} profil",
@@ -1801,7 +1801,9 @@
       "health_sciences": "Sciences de la santé",
       "computing": "Informatique",
       "natural_sciences": "Sciences naturelles"
-    }
+    },
+    "status_verified_label": "Vérifié",
+    "status_reviewed_label": "Révisé"
   },
   "about": {
     "title": "À propos",

@@ -1746,7 +1746,7 @@
     "install_btn": "インストール",
     "guided_hint_title": "正確なプロフィール名を知っている必要はありません",
     "guided_hint_body": "まず所属機関、または学位・分野・引用スタイルの近い組み合わせから始めてください。完全一致がない場合は、シンプルな機関ベースのプロフィールを出発点にして後で調整します。",
-    "catalog_load_error": "カタログを読み込めませんでした: {{error}}。接続を確認してください。",
+    "catalog_load_error": "プロフィールカタログを読み込めませんでした。接続を確認するか、もう一度お試しください。",
     "install_success": "「{{name}}」をインストールしました。",
     "breadcrumb_all": "すべて",
     "profile_count_one": "{{count}} 件のプロフィール",
@@ -1801,7 +1801,9 @@
       "health_sciences": "健康科学",
       "computing": "コンピューティング",
       "natural_sciences": "自然科学"
-    }
+    },
+    "status_verified_label": "検証済み",
+    "status_reviewed_label": "レビュー済み"
   },
   "about": {
     "title": "このアプリについて",

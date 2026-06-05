@@ -186,6 +186,9 @@ export const api = {
   fetchRemoteProfile: (url: string, expectedSha256?: string): Promise<ProfileInfo> =>
     call("fetch_remote_profile", { url, expectedSha256: expectedSha256 ?? null }),
 
+  fetchProfileCatalog: (url: string): Promise<unknown> =>
+    call("fetch_profile_catalog", { url }),
+
   deleteProfile: (profileId: string): Promise<void> =>
     call("delete_profile", { profileId }),
 

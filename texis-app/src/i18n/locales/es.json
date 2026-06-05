@@ -1777,7 +1777,7 @@
     "install_btn": "Instalar",
     "guided_hint_title": "No necesitas saber el nombre exacto del perfil",
     "guided_hint_body": "Empieza por tu institución o por una combinación parecida de grado, área y estilo de citas. Si no existe una coincidencia exacta, conviene arrancar con una base institucional simple y ajustar después.",
-    "catalog_load_error": "No se pudo cargar el catálogo: {{error}}. Verifica tu conexión.",
+    "catalog_load_error": "No se pudo cargar el catálogo de perfiles. Verifica tu conexión o inténtalo de nuevo.",
     "install_success": "\"{{name}}\" instalado correctamente.",
     "breadcrumb_all": "Todos",
     "profile_count_one": "{{count}} perfil",
@@ -1832,7 +1832,9 @@
       "health_sciences": "Ciencias de la salud",
       "computing": "Computación",
       "natural_sciences": "Ciencias naturales"
-    }
+    },
+    "status_verified_label": "Verificado",
+    "status_reviewed_label": "Revisado"
   },
   "about": {
     "title": "Acerca de",
