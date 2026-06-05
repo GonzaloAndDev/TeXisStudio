@@ -753,6 +753,7 @@ function StepPerfil({
   programName: string;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { userMode } = useSettingsStore();
   const placementShort = useMemo(() => ({
     front_matter: t("wizard.placement_front_short"),
@@ -862,7 +863,7 @@ function StepPerfil({
           <IconInfo size={14} />
           <div>
             <strong>{t("wizard.no_institution")}</strong> {t("wizard.import_profile_from")}{" "}
-            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => window.open("/library")}>{t("library.title")}</span>.
+            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => navigate("/library")}>{t("library.title")}</span>.
           </div>
         </div>
       </div>
