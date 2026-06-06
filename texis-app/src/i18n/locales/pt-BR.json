@@ -557,7 +557,8 @@
     "recommend_reason_tesina": "projetado para teses curtas",
     "recommend_reason_tesis": "base sólida para teses",
     "recommend_reason_verified": "tem verificação institucional",
-    "recommend_reason_reviewed": "revisado pela equipe"
+    "recommend_reason_reviewed": "revisado pela equipe",
+    "error_vocab_install": "Nao foi possivel ativar \"{{name}}\". Verifique sua conexao ou desmarque-o. Detalhe: {{error}}"
   },
   "editor": {
     "diag_title": "Diagnóstico de projeto",

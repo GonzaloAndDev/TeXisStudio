@@ -54,5 +54,21 @@ export default defineConfig(async () => ({
         : "safari13",
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    // Tauri loads from local disk — 500 kB limit is calibrated for HTTP.
+    // The main index chunk is large because all 7 bundled UI locales (~826 kB raw)
+    // are statically imported to guarantee synchronous availability at i18next init.
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor libs that change rarely — isolate for better WebView cache reuse.
+          "vendor-react": ["react", "react-dom"],
+          "vendor-router": ["react-router-dom"],
+          "vendor-i18n": ["i18next", "react-i18next"],
+          "vendor-state": ["zustand"],
+          "vendor-katex": ["katex"],
+        },
+      },
+    },
   },
 }));

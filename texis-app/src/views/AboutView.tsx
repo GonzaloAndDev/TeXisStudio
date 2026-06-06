@@ -227,13 +227,13 @@ export default function AboutView() {
               </div>
               <div style={{ color: "var(--fg-muted)" }}>
                 {t("about.main_repo")}:{" "}
-                <a href="https://github.com/GonzaloAndDev/TeXisStudio" style={{ color: "var(--link)", textDecoration: "none" }}>
+                <a href="https://github.com/GonzaloAndDev/TeXisStudio" target="_blank" rel="noreferrer" style={{ color: "var(--link)", textDecoration: "none" }}>
                   GonzaloAndDev/TeXisStudio
                 </a>
               </div>
               <div style={{ color: "var(--fg-muted)" }}>
                 GitHub:{" "}
-                <a href="https://github.com/GonzaloAndDev" style={{ color: "var(--link)", textDecoration: "none" }}>
+                <a href="https://github.com/GonzaloAndDev" target="_blank" rel="noreferrer" style={{ color: "var(--link)", textDecoration: "none" }}>
                   @GonzaloAndDev
                 </a>
               </div>

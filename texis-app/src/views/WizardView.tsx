@@ -1279,7 +1279,7 @@ export default function WizardView() {
           try {
             await installVocabPack(pack);
           } catch (e) {
-            throw new Error(`No se pudo activar "${pack.name}". Revisa tu conexión o desmárcalo para crear el proyecto sin ese apoyo. Detalle: ${e}`);
+            throw new Error(t("wizard.error_vocab_install", { name: pack.name, error: String(e) }));
           }
         }
       }

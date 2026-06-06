@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "conçu pour les mémoires courts",
     "recommend_reason_tesis": "base solide pour les thèses",
     "recommend_reason_verified": "dispose d'une vérification institutionnelle",
-    "recommend_reason_reviewed": "révisé par l'équipe"
+    "recommend_reason_reviewed": "révisé par l'équipe",
+    "error_vocab_install": "Impossible d'activer \"{{name}}\". Verifie ta connexion ou deselectionnez-le. Detail: {{error}}"
   },
   "editor": {
     "placement_front": "Pages liminaires",

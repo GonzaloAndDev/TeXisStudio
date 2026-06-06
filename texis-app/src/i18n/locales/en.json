@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "designed for short theses",
     "recommend_reason_tesis": "solid base for theses",
     "recommend_reason_verified": "has institutional verification",
-    "recommend_reason_reviewed": "reviewed by the team"
+    "recommend_reason_reviewed": "reviewed by the team",
+    "error_vocab_install": "Could not activate \"{{name}}\". Check your connection or deselect it to create the project without this support. Detail: {{error}}"
   },
   "editor": {
     "diag_title": "Project diagnostics",

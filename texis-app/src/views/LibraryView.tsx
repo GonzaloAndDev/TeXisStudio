@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -12,7 +12,12 @@ import { ProfileDetailPanel } from "./library/ProfileDetailPanel";
 import { ProfileEditorPanel } from "./library/ProfileEditorPanel";
 import { StylesTab } from "./library/StylesTab";
 import { CommunityTab } from "./library/CommunityTab";
-import { PluginsTab } from "./library/PluginsTab";
+
+// Lazy-loaded: pulls in the full @texisstudio/plugins registry (1.4 MB source).
+// Only loads when the user opens the Plugins tab.
+const PluginsTab = lazy(() =>
+  import("./library/PluginsTab").then((m) => ({ default: m.PluginsTab })),
+);
 
 type LibTab = "profiles" | "community" | "styles" | "plugins";
 
@@ -306,7 +311,11 @@ export default function LibraryView() {
 
         {tab === "styles" && <StylesTab />}
 
-        {tab === "plugins" && <PluginsTab />}
+        {tab === "plugins" && (
+          <Suspense fallback={<div style={{ padding: 32, textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>{t("common.loading")}</div>}>
+            <PluginsTab />
+          </Suspense>
+        )}
       </div>
 
       <TxStatusbar items={[

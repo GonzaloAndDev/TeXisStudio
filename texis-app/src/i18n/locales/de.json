@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "für Kurzarbeiten konzipiert",
     "recommend_reason_tesis": "solide Basis für Dissertationen",
     "recommend_reason_verified": "hat institutionelle Verifizierung",
-    "recommend_reason_reviewed": "vom Team geprüft"
+    "recommend_reason_reviewed": "vom Team geprüft",
+    "error_vocab_install": "\"{{name}}\" konnte nicht aktiviert werden. Verbindung pruefen oder Auswahl aufheben. Detail: {{error}}"
   },
   "editor": {
     "placement_front": "Titelei",

@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "小論文向けに設計",
     "recommend_reason_tesis": "論文の堅固なベース",
     "recommend_reason_verified": "機関認証あり",
-    "recommend_reason_reviewed": "チームによる審査済み"
+    "recommend_reason_reviewed": "チームによる審査済み",
+    "error_vocab_install": "\"{{name}}\" を有効化できませんでした。接続を確認するか選択を外してください。詳細: {{error}}"
   },
   "editor": {
     "diag_title": "プロジェクト診断",

@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "está pensado para tesinas",
     "recommend_reason_tesis": "sirve como base sólida para tesis",
     "recommend_reason_verified": "tiene verificación institucional",
-    "recommend_reason_reviewed": "ya fue revisado por el equipo"
+    "recommend_reason_reviewed": "ya fue revisado por el equipo",
+    "error_vocab_install": "No se pudo activar \"{{name}}\". Revisa tu conexion o desmarcalo para crear el proyecto sin ese apoyo. Detalle: {{error}}"
   },
   "editor": {
     "diag_title": "Diagnósticos del proyecto",

@@ -271,7 +271,8 @@
     "recommend_reason_tesina": "专为小论文设计",
     "recommend_reason_tesis": "论文的可靠基础",
     "recommend_reason_verified": "具有机构认证",
-    "recommend_reason_reviewed": "经团队审核"
+    "recommend_reason_reviewed": "经团队审核",
+    "error_vocab_install": "\"{{name}}\"无法激活。请检查网络连接或取消选择。详情：{{error}}"
   },
   "editor": {
     "placement_front": "前置内容",
