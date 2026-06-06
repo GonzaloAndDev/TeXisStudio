@@ -893,7 +893,12 @@
     "basic_mode_title": "Modo básico ativo",
     "basic_mode_body": "Mostramos apenas o que você precisa escrever e enviar sem complexidade. Você pode ativar",
     "basic_mode_suffix": "na seção de texto.",
-    "basic_top_body": "Essas configurações são projetadas para decisões úteis sem inserir detalhes técnicos do LaTeX. Mudar para"
+    "basic_top_body": "Essas configurações são projetadas para decisões úteis sem inserir detalhes técnicos do LaTeX. Mudar para",
+    "update_check_btn": "Verificar atualizações",
+    "update_checking": "Verificando…",
+    "update_available": "Versão {{version}} disponível — reinicie para instalar",
+    "update_up_to_date": "Você está atualizado",
+    "update_error": "Não foi possível verificar atualizações"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Imagem '{{file}}' referenciada na seção '{{section}}' não encontrada.",

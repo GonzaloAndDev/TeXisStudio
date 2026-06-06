@@ -157,7 +157,7 @@ fn paper_to_record(paper: &S2Paper) -> BibliographicRecord {
             .map(|name| {
                 let parts: Vec<&str> = name.split_whitespace().collect();
                 if parts.len() >= 2 {
-                    let family = parts.last().unwrap().to_string();
+                    let family = parts[parts.len() - 1].to_string();
                     let given = parts[..parts.len() - 1].join(" ");
                     PersonName::new_person(family, given)
                 } else {

@@ -607,7 +607,12 @@
     "basic_mode_title": "Mode de base actif",
     "basic_mode_body": "Seul l'essentiel pour rédiger et soumettre sans complexité est affiché. Vous pouvez activer",
     "basic_mode_suffix": "dans la section texte.",
-    "basic_top_body": "Ces paramètres sont conçus pour des décisions utiles sans entrer dans les détails techniques LaTeX. Passer à"
+    "basic_top_body": "Ces paramètres sont conçus pour des décisions utiles sans entrer dans les détails techniques LaTeX. Passer à",
+    "update_check_btn": "Rechercher des mises à jour",
+    "update_checking": "Recherche…",
+    "update_available": "Version {{version}} disponible — redémarrer pour installer",
+    "update_up_to_date": "Vous êtes à jour",
+    "update_error": "Impossible de vérifier les mises à jour"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Image '{{file}}' référencée dans la section '{{section}}' introuvable.",

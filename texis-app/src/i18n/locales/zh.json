@@ -607,7 +607,12 @@
     "basic_mode_title": "基本模式已激活",
     "basic_mode_body": "仅显示无复杂性地编写和提交所需的内容。您可以启用",
     "basic_mode_suffix": "在文本部分。",
-    "basic_top_body": "这些设置旨在不涉及LaTeX技术细节的情况下做出有用决策。切换到"
+    "basic_top_body": "这些设置旨在不涉及LaTeX技术细节的情况下做出有用决策。切换到",
+    "update_check_btn": "检查更新",
+    "update_checking": "检查中…",
+    "update_available": "{{version}} 版本可用 — 重启以安装",
+    "update_up_to_date": "已是最新版本",
+    "update_error": "无法检查更新"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "未找到“{{section}}”部分引用的图像“{{file}}”。",

@@ -607,7 +607,12 @@
     "basic_mode_title": "基本モードが有効",
     "basic_mode_body": "複雑な操作なしに執筆と提出に必要なものだけを表示しています。有効にできます",
     "basic_mode_suffix": "テキストセクションで。",
-    "basic_top_body": "これらの設定は、LaTeXの技術的な詳細に入らずに役立つ決定ができるように設計されています。切り替えは"
+    "basic_top_body": "これらの設定は、LaTeXの技術的な詳細に入らずに役立つ決定ができるように設計されています。切り替えは",
+    "update_check_btn": "アップデートを確認",
+    "update_checking": "確認中…",
+    "update_available": "バージョン {{version}} が利用可能 — 再起動してインストール",
+    "update_up_to_date": "最新バージョンです",
+    "update_error": "アップデートを確認できませんでした"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "セクション '{{section}}' で参照されている画像 '{{file}}' が見つかりません。",

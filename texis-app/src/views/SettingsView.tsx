@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -12,6 +12,7 @@ import type { LangPackEntry } from "../types";
 import { VocabularyPacksPanel } from "../components/settings/VocabularyPacksPanel";
 
 import { SectionHeading, Card, Toggle, FieldRow } from "./settings/SettingsWidgets";
+import { checkForUpdate } from "../services/updater";
 // ── Layout constants ──────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -73,6 +74,25 @@ export default function SettingsView() {
   const [activeSection, setActiveSection] = useState<Section>(validParam);
   const [newWord, setNewWord] = useState("");
   const [userSaved, setUserSaved] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "up-to-date" | "error">("idle");
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+
+  const handleCheckUpdate = useCallback(async () => {
+    setUpdateStatus("checking");
+    setUpdateMsg(null);
+    try {
+      const result = await checkForUpdate();
+      if (result.available) {
+        setUpdateStatus("available");
+        setUpdateMsg(result.version ?? null);
+      } else {
+        setUpdateStatus("up-to-date");
+      }
+    } catch (e) {
+      setUpdateStatus("error");
+      setUpdateMsg(String(e));
+    }
+  }, []);
   const [installError, setInstallError] = useState<string | null>(null);
   const [localName, setLocalName] = useState(userName);
   const [localInstitution, setLocalInstitution] = useState(userInstitution);
@@ -841,6 +861,34 @@ export default function SettingsView() {
                   ))}
                 </div>
               </Card>
+
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleCheckUpdate}
+                  disabled={updateStatus === "checking"}
+                >
+                  <IconDownload size={13} />
+                  {updateStatus === "checking"
+                    ? t("settings.update_checking")
+                    : t("settings.update_check_btn")}
+                </button>
+                {updateStatus === "available" && (
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--accent)" }}>
+                    {t("settings.update_available", { version: updateMsg ?? "" })}
+                  </span>
+                )}
+                {updateStatus === "up-to-date" && (
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                    {t("settings.update_up_to_date")}
+                  </span>
+                )}
+                {updateStatus === "error" && (
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>
+                    {t("settings.update_error")}
+                  </span>
+                )}
+              </div>
 
               <button className="btn btn-ghost btn-sm" onClick={() => navigate("/about")}>
                 <IconBook size={13} /> {t("settings.about_view_full")}

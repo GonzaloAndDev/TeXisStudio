@@ -607,7 +607,12 @@
     "basic_mode_title": "Basic mode active",
     "basic_mode_body": "We show only what you need to write and submit without complexity. You can enable",
     "basic_mode_suffix": "in the text section.",
-    "basic_top_body": "These settings are designed for useful decisions without entering LaTeX technical details. Switch to"
+    "basic_top_body": "These settings are designed for useful decisions without entering LaTeX technical details. Switch to",
+    "update_check_btn": "Check for updates",
+    "update_checking": "Checking…",
+    "update_available": "Version {{version}} available — restart to install",
+    "update_up_to_date": "You are up to date",
+    "update_error": "Could not check for updates"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Image '{{file}}' referenced in section '{{section}}' not found.",

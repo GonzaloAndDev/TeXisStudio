@@ -607,7 +607,12 @@
     "basic_mode_title": "Modo básico activo",
     "basic_mode_body": "Te mostramos solo lo necesario para escribir y entregar sin complicarte. Puedes activar",
     "basic_mode_suffix": "en la sección de texto.",
-    "basic_top_body": "Esta configuración está pensada para que tomes decisiones útiles sin tener que entrar al detalle técnico de LaTeX. Si más adelante necesitas control fino, puedes cambiar a"
+    "basic_top_body": "Esta configuración está pensada para que tomes decisiones útiles sin tener que entrar al detalle técnico de LaTeX. Si más adelante necesitas control fino, puedes cambiar a",
+    "update_check_btn": "Buscar actualizaciones",
+    "update_checking": "Buscando…",
+    "update_available": "Versión {{version}} disponible — reinicia para instalar",
+    "update_up_to_date": "Estás al día",
+    "update_error": "No se pudo buscar actualizaciones"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Imagen '{{file}}' referenciada en la sección '{{section}}' no encontrada.",

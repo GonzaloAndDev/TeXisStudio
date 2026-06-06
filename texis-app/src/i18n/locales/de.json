@@ -607,7 +607,12 @@
     "basic_mode_title": "Basismodus aktiv",
     "basic_mode_body": "Es werden nur die wesentlichen Funktionen zum Schreiben und Einreichen ohne Komplexität angezeigt. Sie können aktivieren",
     "basic_mode_suffix": "im Textbereich.",
-    "basic_top_body": "Diese Einstellungen sind für nützliche Entscheidungen ohne LaTeX-Technikdetails konzipiert. Wechseln zu"
+    "basic_top_body": "Diese Einstellungen sind für nützliche Entscheidungen ohne LaTeX-Technikdetails konzipiert. Wechseln zu",
+    "update_check_btn": "Nach Updates suchen",
+    "update_checking": "Suche…",
+    "update_available": "Version {{version}} verfügbar — neu starten zum Installieren",
+    "update_up_to_date": "Du bist auf dem neuesten Stand",
+    "update_error": "Updates konnten nicht geprüft werden"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Bild '{{file}}' in Abschnitt '{{section}}' nicht gefunden.",

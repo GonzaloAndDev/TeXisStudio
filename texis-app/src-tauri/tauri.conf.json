@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self' asset: https://asset.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost data: https: blob:; font-src 'self' data:; connect-src 'self' https: ipc: http://ipc.localhost; worker-src 'self' blob:",
       "assetProtocol": {
         "enable": true,
         "scope": ["**"]
@@ -43,8 +43,8 @@
       "../../profiles": "profiles"
     },
     "category": "Education",
-    "shortDescription": "Editor profesional de tesis con LaTeX",
-    "longDescription": "TeXisStudio permite elaborar tesis y tesinas de alta calidad tipográfica usando LaTeX como motor, sin necesitar aprender LaTeX directamente. El usuario edita un modelo estructurado; el sistema genera LaTeX limpio; el PDF es portable y compilable sin la app.",
+    "shortDescription": "LaTeX-powered thesis editor — no LaTeX required",
+    "longDescription": "TeXisStudio helps undergraduate, master's, doctoral, and postdoctoral students produce high-quality academic documents using LaTeX as the engine, without needing to learn LaTeX. You edit a structured model; the app generates clean LaTeX; the resulting PDF is portable and compilable independently.",
     "linux": {
       "deb": {
         "depends": [
@@ -67,6 +67,26 @@
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/GonzaloAndDev/TeXisStudio/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    },
+    "log": {
+      "level": "warn",
+      "targets": [
+        { "kind": "stdout" },
+        { "kind": "logdir", "filename": "texisstudio" }
+      ],
+      "maxFileSize": 10485760
     }
   }
 }

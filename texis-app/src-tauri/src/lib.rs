@@ -4,6 +4,8 @@ mod commands;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(commands::compiler::CompileState::new())
         .invoke_handler(tauri::generate_handler![
@@ -87,5 +89,5 @@ pub fn run() {
             commands::figure_plugin::list_plugin_figures,
         ])
         .run(tauri::generate_context!())
-        .expect("error al iniciar TeXisStudio");
+        .expect("failed to start TeXisStudio");
 }
