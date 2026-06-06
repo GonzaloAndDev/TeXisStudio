@@ -2315,6 +2315,7 @@
     "subheading": "Du kannst dies später in den Einstellungen ändern.",
     "more_languages": "Weitere Sprachen",
     "loading_more": "Weitere Sprachen werden geladen…",
+    "catalog_error": "Weitere Sprachen konnten nicht geladen werden. Du kannst mit einer enthaltenen Sprache fortfahren.",
     "skip": "Überspringen"
   }
 }

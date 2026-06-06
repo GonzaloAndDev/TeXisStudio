@@ -11,8 +11,7 @@ import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import type { LangPackEntry } from "../types";
 import { TxLogo } from "../components/Chrome";
-
-export const WELCOME_SHOWN_KEY = "tx-welcome-v1";
+import { WELCOME_SHOWN_KEY } from "../constants/welcome";
 
 export default function WelcomeView() {
   const { t, i18n } = useTranslation();
@@ -44,8 +43,14 @@ export default function WelcomeView() {
     ensureDynamicLocale(code);
     setLang(code);
     i18n.changeLanguage(code);
-    const spellCode = SPELL_CHECK_LANGS[code];
-    if (spellCode !== undefined) setSpellLang(spellCode);
+    const bundledSpellCode = SPELL_CHECK_LANGS[code];
+    if (bundledSpellCode !== undefined) {
+      setSpellLang(bundledSpellCode);
+    } else if (remote?.capabilities.spelling) {
+      setSpellLang(code);
+    } else if (remote) {
+      setSpellLang(null);
+    }
     localStorage.setItem(WELCOME_SHOWN_KEY, "1");
     navigate("/", { replace: true });
   }

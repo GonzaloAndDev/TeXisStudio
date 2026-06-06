@@ -9,7 +9,7 @@ import {
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
 
-import { WELCOME_SHOWN_KEY } from "./views/WelcomeView";
+import { WELCOME_SHOWN_KEY } from "./constants/welcome";
 
 const AboutView = lazy(() => import("./views/AboutView"));
 const CompileView = lazy(() => import("./views/CompileView"));

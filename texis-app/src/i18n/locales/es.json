@@ -2315,6 +2315,7 @@
     "subheading": "Puedes cambiarlo después en Ajustes.",
     "more_languages": "Más idiomas",
     "loading_more": "Cargando más idiomas…",
+    "catalog_error": "No se pudieron cargar más idiomas. Puedes continuar con un idioma incluido.",
     "skip": "Omitir"
   }
 }

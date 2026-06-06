@@ -2315,6 +2315,7 @@
     "subheading": "後から設定で変更できます。",
     "more_languages": "他の言語",
     "loading_more": "他の言語を読み込み中…",
+    "catalog_error": "他の言語を読み込めませんでした。同梱の言語で続行できます。",
     "skip": "スキップ"
   }
 }

@@ -2315,6 +2315,7 @@
     "subheading": "您可以稍后在设置中更改。",
     "more_languages": "更多语言",
     "loading_more": "正在加载更多语言…",
+    "catalog_error": "无法加载更多语言。您可以继续使用内置语言。",
     "skip": "跳过"
   }
 }

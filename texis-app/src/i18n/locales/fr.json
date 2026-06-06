@@ -2315,6 +2315,7 @@
     "subheading": "Vous pouvez le modifier plus tard dans les Paramètres.",
     "more_languages": "Plus de langues",
     "loading_more": "Chargement de plus de langues…",
+    "catalog_error": "Impossible de charger plus de langues. Vous pouvez continuer avec une langue incluse.",
     "skip": "Ignorer"
   }
 }

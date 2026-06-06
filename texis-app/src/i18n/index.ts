@@ -7,6 +7,7 @@ import fr from "./locales/fr.json";
 import de from "./locales/de.json";
 import ja from "./locales/ja.json";
 import zh from "./locales/zh.json";
+import ptBR from "./locales/pt-BR.json";
 
 import { getInstalledLocales } from "../services/languagePacks";
 import { persistUiLanguage, readStoredUiLanguage } from "./languageState";
@@ -19,6 +20,7 @@ const bundled: Record<string, { t: Record<string, unknown> }> = {
   de: { t: de as Record<string, unknown> },
   ja: { t: ja as Record<string, unknown> },
   zh: { t: zh as Record<string, unknown> },
+  "pt-BR": { t: ptBR as Record<string, unknown> },
 };
 
 const installed = getInstalledLocales();
@@ -72,6 +74,7 @@ export const SUPPORTED_LANGUAGES = [
   { code: "de", label: "Deutsch",   flag: "🇩🇪", bundled: true  },
   { code: "ja", label: "日本語",     flag: "🇯🇵", bundled: true  },
   { code: "zh", label: "中文",       flag: "🇨🇳", bundled: true  },
+  { code: "pt-BR", label: "Português", flag: "🇧🇷", bundled: true },
 ];
 
 // Spell-check language codes (null = no Hunspell dict bundled)
@@ -82,6 +85,7 @@ export const SPELL_CHECK_LANGS: Record<string, string | null> = {
   de: "de",
   ja: null,
   zh: null,
+  "pt-BR": null,
 };
 
 export const LT_LANG_CODES: Record<string, string> = {

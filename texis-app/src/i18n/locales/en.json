@@ -2315,6 +2315,7 @@
     "subheading": "You can change this later in Settings.",
     "more_languages": "More languages",
     "loading_more": "Loading more languages…",
+    "catalog_error": "Could not load more languages. You can continue with a bundled language.",
     "skip": "Skip"
   }
 }

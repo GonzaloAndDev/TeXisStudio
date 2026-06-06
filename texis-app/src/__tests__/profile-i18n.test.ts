@@ -73,8 +73,7 @@ describe("profile ID candidates", () => {
 
 describe("WELCOME_SHOWN_KEY", () => {
   it("is defined and non-empty", async () => {
-    // Dynamic import avoids pulling in react-router-dom and Tauri in test env
-    const { WELCOME_SHOWN_KEY } = await import("../views/WelcomeView");
+    const { WELCOME_SHOWN_KEY } = await import("../constants/welcome");
     expect(typeof WELCOME_SHOWN_KEY).toBe("string");
     expect(WELCOME_SHOWN_KEY.length).toBeGreaterThan(0);
   });
