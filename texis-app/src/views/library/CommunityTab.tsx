@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconBuilding, IconDownload, IconMap, IconRefresh, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
@@ -162,62 +162,100 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
     [catalog, i18n.language, profileLocaleTick],
   );
 
-  const filteredCatalog = localizedCatalog.filter((p) => {
-    const statusOk = statusFilter === "all" || (p.status ?? "unspecified") === statusFilter;
-    const styleOk = styleFilter === "all" || (p.style_id ?? p.bibliography_style ?? "unspecified") === styleFilter;
+  // useDeferredValue: los selects responden al instante; el filtrado pesado
+  // se ejecuta en un render de menor prioridad sin bloquear la UI.
+  const deferredStatus     = useDeferredValue(statusFilter);
+  const deferredStyle      = useDeferredValue(styleFilter);
+  const deferredLevel      = useDeferredValue(levelFilter);
+  const deferredDiscipline = useDeferredValue(disciplineFilter);
+  const deferredScope      = useDeferredValue(scopeFilter);
+  const deferredInstitution = useDeferredValue(institutionFilter);
+  const deferredProgram    = useDeferredValue(programFilter);
+  const deferredNovice     = useDeferredValue(noviceSafeOnly);
+  const deferredSearch     = useDeferredValue(search);
+
+  const filteredCatalog = useMemo(() => localizedCatalog.filter((p) => {
+    const statusOk = deferredStatus === "all" || (p.status ?? "unspecified") === deferredStatus;
+    const styleOk  = deferredStyle  === "all" || (p.style_id ?? p.bibliography_style ?? "unspecified") === deferredStyle;
     const profileLevels = [
       ...(p.academic_level ? [p.academic_level] : []),
       ...((p.target_levels ?? []).filter((level) => level !== p.academic_level)),
     ];
-    const levelOk = levelFilter === "all"
-      || (profileLevels.length === 0 ? "unspecified" === levelFilter : profileLevels.includes(levelFilter as typeof profileLevels[number]));
-    const disciplineOk = disciplineFilter === "all" || (p.discipline ?? "unspecified") === disciplineFilter;
-    const scopeOk = scopeFilter === "all" || (p.profile_scope ?? "unspecified") === scopeFilter;
-    const institutionOk = institutionFilter === "all" || (p.institution ?? "unspecified") === institutionFilter;
-    const programOk = programFilter === "all" || (p.program_name ?? "unspecified") === programFilter;
-    const noviceOk = !noviceSafeOnly || p.novice_safe === true;
+    const levelOk = deferredLevel === "all"
+      || (profileLevels.length === 0 ? "unspecified" === deferredLevel : profileLevels.includes(deferredLevel as typeof profileLevels[number]));
+    const disciplineOk  = deferredDiscipline  === "all" || (p.discipline      ?? "unspecified") === deferredDiscipline;
+    const scopeOk       = deferredScope       === "all" || (p.profile_scope   ?? "unspecified") === deferredScope;
+    const institutionOk = deferredInstitution === "all" || (p.institution     ?? "unspecified") === deferredInstitution;
+    const programOk     = deferredProgram     === "all" || (p.program_name    ?? "unspecified") === deferredProgram;
+    const noviceOk      = !deferredNovice || p.novice_safe === true;
     return statusOk && styleOk && levelOk && disciplineOk && scopeOk && institutionOk && programOk && noviceOk;
-  });
+  }), [localizedCatalog, deferredStatus, deferredStyle, deferredLevel, deferredDiscipline, deferredScope, deferredInstitution, deferredProgram, deferredNovice]);
 
-  // Build hierarchy from filtered catalog
-  const continents = [...new Set(filteredCatalog.map((p) => p.continent))].sort();
-  const countriesInContinent = (continent: string) =>
-    [...new Set(filteredCatalog.filter((p) => p.continent === continent).map((p) => p.country))].sort();
-  const profilesInCountry = (continent: string, country: string) =>
-    filteredCatalog.filter((p) => p.continent === continent && p.country === country);
-
-  const availableStatuses = [...new Set(localizedCatalog.map((p) => p.status ?? "unspecified"))].sort();
-  const availableStyles = [...new Set(localizedCatalog.map((p) => p.style_id ?? p.bibliography_style ?? "unspecified"))].sort();
-  const availableLevels = [...new Set(
-    localizedCatalog.flatMap((p) => {
-      const levels = [
-        ...(p.academic_level ? [p.academic_level] : []),
-        ...(p.target_levels ?? []),
-      ];
+  // Opciones de filtros — sólo recalculan cuando cambia el catálogo localizado
+  const availableStatuses = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.status ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
+  const availableStyles = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.style_id ?? p.bibliography_style ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
+  const availableLevels = useMemo(
+    () => [...new Set(localizedCatalog.flatMap((p) => {
+      const levels = [...(p.academic_level ? [p.academic_level] : []), ...(p.target_levels ?? [])];
       return levels.length ? levels : ["unspecified"];
-    }),
-  )].sort();
-  const availableDisciplines = [...new Set(localizedCatalog.map((p) => p.discipline ?? "unspecified"))].sort();
-  const availableScopes = [...new Set(localizedCatalog.map((p) => p.profile_scope ?? "unspecified"))].sort();
-  const availableInstitutions = [...new Set(localizedCatalog.map((p) => p.institution ?? "unspecified"))].sort();
-  const availablePrograms = [...new Set(localizedCatalog.map((p) => p.program_name ?? "unspecified"))].sort();
+    }))].sort(),
+    [localizedCatalog],
+  );
+  const availableDisciplines = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.discipline ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
+  const availableScopes = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.profile_scope ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
+  const availableInstitutions = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.institution ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
+  const availablePrograms = useMemo(
+    () => [...new Set(localizedCatalog.map((p) => p.program_name ?? "unspecified"))].sort(),
+    [localizedCatalog],
+  );
 
-  // Search flattens everything
-  const searchResults = search.trim()
-    ? filteredCatalog.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.id.toLowerCase().includes(search.toLowerCase()) ||
-        (p.institution ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.institution_id ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.style_id ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.bibliography_style ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.discipline ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.program_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.faculty ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (p.department ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        p.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
-      )
-    : [];
+  // Jerarquía geográfica — recalcula sólo cuando filteredCatalog cambia
+  const continents = useMemo(
+    () => [...new Set(filteredCatalog.map((p) => p.continent))].sort(),
+    [filteredCatalog],
+  );
+  const countriesInContinent = useMemo(() =>
+    (continent: string) => [...new Set(filteredCatalog.filter((p) => p.continent === continent).map((p) => p.country))].sort(),
+    [filteredCatalog],
+  );
+  const profilesInCountry = useMemo(() =>
+    (continent: string, country: string) => filteredCatalog.filter((p) => p.continent === continent && p.country === country),
+    [filteredCatalog],
+  );
+
+  // Búsqueda — deferred para no bloquear el teclado
+  const searchResults = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return [];
+    return filteredCatalog.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.id.toLowerCase().includes(q) ||
+      (p.institution ?? "").toLowerCase().includes(q) ||
+      (p.institution_id ?? "").toLowerCase().includes(q) ||
+      (p.style_id ?? "").toLowerCase().includes(q) ||
+      (p.bibliography_style ?? "").toLowerCase().includes(q) ||
+      (p.discipline ?? "").toLowerCase().includes(q) ||
+      (p.program_name ?? "").toLowerCase().includes(q) ||
+      (p.faculty ?? "").toLowerCase().includes(q) ||
+      (p.department ?? "").toLowerCase().includes(q) ||
+      p.tags.some((tag) => tag.toLowerCase().includes(q))
+    );
+  }, [filteredCatalog, deferredSearch]);
 
   const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
   const academicLevelLabel = (level: string) => t(`community.academic_level.${level}`, { defaultValue: level });
