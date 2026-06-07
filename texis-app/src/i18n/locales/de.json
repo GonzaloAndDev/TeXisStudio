@@ -104,7 +104,7 @@
                  "import_choose":  "Auswählen",
                  "import_busy":  "Importieren...",
                  "import_create":  "Importiertes Projekt erstellen",
-                 "basic_mode_description":  "TeXisStudio ist im geführten Modus: Konzentriere dich auf deine Arbeit, die App unterstützt dich bei Formatierung, Bibliografie und Abgabe.",
+                 "basic_mode_description":  "TeXisStudio ist im geführten Modus: Konzentrieren Sie sich auf Ihre Arbeit – die App begleitet Sie bei Formatierung, Bibliografie und Abgabe.",
                  "error_opening_project":  "Dieser Ordner konnte nicht als TeXisStudio-Projekt geöffnet werden. Stellen Sie sicher, dass er tesis.project.yaml enthält.",
                  "search_library_hint":  "Bibliothek durchsuchen",
                  "detecting_latex":  "LaTeX wird erkannt…",
