@@ -158,7 +158,7 @@
 
 /* ─── Reset ─── */
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; min-width: 860px; }
 body {
   font-family: var(--font-ui);
   font-size: var(--fs-base);
@@ -462,10 +462,43 @@ body {
   }
 }
 
-@media (max-height: 760px) {
+/* ≤768px de alto (720p) — editor paper más compacto */
+@media (max-height: 768px) {
   .editor-paper {
     padding-top: 24px;
     padding-bottom: 36px;
     min-height: calc(100vh - 132px);
+  }
+}
+
+/* ≤768px de alto (720p) — HomeView más compacto */
+@media (max-height: 768px) {
+  .home-main {
+    padding: 16px 40px 24px !important;
+  }
+  .home-hero {
+    margin-bottom: 16px !important;
+    padding-bottom: 16px !important;
+  }
+  .home-hero-title {
+    font-size: var(--fs-2xl) !important;
+    margin-bottom: 4px !important;
+  }
+  .home-hero-sub {
+    margin-top: 4px !important;
+  }
+  .home-actions {
+    margin-top: 12px !important;
+  }
+  .home-journey-grid {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+  .home-journey-card {
+    min-height: 72px !important;
+    padding: 10px 12px !important;
+  }
+  .home-section-title {
+    margin: 14px 0 8px !important;
   }
 }

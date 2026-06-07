@@ -63,6 +63,7 @@ const S = {
   },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } as const,
   journeyGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 18 } as const,
+  journeyCard: { minHeight: 88 } as const,
   card: {
     background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
     borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
@@ -537,20 +538,20 @@ export default function HomeView() {
           </div>
         </aside>
 
-        <main style={S.main} className="scroll">
-          <div style={S.hero}>
-            <h1 style={S.greet}>
+        <main style={S.main} className="scroll home-main">
+          <div style={S.hero} className="home-hero">
+            <h1 style={S.greet} className="home-hero-title">
               <Trans
                 i18nKey="home.greeting"
                 components={{ em: <span style={S.greetItalic} /> }}
               />
             </h1>
-            <p style={S.sub}>
+            <p style={S.sub} className="home-hero-sub">
               {userMode === "basic"
                 ? t("home.basic_mode_description")
                 : t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
-            <div style={S.actions}>
+            <div style={S.actions} className="home-actions">
               <button className="btn btn-accent" onClick={() => navigate("/new")}>
                 <IconPlus size={13} /> {t("home.new_project")}
               </button>
@@ -568,12 +569,13 @@ export default function HomeView() {
             {projectsLoading || latexLoading ? (
               <HomeLoadingSkeleton />
             ) : (
-              <div style={S.journeyGrid}>
+              <div style={S.journeyGrid} className="home-journey-grid">
                 {workMoments.map(({ label, hint, icon, onClick }) => (
                   <button
                     key={label}
                     type="button"
                     onClick={onClick}
+                    className="home-journey-card"
                     style={{
                       textAlign: "left",
                       background: "var(--bg-panel)",
@@ -584,6 +586,7 @@ export default function HomeView() {
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
+                      minHeight: 88,
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
@@ -604,7 +607,7 @@ export default function HomeView() {
             <NextStepBanner project={latestProject} onClick={() => handleOpen(latestProject.path)} />
           )}
 
-          <div style={S.sectionTitle}>
+          <div style={S.sectionTitle} className="home-section-title">
             <span>{t("home.recent_projects")}</span>
             <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
             <span style={{ color: "var(--fg-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>

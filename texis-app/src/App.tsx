@@ -251,7 +251,7 @@ export default function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
-        <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflowX: "auto", overflowY: "hidden" }}>
           <AppErrorBoundary>
             <Suspense
               fallback={
