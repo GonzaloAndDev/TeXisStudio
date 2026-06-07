@@ -88,7 +88,6 @@ export function AppDialog({
         padding: 20,
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      aria-hidden="false"
     >
       <div
         ref={containerRef}

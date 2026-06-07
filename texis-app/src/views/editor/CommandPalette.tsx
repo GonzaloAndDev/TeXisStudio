@@ -194,7 +194,6 @@ export function CommandPalette({
         paddingTop: 120, zIndex: 900,
       }}
       onClick={onClose}
-      aria-hidden="false"
     >
       <div
         ref={dialogRef}
