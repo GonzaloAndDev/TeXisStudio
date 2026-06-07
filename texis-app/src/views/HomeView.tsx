@@ -238,11 +238,12 @@ function RecentProjectsSkeleton() {
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
+  const { setRecentProjects, recentProjects: cachedProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
-  const [projects, setProjects] = useState<RecentProject[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [latexLoading, setLatexLoading] = useState(true);
+  // Mostrar datos del store inmediatamente; solo mostrar skeleton en la primera carga
+  const [projects, setProjects] = useState<RecentProject[]>(cachedProjects);
+  const [projectsLoading, setProjectsLoading] = useState(cachedProjects.length === 0);
+  const [latexLoading, setLatexLoading] = useState(latexInfo === null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importTexPath, setImportTexPath] = useState("");
   const [importOutputPath, setImportOutputPath] = useState("");
@@ -251,6 +252,7 @@ export default function HomeView() {
   const [homeError, setHomeError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Siempre refrescar LaTeX en background; si ya hay datos en caché no mostramos spinner
     api.detectLatex()
       .then(setLatexInfo)
       .catch(() => {})
@@ -262,10 +264,12 @@ export default function HomeView() {
         api.listRecentProjects(dir).then((p) => {
           setProjects(p);
           setRecentProjects(p);
-        }).catch(() => setProjects([]))
-          .finally(() => setProjectsLoading(false))
+        }).catch(() => {
+          // Si falla el refresh, conservar caché; solo vaciar si era la primera carga
+          if (cachedProjects.length === 0) setProjects([]);
+        }).finally(() => setProjectsLoading(false))
       ).catch(() => {
-        setProjects([]);
+        if (cachedProjects.length === 0) setProjects([]);
         setProjectsLoading(false);
       });
     } else {
@@ -273,7 +277,7 @@ export default function HomeView() {
       setRecentProjects(MOCK_PROJECTS);
       setProjectsLoading(false);
     }
-  }, [setLatexInfo, setRecentProjects]);
+  }, [setLatexInfo, setRecentProjects, cachedProjects.length]);
 
   async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
