@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
@@ -239,6 +239,8 @@ function RecentProjectsSkeleton() {
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [navPending, startNav] = useTransition();
+  const [opening, setOpening] = useState<string | null>(null); // path del proyecto que se está abriendo
   const { setRecentProjects, recentProjects: cachedProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
   // Mostrar datos del store inmediatamente; solo mostrar skeleton en la primera carga
@@ -282,15 +284,18 @@ export default function HomeView() {
 
   async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
-    if (!isTauriEnv) { navigate("/demo"); return; }
+    if (!isTauriEnv) { startNav(() => navigate("/demo")); return; }
+    setOpening(projectPath); // feedback inmediato
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
       const encodedPath = encodeURIComponent(projectPath);
-      navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
+      startNav(() => navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`));
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
       setHomeError(t("home.error_opening_project"));
+    } finally {
+      setOpening(null);
     }
   }
 
@@ -374,31 +379,31 @@ export default function HomeView() {
       label: t("home.step_start"),
       hint: t("home.step_start_hint"),
       icon: <IconPlus size={13} />,
-      onClick: () => navigate("/new"),
+      onClick: () => startNav(() => navigate("/new")),
     },
     {
       label: t("home.step_setup"),
       hint: t("home.step_setup_hint"),
       icon: <IconSettings size={13} />,
-      onClick: () => navigate("/settings"),
+      onClick: () => startNav(() => navigate("/settings")),
     },
     {
       label: t("home.step_write"),
       hint: latestProject ? t("home.step_write_hint_project") : t("home.step_write_hint_empty"),
       icon: <IconBook size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path) : navigate("/new"),
+      onClick: () => latestProject ? handleOpen(latestProject.path) : startNav(() => navigate("/new")),
     },
     {
       label: t("home.step_review"),
       hint: t("home.step_review_hint"),
       icon: <IconSearch size={13} />,
-      onClick: () => navigate("/settings/text"),
+      onClick: () => startNav(() => navigate("/settings/text")),
     },
     {
       label: t("home.step_deliver"),
       hint: latestProject ? t("home.step_deliver_hint_project") : t("home.step_deliver_hint_empty"),
       icon: <IconUpload size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : navigate("/new"),
+      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : startNav(() => navigate("/new")),
     },
   ];
 
@@ -488,16 +493,34 @@ export default function HomeView() {
           </div>
         </AppDialog>
       )}
+      {/* Barra de progreso de navegación */}
+      {(navPending || opening) && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 9999, background: "var(--bg-app)" }}>
+          <div style={{
+            height: "100%",
+            background: "var(--accent)",
+            animation: "tx-nav-progress 1.2s ease-in-out infinite",
+          }} />
+          <style>{`
+            @keyframes tx-nav-progress {
+              0%   { width: 0%; margin-left: 0; }
+              50%  { width: 70%; margin-left: 0; }
+              100% { width: 0%; margin-left: 100%; }
+            }
+          `}</style>
+        </div>
+      )}
+
       <TxAppbar
         left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v1.0.0</span></>}
         center={null}
         right={
           <>
             <LanguagePicker />
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")} title={t("home.search_library_hint")}>
+            <button className="btn btn-ghost btn-sm" onClick={() => startNav(() => navigate("/library"))} title={t("home.search_library_hint")}>
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
-            <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} aria-label={t("common.settings")}><IconSettings size={14} /></button>
+            <button className="btn btn-ghost btn-icon" onClick={() => startNav(() => navigate("/settings"))} aria-label={t("common.settings")}><IconSettings size={14} /></button>
           </>
         }
       />
@@ -510,7 +533,7 @@ export default function HomeView() {
               key={label}
               type="button"
               className="tx-unstyled-button"
-              style={S.sideItem(false)}
+              style={{ ...S.sideItem(false), opacity: navPending || opening ? 0.55 : 1, pointerEvents: navPending || opening ? "none" : "auto" }}
               onClick={onClick}
             >
               {icon} {label}
@@ -522,8 +545,8 @@ export default function HomeView() {
           <button
             type="button"
             className="tx-unstyled-button"
-            style={S.sideItem(false)}
-            onClick={() => navigate("/library")}
+            style={{ ...S.sideItem(false), opacity: navPending || opening ? 0.55 : 1, pointerEvents: navPending || opening ? "none" : "auto" }}
+            onClick={() => startNav(() => navigate("/library"))}
           >
             <IconFolder size={13} /> {t("home.nav_profiles")}
           </button>
@@ -582,7 +605,8 @@ export default function HomeView() {
                       border: "1px solid var(--border-soft)",
                       borderRadius: "var(--r-lg)",
                       padding: "14px 16px",
-                      cursor: "pointer",
+                      cursor: navPending || opening ? "default" : "pointer",
+                      opacity: navPending || opening ? 0.55 : 1,
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
