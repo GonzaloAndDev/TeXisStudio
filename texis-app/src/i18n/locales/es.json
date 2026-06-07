@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -30,7 +30,7 @@
     "spell_not_available": "Corrección ortográfica no disponible para este idioma"
   },
   "home": {
-    "greeting": "Continúa donde lo dejaste.",
+    "greeting": "Continúa <em>donde lo dejaste</em>.",
     "greeting_italic": "donde lo dejaste",
     "projects_count_one": "{{count}} proyecto",
     "projects_count_other": "{{count}} proyectos",

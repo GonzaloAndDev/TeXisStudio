@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -30,7 +30,7 @@
     "spell_not_available": "Rechtschreibprüfung für diese Sprache nicht verfügbar"
   },
   "home": {
-    "greeting": "Mach weiter, wo du aufgehört hast.",
+    "greeting": "Mach weiter, <em>wo du aufgehört hast</em>.",
     "greeting_italic": "wo du aufgehört hast",
     "projects_count_one": "{{count}} Projekt",
     "projects_count_other": "{{count}} Projekte",

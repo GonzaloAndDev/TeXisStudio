@@ -1,4 +1,4 @@
-{
+﻿{
   "setup_latex": {
     "options": {
       "macos": {
@@ -316,7 +316,7 @@
     "spell_not_available": "A verificação ortográfica não está disponível para este idioma"
   },
   "home": {
-    "greeting": "Continue de onde parou.",
+    "greeting": "Continue <em>onde você parou</em>.",
     "greeting_italic": "onde você parou",
     "projects_count_one": "Projeto {{count}}",
     "projects_count_other": "Projetos {{count}}",

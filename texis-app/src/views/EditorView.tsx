@@ -806,6 +806,16 @@ export default function EditorView() {
               </div>
             ))}
           </div>
+
+          {/* Leyenda de estados — accesible sin color */}
+          <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px" }} aria-label={t("editor.section_status_legend", { defaultValue: "Leyenda de estados" })}>
+            {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
+              <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
+                {t(cfg.labelKey)}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* ── Canvas editor ──────────────────────────────────────── */}
@@ -844,26 +854,35 @@ export default function EditorView() {
             <button
               className={`btn btn-sm ${spellPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => { setSpellPanelOpen((v) => !v); if (grammarPanelOpen) setGrammarPanelOpen(false); }}
+              aria-label={t("spell.panel_title")}
+              aria-pressed={spellPanelOpen}
               title={t("spell.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              ABC✓
+              <IconCheck size={11} />
+              {t("editor.review_spell", { defaultValue: "Ortografía" })}
             </button>
             <button
               className={`btn btn-sm ${grammarPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => { setGrammarPanelOpen((v) => !v); if (spellPanelOpen) setSpellPanelOpen(false); }}
+              aria-label={t("grammar.panel_title")}
+              aria-pressed={grammarPanelOpen}
               title={t("grammar.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              LT
+              <IconText size={11} />
+              {t("editor.review_grammar", { defaultValue: "Gramática" })}
             </button>
             <button
               className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => aiPanel.togglePanel()}
+              aria-label={t("ai.panel_title")}
+              aria-pressed={aiPanel.isPanelOpen}
               title={t("ai.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              ✦ IA
+              <IconSigma size={11} />
+              {t("editor.review_ai", { defaultValue: "IA" })}
             </button>
 
             <div style={{ display: "none" }} />

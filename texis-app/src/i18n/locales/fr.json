@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -30,7 +30,7 @@
     "spell_not_available": "Correcteur orthographique non disponible pour cette langue"
   },
   "home": {
-    "greeting": "Reprenez là où vous en étiez.",
+    "greeting": "Reprenez <em>là où vous en étiez</em>.",
     "greeting_italic": "là où vous en étiez",
     "projects_count_one": "{{count}} projet",
     "projects_count_other": "{{count}} projets",

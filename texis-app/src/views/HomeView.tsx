@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -198,7 +198,10 @@ function SkeletonLine({ width = "100%", height = 12 }: { width?: string; height?
 function HomeLoadingSkeleton() {
   return (
     <>
-      <style>{`@keyframes tx-pulse { 0% { background-position: 220% 0; } 100% { background-position: -220% 0; } }`}</style>
+      <style>{`
+        @keyframes tx-pulse { 0% { background-position: 220% 0; } 100% { background-position: -220% 0; } }
+        @media (prefers-reduced-motion: reduce) { @keyframes tx-pulse { 0%, 100% { background-position: 0 0; } } }
+      `}</style>
       <div style={S.journeyGrid}>
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 16px", minHeight: 88, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -541,11 +544,10 @@ export default function HomeView() {
         <main style={S.main} className="scroll">
           <div style={S.hero}>
             <h1 style={S.greet}>
-              {t("home.greeting").split(t("home.greeting_italic")).map((part, i, arr) =>
-                i < arr.length - 1
-                  ? [part, <span key={i} style={S.greetItalic}>{t("home.greeting_italic")}</span>]
-                  : part
-              )}
+              <Trans
+                i18nKey="home.greeting"
+                components={{ em: <span style={S.greetItalic} /> }}
+              />
             </h1>
             <p style={S.sub}>
               {userMode === "basic"

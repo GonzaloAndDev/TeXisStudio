@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "保存",
     "cancel": "取消",
@@ -30,7 +30,7 @@
     "spell_not_available": "该语言不支持拼写检查"
   },
   "home": {
-    "greeting": "继续您上次的工作。",
+    "greeting": "继续您<em>上次的工作</em>。",
     "greeting_italic": "上次的工作",
     "projects_count_one": "{{count}} 个项目",
     "projects_count_other": "{{count}} 个项目",

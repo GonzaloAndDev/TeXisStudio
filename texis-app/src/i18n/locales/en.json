@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -30,7 +30,7 @@
     "spell_not_available": "Spell checking not available for this language"
   },
   "home": {
-    "greeting": "Continue where you left off.",
+    "greeting": "Continue <em>where you left off</em>.",
     "greeting_italic": "where you left off",
     "projects_count_one": "{{count}} project",
     "projects_count_other": "{{count}} projects",

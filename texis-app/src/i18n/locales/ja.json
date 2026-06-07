@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "保存",
     "cancel": "キャンセル",
@@ -30,7 +30,7 @@
     "spell_not_available": "この言語のスペルチェックは利用できません"
   },
   "home": {
-    "greeting": "前回の続きから始めましょう。",
+    "greeting": "<em>前回の続きから</em>始めましょう。",
     "greeting_italic": "前回の続きから",
     "projects_count_one": "{{count}} 件のプロジェクト",
     "projects_count_other": "{{count}} 件のプロジェクト",
