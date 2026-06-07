@@ -69,8 +69,9 @@ export default function WelcomeView() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      justifyContent: "safe center", // centra si cabe; top-align con scroll si desborda
       background: "var(--bg-app)",
-      padding: "60px 24px 48px",
+      padding: "40px 24px",
     }}>
       <div style={{ marginBottom: 28 }}>
         <TxLogo />

@@ -288,7 +288,8 @@ export default function HomeView() {
       setRecentProjects(MOCK_PROJECTS);
       setProjectsLoading(false);
     }
-  }, [setLatexInfo, setRecentProjects, cachedProjects.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setLatexInfo, setRecentProjects]); // cachedProjects.length excluido: incluirlo causaría re-fetch al recibir datos
 
   async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
@@ -541,7 +542,8 @@ export default function HomeView() {
               key={label}
               type="button"
               className="tx-unstyled-button"
-              style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1, pointerEvents: busy || opening ? "none" : "auto" }}
+              disabled={busy || !!opening}
+              style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1 }}
               onClick={onClick}
             >
               {icon} {label}
@@ -553,7 +555,8 @@ export default function HomeView() {
           <button
             type="button"
             className="tx-unstyled-button"
-            style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1, pointerEvents: busy || opening ? "none" : "auto" }}
+            disabled={busy || !!opening}
+            style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1 }}
             onClick={() => goTo("/library")}
           >
             <IconFolder size={13} /> {t("home.nav_profiles")}
@@ -583,7 +586,7 @@ export default function HomeView() {
                 : t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
             <div style={S.actions} className="home-actions">
-              <button className="btn btn-accent" onClick={() => navigate("/new")}>
+              <button className="btn btn-accent" onClick={() => goTo("/new")} disabled={busy || !!opening}>
                 <IconPlus size={13} /> {t("home.new_project")}
               </button>
               <button
@@ -607,6 +610,7 @@ export default function HomeView() {
                     type="button"
                     onClick={onClick}
                     className="home-journey-card"
+                    disabled={busy || !!opening}
                     style={{
                       textAlign: "left",
                       background: "var(--bg-panel)",
