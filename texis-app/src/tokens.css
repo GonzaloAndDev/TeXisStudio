@@ -168,6 +168,52 @@ body {
   font-feature-settings: 'ss01', 'cv11';
 }
 
+/* ─── Focus global ─── */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ─── Acciones interactivas ─── */
+.tx-unstyled-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tx-card-action {
+  cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.tx-card-action:hover {
+  border-color: var(--accent-soft) !important;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.tx-card-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent) !important;
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ─── Utilidades generales ─── */
 .tx-mono { font-family: var(--font-mono); }
 .tx-serif { font-family: var(--font-display); }

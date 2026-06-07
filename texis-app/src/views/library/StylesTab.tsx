@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../../components/ui/useConfirm";
 import type { TFunction } from "i18next";
 import { AppDialog } from "../../components/AppDialog";
 import { IconCheck, IconEdit, IconLayers, IconPlus, IconRefresh, IconSearch, IconTrash, IconX } from "../../components/Icons";
@@ -62,6 +63,7 @@ function styleBibliographyTitle(t: TFunction, style: CitationStyle) {
 
 export function StylesTab() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [styles, setStyles]           = useState<CitationStyle[]>(loadStyles);
   const [selected, setSelected]       = useState<CitationStyle | null>(null);
   const [addingCustom, setAddingCustom] = useState(false);
@@ -145,8 +147,15 @@ export function StylesTab() {
     if (selected?.id === style.id) setSelected(null);
   }
 
-  function resetToDefaults() {
-    if (!window.confirm(t("styles.reset_confirm"))) return;
+  async function resetToDefaults() {
+    const ok = await confirm({
+      title: t("styles.reset_title", { defaultValue: "Restaurar estilos por defecto" }),
+      message: t("styles.reset_confirm"),
+      confirmLabel: t("styles.reset_action", { defaultValue: "Restaurar" }),
+      cancelLabel: t("common.cancel", { defaultValue: "Cancelar" }),
+      destructive: true,
+    });
+    if (!ok) return;
     saveStyles(BUILTIN_STYLES);
     setStyles(BUILTIN_STYLES);
     setSelected(null);

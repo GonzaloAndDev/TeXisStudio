@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/ui/useConfirm";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
@@ -178,6 +179,7 @@ export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
 
@@ -376,14 +378,17 @@ export default function EditorView() {
 
   const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm(
-      t("editor.snapshot_restore_confirm")
-    );
+    const ok = await confirm({
+      title: t("editor.snapshot_restore_title", { defaultValue: "Restaurar versión" }),
+      message: t("editor.snapshot_restore_confirm"),
+      confirmLabel: t("editor.snapshot_restore_action", { defaultValue: "Restaurar" }),
+      cancelLabel: t("common.cancel", { defaultValue: "Cancelar" }),
+      destructive: false,
+    });
     if (!ok) return;
     setSnapBusy(true);
     try {
       await api.restoreSnapshot(activeProjectPath, filename);
-      // Recargar el proyecto desde disco
       const model = await api.getProject(activeProjectPath);
       useProjectStore.getState().openProject(model, activeProjectPath);
       setSnapshotsOpen(false);
@@ -392,11 +397,17 @@ export default function EditorView() {
     } finally {
       setSnapBusy(false);
     }
-  }, [activeProjectPath]);
+  }, [activeProjectPath, confirm, t]);
 
   const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm(t("editor.snapshot_delete_confirm"));
+    const ok = await confirm({
+      title: t("editor.snapshot_delete_title", { defaultValue: "Eliminar versión" }),
+      message: t("editor.snapshot_delete_confirm"),
+      confirmLabel: t("common.delete", { defaultValue: "Eliminar" }),
+      cancelLabel: t("common.cancel", { defaultValue: "Cancelar" }),
+      destructive: true,
+    });
     if (!ok) return;
     try {
       await api.deleteSnapshot(activeProjectPath, filename);
@@ -404,7 +415,7 @@ export default function EditorView() {
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
     }
-  }, [activeProjectPath, loadSnapshots]);
+  }, [activeProjectPath, confirm, t, loadSnapshots]);
 
   const scheduleAutoSave = useCallback((blocks: ContentBlock[]) => {
     setSaveStatus("unsaved");
@@ -694,7 +705,7 @@ export default function EditorView() {
     t("editor.autosaved");
   const saveDot =
     saveStatus === "saving"  ? "var(--build-warn)" :
-    saveStatus === "unsaved" ? "var(--build-err)" :
+    saveStatus === "unsaved" ? "var(--build-warn)" :
     saveStatus === "error"   ? "var(--build-err)" :
     "var(--build-ok)";
 
@@ -865,8 +876,8 @@ export default function EditorView() {
 
             <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 6px", flexShrink: 0 }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: saveStatus === "error" ? "var(--build-err)" : "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
+            <div role="status" aria-live="polite" aria-label={saveLabel} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: saveStatus === "error" ? "var(--build-err)" : "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
               <IconRefresh size={11} /> {saveLabel}
               {saveStatus === "error" && (
                 <button

@@ -6,7 +6,7 @@ import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook, IconFile,
-  IconFolder, IconPlus, IconSearch, IconSettings, IconUpload,
+  IconFolder, IconPlus, IconSearch, IconSettings, IconUpload, IconWarn,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { api } from "../lib/tauri";
@@ -154,7 +154,7 @@ function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
       background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
       display: "flex", gap: 14, alignItems: "center",
     }}>
-      <span style={{ fontSize: 20, flexShrink: 0 }}>⚠</span>
+      <span style={{ color: "var(--build-warn)", flexShrink: 0 }}><IconWarn size={18} /></span>
       <div style={{ flex: 1 }}>
         <span style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)" }}>
           {available.length === 0
@@ -483,10 +483,10 @@ export default function HomeView() {
         right={
           <>
             <LanguagePicker />
-            <button className="btn btn-ghost btn-sm">
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")} title={t("home.search_library_hint", { defaultValue: "Buscar en la biblioteca" })}>
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
-            <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} title={t("common.settings")}><IconSettings size={14} /></button>
+            <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} aria-label={t("common.settings")}><IconSettings size={14} /></button>
           </>
         }
       />
@@ -495,19 +495,35 @@ export default function HomeView() {
         <aside style={S.side}>
           <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.guided_route")}</div>
           {workMoments.map(({ label, icon, onClick }) => (
-            <div key={label} style={S.sideItem(false)} onClick={onClick}>
+            <button
+              key={label}
+              type="button"
+              className="tx-unstyled-button"
+              style={S.sideItem(false)}
+              onClick={onClick}
+            >
               {icon} {label}
-            </div>
+            </button>
           ))}
 
           <div style={{ height: 1, background: "var(--border-subtle)", margin: "12px 4px" }} />
           <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.nav_library")}</div>
-          <div style={S.sideItem(false)} onClick={() => navigate("/library")}>
+          <button
+            type="button"
+            className="tx-unstyled-button"
+            style={S.sideItem(false)}
+            onClick={() => navigate("/library")}
+          >
             <IconFolder size={13} /> {t("home.nav_profiles")}
-          </div>
-          <div style={S.sideItem(false)}>
+          </button>
+          <button
+            type="button"
+            className="tx-unstyled-button"
+            style={S.sideItem(false)}
+            onClick={() => navigate("/library?tab=elements")}
+          >
             <IconFile size={13} /> {t("home.nav_elements")}
-          </div>
+          </button>
 
           <div style={{
             marginTop: "auto", padding: 8, borderTop: "1px solid var(--border-subtle)",
@@ -600,12 +616,13 @@ export default function HomeView() {
           ) : (
           <div style={S.grid}>
             {projects.map((p, i) => (
-              <div
+              <button
                 key={i}
-                style={S.card}
+                type="button"
+                className="tx-unstyled-button tx-card-action"
+                style={{ ...S.card, display: "flex" }}
                 onClick={() => handleOpen(p.path)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--accent)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-soft)"; }}
+                aria-label={p.title}
               >
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={S.cardSpine} />
@@ -625,14 +642,16 @@ export default function HomeView() {
                   <span>{p.path.split(/[/\\]/).pop()}</span>
                   <span>{formatUpdatedAt(p.updated_at, t)}</span>
                 </div>
-              </div>
+              </button>
             ))}
 
             {projects.length === 0 && (
-              <div
+              <button
+                type="button"
+                className="tx-unstyled-button tx-card-action"
                 style={{
                   background: "var(--bg-panel)", border: "1px dashed var(--border-firm)",
-                  borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
+                  borderRadius: "var(--r-lg)", padding: 16,
                   display: "flex", flexDirection: "column", gap: 8, minHeight: 132,
                 }}
                 onClick={() => navigate("/new")}
@@ -649,7 +668,7 @@ export default function HomeView() {
                   <span className="chip">{t("wizard.doc_tesina")}</span>
                   <span className="chip">{t("wizard.chip_more")}</span>
                 </div>
-              </div>
+              </button>
             )}
           </div>
           )}
