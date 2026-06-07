@@ -285,17 +285,18 @@ body {
 .editor-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(210px, 17vw) minmax(0, 1fr) minmax(250px, 21vw);
+  /* paneles clampeados: crecen con vw pero tienen techo para pantallas grandes */
+  grid-template-columns: clamp(200px, 17vw, 280px) minmax(0, 1fr) clamp(250px, 21vw, 340px);
   min-height: 0;
   min-width: 0;
 }
 
 .editor-grid-left-collapsed {
-  grid-template-columns: 42px minmax(0, 1fr) minmax(250px, 21vw);
+  grid-template-columns: 42px minmax(0, 1fr) clamp(250px, 21vw, 340px);
 }
 
 .editor-grid-meta-collapsed {
-  grid-template-columns: minmax(210px, 17vw) minmax(0, 1fr) 42px;
+  grid-template-columns: clamp(200px, 17vw, 280px) minmax(0, 1fr) 42px;
 }
 
 .editor-grid-left-collapsed.editor-grid-meta-collapsed {
@@ -396,17 +397,18 @@ body {
   flex-basis: clamp(360px, 34vw, 480px);
 }
 
-@media (max-width: 1360px) {
+/* ≤1400px — paneles ligeramente compactos (monitores de 1440p con zoom, etc.) */
+@media (max-width: 1400px) {
   .editor-grid {
-    grid-template-columns: 220px minmax(0, 1fr) 270px;
+    grid-template-columns: 210px minmax(0, 1fr) 260px;
   }
 
   .editor-grid-left-collapsed {
-    grid-template-columns: 42px minmax(0, 1fr) 270px;
+    grid-template-columns: 42px minmax(0, 1fr) 260px;
   }
 
   .editor-grid-meta-collapsed {
-    grid-template-columns: 220px minmax(0, 1fr) 42px;
+    grid-template-columns: 210px minmax(0, 1fr) 42px;
   }
 
   .editor-grid-left-collapsed.editor-grid-meta-collapsed {
@@ -420,9 +422,38 @@ body {
   }
 }
 
+/* ≤1280px — 720p: colapsar panel derecho para dar espacio al canvas */
+@media (max-width: 1280px) {
+  .editor-grid {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .editor-grid-meta-collapsed {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed.editor-grid-meta-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .editor-meta-panel,
+  .editor-panel-rail-right {
+    display: none !important;
+  }
+}
+
+/* ≤1120px — panel izquierdo más estrecho */
 @media (max-width: 1120px) {
   .editor-grid {
-    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
   }
 
   .editor-meta-panel,
