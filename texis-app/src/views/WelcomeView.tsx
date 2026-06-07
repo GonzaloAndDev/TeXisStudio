@@ -65,12 +65,12 @@ export default function WelcomeView() {
   return (
     <div style={{
       minHeight: "100vh",
+      overflowY: "auto",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
       background: "var(--bg-app)",
-      padding: "40px 24px",
+      padding: "60px 24px 48px",
     }}>
       <div style={{ marginBottom: 28 }}>
         <TxLogo />
