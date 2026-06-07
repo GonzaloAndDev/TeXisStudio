@@ -239,8 +239,21 @@ function RecentProjectsSkeleton() {
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [navPending, startNav] = useTransition();
-  const [opening, setOpening] = useState<string | null>(null); // path del proyecto que se está abriendo
+  const [, startNav] = useTransition();
+  const [busy, setBusy] = useState(false);          // nav en curso (feedback inmediato)
+  const [opening, setOpening] = useState<string | null>(null); // proyecto abriéndose
+
+  // Navega a una ruta garantizando que el estado de carga se pinta antes
+  function goTo(path: string) {
+    setBusy(true);
+    // Dos rAF: primer frame aplica busy=true, segundo frame el browser ya pintó, entonces navegamos
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        startNav(() => navigate(path));
+        // HomeView se desmonta tras navigate; no hace falta limpiar busy
+      });
+    });
+  }
   const { setRecentProjects, recentProjects: cachedProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
   // Mostrar datos del store inmediatamente; solo mostrar skeleton en la primera carga
@@ -379,31 +392,31 @@ export default function HomeView() {
       label: t("home.step_start"),
       hint: t("home.step_start_hint"),
       icon: <IconPlus size={13} />,
-      onClick: () => startNav(() => navigate("/new")),
+      onClick: () => goTo("/new"),
     },
     {
       label: t("home.step_setup"),
       hint: t("home.step_setup_hint"),
       icon: <IconSettings size={13} />,
-      onClick: () => startNav(() => navigate("/settings")),
+      onClick: () => goTo("/settings"),
     },
     {
       label: t("home.step_write"),
       hint: latestProject ? t("home.step_write_hint_project") : t("home.step_write_hint_empty"),
       icon: <IconBook size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path) : startNav(() => navigate("/new")),
+      onClick: () => latestProject ? handleOpen(latestProject.path) : goTo("/new"),
     },
     {
       label: t("home.step_review"),
       hint: t("home.step_review_hint"),
       icon: <IconSearch size={13} />,
-      onClick: () => startNav(() => navigate("/settings/text")),
+      onClick: () => goTo("/settings/text"),
     },
     {
       label: t("home.step_deliver"),
       hint: latestProject ? t("home.step_deliver_hint_project") : t("home.step_deliver_hint_empty"),
       icon: <IconUpload size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : startNav(() => navigate("/new")),
+      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : goTo("/new"),
     },
   ];
 
@@ -494,7 +507,7 @@ export default function HomeView() {
         </AppDialog>
       )}
       {/* Barra de progreso de navegación */}
-      {(navPending || opening) && (
+      {(busy || opening) && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 9999, background: "var(--bg-app)" }}>
           <div style={{
             height: "100%",
@@ -517,10 +530,10 @@ export default function HomeView() {
         right={
           <>
             <LanguagePicker />
-            <button className="btn btn-ghost btn-sm" onClick={() => startNav(() => navigate("/library"))} title={t("home.search_library_hint")}>
+            <button className="btn btn-ghost btn-sm" onClick={() => goTo("/library")} title={t("home.search_library_hint")}>
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
-            <button className="btn btn-ghost btn-icon" onClick={() => startNav(() => navigate("/settings"))} aria-label={t("common.settings")}><IconSettings size={14} /></button>
+            <button className="btn btn-ghost btn-icon" onClick={() => goTo("/settings")} aria-label={t("common.settings")}><IconSettings size={14} /></button>
           </>
         }
       />
@@ -533,7 +546,7 @@ export default function HomeView() {
               key={label}
               type="button"
               className="tx-unstyled-button"
-              style={{ ...S.sideItem(false), opacity: navPending || opening ? 0.55 : 1, pointerEvents: navPending || opening ? "none" : "auto" }}
+              style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1, pointerEvents: busy || opening ? "none" : "auto" }}
               onClick={onClick}
             >
               {icon} {label}
@@ -545,8 +558,8 @@ export default function HomeView() {
           <button
             type="button"
             className="tx-unstyled-button"
-            style={{ ...S.sideItem(false), opacity: navPending || opening ? 0.55 : 1, pointerEvents: navPending || opening ? "none" : "auto" }}
-            onClick={() => startNav(() => navigate("/library"))}
+            style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1, pointerEvents: busy || opening ? "none" : "auto" }}
+            onClick={() => goTo("/library")}
           >
             <IconFolder size={13} /> {t("home.nav_profiles")}
           </button>
@@ -605,8 +618,8 @@ export default function HomeView() {
                       border: "1px solid var(--border-soft)",
                       borderRadius: "var(--r-lg)",
                       padding: "14px 16px",
-                      cursor: navPending || opening ? "default" : "pointer",
-                      opacity: navPending || opening ? 0.55 : 1,
+                      cursor: busy || opening ? "default" : "pointer",
+                      opacity: busy || opening ? 0.55 : 1,
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
