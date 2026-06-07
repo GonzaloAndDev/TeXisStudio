@@ -285,7 +285,7 @@ export default function HomeView() {
       navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
-      setHomeError("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
+      setHomeError(t("home.error_opening_project"));
     }
   }
 
@@ -333,7 +333,7 @@ export default function HomeView() {
     } catch (e) {
       console.error("Error importando .tex:", e);
       const message = e instanceof Error ? e.message : String(e);
-      setHomeError(`No pude importar el archivo .tex: ${message}`);
+      setHomeError(t("home.error_importing_tex", { error: message }));
     } finally {
       setImportBusy(false);
     }
@@ -345,7 +345,7 @@ export default function HomeView() {
   }
 
   const latexStatus = (() => {
-    if (latexLoading) return { text: "Detectando LaTeX...", dot: "var(--build-warn)" };
+    if (latexLoading) return { text: t("home.detecting_latex"), dot: "var(--build-warn)" };
     if (!latexInfo?.is_usable) return { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
     const backends = latexInfo.available_backends ?? [];
     const hasTectonic = latexInfo.has_tectonic;
@@ -489,7 +489,7 @@ export default function HomeView() {
         right={
           <>
             <LanguagePicker />
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")} title={t("home.search_library_hint", { defaultValue: "Buscar en la biblioteca" })}>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate("/library")} title={t("home.search_library_hint")}>
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
             <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} aria-label={t("common.settings")}><IconSettings size={14} /></button>
@@ -551,7 +551,7 @@ export default function HomeView() {
             </h1>
             <p style={S.sub}>
               {userMode === "basic"
-                ? "TeXisStudio está en modo guiado: tú enfócate en tu trabajo y la app te acompaña con formato, bibliografía y entrega."
+                ? t("home.basic_mode_description")
                 : t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
             <div style={S.actions}>

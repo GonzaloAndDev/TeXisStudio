@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AIAssistantPanel — panel lateral de asistente de IA.
  *
  * Pestañas independientes por proveedor.
@@ -360,7 +360,7 @@ export function AiAssistantPanel({
         <button
           className="btn btn-ghost"
           onClick={store.togglePanel}
-          aria-label={t("common.close", { defaultValue: "Cerrar" })}
+          aria-label={t("common.close")}
           style={{ padding: "2px 6px", fontSize: 11 }}
         >
           <IconX size={13} />
@@ -657,7 +657,7 @@ export function AiAssistantPanel({
           className="btn btn-accent"
           onClick={handleSend}
           disabled={!isConfigured || !input.trim() || store.isLoading}
-          aria-label={t("ai.send", { defaultValue: "Enviar" })}
+          aria-label={t("ai.send")}
           style={{ padding: "8px 10px", flexShrink: 0 }}
         >
           <IconUpload size={14} />

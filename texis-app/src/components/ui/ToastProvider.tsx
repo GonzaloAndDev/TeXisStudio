@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
@@ -34,6 +35,7 @@ const TYPE_COLORS: Record<ToastType, { bg: string; border: string; icon: string 
 };
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+  const { t } = useTranslation();
   const c = TYPE_COLORS[toast.type];
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -80,7 +82,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       <span style={{ flex: 1, lineHeight: 1.5 }}>{toast.message}</span>
       <button
         type="button"
-        aria-label="Cerrar notificación"
+        aria-label={t("toast.close_button")}
         onClick={() => onDismiss(toast.id)}
         style={{
           background: "transparent",
@@ -103,6 +105,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 let toastCounter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
@@ -138,7 +141,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           }
         `}</style>
         <div
-          aria-label="Notificaciones"
+          aria-label={t("toast.notifications_area_label")}
           style={{
             position: "fixed",
             bottom: 40,

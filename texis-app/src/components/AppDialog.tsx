@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { IconX } from "./Icons";
 
 const FOCUSABLE = [
@@ -39,6 +40,7 @@ export function AppDialog({
   width?: number;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const titleId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
@@ -126,7 +128,7 @@ export function AppDialog({
               </div>
             )}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }} aria-label="Cerrar">
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }} aria-label={t("common.close")}>
             <IconX size={12} />
           </button>
         </div>

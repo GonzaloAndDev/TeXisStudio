@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
@@ -207,7 +207,7 @@ export default function CompileView() {
       const res = await api.exportDelivery(activeProjectPath, folder, exportMode);
       setExportResult(res);
       setExportedZip(res.zip_path);
-      toast.success(t("compile.export_success", { defaultValue: "Exportación completada" }));
+      toast.success(t("compile.export_success"));
     } catch (e) {
       const msg = t("compile.export_error", { error: String(e) });
       setExportError(msg);
@@ -294,16 +294,16 @@ export default function CompileView() {
     <>
       {readinessAction && readiness && (
         <AppDialog
-          title={readinessAction === "compile" ? t("compile.readiness_compile_title", { defaultValue: "Proyecto pendiente para versión formal" }) : t("compile.readiness_export_title", { defaultValue: "Entrega final bloqueada" })}
+          title={readinessAction === "compile" ? t("compile.readiness_compile_title") : t("compile.readiness_export_title")}
           subtitle={readinessAction === "compile"
-            ? t("compile.readiness_compile_subtitle", { defaultValue: "Compila como borrador o revisa estos puntos antes de tratarlo como versión formal." })
-            : t("compile.readiness_export_subtitle", { defaultValue: "Para exportar en modo final, completa primero los controles de entrega y calidad." })}
+            ? t("compile.readiness_compile_subtitle")
+            : t("compile.readiness_export_subtitle")}
           width={580}
           onClose={() => setReadinessAction(null)}
           footer={
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setReadinessAction(null)}>
-                {t("compile.readiness_back", { defaultValue: "Volver a revisar" })}
+                {t("compile.readiness_back")}
               </button>
               {readinessAction === "compile" && (
                 <button
@@ -314,7 +314,7 @@ export default function CompileView() {
                     doCompile();
                   }}
                 >
-                  {t("compile.compile_as_draft", { defaultValue: "Compilar como borrador" })}
+                  {t("compile.compile_as_draft")}
                 </button>
               )}
             </>
@@ -322,8 +322,8 @@ export default function CompileView() {
         >
           <div style={{ display: "grid", gap: 12 }}>
             {([
-              [t("compile.readiness_delivery", { defaultValue: "Entrega" }), readiness.deliveryPending],
-              [t("compile.readiness_quality", { defaultValue: "Calidad final" }), readiness.qualityPending],
+              [t("compile.readiness_delivery"), readiness.deliveryPending],
+              [t("compile.readiness_quality"), readiness.qualityPending],
             ] as [string, string[]][]).map(([label, items]) => (
               <div key={label} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
                 <div style={{ padding: "8px 10px", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -331,7 +331,7 @@ export default function CompileView() {
                 </div>
                 {items.length === 0 ? (
                   <div style={{ padding: "9px 10px", fontSize: "var(--fs-sm)", color: "var(--build-ok)" }}>
-                    {t("compile.readiness_complete", { defaultValue: "Completo" })}
+                    {t("compile.readiness_complete")}
                   </div>
                 ) : (
                   items.map((item) => (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/ui/useConfirm";
@@ -379,10 +379,10 @@ export default function EditorView() {
   const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
     const ok = await confirm({
-      title: t("editor.snapshot_restore_title", { defaultValue: "Restaurar versión" }),
+      title: t("editor.snapshot_restore_title"),
       message: t("editor.snapshot_restore_confirm"),
-      confirmLabel: t("editor.snapshot_restore_action", { defaultValue: "Restaurar" }),
-      cancelLabel: t("common.cancel", { defaultValue: "Cancelar" }),
+      confirmLabel: t("editor.snapshot_restore_action"),
+      cancelLabel: t("common.cancel"),
       destructive: false,
     });
     if (!ok) return;
@@ -402,10 +402,10 @@ export default function EditorView() {
   const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
     const ok = await confirm({
-      title: t("editor.snapshot_delete_title", { defaultValue: "Eliminar versión" }),
+      title: t("editor.snapshot_delete_title"),
       message: t("editor.snapshot_delete_confirm"),
-      confirmLabel: t("common.delete", { defaultValue: "Eliminar" }),
-      cancelLabel: t("common.cancel", { defaultValue: "Cancelar" }),
+      confirmLabel: t("common.delete"),
+      cancelLabel: t("common.cancel"),
       destructive: true,
     });
     if (!ok) return;
@@ -442,7 +442,7 @@ export default function EditorView() {
       case "equation":       block = { type, id, latex_content: "", numbered: false }; break;
       case "raw_latex":      block = { type, id, content: "", user_confirmed: false }; break;
       case "figure":         block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
-      case "table":          block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]] }; break;
+      case "table":          block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: [t("editor.default_table_column_1"), t("editor.default_table_column_2")], rows: [["", ""], ["", ""]] }; break;
       case "citation":       block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
       case "glossary_entry": block = { type, id, term: "", definition: "" }; break;
       case "acronym_entry":  block = { type, id, acronym: "", full_form: "", description: undefined }; break;
@@ -456,7 +456,7 @@ export default function EditorView() {
           caption: "",
           label: `fig:${id.slice(0, 6)}`,
           include_in_list: true,
-          config: { kind: "venn_euler", sets: [{ label: "Conjunto A", color: "red" }, { label: "Conjunto B", color: "blue" }, { label: "Conjunto C", color: "green" }], intersections: {} },
+          config: { kind: "venn_euler", sets: [{ label: t("editor.default_set_a"), color: "red" }, { label: t("editor.default_set_b"), color: "blue" }, { label: t("editor.default_set_c"), color: "green" }], intersections: {} },
         };
         setVisualSelectorOpen(id); // abrimos el selector de tipo
         break;
@@ -808,7 +808,7 @@ export default function EditorView() {
           </div>
 
           {/* Leyenda de estados — accesible sin color */}
-          <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px" }} aria-label={t("editor.section_status_legend", { defaultValue: "Leyenda de estados" })}>
+          <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px" }} aria-label={t("editor.section_status_legend")}>
             {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
               <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
                 <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
@@ -860,7 +860,7 @@ export default function EditorView() {
               style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
               <IconCheck size={11} />
-              {t("editor.review_spell", { defaultValue: "Ortografía" })}
+              {t("editor.review_spell")}
             </button>
             <button
               className={`btn btn-sm ${grammarPanelOpen ? "btn-accent" : "btn-ghost"}`}
@@ -871,7 +871,7 @@ export default function EditorView() {
               style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
               <IconText size={11} />
-              {t("editor.review_grammar", { defaultValue: "Gramática" })}
+              {t("editor.review_grammar")}
             </button>
             <button
               className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
@@ -882,7 +882,7 @@ export default function EditorView() {
               style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
               <IconSigma size={11} />
-              {t("editor.review_ai", { defaultValue: "IA" })}
+              {t("editor.review_ai")}
             </button>
 
             <div style={{ display: "none" }} />
@@ -1015,7 +1015,7 @@ export default function EditorView() {
                       onClick={() => addBlock("paragraph")}
                       aria-label={t("editor.block_paragraph")}
                     >
-                      <IconPlus size={12} style={{ marginRight: 6 }} /> {t("editor.add_paragraph", { defaultValue: "Nuevo párrafo" })}
+                      <IconPlus size={12} style={{ marginRight: 6 }} /> {t("editor.add_paragraph")}
                     </button>
                   </>
                 )}
@@ -1218,7 +1218,7 @@ export default function EditorView() {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 16 }}>
-              ¿Qué tipo de diagrama quieres insertar?
+              {t("editor.visual_type_selector_title")}
             </div>
             <VisualKindSelector onSelect={(kind: VisualKind) => {
               const blockId = visualSelectorOpen;
@@ -1399,24 +1399,24 @@ export default function EditorView() {
             padding: "28px 28px 22px",
           }}>
             <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 10 }}>
-              Cambios sin guardar
+              {t("editor.unsaved_changes_title")}
             </div>
             <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6, margin: "0 0 22px" }}>
-              Tienes cambios sin guardar en esta sección. ¿Qué deseas hacer antes de salir?
+              {t("editor.unsaved_changes_message")}
             </p>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <button
                 className="btn btn-ghost"
                 onClick={() => blocker.reset?.()}
               >
-                Seguir editando
+                {t("editor.continue_editing")}
               </button>
               <button
                 className="btn"
                 style={{ color: "var(--build-err)", borderColor: "var(--build-err)" }}
                 onClick={() => blocker.proceed?.()}
               >
-                Salir sin guardar
+                {t("editor.leave_without_saving")}
               </button>
               <button
                 className="btn btn-accent"
@@ -1425,7 +1425,7 @@ export default function EditorView() {
                   blocker.proceed?.();
                 }}
               >
-                <IconCheck size={12} /> Guardar y salir
+                <IconCheck size={12} /> {t("editor.save_and_exit")}
               </button>
             </div>
           </div>
@@ -1438,10 +1438,10 @@ export default function EditorView() {
         { text: t("editor.words", { n: bodyWordCount.toLocaleString() }) },
         {
           right: true,
-          text: bibRefs.length > 0 ? `${bibRefs.length} refs en .bib` : "sin .bib",
+          text: bibRefs.length > 0 ? t("editor.bib_refs_count", { count: bibRefs.length }) : t("editor.no_bib_file"),
           icon: <span style={{ cursor: "pointer" }} onClick={() => setCitPickerOpen(true)} />,
         },
-        { right: true, text: `${activeProject.sections.filter((s) => s.enabled).length} secciones` },
+        { right: true, text: t("editor.sections_count", { count: activeProject.sections.filter((s) => s.enabled).length }) },
       ]} />
     </>
   );

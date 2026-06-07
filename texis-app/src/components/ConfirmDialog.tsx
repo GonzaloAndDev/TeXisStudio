@@ -1,10 +1,11 @@
+import { useTranslation } from "react-i18next";
 import { AppDialog } from "./AppDialog";
 
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   busy = false,
   onConfirm,
@@ -19,6 +20,10 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const resolvedConfirm = confirmLabel ?? t("common.confirm");
+  const resolvedCancel = cancelLabel ?? t("common.cancel");
+
   return (
     <AppDialog
       title={title}
@@ -26,7 +31,7 @@ export function ConfirmDialog({
       footer={
         <>
           <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>
-            {cancelLabel}
+            {resolvedCancel}
           </button>
           <button
             className="btn btn-sm"
@@ -34,7 +39,7 @@ export function ConfirmDialog({
             disabled={busy}
             style={destructive ? { color: "#fff", background: "var(--build-err)", border: "none" } : undefined}
           >
-            {busy ? "Trabajando..." : confirmLabel}
+            {busy ? t("common.working") : resolvedConfirm}
           </button>
         </>
       }
