@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "../components/ui/ToastProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -70,6 +71,7 @@ export default function SettingsView() {
     loadCatalog, install: installPack, uninstall: uninstallPack, isInstalled,
   } = useLangPacksStore();
 
+  const toast = useToast();
   const validParam = SECTIONS.includes(sectionParam as Section) ? (sectionParam as Section) : "language";
   const [activeSection, setActiveSection] = useState<Section>(validParam);
   const [newWord, setNewWord] = useState("");
@@ -93,7 +95,6 @@ export default function SettingsView() {
       setUpdateMsg(String(e));
     }
   }, []);
-  const [installError, setInstallError] = useState<string | null>(null);
   const [localName, setLocalName] = useState(userName);
   const [localInstitution, setLocalInstitution] = useState(userInstitution);
   const [localEmail, setLocalEmail] = useState(userEmail);
@@ -113,11 +114,10 @@ export default function SettingsView() {
   }, [activeSection, catalog, catalogLoading, loadCatalog]);
 
   async function handleInstall(entry: LangPackEntry) {
-    setInstallError(null);
     try {
       await installPack(entry);
     } catch (e) {
-      setInstallError(String(e));
+      toast.error(String(e));
     }
   }
 
@@ -226,20 +226,23 @@ export default function SettingsView() {
           background: "var(--bg-chrome)",
         }}>
           {visibleNavItems.map(({ key, label }) => (
-            <div
+            <button
               key={key}
+              type="button"
+              className="tx-unstyled-button"
+              aria-current={activeSection === key ? "page" : undefined}
               onClick={() => setActiveSection(key)}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "7px 10px", borderRadius: "var(--r-md)",
-                fontSize: "var(--fs-base)", cursor: "pointer",
+                fontSize: "var(--fs-base)", width: "100%", textAlign: "left",
                 background: activeSection === key ? "var(--bg-selected)" : "transparent",
                 color: activeSection === key ? "var(--accent-deep)" : "var(--fg-default)",
                 fontWeight: activeSection === key ? 500 : 400,
               }}
             >
               {label}
-            </div>
+            </button>
           ))}
           {userMode === "basic" && (
             <div style={{
@@ -498,12 +501,6 @@ export default function SettingsView() {
                     {catalogError}
                   </div>
                 )}
-                {installError && (
-                  <div style={{ color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
-                    {installError}
-                  </div>
-                )}
-
                 {catalogLoading && !catalog && (
                   <div style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", padding: "16px 0" }}>
                     {t("common.loading")}

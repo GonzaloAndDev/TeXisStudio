@@ -13,6 +13,7 @@ import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
 import { useAiStore } from "../stores/ai";
 import type { CompilationResult, DependencyIssue, ExportDeliveryResult, PdfPostflightResult, ValidationReport } from "../types";
+import { useToast } from "../components/ui/ToastProvider";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
@@ -53,6 +54,7 @@ export default function CompileView() {
   const [platform, setPlatform] = useState<string>("linux");
 
   const logRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
@@ -205,8 +207,11 @@ export default function CompileView() {
       const res = await api.exportDelivery(activeProjectPath, folder, exportMode);
       setExportResult(res);
       setExportedZip(res.zip_path);
+      toast.success(t("compile.export_success", { defaultValue: "Exportación completada" }));
     } catch (e) {
-      setExportError(t("compile.export_error", { error: String(e) }));
+      const msg = t("compile.export_error", { error: String(e) });
+      setExportError(msg);
+      toast.error(msg);
     } finally {
       setExportBusy(false);
     }
@@ -221,7 +226,9 @@ export default function CompileView() {
       const res = await api.checkPdfPostflight(activeProjectPath);
       setPostflightResult(res);
     } catch (e) {
-      setPostflightError(t("compile.postflight_error", { error: String(e) }));
+      const msg = t("compile.postflight_error", { error: String(e) });
+      setPostflightError(msg);
+      toast.error(msg);
     } finally {
       setPostflightBusy(false);
     }
@@ -287,16 +294,16 @@ export default function CompileView() {
     <>
       {readinessAction && readiness && (
         <AppDialog
-          title={readinessAction === "compile" ? "Proyecto pendiente para version formal" : "Entrega final bloqueada"}
+          title={readinessAction === "compile" ? t("compile.readiness_compile_title", { defaultValue: "Proyecto pendiente para versión formal" }) : t("compile.readiness_export_title", { defaultValue: "Entrega final bloqueada" })}
           subtitle={readinessAction === "compile"
-            ? "Compila como borrador o revisa estos puntos antes de tratar esta salida como formal."
-            : "Para exportar en modo final, completa primero los controles de entrega y calidad."}
+            ? t("compile.readiness_compile_subtitle", { defaultValue: "Compila como borrador o revisa estos puntos antes de tratarlo como versión formal." })
+            : t("compile.readiness_export_subtitle", { defaultValue: "Para exportar en modo final, completa primero los controles de entrega y calidad." })}
           width={580}
           onClose={() => setReadinessAction(null)}
           footer={
             <>
               <button className="btn btn-ghost btn-sm" onClick={() => setReadinessAction(null)}>
-                Volver a revisar
+                {t("compile.readiness_back", { defaultValue: "Volver a revisar" })}
               </button>
               {readinessAction === "compile" && (
                 <button
@@ -307,27 +314,27 @@ export default function CompileView() {
                     doCompile();
                   }}
                 >
-                  Compilar como borrador
+                  {t("compile.compile_as_draft", { defaultValue: "Compilar como borrador" })}
                 </button>
               )}
             </>
           }
         >
           <div style={{ display: "grid", gap: 12 }}>
-            {[
-              ["Entrega", readiness.deliveryPending],
-              ["Calidad final", readiness.qualityPending],
-            ].map(([label, items]) => (
-              <div key={label as string} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
+            {([
+              [t("compile.readiness_delivery", { defaultValue: "Entrega" }), readiness.deliveryPending],
+              [t("compile.readiness_quality", { defaultValue: "Calidad final" }), readiness.qualityPending],
+            ] as [string, string[]][]).map(([label, items]) => (
+              <div key={label} style={{ border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
                 <div style={{ padding: "8px 10px", background: "var(--bg-panel)", fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--fg-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  {label as string}
+                  {label}
                 </div>
-                {(items as string[]).length === 0 ? (
+                {items.length === 0 ? (
                   <div style={{ padding: "9px 10px", fontSize: "var(--fs-sm)", color: "var(--build-ok)" }}>
-                    Completo
+                    {t("compile.readiness_complete", { defaultValue: "Completo" })}
                   </div>
                 ) : (
-                  (items as string[]).map((item) => (
+                  items.map((item) => (
                     <div key={item} style={{ padding: "9px 10px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.5 }}>
                       {item}
                     </div>
@@ -427,11 +434,16 @@ export default function CompileView() {
 
         {/* ── Panel izquierdo: estado + errores ──────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, borderRight: "1px solid var(--border-subtle)" }}>
-          <div style={{
-            height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
-            display: "flex", alignItems: "center", gap: 8,
-            background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
-          }}>
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            style={{
+              height: 38, padding: "0 16px", borderBottom: "1px solid var(--border-subtle)",
+              display: "flex", alignItems: "center", gap: 8,
+              background: "var(--bg-panel)", fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)",
+            }}
+          >
             {compileState === "success"   && <IconCheckCircle size={14} style={{ color: "var(--build-ok)" }} />}
             {compileState === "error"     && <IconErr size={14} style={{ color: "var(--build-err)" }} />}
             {compileState === "idle"      && <IconBuild size={14} />}
