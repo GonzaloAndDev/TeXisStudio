@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { lockScroll } from "../../lib/scrollLock";
 import { IconSearch } from "../../components/Icons";
 import type { ContentBlock, ProjectSection } from "../../types";
 
@@ -132,7 +133,7 @@ export function CommandPalette({
   useEffect(() => {
     triggerRef.current = document.activeElement;
     inputRef.current?.focus();
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") { e.preventDefault(); onClose(); }
@@ -141,7 +142,7 @@ export function CommandPalette({
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      unlockScroll();
       if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
         (triggerRef.current as HTMLElement).focus();
       }

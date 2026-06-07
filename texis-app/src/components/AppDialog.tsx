@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { lockScroll } from "../lib/scrollLock";
 import { IconX } from "./Icons";
 
 const FOCUSABLE = [
@@ -61,11 +62,11 @@ export function AppDialog({
     }
 
     document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockScroll();
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
+      unlockScroll();
       // Restore focus to trigger
       if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
         (triggerRef.current as HTMLElement).focus();
