@@ -1,4 +1,5 @@
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
@@ -239,20 +240,14 @@ function RecentProjectsSkeleton() {
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [, startNav] = useTransition();
-  const [busy, setBusy] = useState(false);          // nav en curso (feedback inmediato)
-  const [opening, setOpening] = useState<string | null>(null); // proyecto abriéndose
+  const [busy, setBusy] = useState(false);
+  const [opening, setOpening] = useState<string | null>(null);
 
-  // Navega a una ruta garantizando que el estado de carga se pinta antes
+  // flushSync garantiza que React renderice y el browser pinte busy=true
+  // de forma síncrona ANTES de llamar a navigate. Sin rAF, sin timing issues.
   function goTo(path: string) {
-    setBusy(true);
-    // Dos rAF: primer frame aplica busy=true, segundo frame el browser ya pintó, entonces navegamos
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        startNav(() => navigate(path));
-        // HomeView se desmonta tras navigate; no hace falta limpiar busy
-      });
-    });
+    flushSync(() => setBusy(true));
+    navigate(path);
   }
   const { setRecentProjects, recentProjects: cachedProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
@@ -297,13 +292,13 @@ export default function HomeView() {
 
   async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
-    if (!isTauriEnv) { startNav(() => navigate("/demo")); return; }
+    if (!isTauriEnv) { navigate("/demo"); return; }
     setOpening(projectPath); // feedback inmediato
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
       const encodedPath = encodeURIComponent(projectPath);
-      startNav(() => navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`));
+      navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
       setHomeError(t("home.error_opening_project"));
