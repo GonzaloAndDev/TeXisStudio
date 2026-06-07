@@ -1,5 +1,28 @@
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconX } from "./Icons";
+
+const FOCUSABLE = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+function trapFocus(container: HTMLElement, e: KeyboardEvent) {
+  const nodes = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE));
+  if (!nodes.length) return;
+  const first = nodes[0];
+  const last = nodes[nodes.length - 1];
+  if (e.key === "Tab") {
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+}
 
 export function AppDialog({
   title,
@@ -16,11 +39,40 @@ export function AppDialog({
   width?: number;
   onClose: () => void;
 }) {
+  const titleId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+
+  useEffect(() => {
+    triggerRef.current = document.activeElement;
+
+    // Move focus into dialog
+    const container = containerRef.current;
+    if (container) {
+      const first = container.querySelector<HTMLElement>(FOCUSABLE);
+      first ? first.focus() : container.focus();
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+      if (containerRef.current) trapFocus(containerRef.current, e);
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+      // Restore focus to trigger
+      if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
+        (triggerRef.current as HTMLElement).focus();
+      }
+    };
+  }, [onClose]);
+
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
       style={{
         position: "fixed",
         inset: 0,
@@ -32,22 +84,27 @@ export function AppDialog({
         justifyContent: "center",
         padding: 20,
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      aria-hidden="false"
     >
       <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         style={{
           width,
           maxWidth: "100%",
           maxHeight: "86vh",
           display: "flex",
           flexDirection: "column",
-          background: "var(--bg-base)",
+          background: "var(--bg-panel)",
           border: "1px solid var(--border-firm)",
           borderRadius: "var(--r-lg)",
           boxShadow: "0 16px 48px rgba(0,0,0,0.4)",
           overflow: "hidden",
+          outline: "none",
         }}
       >
         <div
@@ -60,7 +117,7 @@ export function AppDialog({
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)" }}>
+            <div id={titleId} style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)" }}>
               {title}
             </div>
             {subtitle && (

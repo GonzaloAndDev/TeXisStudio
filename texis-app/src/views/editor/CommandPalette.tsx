@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconSearch } from "../../components/Icons";
 import type { ContentBlock, ProjectSection } from "../../types";
@@ -10,7 +10,7 @@ export const PALETTE_BLOCK_ITEMS = [
   { type: "heading"       as ContentBlock["type"],  labelKey: "editor.block_heading",       icon: "H",  hintKey: "command_palette.hint_heading_levels" },
   { type: "list"          as ContentBlock["type"],  labelKey: "editor.block_list",        icon: "•",  hintKey: "command_palette.hint_list" },
   { type: "equation"      as ContentBlock["type"],  labelKey: "editor.block_equation",     icon: "∑",  hintKey: "command_palette.hint_latex_math" },
-  { type: "figure"        as ContentBlock["type"],  labelKey: "editor.block_figure",       icon: "🖼",  hintKey: "command_palette.hint_image_caption" },
+  { type: "figure"        as ContentBlock["type"],  labelKey: "editor.block_figure",       icon: "▣",  hintKey: "command_palette.hint_image_caption" },
   { type: "table"         as ContentBlock["type"],  labelKey: "editor.block_table",        icon: "⊞",  hintKey: "command_palette.hint_editable_table" },
   { type: "citation"      as ContentBlock["type"],  labelKey: "editor.block_citation",         icon: "❞",  hintKey: "command_palette.hint_bibliographic_ref" },
   { type: "raw_latex"     as ContentBlock["type"],  labelKey: "editor.block_rawlatex",icon: "{}",  hintKey: "command_palette.hint_latex_fragment" },
@@ -21,12 +21,12 @@ export const PALETTE_BLOCK_ITEMS = [
   { type: "glossary_entry"as ContentBlock["type"],  labelKey: "editor.block_glossary",     icon: "Gl", hintKey: "command_palette.hint_glossary_entry" },
   { type: "acronym_entry" as ContentBlock["type"],  labelKey: "editor.block_acronym",     icon: "Ab", hintKey: "command_palette.hint_acronym_list" },
   // ── Visuales ──
-  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_venn",   icon: "⬤⬤", hintKey: "command_palette.hint_set_diagram" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_venn",   icon: "◎", hintKey: "command_palette.hint_set_diagram" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_flow",        icon: "→",  hintKey: "command_palette.hint_process_diagram" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_timeline",     icon: "──", hintKey: "command_palette.hint_timeline" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_reaction",     icon: "⇌",  hintKey: "command_palette.hint_chemical_reaction" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_molecule",     icon: "⬡",  hintKey: "command_palette.hint_molecule" },
-  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_circuit",     icon: "⚡", hintKey: "command_palette.hint_circuit" },
+  { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_circuit",     icon: "~",  hintKey: "command_palette.hint_circuit" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_feynman",      icon: "∿",  hintKey: "command_palette.hint_feynman" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_bio_pathway",icon: "⟳",  hintKey: "command_palette.hint_bio_pathway" },
   { type: "visual"        as ContentBlock["type"],  labelKey: "command_palette.visual_score",    icon: "♩",  hintKey: "command_palette.hint_music_fragment" },
@@ -98,7 +98,7 @@ function searchBlockContent(sections: ProjectSection[], q: string): ContentMatch
         icon: blockIcon(block.type),
         excerpt: makeExcerpt(text, idx, q.length),
       });
-      if (results.length >= 12) return results; // evitar resultados excesivos
+      if (results.length >= 12) return results;
     }
   }
   return results;
@@ -125,35 +125,50 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
+  const titleId = useId();
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    triggerRef.current = document.activeElement;
+    inputRef.current?.focus();
+    document.body.style.overflow = "hidden";
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+    }
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+      if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
+        (triggerRef.current as HTMLElement).focus();
+      }
+    };
+  }, [onClose]);
 
   const q = query.toLowerCase().trim();
   const allowedBlockTypes = userMode === "basic"
     ? new Set<ContentBlock["type"]>(["paragraph", "heading", "list", "citation", "figure", "table", "equation"])
     : null;
 
-  // Bloques (insertar) — se muestran solo si no hay query o la query coincide
   const blockItems = PALETTE_BLOCK_ITEMS.filter(
     (b) => !q || t(b.labelKey).toLowerCase().includes(q) || t(b.hintKey).toLowerCase().includes(q)
   ).filter((b) => !allowedBlockTypes || allowedBlockTypes.has(b.type));
 
-  // Secciones (saltar a) — coincidencia por título
   const sectionItems = sections
     .filter((s) => s.enabled && (!q || (s.title ?? s.id).toLowerCase().includes(q)))
     .map((s) => ({ id: s.id, label: s.title ?? s.id, placement: s.placement }));
 
-  // Contenido (búsqueda dentro de bloques) — solo cuando hay query >= 2 chars
   const contentMatches: ContentMatch[] = q.length >= 2 ? searchBlockContent(sections, q) : [];
 
-  // Lista unificada para navegación por teclado
   type AnyItem =
     | { kind: "block"; type: ContentBlock["type"]; labelKey: string; icon: string; hintKey: string }
     | { kind: "section"; id: string; label: string; placement: string }
     | ContentMatch;
 
   const allItems: AnyItem[] = [
-    // Cuando hay búsqueda de contenido, no mostramos los tipos de bloque
     ...(contentMatches.length > 0 || q.length >= 2 ? [] : blockItems.map(b => ({ kind: "block" as const, ...b }))),
     ...sectionItems.map(s => ({ kind: "section" as const, ...s })),
     ...contentMatches,
@@ -161,7 +176,7 @@ export function CommandPalette({
 
   const total = allItems.length;
 
-  function confirm(idx: number) {
+  function activate(idx: number) {
     const item = allItems[idx];
     if (!item) return;
     if (item.kind === "block")    { onInsertBlock(item.type); }
@@ -178,8 +193,13 @@ export function CommandPalette({
         paddingTop: 120, zIndex: 900,
       }}
       onClick={onClose}
+      aria-hidden="false"
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           width: 560, background: "var(--bg-chrome)", borderRadius: "var(--r-lg)",
           border: "1px solid var(--border-firm)",
@@ -188,6 +208,11 @@ export function CommandPalette({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Título visualmente oculto para lectores de pantalla */}
+        <div id={titleId} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+          {t("command_palette.dialog_title", { defaultValue: "Paleta de comandos" })}
+        </div>
+
         {/* Barra de búsqueda */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
           <IconSearch size={14} style={{ color: "var(--fg-faint)", flexShrink: 0 }} />
@@ -196,6 +221,10 @@ export function CommandPalette({
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
             placeholder={t("command_palette.placeholder")}
+            aria-label={t("command_palette.placeholder")}
+            aria-autocomplete="list"
+            aria-controls="palette-results"
+            aria-activedescendant={total > 0 ? `palette-item-${cursor}` : undefined}
             style={{
               flex: 1, border: "none", outline: "none", background: "transparent",
               fontSize: "var(--fs-md)", color: "var(--fg-strong)",
@@ -203,17 +232,17 @@ export function CommandPalette({
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, total - 1)); }
               if (e.key === "ArrowUp")   { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
-              if (e.key === "Enter")     { e.preventDefault(); confirm(cursor); }
-              if (e.key === "Escape")    { e.preventDefault(); onClose(); }
+              if (e.key === "Enter")     { e.preventDefault(); activate(cursor); }
             }}
           />
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0 }}>{t("command_palette.esc_closes")}</span>
+          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0 }}>
+            {t("command_palette.esc_closes")}
+          </span>
         </div>
 
         {/* Resultados */}
-        <div style={{ maxHeight: 380, overflow: "auto" }} className="scroll">
+        <div id="palette-results" role="listbox" style={{ maxHeight: 380, overflow: "auto" }} className="scroll">
 
-          {/* Insertar bloque (solo cuando no hay búsqueda o la query coincide con un tipo) */}
           {allItems.some(i => i.kind === "block") && (
             <>
               <SectionHeader label={userMode === "basic" ? t("command_palette.add_content") : t("command_palette.insert_block")} hasBorder={false} />
@@ -222,20 +251,20 @@ export function CommandPalette({
                 const globalIdx = allItems.indexOf(item);
                 return (
                   <PaletteRow
-                    key={b.type}
+                    key={b.type + globalIdx}
+                    id={`palette-item-${globalIdx}`}
                     icon={b.icon}
                     label={t(b.labelKey)}
                     hint={t(b.hintKey)}
                     selected={cursor === globalIdx}
                     onHover={() => setCursor(globalIdx)}
-                    onClick={() => confirm(globalIdx)}
+                    onClick={() => activate(globalIdx)}
                   />
                 );
               })}
             </>
           )}
 
-          {/* Ir a sección */}
           {sectionItems.length > 0 && (
             <>
               <SectionHeader label={t("command_palette.go_to_section")} hasBorder={allItems.some(i => i.kind === "block")} />
@@ -251,37 +280,44 @@ export function CommandPalette({
                 return (
                   <PaletteRow
                     key={s.id}
+                    id={`palette-item-${globalIdx}`}
                     icon="§"
                     label={s.label}
                     hint={placementLabel}
                     selected={cursor === globalIdx}
                     onHover={() => setCursor(globalIdx)}
-                    onClick={() => confirm(globalIdx)}
+                    onClick={() => activate(globalIdx)}
                   />
                 );
               })}
             </>
           )}
 
-          {/* Resultados de contenido */}
           {contentMatches.length > 0 && (
             <>
               <SectionHeader
-                label={new Set(contentMatches.map(m => m.sectionId)).size === 1 ? t("command_palette.found_in_one", { section: contentMatches[0].sectionTitle }) : t("command_palette.found_in_many", { count: new Set(contentMatches.map(m => m.sectionId)).size })}
+                label={new Set(contentMatches.map(m => m.sectionId)).size === 1
+                  ? t("command_palette.found_in_one", { section: contentMatches[0].sectionTitle })
+                  : t("command_palette.found_in_many", { count: new Set(contentMatches.map(m => m.sectionId)).size })}
                 hasBorder={sectionItems.length > 0 || allItems.some(i => i.kind === "block")}
               />
               {contentMatches.map((match) => {
                 const globalIdx = allItems.indexOf(match);
                 return (
-                  <div
+                  <button
                     key={`${match.sectionId}-${match.blockId}`}
+                    id={`palette-item-${globalIdx}`}
+                    type="button"
+                    role="option"
+                    aria-selected={cursor === globalIdx}
+                    className="tx-unstyled-button"
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 12,
-                      padding: "8px 16px", cursor: "pointer",
+                      padding: "8px 16px", width: "100%", textAlign: "left",
                       background: cursor === globalIdx ? "var(--bg-selected)" : "transparent",
                     }}
                     onMouseEnter={() => setCursor(globalIdx)}
-                    onClick={() => confirm(globalIdx)}
+                    onClick={() => activate(globalIdx)}
                   >
                     <div style={{
                       width: 28, height: 28, borderRadius: "var(--r-sm)", flexShrink: 0, marginTop: 2,
@@ -309,22 +345,20 @@ export function CommandPalette({
                       </div>
                     </div>
                     {cursor === globalIdx && (
-                      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0, marginTop: 6 }}>↵</span>
+                      <span aria-hidden="true" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)", flexShrink: 0, marginTop: 6 }}>↵</span>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </>
           )}
 
-          {/* Sin resultados */}
           {total === 0 && q.length > 0 && (
-            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
+            <div role="status" style={{ padding: "32px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
               {t("command_palette.no_results", { query })}
             </div>
           )}
 
-          {/* Estado inicial: mostrar hint de búsqueda */}
           {total === 0 && q.length === 0 && (
             <div style={{ padding: "20px 16px", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
               {t("command_palette.initial_hint_line_1")}<br />{t("command_palette.initial_hint_line_2")}
@@ -332,7 +366,7 @@ export function CommandPalette({
           )}
         </div>
 
-        {/* Footer hint */}
+        {/* Footer */}
         {q.length >= 2 && contentMatches.length === 0 && sectionItems.length === 0 && (
           <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
             {t("command_palette.searching_all_text")}
@@ -367,16 +401,21 @@ function SectionHeader({ label, hasBorder }: { label: string; hasBorder: boolean
 }
 
 function PaletteRow({
-  icon, label, hint, selected, onHover, onClick,
+  id, icon, label, hint, selected, onHover, onClick,
 }: {
-  icon: string; label: string; hint: string;
+  id: string; icon: string; label: string; hint: string;
   selected: boolean; onHover: () => void; onClick: () => void;
 }) {
   return (
-    <div
+    <button
+      id={id}
+      type="button"
+      role="option"
+      aria-selected={selected}
+      className="tx-unstyled-button"
       style={{
         display: "flex", alignItems: "center", gap: 12,
-        padding: "8px 16px", cursor: "pointer",
+        padding: "8px 16px", width: "100%", textAlign: "left",
         background: selected ? "var(--bg-selected)" : "transparent",
       }}
       onMouseEnter={onHover}
@@ -396,8 +435,8 @@ function PaletteRow({
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{hint}</div>
       </div>
       {selected && (
-        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
+        <span aria-hidden="true" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}>↵</span>
       )}
-    </div>
+    </button>
   );
 }

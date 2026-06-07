@@ -115,14 +115,17 @@ function NextStepBanner({ project, onClick }: { project: RecentProject; onClick:
     : t("home.resume_hint");
 
   return (
-    <div
+    <button
+      type="button"
+      className="tx-unstyled-button tx-card-action"
+      aria-label={`${label}: ${project.title}`}
       style={{
         margin: "0 0 20px", padding: "14px 18px",
         borderRadius: "var(--r-lg)",
         background: "var(--bg-panel)",
         border: "1px solid var(--accent-soft)",
         display: "flex", gap: 16, alignItems: "center",
-        cursor: "pointer",
+        width: "100%", textAlign: "left",
       }}
       onClick={onClick}
     >
@@ -135,10 +138,10 @@ function NextStepBanner({ project, onClick }: { project: RecentProject; onClick:
         </div>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>{hint}</div>
       </div>
-      <button className="btn btn-sm btn-accent" style={{ flexShrink: 0 }}>
+      <span aria-hidden="true" className="btn btn-sm btn-accent" style={{ flexShrink: 0, pointerEvents: "none" }}>
         {t("home.open")}
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }
 

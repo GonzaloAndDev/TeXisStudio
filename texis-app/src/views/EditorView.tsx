@@ -729,7 +729,7 @@ export default function EditorView() {
         center={null}
         right={
           <>
-            <button className="btn btn-ghost btn-sm"><IconSearch size={13} /></button>
+            <button className="btn btn-ghost btn-sm" aria-label={t("command_palette.placeholder")} onClick={() => setPaletteOpen(true)}><IconSearch size={13} /></button>
             <button
               className={`btn btn-ghost btn-sm${snapshotsOpen ? " btn-active" : ""}`}
               onClick={() => setSnapshotsOpen((o) => !o)}
@@ -764,8 +764,8 @@ export default function EditorView() {
         }
       />
 
-      <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0 }}>
+      <div className="editor-shell">
+      <div className="editor-grid">
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -782,19 +782,25 @@ export default function EditorView() {
                 {secs.filter((s) => s.enabled).map((s) => {
                   const sStatus = s.status ?? "draft";
                   const dotColor = STATUS_CONFIG[sStatus as SectionStatus]?.color ?? "#888";
+                  const statusLabel = STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus;
                   return (
-                    <div
+                    <button
                       key={s.id}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
+                      type="button"
+                      role="option"
+                      aria-selected={s.id === activeSectionId}
+                      aria-label={`${localizedSectionTitle(s)} — ${statusLabel}`}
+                      className="tx-unstyled-button"
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", width: "100%", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
                       onClick={() => setActiveSectionId(s.id)}
-                      title={`${localizedSectionTitle(s)} · ${STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus}`}
+                      title={`${localizedSectionTitle(s)} · ${statusLabel}`}
                     >
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                      <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{localizedSectionTitle(s)}</span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
+                      <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
                         {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -900,7 +906,7 @@ export default function EditorView() {
             onKeyUp={captureSelection}
           >
             {activeSection ? (
-              <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
+              <div className="editor-paper">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", flex: 1 }}>
                     {userMode === "advanced" ? activeSection.element_id : t("editor.active_section")}
@@ -945,9 +951,12 @@ export default function EditorView() {
                 />
 
                 {localBlocks.length === 0 ? (
-                  <div
-                    style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", cursor: "text" }}
+                  <button
+                    type="button"
+                    className="tx-unstyled-button tx-card-action"
+                    style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", width: "100%", borderRadius: "var(--r-md)" }}
                     onClick={() => addBlock("paragraph")}
+                    aria-label={t("editor.empty_basic_title")}
                   >
                     <p style={{ margin: 0 }}>{userMode === "basic" ? t("editor.empty_basic_title") : t("editor.empty_advanced_title")}</p>
                     <p style={{ fontSize: "var(--fs-sm)", marginTop: 8, color: "var(--fg-faint)" }}>
@@ -955,7 +964,7 @@ export default function EditorView() {
                         ? t("editor.empty_basic_body")
                         : t("editor.empty_advanced_body")}
                     </p>
-                  </div>
+                  </button>
                 ) : (
                   <>
                     {localBlocks.map((block) => (
@@ -980,14 +989,15 @@ export default function EditorView() {
                       />
                     ))}
                     {/* Zona de click al final para agregar párrafo */}
-                    <div
-                      style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", cursor: "text", borderRadius: 6, marginTop: 8 }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-hover)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                    <button
+                      type="button"
+                      className="tx-unstyled-button tx-card-action"
+                      style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", borderRadius: 6, marginTop: 8, width: "100%" }}
                       onClick={() => addBlock("paragraph")}
+                      aria-label={t("editor.block_paragraph")}
                     >
-                      <IconPlus size={12} style={{ marginRight: 6 }} /> Nuevo párrafo
-                    </div>
+                      <IconPlus size={12} style={{ marginRight: 6 }} /> {t("editor.add_paragraph", { defaultValue: "Nuevo párrafo" })}
+                    </button>
                   </>
                 )}
               </div>
