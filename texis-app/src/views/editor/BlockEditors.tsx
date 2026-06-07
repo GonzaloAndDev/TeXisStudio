@@ -121,8 +121,7 @@ export function ParagraphEditor({
                       padding: "8px 12px", border: "none", background: "transparent",
                       cursor: "pointer", textAlign: "left",
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-selected)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                    className="tx-card-action"
                   >
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--accent-deep)" }}>{lbl.key}</span>
                     {lbl.caption && <span style={{ fontSize: 10, color: "var(--fg-muted)" }}>{lbl.caption}</span>}

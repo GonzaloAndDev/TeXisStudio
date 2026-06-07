@@ -427,10 +427,9 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                   const count = filteredCatalog.filter((p) => p.continent === continent).length;
                   const color = CONTINENT_COLOR[continent] ?? "var(--accent)";
                   return (
-                    <div key={continent} onClick={() => setNavContinent(continent)}
-                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "18px 16px", cursor: "pointer", transition: "border-color 0.15s, box-shadow 0.15s" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = color; e.currentTarget.style.boxShadow = `0 0 0 3px ${color}22`; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-soft)"; e.currentTarget.style.boxShadow = "none"; }}
+                    <button key={continent} type="button" className="tx-unstyled-button tx-card-action" onClick={() => setNavContinent(continent)}
+                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "18px 16px", width: "100%", textAlign: "left" }}
+                      aria-label={continentLabel(continent)}
                     >
                       <div style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: `${color}18`, color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
                         <IconMap size={16} />
@@ -440,7 +439,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("community.profile_count", { count })}</span>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color, fontWeight: 700, background: `${color}14`, padding: "1px 5px", borderRadius: "var(--r-xs)" }}>{CONTINENT_ABBR[continent] ?? continent.slice(0,2).toUpperCase()}</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -453,10 +452,9 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                   const count = profilesInCountry(navContinent, country).length;
                   const color = CONTINENT_COLOR[navContinent] ?? "var(--accent)";
                   return (
-                    <div key={country} onClick={() => setNavCountry(country)}
-                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 14px", cursor: "pointer", transition: "border-color 0.15s", display: "flex", alignItems: "center", gap: 10 }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = color; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-soft)"; }}
+                    <button key={country} type="button" className="tx-unstyled-button tx-card-action" onClick={() => setNavCountry(country)}
+                      style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 14px", display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left" }}
+                      aria-label={countryLabel(country)}
                     >
                       <div style={{ width: 28, height: 28, borderRadius: "var(--r-sm)", background: `${color}14`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <IconBuilding size={13} />
@@ -465,7 +463,7 @@ export function CommunityTab({ installedIds, onInstalled, userMode }: {
                         <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)" }}>{countryLabel(country)}</div>
                         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("community.profile_count", { count })}</div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
