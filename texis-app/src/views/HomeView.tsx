@@ -5,7 +5,7 @@ import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBook, IconFile,
+  IconBook,
   IconFolder, IconPlus, IconSearch, IconSettings, IconUpload, IconWarn,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
@@ -378,8 +378,8 @@ export default function HomeView() {
     {
       label: t("home.step_setup"),
       hint: t("home.step_setup_hint"),
-      icon: <IconFolder size={13} />,
-      onClick: () => navigate("/library"),
+      icon: <IconSettings size={13} />,
+      onClick: () => navigate("/settings"),
     },
     {
       label: t("home.step_write"),
@@ -525,14 +525,6 @@ export default function HomeView() {
             onClick={() => navigate("/library")}
           >
             <IconFolder size={13} /> {t("home.nav_profiles")}
-          </button>
-          <button
-            type="button"
-            className="tx-unstyled-button"
-            style={S.sideItem(false)}
-            onClick={() => navigate("/library?tab=elements")}
-          >
-            <IconFile size={13} /> {t("home.nav_elements")}
           </button>
 
           <div style={{
