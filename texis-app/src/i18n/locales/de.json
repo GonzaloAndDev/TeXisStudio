@@ -23,14 +23,16 @@
     "import": "Importieren",
     "retry": "Erneut versuchen",
     "apply": "Anwenden",
-    "export": "Exportieren"
+    "export": "Exportieren",
+    "confirm": "Bestätigen",
+    "working": "Wird verarbeitet…"
   },
   "lang": {
     "picker_label": "Sprache der Benutzeroberfläche",
     "spell_not_available": "Rechtschreibprüfung für diese Sprache nicht verfügbar"
   },
   "home": {
-    "greeting": "Mach weiter, wo du aufgehört hast.",
+    "greeting": "Mach weiter, <em>wo du aufgehört hast</em>.",
     "greeting_italic": "wo du aufgehört hast",
     "projects_count_one": "{{count}} Projekt",
     "projects_count_other": "{{count}} Projekte",
@@ -101,7 +103,12 @@
     "import_note": "Das Original wird in imports/source.tex gespeichert und der Inhalt wird als bestätigter LaTeX eingegeben, um die Wiedergabetreue zu wahren.",
     "import_choose": "Auswählen",
     "import_busy": "Importieren...",
-    "import_create": "Importiertes Projekt erstellen"
+    "import_create": "Importiertes Projekt erstellen",
+    "basic_mode_description": "TeXisStudio ist im geführten Modus: Konzentrieren Sie sich auf Ihre Arbeit – die App begleitet Sie bei Formatierung, Bibliografie und Abgabe.",
+    "error_opening_project": "Dieser Ordner konnte nicht als TeXisStudio-Projekt geöffnet werden. Stellen Sie sicher, dass er tesis.project.yaml enthält.",
+    "search_library_hint": "Bibliothek durchsuchen",
+    "detecting_latex": "LaTeX wird erkannt…",
+    "error_importing_tex": "Die .tex-Datei konnte nicht importiert werden: {{error}}"
   },
   "wizard": {
     "title": "Neues Projekt",
@@ -493,7 +500,27 @@
     "diag_gls_undefined": "nicht definiert",
     "diag_gls_unused_one": "{{count}} Glossareintrag definiert, aber nicht verwendet",
     "diag_gls_unused_other": "{{count}} Glossareinträge definiert, aber nicht verwendet",
-    "section_guidance_label": "Abschnittsleitfaden"
+    "section_guidance_label": "Abschnittsleitfaden",
+    "save_and_exit": "Speichern und verlassen",
+    "snapshot_restore_action": "Wiederherstellen",
+    "continue_editing": "Weiter bearbeiten",
+    "unsaved_changes_message": "Sie haben ungespeicherte Änderungen in diesem Abschnitt. Was möchten Sie vor dem Verlassen tun?",
+    "unsaved_changes_title": "Ungespeicherte Änderungen",
+    "review_ai": "KI",
+    "visual_type_selector_title": "Welchen Diagrammtyp möchten Sie einfügen?",
+    "default_set_a": "Menge A",
+    "add_paragraph": "Neuer Absatz",
+    "review_grammar": "Grammatik",
+    "bib_refs_count": "{{count}} Refs in .bib",
+    "section_status_legend": "Statuslegende",
+    "sections_count": "{{count}} Abschnitte",
+    "review_spell": "Rechtschreibung",
+    "leave_without_saving": "Ohne Speichern verlassen",
+    "default_table_column_2": "Spalte 2",
+    "default_set_c": "Menge C",
+    "default_set_b": "Menge B",
+    "default_table_column_1": "Spalte 1",
+    "no_bib_file": "kein .bib"
   },
   "spell": {
     "panel_title": "Rechtschreibprüfung",
@@ -924,7 +951,8 @@
     "empty_needs_key": "Konfigurieren Sie Ihren {{provider}} API-Schlüssel zum Starten.",
     "generating_response": "Antwort wird generiert…",
     "message_placeholder": "Schreiben Sie Ihre Nachricht… (Enter zum Senden)",
-    "configure_key_first": "Konfigurieren Sie zuerst Ihren API-Schlüssel"
+    "configure_key_first": "Konfigurieren Sie zuerst Ihren API-Schlüssel",
+    "send": "Senden"
   },
   "editor_meta": {
     "project_guide": "Projektleitfaden",
@@ -1145,7 +1173,17 @@
     "preflight_has_warnings": "{{count}} Warnung(en) gefunden. Du kannst trotzdem fortfahren.",
     "preflight_errors_section": "Fehler ({{count}})",
     "preflight_warnings_section": "Warnungen ({{count}})",
-    "preflight_suggestions_section": "Vorschläge ({{count}})"
+    "preflight_suggestions_section": "Vorschläge ({{count}})",
+    "export_success": "Export abgeschlossen",
+    "compile_as_draft": "Als Entwurf kompilieren",
+    "readiness_complete": "Vollständig",
+    "readiness_export_title": "Endabgabe blockiert",
+    "readiness_back": "Zurück zur Überprüfung",
+    "readiness_compile_title": "Projekt nicht bereit für formelle Version",
+    "readiness_export_subtitle": "Um im endgültigen Modus zu exportieren, schließen Sie zuerst die Liefer- und Qualitätsprüfungen ab.",
+    "readiness_compile_subtitle": "Kompilieren Sie als Entwurf oder prüfen Sie diese Punkte, bevor Sie es als formelle Version behandeln.",
+    "readiness_delivery": "Abgabe",
+    "readiness_quality": "Endqualität"
   },
   "community_profile": {
     "audience_label": "Für wen es ist",
@@ -1401,7 +1439,9 @@
         "in_text_format": "[1]",
         "bibliography_title": "Literatur"
       }
-    }
+    },
+    "reset_title": "Standardstile wiederherstellen",
+    "reset_action": "Wiederherstellen"
   },
   "block_editor": {
     "insert_cross_reference": "⌗ Querverweis einfügen ({{count}})",
@@ -2323,5 +2363,9 @@
     "loading_more": "Weitere Sprachen werden geladen…",
     "catalog_error": "Weitere Sprachen konnten nicht geladen werden. Du kannst mit einer enthaltenen Sprache fortfahren.",
     "skip": "Überspringen"
+  },
+  "toast": {
+    "close_button": "Benachrichtigung schließen",
+    "notifications_area_label": "Benachrichtigungen"
   }
 }

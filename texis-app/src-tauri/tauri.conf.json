@@ -80,13 +80,6 @@
         "installMode": "passive"
       }
     },
-    "log": {
-      "level": "warn",
-      "targets": [
-        { "kind": "stdout" },
-        { "kind": "logdir", "filename": "texisstudio" }
-      ],
-      "maxFileSize": 10485760
-    }
+    "log": null
   }
 }

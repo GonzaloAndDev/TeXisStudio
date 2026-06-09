@@ -1,4 +1,2 @@
-$ErrorActionPreference = "Stop"
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
-& powershell -ExecutionPolicy Bypass -File (Join-Path $root "scripts\bootstrap-windows.ps1") -Run
-exit $LASTEXITCODE
+﻿$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+node "$root\scripts\texis.mjs" run @args

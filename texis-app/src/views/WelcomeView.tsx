@@ -65,10 +65,11 @@ export default function WelcomeView() {
   return (
     <div style={{
       minHeight: "100vh",
+      overflowY: "auto",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "safe center", // centra si cabe; top-align con scroll si desborda
       background: "var(--bg-app)",
       padding: "40px 24px",
     }}>

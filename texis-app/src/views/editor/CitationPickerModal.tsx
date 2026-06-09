@@ -497,16 +497,15 @@ export function CitationPickerModal({
             </div>
           )}
           {filtered.map((ref) => (
-            <div
+            <button
               key={ref.key}
+              type="button"
+              className="tx-unstyled-button tx-card-action"
               onClick={() => { onInsert(ref); onClose(); }}
               style={{
                 padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)",
-                cursor: "pointer", display: "flex", gap: 12, alignItems: "flex-start",
-                transition: "background 0.1s",
+                display: "flex", gap: 12, alignItems: "flex-start", width: "100%", textAlign: "left",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-selected)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
             >
               {/* Chip de tipo */}
               <span style={{
@@ -547,7 +546,7 @@ export function CitationPickerModal({
               }}>
                 {typeLabel[citationType]}{"{"}…{"}"}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>

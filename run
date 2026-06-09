@@ -2,4 +2,4 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec bash "$ROOT/scripts/bootstrap.sh" run
+exec node "$ROOT/scripts/texis.mjs" run "$@"

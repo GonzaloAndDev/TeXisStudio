@@ -8,6 +8,8 @@ import {
 } from "react-router-dom";
 import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
+import { ConfirmProvider } from "./components/ui/useConfirm";
+import { ToastProvider } from "./components/ui/ToastProvider";
 
 import { WELCOME_SHOWN_KEY } from "./constants/welcome";
 
@@ -247,21 +249,25 @@ const router = createBrowserRouter(
 
 export default function App() {
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <AppErrorBoundary>
-        <Suspense
-          fallback={
-            <div style={{
-              flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-              background: "var(--bg-app)", color: "var(--fg-muted)", fontSize: "var(--fs-sm)",
-            }}>
-              Loading…
-            </div>
-          }
-        >
-          <RouterProvider router={router} future={{ v7_startTransition: true }} />
-        </Suspense>
-      </AppErrorBoundary>
-    </div>
+    <ToastProvider>
+      <ConfirmProvider>
+        <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflowX: "auto", overflowY: "hidden" }}>
+          <AppErrorBoundary>
+            <Suspense
+              fallback={
+                <div style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--bg-app)", color: "var(--fg-muted)", fontSize: "var(--fs-sm)",
+                }}>
+                  Loading…
+                </div>
+              }
+            >
+              <RouterProvider router={router} future={{ v7_startTransition: true }} />
+            </Suspense>
+          </AppErrorBoundary>
+        </div>
+      </ConfirmProvider>
+    </ToastProvider>
   );
 }

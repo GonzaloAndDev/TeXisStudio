@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
-  IconBook, IconFile,
-  IconFolder, IconPlus, IconSearch, IconSettings, IconUpload,
+  IconBook,
+  IconFolder, IconPlus, IconSearch, IconSettings, IconUpload, IconWarn,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { api } from "../lib/tauri";
@@ -63,6 +64,7 @@ const S = {
   },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } as const,
   journeyGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 18 } as const,
+  journeyCard: { minHeight: 88 } as const,
   card: {
     background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
     borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
@@ -115,14 +117,17 @@ function NextStepBanner({ project, onClick }: { project: RecentProject; onClick:
     : t("home.resume_hint");
 
   return (
-    <div
+    <button
+      type="button"
+      className="tx-unstyled-button tx-card-action"
+      aria-label={`${label}: ${project.title}`}
       style={{
         margin: "0 0 20px", padding: "14px 18px",
         borderRadius: "var(--r-lg)",
         background: "var(--bg-panel)",
         border: "1px solid var(--accent-soft)",
         display: "flex", gap: 16, alignItems: "center",
-        cursor: "pointer",
+        width: "100%", textAlign: "left",
       }}
       onClick={onClick}
     >
@@ -135,10 +140,10 @@ function NextStepBanner({ project, onClick }: { project: RecentProject; onClick:
         </div>
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 2 }}>{hint}</div>
       </div>
-      <button className="btn btn-sm btn-accent" style={{ flexShrink: 0 }}>
+      <span aria-hidden="true" className="btn btn-sm btn-accent" style={{ flexShrink: 0, pointerEvents: "none" }}>
         {t("home.open")}
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -154,7 +159,7 @@ function LatexSetupBanner({ info }: { info: import("../types").LatexInfo }) {
       background: "var(--accent-tint)", border: "1px solid var(--accent-soft)",
       display: "flex", gap: 14, alignItems: "center",
     }}>
-      <span style={{ fontSize: 20, flexShrink: 0 }}>⚠</span>
+      <span style={{ color: "var(--build-warn)", flexShrink: 0 }}><IconWarn size={18} /></span>
       <div style={{ flex: 1 }}>
         <span style={{ fontWeight: 600, color: "var(--accent-deep)", fontSize: "var(--fs-sm)" }}>
           {available.length === 0
@@ -195,7 +200,10 @@ function SkeletonLine({ width = "100%", height = 12 }: { width?: string; height?
 function HomeLoadingSkeleton() {
   return (
     <>
-      <style>{`@keyframes tx-pulse { 0% { background-position: 220% 0; } 100% { background-position: -220% 0; } }`}</style>
+      <style>{`
+        @keyframes tx-pulse { 0% { background-position: 220% 0; } 100% { background-position: -220% 0; } }
+        @media (prefers-reduced-motion: reduce) { @keyframes tx-pulse { 0%, 100% { background-position: 0 0; } } }
+      `}</style>
       <div style={S.journeyGrid}>
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} style={{ background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: "14px 16px", minHeight: 88, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -232,11 +240,21 @@ function RecentProjectsSkeleton() {
 export default function HomeView() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { setRecentProjects, latexInfo, setLatexInfo } = useProjectStore();
+  const [busy, setBusy] = useState(false);
+  const [opening, setOpening] = useState<string | null>(null);
+
+  // flushSync garantiza que React renderice y el browser pinte busy=true
+  // de forma síncrona ANTES de llamar a navigate. Sin rAF, sin timing issues.
+  function goTo(path: string) {
+    flushSync(() => setBusy(true));
+    navigate(path);
+  }
+  const { setRecentProjects, recentProjects: cachedProjects, latexInfo, setLatexInfo } = useProjectStore();
   const { userMode } = useSettingsStore();
-  const [projects, setProjects] = useState<RecentProject[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [latexLoading, setLatexLoading] = useState(true);
+  // Mostrar datos del store inmediatamente; solo mostrar skeleton en la primera carga
+  const [projects, setProjects] = useState<RecentProject[]>(cachedProjects);
+  const [projectsLoading, setProjectsLoading] = useState(cachedProjects.length === 0);
+  const [latexLoading, setLatexLoading] = useState(latexInfo === null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importTexPath, setImportTexPath] = useState("");
   const [importOutputPath, setImportOutputPath] = useState("");
@@ -245,6 +263,7 @@ export default function HomeView() {
   const [homeError, setHomeError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Siempre refrescar LaTeX en background; si ya hay datos en caché no mostramos spinner
     api.detectLatex()
       .then(setLatexInfo)
       .catch(() => {})
@@ -256,10 +275,12 @@ export default function HomeView() {
         api.listRecentProjects(dir).then((p) => {
           setProjects(p);
           setRecentProjects(p);
-        }).catch(() => setProjects([]))
-          .finally(() => setProjectsLoading(false))
+        }).catch(() => {
+          // Si falla el refresh, conservar caché; solo vaciar si era la primera carga
+          if (cachedProjects.length === 0) setProjects([]);
+        }).finally(() => setProjectsLoading(false))
       ).catch(() => {
-        setProjects([]);
+        if (cachedProjects.length === 0) setProjects([]);
         setProjectsLoading(false);
       });
     } else {
@@ -267,11 +288,13 @@ export default function HomeView() {
       setRecentProjects(MOCK_PROJECTS);
       setProjectsLoading(false);
     }
-  }, [setLatexInfo, setRecentProjects]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setLatexInfo, setRecentProjects]); // cachedProjects.length excluido: incluirlo causaría re-fetch al recibir datos
 
   async function handleOpen(projectPath: string, destination: "editor" | "compile" = "editor") {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (!isTauriEnv) { navigate("/demo"); return; }
+    setOpening(projectPath); // feedback inmediato
     try {
       const model = await api.getProject(projectPath);
       useProjectStore.getState().openProject(model, projectPath);
@@ -279,7 +302,9 @@ export default function HomeView() {
       navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
     } catch (e) {
       console.error("Error abriendo proyecto:", e);
-      setHomeError("No pude abrir esa carpeta como proyecto TeXisStudio. Verifica que contenga tesis.project.yaml.");
+      setHomeError(t("home.error_opening_project"));
+    } finally {
+      setOpening(null);
     }
   }
 
@@ -327,7 +352,7 @@ export default function HomeView() {
     } catch (e) {
       console.error("Error importando .tex:", e);
       const message = e instanceof Error ? e.message : String(e);
-      setHomeError(`No pude importar el archivo .tex: ${message}`);
+      setHomeError(t("home.error_importing_tex", { error: message }));
     } finally {
       setImportBusy(false);
     }
@@ -339,7 +364,7 @@ export default function HomeView() {
   }
 
   const latexStatus = (() => {
-    if (latexLoading) return { text: "Detectando LaTeX...", dot: "var(--build-warn)" };
+    if (latexLoading) return { text: t("home.detecting_latex"), dot: "var(--build-warn)" };
     if (!latexInfo?.is_usable) return { text: t("home.latex_not_detected"), dot: "var(--build-err)" };
     const backends = latexInfo.available_backends ?? [];
     const hasTectonic = latexInfo.has_tectonic;
@@ -363,31 +388,31 @@ export default function HomeView() {
       label: t("home.step_start"),
       hint: t("home.step_start_hint"),
       icon: <IconPlus size={13} />,
-      onClick: () => navigate("/new"),
+      onClick: () => goTo("/new"),
     },
     {
       label: t("home.step_setup"),
       hint: t("home.step_setup_hint"),
-      icon: <IconFolder size={13} />,
-      onClick: () => navigate("/library"),
+      icon: <IconSettings size={13} />,
+      onClick: () => goTo("/settings"),
     },
     {
       label: t("home.step_write"),
       hint: latestProject ? t("home.step_write_hint_project") : t("home.step_write_hint_empty"),
       icon: <IconBook size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path) : navigate("/new"),
+      onClick: () => latestProject ? handleOpen(latestProject.path) : goTo("/new"),
     },
     {
       label: t("home.step_review"),
       hint: t("home.step_review_hint"),
       icon: <IconSearch size={13} />,
-      onClick: () => navigate("/settings/text"),
+      onClick: () => goTo("/settings/text"),
     },
     {
       label: t("home.step_deliver"),
       hint: latestProject ? t("home.step_deliver_hint_project") : t("home.step_deliver_hint_empty"),
       icon: <IconUpload size={13} />,
-      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : navigate("/new"),
+      onClick: () => latestProject ? handleOpen(latestProject.path, "compile") : goTo("/new"),
     },
   ];
 
@@ -477,16 +502,34 @@ export default function HomeView() {
           </div>
         </AppDialog>
       )}
+      {/* Barra de progreso de navegación */}
+      {(busy || opening) && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 9999, background: "var(--bg-app)" }}>
+          <div style={{
+            height: "100%",
+            background: "var(--accent)",
+            animation: "tx-nav-progress 1.2s ease-in-out infinite",
+          }} />
+          <style>{`
+            @keyframes tx-nav-progress {
+              0%   { width: 0%; margin-left: 0; }
+              50%  { width: 70%; margin-left: 0; }
+              100% { width: 0%; margin-left: 100%; }
+            }
+          `}</style>
+        </div>
+      )}
+
       <TxAppbar
         left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v1.0.0</span></>}
         center={null}
         right={
           <>
             <LanguagePicker />
-            <button className="btn btn-ghost btn-sm">
+            <button className="btn btn-ghost btn-sm" onClick={() => goTo("/library")} title={t("home.search_library_hint")}>
               <IconSearch size={13} /> {t("common.search")} <span className="kbd">⌘K</span>
             </button>
-            <button className="btn btn-ghost btn-icon" onClick={() => navigate("/settings")} title={t("common.settings")}><IconSettings size={14} /></button>
+            <button className="btn btn-ghost btn-icon" onClick={() => goTo("/settings")} aria-label={t("common.settings")}><IconSettings size={14} /></button>
           </>
         }
       />
@@ -495,19 +538,29 @@ export default function HomeView() {
         <aside style={S.side}>
           <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.guided_route")}</div>
           {workMoments.map(({ label, icon, onClick }) => (
-            <div key={label} style={S.sideItem(false)} onClick={onClick}>
+            <button
+              key={label}
+              type="button"
+              className="tx-unstyled-button"
+              disabled={busy || !!opening}
+              style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1 }}
+              onClick={onClick}
+            >
               {icon} {label}
-            </div>
+            </button>
           ))}
 
           <div style={{ height: 1, background: "var(--border-subtle)", margin: "12px 4px" }} />
           <div style={{ ...S.sectionTitle, margin: "4px 4px 8px" }}>{t("home.nav_library")}</div>
-          <div style={S.sideItem(false)} onClick={() => navigate("/library")}>
+          <button
+            type="button"
+            className="tx-unstyled-button"
+            disabled={busy || !!opening}
+            style={{ ...S.sideItem(false), opacity: busy || opening ? 0.55 : 1 }}
+            onClick={() => goTo("/library")}
+          >
             <IconFolder size={13} /> {t("home.nav_profiles")}
-          </div>
-          <div style={S.sideItem(false)}>
-            <IconFile size={13} /> {t("home.nav_elements")}
-          </div>
+          </button>
 
           <div style={{
             marginTop: "auto", padding: 8, borderTop: "1px solid var(--border-subtle)",
@@ -519,22 +572,21 @@ export default function HomeView() {
           </div>
         </aside>
 
-        <main style={S.main} className="scroll">
-          <div style={S.hero}>
-            <h1 style={S.greet}>
-              {t("home.greeting").split(t("home.greeting_italic")).map((part, i, arr) =>
-                i < arr.length - 1
-                  ? [part, <span key={i} style={S.greetItalic}>{t("home.greeting_italic")}</span>]
-                  : part
-              )}
+        <main style={S.main} className="scroll home-main">
+          <div style={S.hero} className="home-hero">
+            <h1 style={S.greet} className="home-hero-title">
+              <Trans
+                i18nKey="home.greeting"
+                components={{ em: <span style={S.greetItalic} /> }}
+              />
             </h1>
-            <p style={S.sub}>
+            <p style={S.sub} className="home-hero-sub">
               {userMode === "basic"
-                ? "TeXisStudio está en modo guiado: tú enfócate en tu trabajo y la app te acompaña con formato, bibliografía y entrega."
+                ? t("home.basic_mode_description")
                 : t(projects.length === 1 ? "home.projects_count_one" : "home.projects_count_other", { count: projects.length })}
             </p>
-            <div style={S.actions}>
-              <button className="btn btn-accent" onClick={() => navigate("/new")}>
+            <div style={S.actions} className="home-actions">
+              <button className="btn btn-accent" onClick={() => goTo("/new")} disabled={busy || !!opening}>
                 <IconPlus size={13} /> {t("home.new_project")}
               </button>
               <button
@@ -551,22 +603,26 @@ export default function HomeView() {
             {projectsLoading || latexLoading ? (
               <HomeLoadingSkeleton />
             ) : (
-              <div style={S.journeyGrid}>
+              <div style={S.journeyGrid} className="home-journey-grid">
                 {workMoments.map(({ label, hint, icon, onClick }) => (
                   <button
                     key={label}
                     type="button"
                     onClick={onClick}
+                    className="home-journey-card"
+                    disabled={busy || !!opening}
                     style={{
                       textAlign: "left",
                       background: "var(--bg-panel)",
                       border: "1px solid var(--border-soft)",
                       borderRadius: "var(--r-lg)",
                       padding: "14px 16px",
-                      cursor: "pointer",
+                      cursor: busy || opening ? "default" : "pointer",
+                      opacity: busy || opening ? 0.55 : 1,
                       display: "flex",
                       flexDirection: "column",
                       gap: 8,
+                      minHeight: 88,
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-strong)", fontWeight: 600 }}>
@@ -587,7 +643,7 @@ export default function HomeView() {
             <NextStepBanner project={latestProject} onClick={() => handleOpen(latestProject.path)} />
           )}
 
-          <div style={S.sectionTitle}>
+          <div style={S.sectionTitle} className="home-section-title">
             <span>{t("home.recent_projects")}</span>
             <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
             <span style={{ color: "var(--fg-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>
@@ -600,12 +656,13 @@ export default function HomeView() {
           ) : (
           <div style={S.grid}>
             {projects.map((p, i) => (
-              <div
+              <button
                 key={i}
-                style={S.card}
+                type="button"
+                className="tx-unstyled-button tx-card-action"
+                style={{ ...S.card, display: "flex" }}
                 onClick={() => handleOpen(p.path)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--accent)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border-soft)"; }}
+                aria-label={p.title}
               >
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={S.cardSpine} />
@@ -625,14 +682,16 @@ export default function HomeView() {
                   <span>{p.path.split(/[/\\]/).pop()}</span>
                   <span>{formatUpdatedAt(p.updated_at, t)}</span>
                 </div>
-              </div>
+              </button>
             ))}
 
             {projects.length === 0 && (
-              <div
+              <button
+                type="button"
+                className="tx-unstyled-button tx-card-action"
                 style={{
                   background: "var(--bg-panel)", border: "1px dashed var(--border-firm)",
-                  borderRadius: "var(--r-lg)", padding: 16, cursor: "pointer",
+                  borderRadius: "var(--r-lg)", padding: 16,
                   display: "flex", flexDirection: "column", gap: 8, minHeight: 132,
                 }}
                 onClick={() => navigate("/new")}
@@ -649,7 +708,7 @@ export default function HomeView() {
                   <span className="chip">{t("wizard.doc_tesina")}</span>
                   <span className="chip">{t("wizard.chip_more")}</span>
                 </div>
-              </div>
+              </button>
             )}
           </div>
           )}

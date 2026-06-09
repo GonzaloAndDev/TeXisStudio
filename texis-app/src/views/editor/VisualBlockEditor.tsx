@@ -126,8 +126,7 @@ export function VisualKindSelector({ onSelect }: { onSelect: (kind: VisualKind) 
               cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 4,
               transition: "border-color 0.15s, background 0.15s",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-firm)"; }}
+            className="tx-card-action"
           >
             <span style={{ fontSize: 22 }}>{icon}</span>
             <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)" }}>{t(labelKey)}</span>

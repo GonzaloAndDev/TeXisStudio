@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
 
-const root = resolve(new URL("..", import.meta.url).pathname);
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const bundledDir = join(root, "texis-app", "src", "i18n", "locales");
 const languagesRepo = process.env.TEXIS_LANGUAGES_REPO
   ? resolve(process.env.TEXIS_LANGUAGES_REPO)
   : resolve(root, "..", "TeXisStudio-Languages");
 
 function readJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
+  const text = readFileSync(path, "utf8");
+  return JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 }
 
 function flatten(value, prefix = "") {

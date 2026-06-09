@@ -23,14 +23,16 @@
     "import": "インポート",
     "retry": "再試行",
     "apply": "適用",
-    "export": "エクスポート"
+    "export": "エクスポート",
+    "confirm": "確認",
+    "working": "処理中…"
   },
   "lang": {
     "picker_label": "インターフェース言語",
     "spell_not_available": "この言語のスペルチェックは利用できません"
   },
   "home": {
-    "greeting": "前回の続きから始めましょう。",
+    "greeting": "<em>前回の続きから</em>始めましょう。",
     "greeting_italic": "前回の続きから",
     "projects_count_one": "{{count}} 件のプロジェクト",
     "projects_count_other": "{{count}} 件のプロジェクト",
@@ -101,7 +103,12 @@
     "level_doctorado": "博士",
     "level_posdoctorado": "ポスドク",
     "level_bachillerato": "高校",
-    "level_tecnico": "専門学校"
+    "level_tecnico": "専門学校",
+    "basic_mode_description": "TeXisStudio はガイドモードです。作業に集中すれば、アプリが書式、参考文献、提出をサポートします。",
+    "error_opening_project": "そのフォルダーを TeXisStudio プロジェクトとして開けませんでした。tesis.project.yaml が含まれていることを確認してください。",
+    "search_library_hint": "ライブラリを検索",
+    "detecting_latex": "LaTeX を検出中…",
+    "error_importing_tex": ".tex ファイルをインポートできませんでした：{{error}}"
   },
   "wizard": {
     "title": "新しいプロジェクト",
@@ -493,7 +500,27 @@
     "no_snapshots_hint": "上のフィールドを使用して作成します。",
     "snapshot_restore_title": "このバージョンを復元",
     "snapshot_delete_title": "バージョンを削除",
-    "section_guidance_label": "セクションガイダンス"
+    "section_guidance_label": "セクションガイダンス",
+    "save_and_exit": "保存して終了",
+    "snapshot_restore_action": "復元",
+    "continue_editing": "編集を続ける",
+    "unsaved_changes_message": "このセクションに未保存の変更があります。離脱する前にどうしますか？",
+    "unsaved_changes_title": "未保存の変更",
+    "review_ai": "AI",
+    "visual_type_selector_title": "挿入する図の種類を選択してください",
+    "default_set_a": "集合 A",
+    "add_paragraph": "新しい段落",
+    "review_grammar": "文法",
+    "bib_refs_count": ".bib に {{count}} 件",
+    "section_status_legend": "ステータス凡例",
+    "sections_count": "{{count}} セクション",
+    "review_spell": "スペル",
+    "leave_without_saving": "保存せずに離脱",
+    "default_table_column_2": "列 2",
+    "default_set_c": "集合 C",
+    "default_set_b": "集合 B",
+    "default_table_column_1": "列 1",
+    "no_bib_file": ".bib なし"
   },
   "spell": {
     "panel_title": "スペルチェック",
@@ -924,7 +951,8 @@
     "empty_needs_key": "{{provider}} API キーを設定して開始します。",
     "generating_response": "応答を生成中…",
     "message_placeholder": "メッセージを書いてください… (Enter に送信します)",
-    "configure_key_first": "最初に API キーを設定してください"
+    "configure_key_first": "最初に API キーを設定してください",
+    "send": "送信"
   },
   "editor_meta": {
     "project_guide": "プロジェクト ガイド",
@@ -1145,7 +1173,17 @@
     "preflight_has_warnings": "{{count}}件の警告が見つかりました。続行できます。",
     "preflight_errors_section": "エラー ({{count}})",
     "preflight_warnings_section": "警告 ({{count}})",
-    "preflight_suggestions_section": "提案 ({{count}})"
+    "preflight_suggestions_section": "提案 ({{count}})",
+    "export_success": "エクスポート完了",
+    "compile_as_draft": "下書きとしてコンパイル",
+    "readiness_complete": "完了",
+    "readiness_export_title": "最終提出がブロックされています",
+    "readiness_back": "見直しに戻る",
+    "readiness_compile_title": "正式版の準備ができていません",
+    "readiness_export_subtitle": "最終モードでエクスポートするには、まず納品と品質チェックを完了してください。",
+    "readiness_compile_subtitle": "下書きとしてコンパイルするか、正式版として扱う前にこれらの点を確認してください。",
+    "readiness_delivery": "納品",
+    "readiness_quality": "最終品質"
   },
   "community_profile": {
     "audience_label": "対象者",
@@ -1401,7 +1439,9 @@
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       }
-    }
+    },
+    "reset_title": "デフォルトスタイルを復元",
+    "reset_action": "復元"
   },
   "block_editor": {
     "insert_cross_reference": "⌗ 相互参照 ({{count}}) を挿入",
@@ -2323,5 +2363,9 @@
     "loading_more": "他の言語を読み込み中…",
     "catalog_error": "他の言語を読み込めませんでした。同梱の言語で続行できます。",
     "skip": "スキップ"
+  },
+  "toast": {
+    "close_button": "通知を閉じる",
+    "notifications_area_label": "通知"
   }
 }

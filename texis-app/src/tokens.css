@@ -158,7 +158,7 @@
 
 /* ─── Reset ─── */
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; min-width: 860px; }
 body {
   font-family: var(--font-ui);
   font-size: var(--fs-base);
@@ -166,6 +166,52 @@ body {
   background: var(--bg-app);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'ss01', 'cv11';
+}
+
+/* ─── Focus global ─── */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ─── Acciones interactivas ─── */
+.tx-unstyled-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tx-card-action {
+  cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.tx-card-action:hover {
+  border-color: var(--accent-soft) !important;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.tx-card-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent) !important;
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── Utilidades generales ─── */
@@ -239,17 +285,18 @@ body {
 .editor-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(210px, 17vw) minmax(0, 1fr) minmax(250px, 21vw);
+  /* paneles clampeados: crecen con vw pero tienen techo para pantallas grandes */
+  grid-template-columns: clamp(200px, 17vw, 280px) minmax(0, 1fr) clamp(250px, 21vw, 340px);
   min-height: 0;
   min-width: 0;
 }
 
 .editor-grid-left-collapsed {
-  grid-template-columns: 42px minmax(0, 1fr) minmax(250px, 21vw);
+  grid-template-columns: 42px minmax(0, 1fr) clamp(250px, 21vw, 340px);
 }
 
 .editor-grid-meta-collapsed {
-  grid-template-columns: minmax(210px, 17vw) minmax(0, 1fr) 42px;
+  grid-template-columns: clamp(200px, 17vw, 280px) minmax(0, 1fr) 42px;
 }
 
 .editor-grid-left-collapsed.editor-grid-meta-collapsed {
@@ -350,17 +397,18 @@ body {
   flex-basis: clamp(360px, 34vw, 480px);
 }
 
-@media (max-width: 1360px) {
+/* ≤1400px — paneles ligeramente compactos (monitores de 1440p con zoom, etc.) */
+@media (max-width: 1400px) {
   .editor-grid {
-    grid-template-columns: 220px minmax(0, 1fr) 270px;
+    grid-template-columns: 210px minmax(0, 1fr) 260px;
   }
 
   .editor-grid-left-collapsed {
-    grid-template-columns: 42px minmax(0, 1fr) 270px;
+    grid-template-columns: 42px minmax(0, 1fr) 260px;
   }
 
   .editor-grid-meta-collapsed {
-    grid-template-columns: 220px minmax(0, 1fr) 42px;
+    grid-template-columns: 210px minmax(0, 1fr) 42px;
   }
 
   .editor-grid-left-collapsed.editor-grid-meta-collapsed {
@@ -374,9 +422,22 @@ body {
   }
 }
 
-@media (max-width: 1120px) {
+/* ≤1280px — 720p: colapsar panel derecho para dar espacio al canvas */
+@media (max-width: 1280px) {
   .editor-grid {
-    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .editor-grid-meta-collapsed {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed.editor-grid-meta-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
   }
 
   .editor-meta-panel,
@@ -385,10 +446,59 @@ body {
   }
 }
 
-@media (max-height: 760px) {
+/* ≤1120px — panel izquierdo más estrecho */
+@media (max-width: 1120px) {
+  .editor-grid {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .editor-grid-left-collapsed {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .editor-meta-panel,
+  .editor-panel-rail-right {
+    display: none !important;
+  }
+}
+
+/* ≤768px de alto (720p) — editor paper más compacto */
+@media (max-height: 768px) {
   .editor-paper {
     padding-top: 24px;
     padding-bottom: 36px;
     min-height: calc(100vh - 132px);
+  }
+}
+
+/* ≤768px de alto (720p) — HomeView más compacto */
+@media (max-height: 768px) {
+  .home-main {
+    padding: 16px 40px 24px !important;
+  }
+  .home-hero {
+    margin-bottom: 16px !important;
+    padding-bottom: 16px !important;
+  }
+  .home-hero-title {
+    font-size: var(--fs-2xl) !important;
+    margin-bottom: 4px !important;
+  }
+  .home-hero-sub {
+    margin-top: 4px !important;
+  }
+  .home-actions {
+    margin-top: 12px !important;
+  }
+  .home-journey-grid {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+  .home-journey-card {
+    min-height: 72px !important;
+    padding: 10px 12px !important;
+  }
+  .home-section-title {
+    margin: 14px 0 8px !important;
   }
 }

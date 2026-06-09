@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AIAssistantPanel — panel lateral de asistente de IA.
  *
  * Pestañas independientes por proveedor.
@@ -12,32 +12,8 @@ import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } f
 import { useSettingsStore } from "../stores/settings";
 import { sendAiMessage, buildErrorMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
-
-// ── Iconos inline mínimos ─────────────────────────────────────────────────────
-
-function IconSend() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" />
-    </svg>
-  );
-}
-
-function IconX() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
+import { AppDialog } from "./AppDialog";
+import { IconTrash, IconX, IconUpload } from "./Icons";
 
 // ── Configuración de proveedores ──────────────────────────────────────────────
 
@@ -128,56 +104,52 @@ function ActionPreviewDialog({
     proposed.kind === "replace_selection" ? proposed.replacement :
     proposed.kind === "insert_at_cursor" ? proposed.content : "";
 
-  return (
-    <div style={{
-      position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)",
-      zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
-    }}>
-      <div style={{
-        background: "var(--bg-base)", borderRadius: "var(--r-lg)",
-        border: "1px solid var(--border-soft)", padding: 18, maxWidth: 500, width: "100%",
-        maxHeight: "80vh", overflow: "auto",
-      }}>
-        <div style={{ fontWeight: 600, marginBottom: 8, color: "var(--fg-strong)" }}>
-          {proposed.kind === "replace_selection" ? t("ai.preview_replace_selection") : t("ai.preview_insert_at_cursor")}
-        </div>
+  const title = proposed.kind === "replace_selection"
+    ? t("ai.preview_replace_selection")
+    : t("ai.preview_insert_at_cursor");
 
+  return (
+    <AppDialog
+      title={title}
+      width={500}
+      onClose={onDismiss}
+      footer={
+        <>
+          <button className="btn btn-ghost btn-sm" onClick={onDismiss}>
+            {t("common.cancel")}
+          </button>
+          <button
+            className="btn btn-accent btn-sm"
+            onClick={() => onApply(content ?? "", proposed.kind)}
+          >
+            {t("ai.apply")}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {proposed.kind === "replace_selection" && proposed.original && (
-          <div style={{ marginBottom: 10 }}>
+          <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 4 }}>{t("ai.preview_original")}</div>
             <pre style={{
               background: "var(--bg-panel)", padding: 10, borderRadius: "var(--r-md)",
               fontSize: "var(--fs-sm)", whiteSpace: "pre-wrap", wordBreak: "break-word",
-              borderLeft: "3px solid var(--build-warn)", maxHeight: 120, overflow: "auto",
+              borderLeft: "3px solid var(--build-warn)", maxHeight: 120, overflow: "auto", margin: 0,
             }}>{proposed.original}</pre>
           </div>
         )}
-
-        <div style={{ marginBottom: 14 }}>
+        <div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 4 }}>
             {proposed.kind === "replace_selection" ? t("ai.preview_proposed") : t("ai.preview_content_to_insert")}
           </div>
           <pre style={{
             background: "var(--bg-panel)", padding: 10, borderRadius: "var(--r-md)",
             fontSize: "var(--fs-sm)", whiteSpace: "pre-wrap", wordBreak: "break-word",
-            borderLeft: "3px solid var(--build-ok)", maxHeight: 200, overflow: "auto",
+            borderLeft: "3px solid var(--build-ok)", maxHeight: 200, overflow: "auto", margin: 0,
           }}>{content}</pre>
         </div>
-
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button className="btn btn-ghost" onClick={onDismiss} style={{ fontSize: "var(--fs-sm)" }}>
-            {t("common.cancel")}
-          </button>
-          <button
-            className="btn btn-accent"
-            onClick={() => onApply(content ?? "", proposed.kind)}
-            style={{ fontSize: "var(--fs-sm)" }}
-          >
-            {t("ai.apply")}
-          </button>
-        </div>
       </div>
-    </div>
+    </AppDialog>
   );
 }
 
@@ -363,7 +335,7 @@ export function AiAssistantPanel({
   return (
     <div style={{
       width: 340, minWidth: 280, display: "flex", flexDirection: "column",
-      borderLeft: "1px solid var(--border-soft)", background: "var(--bg-base)",
+      borderLeft: "1px solid var(--border-soft)", background: "var(--bg-panel)",
       height: "100%", position: "relative", fontSize: "var(--fs-sm)",
     }}>
       {/* Preview dialog */}
@@ -388,9 +360,10 @@ export function AiAssistantPanel({
         <button
           className="btn btn-ghost"
           onClick={store.togglePanel}
+          aria-label={t("common.close")}
           style={{ padding: "2px 6px", fontSize: 11 }}
         >
-          <IconX />
+          <IconX size={13} />
         </button>
       </div>
 
@@ -444,7 +417,7 @@ export function AiAssistantPanel({
               style={{
                 flex: 1, fontSize: "var(--fs-xs)", padding: "5px 8px",
                 borderRadius: "var(--r-sm)", border: "1px solid var(--border-soft)",
-                background: "var(--bg-base)", color: "var(--fg-default)",
+                background: "var(--bg-panel)", color: "var(--fg-default)",
               }}
               value={apiKey}
               onChange={(e) => store.setApiKey(provider, e.target.value)}
@@ -483,10 +456,11 @@ export function AiAssistantPanel({
           <button
             className="btn btn-ghost"
             onClick={() => store.clearHistory(provider)}
+            aria-label={t("ai.clear_history")}
             title={t("ai.clear_history")}
             style={{ padding: "3px 6px" }}
           >
-            <IconTrash />
+            <IconTrash size={12} />
           </button>
           <button
             className="btn btn-ghost"
@@ -683,9 +657,10 @@ export function AiAssistantPanel({
           className="btn btn-accent"
           onClick={handleSend}
           disabled={!isConfigured || !input.trim() || store.isLoading}
+          aria-label={t("ai.send")}
           style={{ padding: "8px 10px", flexShrink: 0 }}
         >
-          <IconSend />
+          <IconUpload size={14} />
         </button>
       </div>
     </div>

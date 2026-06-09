@@ -23,14 +23,16 @@
     "import": "Import",
     "retry": "Retry",
     "apply": "Apply",
-    "export": "Export"
+    "export": "Export",
+    "confirm": "Confirm",
+    "working": "Working…"
   },
   "lang": {
     "picker_label": "Interface language",
     "spell_not_available": "Spell checking not available for this language"
   },
   "home": {
-    "greeting": "Continue where you left off.",
+    "greeting": "Continue <em>where you left off</em>.",
     "greeting_italic": "where you left off",
     "projects_count_one": "{{count}} project",
     "projects_count_other": "{{count}} projects",
@@ -101,7 +103,12 @@
     "level_doctorado": "Doctorate",
     "level_posdoctorado": "Postdoctorate",
     "level_bachillerato": "High school",
-    "level_tecnico": "Technical"
+    "level_tecnico": "Technical",
+    "basic_mode_description": "TeXisStudio is in guided mode: focus on your work and the app will handle formatting, bibliography, and delivery.",
+    "error_opening_project": "Could not open that folder as a TeXisStudio project. Make sure it contains tesis.project.yaml.",
+    "search_library_hint": "Search library",
+    "detecting_latex": "Detecting LaTeX…",
+    "error_importing_tex": "Could not import the .tex file: {{error}}"
   },
   "wizard": {
     "title": "New project",
@@ -493,7 +500,27 @@
     "no_snapshots_hint": "Use the field above to create one.",
     "snapshot_restore_title": "Restore this version",
     "snapshot_delete_title": "Delete version",
-    "section_guidance_label": "Section guidance"
+    "section_guidance_label": "Section guidance",
+    "save_and_exit": "Save and exit",
+    "snapshot_restore_action": "Restore",
+    "continue_editing": "Keep editing",
+    "unsaved_changes_message": "You have unsaved changes in this section. What would you like to do before leaving?",
+    "unsaved_changes_title": "Unsaved changes",
+    "review_ai": "AI",
+    "visual_type_selector_title": "What type of diagram do you want to insert?",
+    "default_set_a": "Set A",
+    "add_paragraph": "New paragraph",
+    "review_grammar": "Grammar",
+    "bib_refs_count": "{{count}} refs in .bib",
+    "section_status_legend": "Status legend",
+    "sections_count": "{{count}} sections",
+    "review_spell": "Spelling",
+    "leave_without_saving": "Leave without saving",
+    "default_table_column_2": "Column 2",
+    "default_set_c": "Set C",
+    "default_set_b": "Set B",
+    "default_table_column_1": "Column 1",
+    "no_bib_file": "no .bib"
   },
   "spell": {
     "panel_title": "Spell check",
@@ -955,7 +982,8 @@
     "empty_needs_key": "Configure your {{provider}} API key to start.",
     "generating_response": "Generating response…",
     "message_placeholder": "Write your message… (Enter to send)",
-    "configure_key_first": "Configure your API key first"
+    "configure_key_first": "Configure your API key first",
+    "send": "Send"
   },
   "editor_meta": {
     "project_guide": "Project guide",
@@ -1176,7 +1204,17 @@
     "preflight_has_warnings": "{{count}} warning(s) found. You can continue anyway.",
     "preflight_errors_section": "Errors ({{count}})",
     "preflight_warnings_section": "Warnings ({{count}})",
-    "preflight_suggestions_section": "Suggestions ({{count}})"
+    "preflight_suggestions_section": "Suggestions ({{count}})",
+    "export_success": "Export completed",
+    "compile_as_draft": "Compile as draft",
+    "readiness_complete": "Complete",
+    "readiness_export_title": "Final delivery blocked",
+    "readiness_back": "Go back to review",
+    "readiness_compile_title": "Project not ready for formal version",
+    "readiness_export_subtitle": "To export in final mode, first complete the delivery and quality checks.",
+    "readiness_compile_subtitle": "Compile as draft or review these points before treating this as a formal version.",
+    "readiness_delivery": "Delivery",
+    "readiness_quality": "Final quality"
   },
   "community_profile": {
     "audience_label": "Who it is for",
@@ -1432,7 +1470,9 @@
         "in_text_format": "[1]",
         "bibliography_title": "References"
       }
-    }
+    },
+    "reset_title": "Restore default styles",
+    "reset_action": "Restore"
   },
   "block_editor": {
     "insert_cross_reference": "⌗ Insert cross-reference ({{count}})",
@@ -2323,5 +2363,9 @@
     "loading_more": "Loading more languages…",
     "catalog_error": "Could not load more languages. You can continue with a bundled language.",
     "skip": "Skip"
+  },
+  "toast": {
+    "close_button": "Close notification",
+    "notifications_area_label": "Notifications"
   }
 }

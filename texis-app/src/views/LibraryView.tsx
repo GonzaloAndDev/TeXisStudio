@@ -201,9 +201,9 @@ export default function LibraryView() {
         {/* Sidebar */}
         <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", padding: "20px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
           {TABS.map(({ id, label, icon }) => (
-            <div key={id} onClick={() => setTab(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: "var(--r-md)", cursor: "pointer", fontSize: "var(--fs-base)", background: tab === id ? "var(--bg-selected)" : "transparent", color: tab === id ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: tab === id ? 500 : 400 }}>
+            <button key={id} type="button" className="tx-unstyled-button" aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: "var(--r-md)", fontSize: "var(--fs-base)", width: "100%", textAlign: "left", background: tab === id ? "var(--bg-selected)" : "transparent", color: tab === id ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: tab === id ? 500 : 400 }}>
               {icon} {label}
-            </div>
+            </button>
           ))}
           <div style={{ flex: 1 }} />
           <div style={{ padding: "10px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>

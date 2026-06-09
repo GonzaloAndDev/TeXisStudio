@@ -23,14 +23,16 @@
     "import": "导入",
     "retry": "重试",
     "apply": "应用",
-    "export": "导出"
+    "export": "导出",
+    "confirm": "确认",
+    "working": "处理中…"
   },
   "lang": {
     "picker_label": "界面语言",
     "spell_not_available": "该语言不支持拼写检查"
   },
   "home": {
-    "greeting": "继续您上次的工作。",
+    "greeting": "继续您<em>上次的工作</em>。",
     "greeting_italic": "上次的工作",
     "projects_count_one": "{{count}} 个项目",
     "projects_count_other": "{{count}} 个项目",
@@ -101,7 +103,12 @@
     "import_note": "原始内容将保存在imports/source.tex中，内容将作为确认的LaTeX输入以保持保真度。",
     "import_choose": "选择",
     "import_busy": "正在导入...",
-    "import_create": "创建导入的项目"
+    "import_create": "创建导入的项目",
+    "basic_mode_description": "TeXisStudio 处于引导模式：专注于您的工作，应用程序将协助完成格式、参考文献和提交。",
+    "error_opening_project": "无法将该文件夹作为 TeXisStudio 项目打开。请确保其中包含 tesis.project.yaml。",
+    "search_library_hint": "搜索资源库",
+    "detecting_latex": "正在检测 LaTeX…",
+    "error_importing_tex": "无法导入 .tex 文件：{{error}}"
   },
   "wizard": {
     "title": "新建项目",
@@ -493,7 +500,27 @@
     "diag_gls_undefined": "未定义",
     "diag_gls_unused_one": "{{count}}个术语表条目已定义但未使用",
     "diag_gls_unused_other": "{{count}}个术语表条目已定义但未使用",
-    "section_guidance_label": "章节指南"
+    "section_guidance_label": "章节指南",
+    "save_and_exit": "保存并退出",
+    "snapshot_restore_action": "恢复",
+    "continue_editing": "继续编辑",
+    "unsaved_changes_message": "该节有未保存的更改。离开前您想怎么做？",
+    "unsaved_changes_title": "未保存的更改",
+    "review_ai": "AI",
+    "visual_type_selector_title": "您想插入哪种类型的图表？",
+    "default_set_a": "集合 A",
+    "add_paragraph": "新段落",
+    "review_grammar": "语法",
+    "bib_refs_count": ".bib 中 {{count}} 条引用",
+    "section_status_legend": "状态图例",
+    "sections_count": "{{count}} 个章节",
+    "review_spell": "拼写",
+    "leave_without_saving": "不保存退出",
+    "default_table_column_2": "列 2",
+    "default_set_c": "集合 C",
+    "default_set_b": "集合 B",
+    "default_table_column_1": "列 1",
+    "no_bib_file": "无 .bib"
   },
   "spell": {
     "panel_title": "拼写检查",
@@ -924,7 +951,8 @@
     "empty_needs_key": "配置您的 {{provider}} API 密钥以启动。",
     "generating_response": "正在生成响应...",
     "message_placeholder": "写下您的消息...（Enter发送）",
-    "configure_key_first": "首先配置您的 API 密钥"
+    "configure_key_first": "首先配置您的 API 密钥",
+    "send": "发送"
   },
   "editor_meta": {
     "project_guide": "项目指南",
@@ -1145,7 +1173,17 @@
     "preflight_has_warnings": "发现 {{count}} 个警告，可继续操作。",
     "preflight_errors_section": "错误 ({{count}})",
     "preflight_warnings_section": "警告 ({{count}})",
-    "preflight_suggestions_section": "建议 ({{count}})"
+    "preflight_suggestions_section": "建议 ({{count}})",
+    "export_success": "导出完成",
+    "compile_as_draft": "以草稿形式编译",
+    "readiness_complete": "完成",
+    "readiness_export_title": "最终提交被阻止",
+    "readiness_back": "返回检查",
+    "readiness_compile_title": "项目尚未准备好正式版",
+    "readiness_export_subtitle": "要以最终模式导出，请先完成交付和质量检查。",
+    "readiness_compile_subtitle": "以草稿形式编译，或在将其视为正式版本之前检查这些事项。",
+    "readiness_delivery": "提交",
+    "readiness_quality": "最终质量"
   },
   "community_profile": {
     "audience_label": "它是给谁的",
@@ -1401,7 +1439,9 @@
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       }
-    }
+    },
+    "reset_title": "恢复默认样式",
+    "reset_action": "恢复"
   },
   "block_editor": {
     "insert_cross_reference": "⌗ 插入交叉引用 ({{count}})",
@@ -2323,5 +2363,9 @@
     "loading_more": "正在加载更多语言…",
     "catalog_error": "无法加载更多语言。您可以继续使用内置语言。",
     "skip": "跳过"
+  },
+  "toast": {
+    "close_button": "关闭通知",
+    "notifications_area_label": "通知"
   }
 }

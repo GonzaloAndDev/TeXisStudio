@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../components/ui/useConfirm";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
@@ -178,6 +179,7 @@ export default function EditorView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
 
@@ -376,14 +378,17 @@ export default function EditorView() {
 
   const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm(
-      t("editor.snapshot_restore_confirm")
-    );
+    const ok = await confirm({
+      title: t("editor.snapshot_restore_title"),
+      message: t("editor.snapshot_restore_confirm"),
+      confirmLabel: t("editor.snapshot_restore_action"),
+      cancelLabel: t("common.cancel"),
+      destructive: false,
+    });
     if (!ok) return;
     setSnapBusy(true);
     try {
       await api.restoreSnapshot(activeProjectPath, filename);
-      // Recargar el proyecto desde disco
       const model = await api.getProject(activeProjectPath);
       useProjectStore.getState().openProject(model, activeProjectPath);
       setSnapshotsOpen(false);
@@ -392,11 +397,17 @@ export default function EditorView() {
     } finally {
       setSnapBusy(false);
     }
-  }, [activeProjectPath]);
+  }, [activeProjectPath, confirm, t]);
 
   const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
-    const ok = window.confirm(t("editor.snapshot_delete_confirm"));
+    const ok = await confirm({
+      title: t("editor.snapshot_delete_title"),
+      message: t("editor.snapshot_delete_confirm"),
+      confirmLabel: t("common.delete"),
+      cancelLabel: t("common.cancel"),
+      destructive: true,
+    });
     if (!ok) return;
     try {
       await api.deleteSnapshot(activeProjectPath, filename);
@@ -404,7 +415,7 @@ export default function EditorView() {
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
     }
-  }, [activeProjectPath, loadSnapshots]);
+  }, [activeProjectPath, confirm, t, loadSnapshots]);
 
   const scheduleAutoSave = useCallback((blocks: ContentBlock[]) => {
     setSaveStatus("unsaved");
@@ -431,7 +442,7 @@ export default function EditorView() {
       case "equation":       block = { type, id, latex_content: "", numbered: false }; break;
       case "raw_latex":      block = { type, id, content: "", user_confirmed: false }; break;
       case "figure":         block = { type, id, file: "", caption: "", width: "full", label: `fig:${id.slice(0, 6)}`, include_in_list: true }; break;
-      case "table":          block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: ["Columna 1", "Columna 2"], rows: [["", ""], ["", ""]] }; break;
+      case "table":          block = { type, id, caption: "", label: `tab:${id.slice(0, 6)}`, include_in_list: true, headers: [t("editor.default_table_column_1"), t("editor.default_table_column_2")], rows: [["", ""], ["", ""]] }; break;
       case "citation":       block = { type, id, citation_key: "", citation_type: "parenthetical" }; break;
       case "glossary_entry": block = { type, id, term: "", definition: "" }; break;
       case "acronym_entry":  block = { type, id, acronym: "", full_form: "", description: undefined }; break;
@@ -445,7 +456,7 @@ export default function EditorView() {
           caption: "",
           label: `fig:${id.slice(0, 6)}`,
           include_in_list: true,
-          config: { kind: "venn_euler", sets: [{ label: "Conjunto A", color: "red" }, { label: "Conjunto B", color: "blue" }, { label: "Conjunto C", color: "green" }], intersections: {} },
+          config: { kind: "venn_euler", sets: [{ label: t("editor.default_set_a"), color: "red" }, { label: t("editor.default_set_b"), color: "blue" }, { label: t("editor.default_set_c"), color: "green" }], intersections: {} },
         };
         setVisualSelectorOpen(id); // abrimos el selector de tipo
         break;
@@ -694,7 +705,7 @@ export default function EditorView() {
     t("editor.autosaved");
   const saveDot =
     saveStatus === "saving"  ? "var(--build-warn)" :
-    saveStatus === "unsaved" ? "var(--build-err)" :
+    saveStatus === "unsaved" ? "var(--build-warn)" :
     saveStatus === "error"   ? "var(--build-err)" :
     "var(--build-ok)";
 
@@ -718,7 +729,7 @@ export default function EditorView() {
         center={null}
         right={
           <>
-            <button className="btn btn-ghost btn-sm"><IconSearch size={13} /></button>
+            <button className="btn btn-ghost btn-sm" aria-label={t("command_palette.placeholder")} onClick={() => setPaletteOpen(true)}><IconSearch size={13} /></button>
             <button
               className={`btn btn-ghost btn-sm${snapshotsOpen ? " btn-active" : ""}`}
               onClick={() => setSnapshotsOpen((o) => !o)}
@@ -753,8 +764,8 @@ export default function EditorView() {
         }
       />
 
-      <div style={{ flex: 1, display: "flex", minHeight: 0, background: "var(--bg-app)" }}>
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "260px 1fr 340px", minHeight: 0 }}>
+      <div className="editor-shell">
+      <div className="editor-grid">
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
         <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -771,22 +782,38 @@ export default function EditorView() {
                 {secs.filter((s) => s.enabled).map((s) => {
                   const sStatus = s.status ?? "draft";
                   const dotColor = STATUS_CONFIG[sStatus as SectionStatus]?.color ?? "#888";
+                  const statusLabel = STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus;
                   return (
-                    <div
+                    <button
                       key={s.id}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", cursor: "pointer", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
+                      type="button"
+                      role="option"
+                      aria-selected={s.id === activeSectionId}
+                      aria-label={`${localizedSectionTitle(s)} — ${statusLabel}`}
+                      className="tx-unstyled-button"
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", width: "100%", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
                       onClick={() => setActiveSectionId(s.id)}
-                      title={`${localizedSectionTitle(s)} · ${STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus}`}
+                      title={`${localizedSectionTitle(s)} · ${statusLabel}`}
                     >
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                      <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{localizedSectionTitle(s)}</span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
+                      <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
                         {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
+            ))}
+          </div>
+
+          {/* Leyenda de estados — accesible sin color */}
+          <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px" }} aria-label={t("editor.section_status_legend")}>
+            {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
+              <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+                <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
+                {t(cfg.labelKey)}
+              </span>
             ))}
           </div>
         </div>
@@ -794,7 +821,7 @@ export default function EditorView() {
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
-          <div style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto" }}>
+          <div className="editor-toolbar" style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)" }}>
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
@@ -827,26 +854,35 @@ export default function EditorView() {
             <button
               className={`btn btn-sm ${spellPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => { setSpellPanelOpen((v) => !v); if (grammarPanelOpen) setGrammarPanelOpen(false); }}
+              aria-label={t("spell.panel_title")}
+              aria-pressed={spellPanelOpen}
               title={t("spell.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              ABC✓
+              <IconCheck size={11} />
+              {t("editor.review_spell")}
             </button>
             <button
               className={`btn btn-sm ${grammarPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => { setGrammarPanelOpen((v) => !v); if (spellPanelOpen) setSpellPanelOpen(false); }}
+              aria-label={t("grammar.panel_title")}
+              aria-pressed={grammarPanelOpen}
               title={t("grammar.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              LT
+              <IconText size={11} />
+              {t("editor.review_grammar")}
             </button>
             <button
               className={`btn btn-sm ${aiPanel.isPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => aiPanel.togglePanel()}
+              aria-label={t("ai.panel_title")}
+              aria-pressed={aiPanel.isPanelOpen}
               title={t("ai.panel_title")}
-              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px" }}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
             >
-              ✦ IA
+              <IconSigma size={11} />
+              {t("editor.review_ai")}
             </button>
 
             <div style={{ display: "none" }} />
@@ -865,8 +901,8 @@ export default function EditorView() {
 
             <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 6px", flexShrink: 0 }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: saveStatus === "error" ? "var(--build-err)" : "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
+            <div role="status" aria-live="polite" aria-label={saveLabel} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-xs)", color: saveStatus === "error" ? "var(--build-err)" : "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: saveDot }} />
               <IconRefresh size={11} /> {saveLabel}
               {saveStatus === "error" && (
                 <button
@@ -889,7 +925,7 @@ export default function EditorView() {
             onKeyUp={captureSelection}
           >
             {activeSection ? (
-              <div style={{ width: 680, margin: "0 auto", background: "var(--bg-paper)", borderRadius: 4, boxShadow: "var(--shadow-paper)", border: "1px solid var(--bg-paper-edge)", padding: "56px 72px 80px", minHeight: 800 }}>
+              <div className="editor-paper">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)", letterSpacing: "0.05em", flex: 1 }}>
                     {userMode === "advanced" ? activeSection.element_id : t("editor.active_section")}
@@ -934,9 +970,12 @@ export default function EditorView() {
                 />
 
                 {localBlocks.length === 0 ? (
-                  <div
-                    style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", cursor: "text" }}
+                  <button
+                    type="button"
+                    className="tx-unstyled-button tx-card-action"
+                    style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: "var(--fs-md)", width: "100%", borderRadius: "var(--r-md)" }}
                     onClick={() => addBlock("paragraph")}
+                    aria-label={t("editor.empty_basic_title")}
                   >
                     <p style={{ margin: 0 }}>{userMode === "basic" ? t("editor.empty_basic_title") : t("editor.empty_advanced_title")}</p>
                     <p style={{ fontSize: "var(--fs-sm)", marginTop: 8, color: "var(--fg-faint)" }}>
@@ -944,7 +983,7 @@ export default function EditorView() {
                         ? t("editor.empty_basic_body")
                         : t("editor.empty_advanced_body")}
                     </p>
-                  </div>
+                  </button>
                 ) : (
                   <>
                     {localBlocks.map((block) => (
@@ -969,14 +1008,15 @@ export default function EditorView() {
                       />
                     ))}
                     {/* Zona de click al final para agregar párrafo */}
-                    <div
-                      style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", cursor: "text", borderRadius: 6, marginTop: 8 }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-hover)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                    <button
+                      type="button"
+                      className="tx-unstyled-button tx-card-action"
+                      style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", borderRadius: 6, marginTop: 8, width: "100%" }}
                       onClick={() => addBlock("paragraph")}
+                      aria-label={t("editor.block_paragraph")}
                     >
-                      <IconPlus size={12} style={{ marginRight: 6 }} /> Nuevo párrafo
-                    </div>
+                      <IconPlus size={12} style={{ marginRight: 6 }} /> {t("editor.add_paragraph")}
+                    </button>
                   </>
                 )}
               </div>
@@ -1178,7 +1218,7 @@ export default function EditorView() {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 16 }}>
-              ¿Qué tipo de diagrama quieres insertar?
+              {t("editor.visual_type_selector_title")}
             </div>
             <VisualKindSelector onSelect={(kind: VisualKind) => {
               const blockId = visualSelectorOpen;
@@ -1359,24 +1399,24 @@ export default function EditorView() {
             padding: "28px 28px 22px",
           }}>
             <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 10 }}>
-              Cambios sin guardar
+              {t("editor.unsaved_changes_title")}
             </div>
             <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.6, margin: "0 0 22px" }}>
-              Tienes cambios sin guardar en esta sección. ¿Qué deseas hacer antes de salir?
+              {t("editor.unsaved_changes_message")}
             </p>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
               <button
                 className="btn btn-ghost"
                 onClick={() => blocker.reset?.()}
               >
-                Seguir editando
+                {t("editor.continue_editing")}
               </button>
               <button
                 className="btn"
                 style={{ color: "var(--build-err)", borderColor: "var(--build-err)" }}
                 onClick={() => blocker.proceed?.()}
               >
-                Salir sin guardar
+                {t("editor.leave_without_saving")}
               </button>
               <button
                 className="btn btn-accent"
@@ -1385,7 +1425,7 @@ export default function EditorView() {
                   blocker.proceed?.();
                 }}
               >
-                <IconCheck size={12} /> Guardar y salir
+                <IconCheck size={12} /> {t("editor.save_and_exit")}
               </button>
             </div>
           </div>
@@ -1398,10 +1438,10 @@ export default function EditorView() {
         { text: t("editor.words", { n: bodyWordCount.toLocaleString() }) },
         {
           right: true,
-          text: bibRefs.length > 0 ? `${bibRefs.length} refs en .bib` : "sin .bib",
+          text: bibRefs.length > 0 ? t("editor.bib_refs_count", { count: bibRefs.length }) : t("editor.no_bib_file"),
           icon: <span style={{ cursor: "pointer" }} onClick={() => setCitPickerOpen(true)} />,
         },
-        { right: true, text: `${activeProject.sections.filter((s) => s.enabled).length} secciones` },
+        { right: true, text: t("editor.sections_count", { count: activeProject.sections.filter((s) => s.enabled).length }) },
       ]} />
     </>
   );

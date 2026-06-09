@@ -309,14 +309,16 @@
     "import": "Importar",
     "retry": "Tentar novamente",
     "apply": "Aplicar",
-    "export": "Exportar"
+    "export": "Exportar",
+    "confirm": "Confirmar",
+    "working": "Processando…"
   },
   "lang": {
     "picker_label": "Idioma da interface",
     "spell_not_available": "A verificação ortográfica não está disponível para este idioma"
   },
   "home": {
-    "greeting": "Continue de onde parou.",
+    "greeting": "Continue <em>onde você parou</em>.",
     "greeting_italic": "onde você parou",
     "projects_count_one": "Projeto {{count}}",
     "projects_count_other": "Projetos {{count}}",
@@ -387,7 +389,12 @@
     "level_doctorado": "Doutorado",
     "level_posdoctorado": "Pós-doutorado",
     "level_bachillerato": "Ensino médio",
-    "level_tecnico": "Técnico"
+    "level_tecnico": "Técnico",
+    "basic_mode_description": "TeXisStudio está no modo guiado: foque no seu trabalho e o app cuida da formatação, bibliografia e entrega.",
+    "error_opening_project": "Não foi possível abrir essa pasta como projeto TeXisStudio. Verifique se ela contém tesis.project.yaml.",
+    "search_library_hint": "Pesquisar na biblioteca",
+    "detecting_latex": "Detectando LaTeX…",
+    "error_importing_tex": "Não foi possível importar o arquivo .tex: {{error}}"
   },
   "wizard": {
     "title": "Novo projeto",
@@ -779,7 +786,27 @@
     "no_snapshots_hint": "Use o campo acima para criar um.",
     "snapshot_restore_title": "Restaurar esta versão",
     "snapshot_delete_title": "Excluir versão",
-    "section_guidance_label": "Orientação da seção"
+    "section_guidance_label": "Orientação da seção",
+    "save_and_exit": "Salvar e sair",
+    "snapshot_restore_action": "Restaurar",
+    "continue_editing": "Continuar editando",
+    "unsaved_changes_message": "Você tem alterações não salvas nesta seção. O que deseja fazer antes de sair?",
+    "unsaved_changes_title": "Alterações não salvas",
+    "review_ai": "IA",
+    "visual_type_selector_title": "Que tipo de diagrama você quer inserir?",
+    "default_set_a": "Conjunto A",
+    "add_paragraph": "Novo parágrafo",
+    "review_grammar": "Gramática",
+    "bib_refs_count": "{{count}} refs em .bib",
+    "section_status_legend": "Legenda de status",
+    "sections_count": "{{count}} seções",
+    "review_spell": "Ortografia",
+    "leave_without_saving": "Sair sem salvar",
+    "default_table_column_2": "Coluna 2",
+    "default_set_c": "Conjunto C",
+    "default_set_b": "Conjunto B",
+    "default_table_column_1": "Coluna 1",
+    "no_bib_file": "sem .bib"
   },
   "spell": {
     "panel_title": "Verificação ortográfica",
@@ -1210,7 +1237,8 @@
     "empty_needs_key": "Configure sua chave de API {{provider}} para iniciar.",
     "generating_response": "Gerando resposta…",
     "message_placeholder": "Escreva sua mensagem… (Entre para enviar)",
-    "configure_key_first": "Configure sua chave API primeiro"
+    "configure_key_first": "Configure sua chave API primeiro",
+    "send": "Enviar"
   },
   "editor_meta": {
     "project_guide": "Guia do projeto",
@@ -1431,7 +1459,17 @@
     "preflight_has_warnings": "{{count}} aviso(s) encontrado(s). Você pode continuar mesmo assim.",
     "preflight_errors_section": "Erros ({{count}})",
     "preflight_warnings_section": "Avisos ({{count}})",
-    "preflight_suggestions_section": "Sugestões ({{count}})"
+    "preflight_suggestions_section": "Sugestões ({{count}})",
+    "export_success": "Exportação concluída",
+    "compile_as_draft": "Compilar como rascunho",
+    "readiness_complete": "Completo",
+    "readiness_export_title": "Entrega final bloqueada",
+    "readiness_back": "Voltar para revisar",
+    "readiness_compile_title": "Projeto não está pronto para versão formal",
+    "readiness_export_subtitle": "Para exportar no modo final, conclua primeiro as verificações de entrega e qualidade.",
+    "readiness_compile_subtitle": "Compile como rascunho ou revise esses pontos antes de tratar como versão formal.",
+    "readiness_delivery": "Entrega",
+    "readiness_quality": "Qualidade final"
   },
   "community_profile": {
     "audience_label": "Para quem é",
@@ -1687,7 +1725,9 @@
         "in_text_format": "[1]",
         "bibliography_title": "References"
       }
-    }
+    },
+    "reset_title": "Restaurar estilos padrão",
+    "reset_action": "Restaurar"
   },
   "block_editor": {
     "insert_cross_reference": "⌗ Inserir referência cruzada ({{count}})",
@@ -2323,5 +2363,9 @@
     "loading_more": "Carregando mais idiomas…",
     "catalog_error": "Não foi possível carregar mais idiomas. Você pode continuar com um idioma incluído.",
     "skip": "Pular"
+  },
+  "toast": {
+    "close_button": "Fechar notificação",
+    "notifications_area_label": "Notificações"
   }
 }
