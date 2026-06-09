@@ -925,6 +925,7 @@
     "update_checking": "Verificando…",
     "update_available": "Versão {{version}} disponível — reinicie para instalar",
     "update_up_to_date": "Você está atualizado",
+    "update_disabled": "Atualização automática não configurada para esta versão",
     "update_error": "Não foi possível verificar atualizações"
   },
   "validation": {

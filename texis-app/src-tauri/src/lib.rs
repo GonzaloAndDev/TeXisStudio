@@ -16,7 +16,6 @@ pub fn run() {
                 .max_file_size(10_485_760)
                 .build(),
         )
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(commands::compiler::CompileState::new())
         .invoke_handler(tauri::generate_handler![

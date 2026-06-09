@@ -639,6 +639,7 @@
     "update_checking": "Checking…",
     "update_available": "Version {{version}} available — restart to install",
     "update_up_to_date": "You are up to date",
+    "update_disabled": "Auto-update not configured for this release",
     "update_error": "Could not check for updates"
   },
   "validation": {

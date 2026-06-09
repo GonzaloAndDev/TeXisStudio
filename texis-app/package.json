@@ -1,7 +1,7 @@
 {
   "name": "texis-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -19,7 +19,6 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-log": "^2",
-    "@tauri-apps/plugin-updater": "^2",
     "dictionary-de": "^3.0.0",
     "dictionary-en": "^4.0.0",
     "dictionary-es": "^4.0.0",

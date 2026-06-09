@@ -639,6 +639,7 @@
     "update_checking": "检查中…",
     "update_available": "{{version}} 版本可用 — 重启以安装",
     "update_up_to_date": "已是最新版本",
+    "update_disabled": "此版本未配置自动更新",
     "update_error": "无法检查更新"
   },
   "validation": {

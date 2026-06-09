@@ -1,5 +1,7 @@
-// Thin wrapper around tauri-plugin-updater.
-// Returns a plain result so callers don't need to import the plugin directly.
+// Auto-update is intentionally disabled until a signing keypair is provisioned
+// and a release server is set up. The button in Settings is kept for future use.
+
+export const UPDATER_ENABLED = false;
 
 export interface UpdateCheckResult {
   available: boolean;
@@ -7,21 +9,7 @@ export interface UpdateCheckResult {
   body?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
-  try {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    const update = await check();
-    if (!update) return { available: false };
-    return {
-      available: update.available,
-      version: update.version,
-      body: update.body ?? undefined,
-    };
-  } catch (e) {
-    // Running in browser / dev without Tauri — silently fail
-    if (String(e).includes("not found") || String(e).includes("invoke")) {
-      return { available: false };
-    }
-    throw e;
-  }
+  return { available: false };
 }

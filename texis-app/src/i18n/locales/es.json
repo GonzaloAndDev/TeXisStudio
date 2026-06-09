@@ -639,6 +639,7 @@
     "update_checking": "Buscando…",
     "update_available": "Versión {{version}} disponible — reinicia para instalar",
     "update_up_to_date": "Estás al día",
+    "update_disabled": "Actualización automática no configurada en esta versión",
     "update_error": "No se pudo buscar actualizaciones"
   },
   "validation": {

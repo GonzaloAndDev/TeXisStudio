@@ -70,16 +70,6 @@
     }
   },
   "plugins": {
-    "updater": {
-      "pubkey": "",
-      "endpoints": [
-        "https://github.com/GonzaloAndDev/TeXisStudio/releases/latest/download/latest.json"
-      ],
-      "dialog": true,
-      "windows": {
-        "installMode": "passive"
-      }
-    },
     "log": null
   }
 }
