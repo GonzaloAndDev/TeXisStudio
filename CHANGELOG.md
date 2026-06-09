@@ -4,6 +4,42 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 ---
 
+## [1.1.0] — 2026-06-08
+
+### Release hardening — preparación para distribución pública
+
+**Rust / texis-core**
+- `generator/main_tex.rs`: corregido aviso `clippy::op_ref` (`&p.name == pkg.as_str()` → `p.name == pkg.as_str()`). CI Clippy con `-D warnings` ahora pasa limpio en todos los crates.
+
+**Rust / texis-app**
+- `commands/figure_plugin.rs`: `#[allow(clippy::too_many_arguments)]` en `save_plugin_figure` (handler Tauri con 9 parámetros — reestructura aplazada).
+- `tauri-plugin-updater` eliminado: dependencia de Cargo, plugin de lib.rs, entrada en `tauri.conf.json` y permiso `updater:default` en `capabilities/default.json`.
+
+**Frontend**
+- `src/version.ts`: fuente única para `APP_VERSION = "1.1.0"`. Los 8 sitios hardcoded en UI (AboutView, HomeView, SettingsView, ProgressView, LibraryView) importan esta constante. Se elimina la bifurcación entre `"1.0.0"` UI y `"1.1.0"` Tauri/Rust.
+- `package.json` y `package-lock.json`: sincronizados a `1.1.0`.
+- `@tauri-apps/plugin-updater` eliminado de dependencias npm.
+- UI de actualizaciones en SettingsView: estado inicial `"disabled"` cuando `UPDATER_ENABLED = false`. Botón deshabilitado con mensaje honesto en los 7 idiomas (`update_disabled`).
+
+**Tests — frontend (173/173)**
+- `version.test.ts`: verifica consistencia entre `version.ts`, `package.json` y `tauri.conf.json`.
+- `project-store.test.ts`: cubre `openProject`, `closeProject`, `updateSectionBlocks`, `updateSectionMeta`, `updateProject` y `setLatexInfo`.
+- `updater.test.ts`: contrato de no-crash y `available: false` con plugin deshabilitado.
+- `tauri-mocks.test.ts`: formas de BROWSER_MOCKS para los 5 comandos más críticos.
+- `citation-search.test.ts`: 12 casos sobre `matchesCitationQuery` — flujo buscar/insertar cita, incluyendo case-insensitivity, campos indexados y no-indexados.
+- `wizard-helpers.test.ts`: 6 casos sobre `defaultAcademicLevelForDocType` — nivel por defecto correcto para cada tipo de documento y guardia contra tipos futuros.
+- `i18n-settings-keys.test.ts`: 22 casos — `update_disabled`, `update_check_btn` y `update_error` presentes como strings no vacíos en los 7 idiomas; `update_disabled` ≠ `update_up_to_date`.
+
+**Notas de seguridad**
+- `assetProtocol.scope`: se mantiene `["**"]` — necesario porque `convertFileSrc` sirve PDFs y assets desde directorios de proyecto elegidos por el usuario (pueden estar en `/Volumes/...`, rutas de red, etc.). El CSP existente (`script-src 'self'`) mitiga el vector de ejecución. Deuda técnica: reemplazar con protocolo propio de scope dinámico por proyecto en una versión futura.
+- **Firma e instaladores no incluidos en este release.** Requerimientos para releases públicos firmados:
+  - macOS: certificado *Developer ID Application* de Apple, habilitado en `tauri.conf.json` → `bundle.macOS.signingIdentity`. Notarización automática vía `bundle.macOS.notarize` (requiere App Store Connect API key).
+  - Windows: certificado code-signing EV (OV recomendado), configurado en `bundle.windows.certificateThumbprint` o via `TAURI_SIGNING_PRIVATE_KEY` en CI.
+  - Linux: paquetes `.deb`/`.rpm`/AppImage no requieren firma para distribución directa, pero sí para Snap Store.
+  - El workflow de release CI (`.github/workflows/release.yml`) está listo para agregar estos pasos cuando se provean los certificados.
+
+---
+
 ## [1.0.0] — 2026-05-24
 
 ### ¡Release oficial! Schema 1.0.0 congelado.

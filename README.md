@@ -4,15 +4,15 @@ Write your thesis at publication quality without learning LaTeX.
 
 Author: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
 License: AGPL v3 + Commons Clause
-Status: v1.0, active development
+Version: 1.1.0 — Release Candidate
 
 ---
 
 ## English
 
-### Definitive Build Flow
+### Build & Run
 
-Run commands from the repository root, `TeXisStudio`.
+Run all commands from the repository root, `TeXisStudio`.
 
 First time on a machine, or after missing dependency errors:
 
@@ -25,115 +25,183 @@ After the machine is prepared:
 
 | Need | Command | Result |
 |---|---|---|
-| Run the app | `./run` or `.\run.ps1` | Opens TeXisStudio in Tauri dev mode with hot reload. It does not create an installer. |
-| Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current operating system. |
-| Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript and Vite without compiling the native app. |
-| Test Rust core | `cargo test -p texis-core` | Runs core tests for LaTeX generation, compilation, bibliography, snapshots, and models. |
+| Run the app | `./run` or `.\run.ps1` | Opens TeXisStudio in Tauri dev mode with hot reload. Does not create an installer. |
+| Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
+| Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
+| Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
+| Test frontend | `npm test` (in `texis-app/`) | 173 tests for stores, services, i18n coverage, and UI helpers. |
 
-Aliases:
+Command aliases:
+- Run app: `dev`, `start`, `app`
+- Build installer: `build`, `compiler`, `package`, `dist`
+- Check frontend: `check`, `frontend`
 
-- Run app: `dev`, `start`, `app`.
-- Build installer/package: `build`, `compiler`, `package`, `dist`.
-- Frontend check: `check`, `frontend`.
-
-VS Code:
-
-- Recommended: open `TeXisStudio.code-workspace`, not a parent folder. The workspace pins the TeXisStudio tasks and disables unrelated auto-detected build tasks.
-- `Ctrl+Shift+B` runs **TeXisStudio: Run app**. It uses the bootstrap task, so the first run can install or verify dependencies; later runs skip work that is already done.
-- To build an installer, use `Terminal > Run Task... > TeXisStudio: Build current OS`.
+VS Code: open `TeXisStudio.code-workspace`. `Ctrl+Shift+B` runs **TeXisStudio: Run app**. To build an installer, use `Terminal > Run Task... > TeXisStudio: Build current OS`.
 
 Local build outputs:
 
-| System | Script | Expected output |
+| System | Script | Output |
 |---|---|---|
-| Windows | `scripts/build-windows.ps1` | MSI, NSIS `.exe`, and portable ZIP in `target/release/bundle/`. |
-| macOS | `scripts/build-mac.sh` | Universal DMG/app in `target/universal-apple-darwin/release/bundle/`. |
-| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm`, and AppImage in `target/release/bundle/`. |
+| Windows | `scripts/build-windows.ps1` | MSI, NSIS `.exe`, and portable ZIP in `target/release/bundle/` |
+| macOS | `scripts/build-mac.sh` | Universal DMG/app in `target/universal-apple-darwin/release/bundle/` |
+| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm`, and AppImage in `target/release/bundle/` |
 
-The bootstrap scripts are idempotent: Node, Rust, native packages, and npm dependencies are installed only when missing or stale. Normal development runs should not reinstall everything.
+Bootstrap scripts are idempotent: Node, Rust, native packages, and npm dependencies are installed only when missing or stale.
 
-One local machine is not expected to build every professional installer. For all supported systems, use GitHub Actions:
+To build all platform installers, push a version tag — GitHub Actions handles the rest:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
-Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and macOS runners, then publishes a GitHub Release with MSI, NSIS `.exe`, portable ZIP, `.deb`, `.rpm`, AppImage, and DMG.
+Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and macOS runners and publishes a GitHub Release with all artifacts. To test the pipeline without publishing, trigger **Build & Release** manually from the Actions tab.
 
-To test the pipeline without publishing a release, run **Build & Release** manually from the GitHub Actions tab.
+> **Note on signing:** Installer signing and notarization are not yet configured. See `CHANGELOG.md [1.1.0]` for the requirements per platform.
+
+---
 
 ### What TeXisStudio Is
 
-TeXisStudio is a desktop application for producing academic theses and dissertations with institutional typographic quality using LaTeX as the rendering engine. Users work with forms, visual editors, and assistants instead of writing LaTeX directly.
+TeXisStudio is a desktop application for writing academic theses, dissertations, and research reports with institutional typographic quality. LaTeX is the rendering engine; users work through a structured block editor, assistants, and forms — no LaTeX knowledge required.
 
-```text
-User describes the content
-        ↓
-TeXisStudio generates correct LaTeX
-        ↓
-Portable PDF, compilable without the app
 ```
+User describes content
+       ↓
+TeXisStudio generates correct LaTeX
+       ↓
+Portable PDF — compilable independently, without the app
+```
+
+---
 
 ### Repository Ecosystem
 
 | Repository | Purpose |
 |---|---|
-| **TeXisStudio** | This repository. Tauri desktop app, Rust core, React frontend, and packaging scripts. |
-| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Figure plugins for publication-quality LaTeX output without writing figure code. |
-| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Downloadable spelling, grammar, and specialized vocabulary packs. |
-| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | Institutional and discipline profiles, templates, and project samples. |
+| **TeXisStudio** | This repo. Tauri desktop app, Rust core, React frontend, packaging scripts. |
+| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Figure plugins: publication-quality LaTeX for diagrams, circuits, molecules, and more without writing figure code. |
+| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Downloadable spell-check, grammar, and discipline vocabulary packs. |
+| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | 42+ institutional and discipline profiles, section templates, and sample projects. |
 
-### Main Features
+---
 
-- Thesis block editor for paragraphs, headings, lists, tables, equations, code, algorithms, theorems, glossary entries, and acronyms.
-- Plugin-generated figures with search, filters, editable source data, and automatic LaTeX package injection.
-- Bibliography tools for DOI import, CrossRef, DataCite, OpenAlex, Semantic Scholar, Zotero, BibTeX, CSL-JSON, and RIS.
-- Compilation through `latexmk` and Tectonic, with diagnostics and toolchain detection.
-- Spell-checking and grammar integrations for ES, EN, FR, and DE.
-- Institutional profile wizard, snapshots, AI assistant, final PDF export, and system doctor.
+### Features
+
+#### Document types and academic levels
+
+Supports: thesis (`tesis`), short thesis (`tesina`), and postgraduate research documents (`especialidad`, `maestría`, `doctorado`, `posdoctorado`). Academic level is auto-suggested from document type and can be overridden.
+
+#### Block editor
+
+15 content block types: paragraph, heading, list, figure, table, equation, code, algorithm, theorem, citation, raw LaTeX, glossary entry, acronym entry, visual figure, and plugin figure.
+
+Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking (`draft → in_review → revised → approved`). Autosave with debounce.
+
+#### Visual figures
+
+9 built-in visual block types rendered directly to LaTeX with no external tools:
+
+| Kind | Description |
+|---|---|
+| `venn_euler` | Venn and Euler diagrams |
+| `flow_diagram` | Flowcharts with shapes, edges, and labels |
+| `timeline` | Chronological event timelines |
+| `chem_reaction` | Chemical reaction equations (mhchem) |
+| `molecule` | Structural formulas (chemfig) |
+| `circuit` | Electronic circuits (circuitikz) |
+| `feynman` | Feynman diagrams |
+| `bio_pathway` | Biological pathways (e.g., Krebs, glycolysis) |
+| `music_fragment` | Music notation (ABC / MusiXTeX) |
+
+Additional plugin-backed figures are available from TeXisStudio-Plugins.
+
+#### Bibliography
+
+Sources: DOI import (CrossRef, DataCite, OpenAlex, Semantic Scholar), Zotero desktop (local API), BibTeX paste, CSL-JSON, RIS. Batch DOI import. Rendered citation preview (APA 7 and others). Citation picker with live search (⌘[).
+
+#### Profile system
+
+42+ profiles across 6 countries, 14 disciplines, and all academic levels. Each profile declares required LaTeX packages, section structure, and style configuration. Profiles are tagged `novice_safe` and include target level metadata. The community tab allows installing profiles from a URL. The profile editor supports creating and editing profiles directly in the app.
+
+#### Discipline detection
+
+The wizard detects the user's discipline from a text field and shows relevant hints, recommended packages, and suggested profiles. 35+ package detection rules cover notation for math, physics, chemistry, biology, computer science, engineering, music, and linguistics.
+
+#### LaTeX compilation
+
+Backends: `latexmk`, Tectonic (bundled, no TeX Live required), `xelatex`, `pdflatex`, `lualatex`. Automatic backend detection. Draft mode. In-app PDF preview. Toolchain diagnostics and system doctor.
+
+#### AI assistant
+
+Available in basic and advanced user modes. Risk-classified actions (5 levels): editing only happens with explicit user confirmation for Medium+ risk. Explicit context scope prevents unintended changes. Supports multiple provider configurations.
+
+#### Readiness and progress
+
+Section-by-section progress view with editorial status, word count, and author notes. Readiness overview tracks setup checks (advisor, abstract, required sections) and delivery checks. Review report export for advisor review.
+
+#### Snapshots and delivery export
+
+Manual snapshots with labels and timestamps. One-click restore. Delivery export (`export_delivery`) packages project, bibliography, and assets for final submission.
+
+#### Settings and accessibility
+
+UI scale: normal, large, x-large. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail).
+
+---
 
 ### Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Core | Rust 2021, `texis-core` |
+| Core | Rust 2021 edition, `texis-core` |
 | Desktop | Tauri v2, WebView2 on Windows |
 | Frontend | React 18, TypeScript 5, Vite 5, Zustand 5 |
-| Plugins | TypeScript, `TeXisStudio-Plugins` |
-| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
-| Serialization | serde_yaml |
-| Network | reqwest 0.12, rustls-tls |
+| i18n | i18next 26, react-i18next 17 — 7 locales |
+| Spell check | nspell, Hunspell dictionaries |
 | Math preview | KaTeX |
+| Plugins | TypeScript, `TeXisStudio-Plugins` monorepo |
+| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
+| Serialization | serde + serde_yaml |
 | Templates | MiniJinja v2 |
+| Schema validation | jsonschema + schemars |
+| Networking | reqwest 0.12, rustls-tls |
+| IDs / timestamps | uuid v4, chrono |
+| Build | Vite 5, rollup, tauri-cli |
+
+---
 
 ### Code Structure
 
-```text
-texis-core/
-  src/
-    project/
-    generator/
-    compiler/
-    bibliography/
-    build_engine/
-    template_engine/
-    validator/
-    asset/
-    plugin/
-    postflight/
-    visual/
+```
+texis-core/src/
+  project/          ProjectModel, loader, saver, migrations
+  schema/           Schema versioning (frozen at 1.0.0), migrator
+  generator/        LaTeX generator — preamble, sections, packages
+  compiler/         latexmk and Tectonic backends
+  bibliography/     BibTeX parser, DOI import, source adapters
+  build_engine/     Multi-step build pipeline
+  template_engine/  MiniJinja templates, builtins
+  validator/        ProjectModel validation rules
+  asset/            Figure and asset management
+  plugin/           Plugin figure model
+  visual/           Visual block → LaTeX renderer (9 kinds)
+  exporter/         Delivery export, PDF postflight
+  postflight/       PDF validation checks
 
-texis-app/
-  src-tauri/src/
-    commands/
-    lib.rs
-  src/
-    views/
-    components/
-    services/
-    stores/
-    types.ts
+texis-app/src-tauri/src/
+  commands/         71 Tauri commands (project, compiler, bibliography,
+                    AI, figure plugin, remote profiles, system, Zotero…)
+  lib.rs            App builder, plugin registration
+
+texis-app/src/
+  views/            11 top-level views + editor/compile/library/settings panels
+  components/       Shared UI components (Chrome, dialogs, panels, icons)
+  stores/           Zustand stores (project, settings, AI, language packs, vocabulary)
+  services/         updater, profile catalog, i18n helpers, vocabulary packs
+  i18n/locales/     7 locale files (en, es, fr, de, pt-BR, zh, ja)
+  types.ts          Shared TypeScript types mirroring Rust structs
+  version.ts        Single source of truth for APP_VERSION
 ```
 
 ---
@@ -144,9 +212,9 @@ Escribe tu tesis con calidad de publicación sin aprender LaTeX.
 
 Autor: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
 Licencia: AGPL v3 + Commons Clause
-Estado: v1.0, desarrollo activo
+Versión: 1.1.0 — Release Candidate
 
-### Flujo Definitivo De Compilación
+### Compilar y Ejecutar
 
 Ejecuta los comandos desde la raíz del repositorio, `TeXisStudio`.
 
@@ -162,72 +230,111 @@ Después de preparar la máquina:
 | Necesidad | Comando | Resultado |
 |---|---|---|
 | Correr la app | `./run` o `.\run.ps1` | Abre TeXisStudio en modo Tauri dev con hot reload. No crea instalador. |
-| Generar instalador/paquete | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
+| Generar instalador | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
 | Revisar solo frontend | `./check` o `.\check.ps1` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
-| Probar core Rust | `cargo test -p texis-core` | Ejecuta pruebas del core de generación LaTeX, compilación, bibliografía, snapshots y modelos. |
+| Probar core Rust | `cargo test -p texis-core` | 305+ pruebas unitarias e integración para generador LaTeX, compilador, bibliografía, snapshots, perfiles y migraciones. |
+| Probar frontend | `npm test` (en `texis-app/`) | 173 pruebas de stores, servicios, cobertura i18n y helpers de UI. |
 
 Alias:
+- Correr app: `dev`, `start`, `app`
+- Generar instalador: `build`, `compiler`, `package`, `dist`
+- Revisar frontend: `check`, `frontend`
 
-- Correr app: `dev`, `start`, `app`.
-- Generar instalador/paquete: `build`, `compiler`, `package`, `dist`.
-- Revisar frontend: `check`, `frontend`.
-
-VS Code:
-
-- Recomendado: abre `TeXisStudio.code-workspace`, no una carpeta padre. El workspace fija las tareas de TeXisStudio y desactiva tareas detectadas automáticamente que no corresponden.
-- `Ctrl+Shift+B` ejecuta **TeXisStudio: Run app**. Usa bootstrap, así que la primera ejecución puede instalar o verificar dependencias; las siguientes omiten lo que ya esté listo.
-- Para generar instalador usa `Terminal > Run Task... > TeXisStudio: Build current OS`.
+VS Code: abre `TeXisStudio.code-workspace`. `Ctrl+Shift+B` ejecuta **TeXisStudio: Run app**. Para generar instalador: `Terminal > Run Task... > TeXisStudio: Build current OS`.
 
 Salidas locales:
 
-| Sistema | Script | Salida esperada |
+| Sistema | Script | Salida |
 |---|---|---|
-| Windows | `scripts/build-windows.ps1` | MSI, `.exe` NSIS y ZIP portable en `target/release/bundle/`. |
-| macOS | `scripts/build-mac.sh` | DMG/app universal en `target/universal-apple-darwin/release/bundle/`. |
-| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/`. |
+| Windows | `scripts/build-windows.ps1` | MSI, `.exe` NSIS y ZIP portable en `target/release/bundle/` |
+| macOS | `scripts/build-mac.sh` | DMG/app universal en `target/universal-apple-darwin/release/bundle/` |
+| Linux | `scripts/build-linux.sh` | `.deb`, `.rpm` y AppImage en `target/release/bundle/` |
 
-Los scripts bootstrap son idempotentes: Node, Rust, paquetes nativos y dependencias npm se instalan solo cuando faltan o están desactualizados. Las ejecuciones normales de desarrollo no deberían reinstalar todo.
+Los scripts bootstrap son idempotentes: solo instalan lo que falta o está desactualizado.
 
-No se espera que una sola máquina local genere todos los instaladores profesionales. Para todos los sistemas soportados, usa GitHub Actions:
+Para compilar instaladores de todas las plataformas, sube un tag de versión:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
-Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows, Linux y macOS, y publica una GitHub Release con MSI, `.exe` NSIS, ZIP portable, `.deb`, `.rpm`, AppImage y DMG.
+Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows, Linux y macOS y publica una GitHub Release. Para probar el pipeline sin publicar, ejecuta **Build & Release** manualmente desde la pestaña Actions.
 
-Para probar el pipeline sin publicar release, ejecuta manualmente **Build & Release** desde la pestaña Actions de GitHub.
+> **Nota sobre firma:** La firma y notarización de instaladores aún no están configuradas. Ver `CHANGELOG.md [1.1.0]` para los requisitos por plataforma.
+
+---
 
 ### Qué Es TeXisStudio
 
-TeXisStudio es una aplicación de escritorio para producir tesis y tesinas académicas con calidad tipográfica institucional usando LaTeX como motor. El usuario trabaja con formularios, editores visuales y asistentes en lugar de escribir LaTeX directamente.
+TeXisStudio es una aplicación de escritorio para escribir tesis, disertaciones e informes de investigación con calidad tipográfica institucional. LaTeX es el motor de renderizado; el usuario trabaja con un editor de bloques estructurado, asistentes y formularios — sin necesidad de saber LaTeX.
 
-```text
+```
 El usuario describe el contenido
-        ↓
+       ↓
 TeXisStudio genera LaTeX correcto
-        ↓
-PDF portable, compilable sin la app
+       ↓
+PDF portable — compilable de forma independiente, sin la app
 ```
 
-### Ecosistema De Repositorios
+---
+
+### Ecosistema de Repositorios
 
 | Repositorio | Propósito |
 |---|---|
-| **TeXisStudio** | Este repositorio. App de escritorio Tauri, core Rust, frontend React y scripts de empaquetado. |
-| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Plugins de figuras para generar LaTeX de calidad editorial sin escribir código de figuras. |
-| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Paquetes descargables de ortografía, gramática y vocabulario especializado. |
-| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | Perfiles institucionales y disciplinares, plantillas y proyectos de ejemplo. |
+| **TeXisStudio** | Este repositorio. App de escritorio Tauri, core Rust, frontend React, scripts de empaquetado. |
+| **[TeXisStudio-Plugins](../TeXisStudio-Plugins/README.md)** | Plugins de figuras: LaTeX de calidad editorial para diagramas, circuitos, moléculas y más sin escribir código. |
+| **[TeXisStudio-Languages](../TeXisStudio-Languages/README.md)** | Paquetes descargables de ortografía, gramática y vocabulario disciplinar. |
+| **[TeXisStudio-Profiles](../TeXisStudio-Profiles/README.md)** | 42+ perfiles institucionales y disciplinares, plantillas de secciones y proyectos de ejemplo. |
 
-### Funcionalidades Principales
+---
 
-- Editor de bloques para párrafos, títulos, listas, tablas, ecuaciones, código, algoritmos, teoremas, glosario y acrónimos.
-- Figuras generadas por plugins con búsqueda, filtros, datos fuente editables e inyección automática de paquetes LaTeX.
-- Bibliografía con DOI, CrossRef, DataCite, OpenAlex, Semantic Scholar, Zotero, BibTeX, CSL-JSON y RIS.
-- Compilación con `latexmk` y Tectonic, diagnósticos y detección del toolchain.
-- Ortografía y gramática para ES, EN, FR y DE.
-- Wizard de perfiles institucionales, snapshots, asistente de IA, exportación final a PDF y diagnóstico del sistema.
+### Funcionalidades
+
+#### Tipos de documento y niveles académicos
+
+Soporta: tesis, tesina, especialidad, maestría, doctorado y posdoctorado. El nivel académico se sugiere automáticamente según el tipo de documento.
+
+#### Editor de bloques
+
+15 tipos de bloque de contenido: párrafo, título, lista, figura, tabla, ecuación, código, algoritmo, teorema, cita, LaTeX libre, entrada de glosario, entrada de acrónimo, figura visual y figura de plugin.
+
+Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX. Seguimiento de estado por sección (`borrador → revisión → revisado → aprobado`). Autoguardado con debounce.
+
+#### Figuras visuales
+
+9 tipos de bloque visual renderizados directamente a LaTeX sin herramientas externas: diagramas de Venn/Euler, diagramas de flujo, líneas de tiempo, reacciones químicas (mhchem), fórmulas estructurales (chemfig), circuitos electrónicos (circuitikz), diagramas de Feynman, rutas biológicas y fragmentos musicales (ABC / MusiXTeX).
+
+#### Bibliografía
+
+Fuentes: DOI (CrossRef, DataCite, OpenAlex, Semantic Scholar), Zotero (API local), BibTeX, CSL-JSON, RIS. Importación masiva de DOIs. Vista previa de citas renderizadas (APA 7 y otros). Picker de citas con búsqueda en vivo (⌘[).
+
+#### Sistema de perfiles
+
+42+ perfiles para 6 países, 14 disciplinas y todos los niveles académicos. Cada perfil declara paquetes LaTeX requeridos, estructura de secciones y configuración de estilo. Marcados con `novice_safe` y nivel objetivo. Instalación de perfiles remotos desde URL. Editor de perfiles en la app.
+
+#### Detección de disciplina
+
+El wizard detecta la disciplina del usuario y muestra hints relevantes, paquetes recomendados y perfiles sugeridos. 35+ reglas de detección de paquetes para notación matemática, física, química, biología, computación, ingeniería, música y lingüística.
+
+#### Compilación LaTeX
+
+Backends: `latexmk`, Tectonic (sin instalación de TeX Live), `xelatex`, `pdflatex`, `lualatex`. Detección automática de backend. Modo borrador. Vista previa de PDF en la app. Diagnósticos del toolchain y doctor del sistema.
+
+#### Asistente de IA
+
+Modos básico y avanzado. Acciones clasificadas por riesgo (5 niveles): las ediciones de riesgo Medio o mayor requieren confirmación explícita del usuario. Contexto explícito para evitar cambios no intencionales.
+
+#### Progreso y entrega
+
+Vista de progreso sección por sección con estado editorial, conteo de palabras y notas. Indicador de preparación (`readiness`) para entrega. Exportación de reporte de revisión para asesor. Snapshots con etiquetas y restauración con un clic. Exportación de entrega final con todos los archivos necesarios.
+
+#### Configuración y accesibilidad
+
+Escala de UI: normal, grande, extra grande. 7 idiomas de interfaz: ES, EN, FR, DE, PT-BR, ZH, JA. Ortografía para ES y EN incluida; FR y DE como paquetes descargables. Revisión gramatical. Diccionario personalizado.
+
+---
 
 ### Stack Técnico
 
@@ -236,9 +343,48 @@ PDF portable, compilable sin la app
 | Core | Rust 2021, `texis-core` |
 | Escritorio | Tauri v2, WebView2 en Windows |
 | Frontend | React 18, TypeScript 5, Vite 5, Zustand 5 |
-| Plugins | TypeScript, `TeXisStudio-Plugins` |
-| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
-| Serialización | serde_yaml |
-| Red | reqwest 0.12, rustls-tls |
+| i18n | i18next 26, react-i18next 17 — 7 idiomas |
+| Ortografía | nspell, diccionarios Hunspell |
 | Vista previa matemática | KaTeX |
+| Plugins | TypeScript, monorepo `TeXisStudio-Plugins` |
+| LaTeX | XeLaTeX, pdfLaTeX, latexmk, Tectonic, biber, biblatex |
+| Serialización | serde + serde_yaml |
 | Plantillas | MiniJinja v2 |
+| Validación de schema | jsonschema + schemars |
+| Red | reqwest 0.12, rustls-tls |
+| IDs / fechas | uuid v4, chrono |
+
+---
+
+### Estructura del Código
+
+```
+texis-core/src/
+  project/          ProjectModel, loader, saver, migraciones
+  schema/           Versionado de schema (congelado en 1.0.0), migrador
+  generator/        Generador LaTeX — preámbulo, secciones, paquetes
+  compiler/         Backends latexmk y Tectonic
+  bibliography/     Parser BibTeX, importación DOI, adaptadores de fuente
+  build_engine/     Pipeline de compilación por etapas
+  template_engine/  Templates MiniJinja, builtins
+  validator/        Reglas de validación del ProjectModel
+  asset/            Gestión de figuras y assets
+  plugin/           Modelo de figura por plugin
+  visual/           Visual block → renderizador LaTeX (9 tipos)
+  exporter/         Exportación de entrega, postflight PDF
+  postflight/       Validaciones del PDF generado
+
+texis-app/src-tauri/src/
+  commands/         71 comandos Tauri (proyecto, compilador, bibliografía,
+                    IA, plugin de figuras, perfiles remotos, sistema, Zotero…)
+  lib.rs            Builder de la app, registro de plugins
+
+texis-app/src/
+  views/            11 vistas principales + paneles de editor/compile/library/settings
+  components/       Componentes UI compartidos (Chrome, diálogos, paneles, íconos)
+  stores/           Stores Zustand (proyecto, configuración, IA, packs de idioma, vocabulario)
+  services/         updater, catálogo de perfiles, helpers i18n, packs de vocabulario
+  i18n/locales/     7 archivos de locale (en, es, fr, de, pt-BR, zh, ja)
+  types.ts          Tipos TypeScript que reflejan los structs Rust
+  version.ts        Fuente única para APP_VERSION
+```
