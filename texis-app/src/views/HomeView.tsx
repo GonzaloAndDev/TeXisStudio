@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
+import { APP_VERSION } from "../version";
 import { useNavigate } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
@@ -521,7 +522,7 @@ export default function HomeView() {
       )}
 
       <TxAppbar
-        left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v1.0.0</span></>}
+        left={<><TxLogo /><span className="chip" style={{ marginLeft: 6 }}>v{APP_VERSION}</span></>}
         center={null}
         right={
           <>
@@ -718,7 +719,7 @@ export default function HomeView() {
       <TxStatusbar items={[
         latexStatus,
         { icon: <IconFolder size={11} />, text: "~/Documentos" },
-        { right: true, text: "TeXisStudio 1.0.0 · AGPL+CC", icon: <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")} /> },
+        { right: true, text: `TeXisStudio ${APP_VERSION} · AGPL+CC`, icon: <span style={{ cursor: "pointer" }} onClick={() => navigate("/about")} /> },
       ]} />
     </>
   );

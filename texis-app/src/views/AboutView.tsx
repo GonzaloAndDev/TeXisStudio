@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { APP_VERSION } from "../version";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -160,7 +161,7 @@ export default function AboutView() {
               TeXis<em style={{ fontStyle: "italic", color: "var(--detail)" }}>Studio</em>
             </h1>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
-              v1.0.0 · {t("about.tagline")}
+              v{APP_VERSION} · {t("about.tagline")}
             </div>
             <div style={{
               marginTop: 18,
@@ -254,7 +255,7 @@ export default function AboutView() {
       </div>
 
       <TxStatusbar items={[
-        { icon: <IconBook size={11} />, text: "TeXisStudio v1.0.0" },
+        { icon: <IconBook size={11} />, text: `TeXisStudio v${APP_VERSION}` },
         { icon: <IconFile size={11} />, text: t("about.statusbar_guided") },
         { right: true, text: "github.com/GonzaloAndDev/TeXisStudio" },
       ]} />

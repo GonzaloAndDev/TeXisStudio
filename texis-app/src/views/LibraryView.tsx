@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { APP_VERSION } from "../version";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -321,7 +322,7 @@ export default function LibraryView() {
       <TxStatusbar items={[
         { text: t("library.installed_profiles_count", { count: profiles.length }) },
         { icon: <IconUpload size={11} />, text: t("common.import") },
-        { right: true, text: "TeXisStudio 1.0.0" },
+        { right: true, text: `TeXisStudio ${APP_VERSION}` },
       ]} />
     </>
   );

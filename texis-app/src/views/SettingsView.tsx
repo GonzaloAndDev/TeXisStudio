@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { APP_VERSION } from "../version";
 import { useToast } from "../components/ui/ToastProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,7 +14,7 @@ import type { LangPackEntry } from "../types";
 import { VocabularyPacksPanel } from "../components/settings/VocabularyPacksPanel";
 
 import { SectionHeading, Card, Toggle, FieldRow } from "./settings/SettingsWidgets";
-import { checkForUpdate } from "../services/updater";
+import { checkForUpdate, UPDATER_ENABLED } from "../services/updater";
 // ── Layout constants ──────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -76,7 +77,7 @@ export default function SettingsView() {
   const [activeSection, setActiveSection] = useState<Section>(validParam);
   const [newWord, setNewWord] = useState("");
   const [userSaved, setUserSaved] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "up-to-date" | "error">("idle");
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "available" | "up-to-date" | "error" | "disabled">(UPDATER_ENABLED ? "idle" : "disabled");
   const [updateMsg, setUpdateMsg] = useState<string | null>(null);
 
   const handleCheckUpdate = useCallback(async () => {
@@ -844,7 +845,7 @@ export default function SettingsView() {
               <Card style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                   {([
-                    ["about_version", "v1.0.0"],
+                    ["about_version", `v${APP_VERSION}`],
                     ["about_license", "AGPL v3 + Commons Clause"],
                     ["about_author", "Gonzalo Andrade Estrella"],
                   ] as const).map(([key, value]) => (
@@ -863,13 +864,18 @@ export default function SettingsView() {
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={handleCheckUpdate}
-                  disabled={updateStatus === "checking"}
+                  disabled={updateStatus === "checking" || updateStatus === "disabled"}
                 >
                   <IconDownload size={13} />
                   {updateStatus === "checking"
                     ? t("settings.update_checking")
                     : t("settings.update_check_btn")}
                 </button>
+                {updateStatus === "disabled" && (
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                    {t("settings.update_disabled")}
+                  </span>
+                )}
                 {updateStatus === "available" && (
                   <span style={{ fontSize: "var(--fs-xs)", color: "var(--accent)" }}>
                     {t("settings.update_available", { version: updateMsg ?? "" })}
@@ -898,7 +904,7 @@ export default function SettingsView() {
 
       <TxStatusbar items={[
         { icon: <IconSettings size={11} />, text: t("settings.title") },
-        { right: true, text: "TeXisStudio v1.0.0" },
+        { right: true, text: `TeXisStudio v${APP_VERSION}` },
       ]} />
     </>
   );

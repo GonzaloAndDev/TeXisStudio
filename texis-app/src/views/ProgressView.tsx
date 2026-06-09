@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import type { TFunction } from "i18next";
+import { APP_VERSION } from "../version";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -423,7 +424,7 @@ export default function ProgressView() {
       <TxStatusbar items={[
         { text: t("progress.statusbar_sections", { count: sections.filter(s => s.enabled).length }) },
         { text: t("progress.statusbar_approved", { count: sections.filter(s => s.status === "approved").length }) },
-        { right: true, text: "TeXisStudio 1.0.0" },
+        { right: true, text: `TeXisStudio ${APP_VERSION}` },
       ]} />
     </>
   );
