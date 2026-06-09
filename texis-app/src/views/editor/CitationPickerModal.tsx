@@ -4,6 +4,19 @@ import { IconCheck, IconSearch, IconX } from "../../components/Icons";
 import { api } from "../../lib/tauri";
 import type { BatchDoiResult, BibReference, ZoteroImportResult, ZoteroItem, ZoteroStatus } from "../../types";
 
+// ── Pure helpers (exported for testing) ──────────────────────────
+
+export function matchesCitationQuery(ref: BibReference, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  return (
+    !q ||
+    ref.key.toLowerCase().includes(q) ||
+    ref.title.toLowerCase().includes(q) ||
+    ref.author.toLowerCase().includes(q) ||
+    ref.year.includes(q)
+  );
+}
+
 // ── CitationPickerModal ───────────────────────────────────────────
 
 export function CitationPickerModal({
@@ -172,15 +185,7 @@ export function CitationPickerModal({
     }
   };
 
-  const q = query.toLowerCase();
-  const filtered = refs.filter(
-    (r) =>
-      !q ||
-      r.key.toLowerCase().includes(q) ||
-      r.title.toLowerCase().includes(q) ||
-      r.author.toLowerCase().includes(q) ||
-      r.year.includes(q)
-  );
+  const filtered = refs.filter((r) => matchesCitationQuery(r, query));
 
   const typeLabel: Record<string, string> = {
     parenthetical: "\\parencite",

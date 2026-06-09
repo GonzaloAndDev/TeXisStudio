@@ -220,7 +220,7 @@ function DisciplineHintPanel({ discipline }: { discipline: string }) {
   );
 }
 
-function defaultAcademicLevelForDocType(docType: string): AcademicLevel {
+export function defaultAcademicLevelForDocType(docType: string): AcademicLevel {
   switch (docType) {
     case "tesina":
       return "licenciatura";
