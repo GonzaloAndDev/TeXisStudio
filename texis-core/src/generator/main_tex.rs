@@ -509,7 +509,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                         .latex_config
                         .packages_with_options
                         .iter()
-                        .any(|p| &p.name == pkg.as_str());
+                        .any(|p| p.name == pkg.as_str());
                 if !already {
                     out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
                 }

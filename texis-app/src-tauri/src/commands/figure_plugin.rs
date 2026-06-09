@@ -34,6 +34,7 @@ fn project_root(project_path: &str) -> Result<PathBuf, String> {
 ///   <project>/texisstudio-assets/figures/<figureId>/manifest.json
 ///
 /// Returns the figureId so the frontend can store it in PluginFigureBlock.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn save_plugin_figure(
     project_path: String,
