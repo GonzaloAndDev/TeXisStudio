@@ -72,6 +72,7 @@ impl LaTeXGenerator {
         main_tex::generate(model, build_dir, &self.engine, lang_config)?;
         sections::generate_all(model, build_dir, &self.engine, title_page_template)?;
         glossary_tex::generate(model, build_dir)?;
+        copy_bib_to_build(build_dir)?;
         Ok(())
     }
 
@@ -142,8 +143,24 @@ impl LaTeXGenerator {
             &mut report,
         )?;
 
+        copy_bib_to_build(build_dir)?;
+
         Ok(report)
     }
+}
+
+/// Copia references.bib desde content/bibliography/ al build_dir para que
+/// \addbibresource{references.bib} funcione sin rutas relativas con '..'.
+/// Tectonic no admite rutas con '../' en \addbibresource.
+fn copy_bib_to_build(build_dir: &Path) -> CoreResult<()> {
+    if let Some(project_root) = build_dir.parent() {
+        let src = project_root.join("content/bibliography/references.bib");
+        if src.exists() {
+            let dst = build_dir.join("references.bib");
+            std::fs::copy(&src, &dst).map_err(CoreError::Io)?;
+        }
+    }
+    Ok(())
 }
 
 /// Escribe `content` en `build_dir/rel_path` salvo que el archivo esté marcado como Manual.

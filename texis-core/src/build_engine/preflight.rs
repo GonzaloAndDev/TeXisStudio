@@ -105,12 +105,12 @@ const RULES: &[CompatibilityRule] = &[
         component: MissingComponent::AnyBackend,
         required_by: "compilación del documento",
         why_it_matters: "Sin un compilador LaTeX no se puede generar el PDF de tu tesis.",
-        recommended_action: "Instala Tectonic (opción más simple) o TeX Live completo.",
-        macos_instructions: Some("Instala Tectonic con Homebrew:\n  brew install tectonic\n\nO instala MacTeX (TeX Live completo):\n  https://www.tug.org/mactex/"),
-        linux_instructions: Some("Instala Tectonic:\n  curl --proto '=https' --tlsv1.2 -fsSL https://drop.cascade.sh | sh\n\nO instala TeX Live:\n  sudo apt install texlive-full   # Debian/Ubuntu\n  sudo dnf install texlive-scheme-full  # Fedora"),
-        windows_instructions: Some("Instala MiKTeX (recomendado para Windows):\n  https://miktex.org/download\n\nO instala Tectonic:\n  winget install tectonic"),
+        recommended_action: "Instala una suite LaTeX completa (MacTeX, TeX Live o MiKTeX) — son la opción más robusta y compatible con todas las funciones de TeXisStudio.",
+        macos_instructions: Some("Opción recomendada — MacTeX (suite completa, ~4 GB):\n  https://www.tug.org/mactex/\n  Incluye XeLaTeX, latexmk, biber y todos los paquetes necesarios.\n\nOpción alternativa — Tectonic (herramienta única, ~50 MB):\n  brew install tectonic\n  Ventaja: descarga solo lo que usa. Limitación: no soporta glosarios\n  ni estilos bibliográficos externos; biber del sistema puede ser\n  incompatible con la versión de biblatex que incluye Tectonic."),
+        linux_instructions: Some("Opción recomendada — TeX Live completo:\n  sudo apt install texlive-full   # Debian/Ubuntu\n  sudo dnf install texlive-scheme-full  # Fedora\n  Incluye XeLaTeX, latexmk, biber y todos los paquetes necesarios.\n\nOpción alternativa — Tectonic (herramienta única, descarga lo que usa):\n  curl --proto '=https' --tlsv1.2 -fsSL https://drop.cascade.sh | sh\n  Limitación: no soporta glosarios; biber del sistema puede\n  ser incompatible con la versión de biblatex incluida en Tectonic."),
+        windows_instructions: Some("Opción recomendada — MiKTeX (suite completa con gestor de paquetes):\n  https://miktex.org/download\n  Instala paquetes faltantes automáticamente al compilar.\n\nOpción alternativa — Tectonic (herramienta única):\n  winget install tectonic\n  Limitación: no soporta glosarios; biber del sistema puede\n  ser incompatible con la versión de biblatex incluida en Tectonic."),
         can_retry: true,
-        simple_alternative: Some("Tectonic es la opción más simple: descarga automáticamente todo lo que necesita."),
+        simple_alternative: Some("Para comenzar rápido: Tectonic (brew install tectonic / winget install tectonic) descarga automáticamente lo que necesita y no requiere instalación de suite completa. Para el máximo de funciones usa MacTeX / TeX Live / MiKTeX."),
     },
     CompatibilityRule {
         id: "missing_biber",
@@ -132,13 +132,13 @@ const RULES: &[CompatibilityRule] = &[
         kind: IssueKind::VersionMismatch,
         component: MissingComponent::Biber,
         required_by: "bibliografía (biblatex)",
-        why_it_matters: "La versión de biber instalada no es compatible con la versión de biblatex que usa Tectonic. Esto produce el error 'control file version mismatch'.",
-        recommended_action: "Usa Tectonic sin biber externo — Tectonic tiene su propia versión compatible integrada.",
-        macos_instructions: Some("Asegúrate de compilar con Tectonic sin biber externo en el PATH:\n  tectonic -X compile main.tex\n\nSi necesitas TeX Live + biber, instala versiones compatibles:\n  La versión de biber debe coincidir con el año de TeX Live.\n  TeX Live 2023 → biber 2.20\n  TeX Live 2024 → biber 2.21+"),
-        linux_instructions: Some("Verifica las versiones compatibles:\n  tlmgr info biber   # muestra la versión para tu TeX Live\n\nInstala la versión del año de tu TeX Live:\n  tlmgr install biber"),
-        windows_instructions: Some("En MiKTeX, biber se actualiza automáticamente con el gestor de paquetes.\nActualiza MiKTeX completo para evitar incompatibilidades."),
+        why_it_matters: "La versión de biber del sistema (>= 2.20) no es compatible con la versión de biblatex que incluye Tectonic. Esto produce el error 'control file version mismatch' y el PDF queda sin referencias. Es una limitación conocida de Tectonic: su biblatex integrado no se actualiza con la misma frecuencia que las suites TeX.",
+        recommended_action: "Cambia al backend latexmk (requiere MacTeX / TeX Live / MiKTeX) — usa el biber del sistema que es compatible con tu instalación.",
+        macos_instructions: Some("Solución recomendada — cambia a latexmk con MacTeX:\n  1. Instala MacTeX: https://www.tug.org/mactex/\n  2. Cambia el backend a 'latexmk' en TeXisStudio.\n  MacTeX instala biber compatible con su versión de biblatex.\n\nSi quieres seguir con Tectonic:\n  Tectonic usa su propio biber interno — el biber del sistema\n  (en el PATH) debe estar ausente o su PATH debe ajustarse para\n  que Tectonic no lo encuentre. Esto es frágil; se recomienda\n  usar latexmk para proyectos con bibliografía biblatex."),
+        linux_instructions: Some("Solución recomendada — cambia a latexmk con TeX Live:\n  sudo apt install texlive-full   # incluye biber compatible\n  Luego cambia el backend a 'latexmk' en TeXisStudio.\n\nSi quieres seguir con Tectonic:\n  Desinstala biber del sistema o ajusta el PATH para que\n  Tectonic use su biber interno. Esto es frágil; se recomienda\n  latexmk para proyectos con bibliografía biblatex."),
+        windows_instructions: Some("Solución recomendada — cambia a latexmk con MiKTeX:\n  Instala MiKTeX: https://miktex.org/download\n  MiKTeX actualiza biber automáticamente de forma compatible.\n  Luego cambia el backend a 'latexmk' en TeXisStudio."),
         can_retry: true,
-        simple_alternative: Some("Usa Tectonic como backend — incluye biblatex + biber compatibles sin configuración adicional."),
+        simple_alternative: Some("La solución más limpia es instalar MacTeX / TeX Live / MiKTeX y usar latexmk — evita completamente el problema de versiones entre biber y biblatex."),
     },
     CompatibilityRule {
         id: "missing_makeglossaries",
@@ -366,27 +366,29 @@ fn cmd_available(cmd: &str) -> bool {
 /// Detecta si hay un mismatch de versión entre biber instalado y biblatex de tectonic.
 /// Retorna Some(true) si hay mismatch, Some(false) si son compatibles, None si no se puede verificar.
 fn check_biber_tectonic_compat() -> Option<bool> {
-    // Biber reporta "This is Biber 2.21" — extraemos el número mayor
+    // Biber reporta "This is Biber 2.21" en stdout o stderr
     let biber_out = Command::new("biber").arg("--version").output().ok()?;
     let stdout = String::from_utf8_lossy(&biber_out.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&biber_out.stderr).into_owned();
     let biber_text = stdout + &stderr;
 
-    let biber_major: u32 = biber_text
+    let version_str = biber_text
         .lines()
         .find(|l| l.contains("Biber"))
-        .and_then(|l| {
-            l.split_whitespace()
-                .last()
-                .and_then(|v| v.split('.').next())
-                .and_then(|n| n.parse().ok())
-        })?;
+        .and_then(|l| l.split_whitespace().last())?;
 
-    // Tectonic usa biblatex 3.17 que necesita biber >= 2.17 con formato .bcf 3.8
-    // Biber 2.20+ usa formato .bcf 3.11+ que tectonic no produce todavía.
-    // Consideramos mismatch si biber >= 2.20 (produce bcf >= 3.11).
-    // Esta heurística se actualizará cuando tectonic actualice biblatex.
-    Some(biber_major >= 2) // Siempre detectar para ser conservadores; refinamos abajo.
+    let mut parts = version_str.splitn(2, '.');
+    let major: u32 = parts.next()?.parse().ok()?;
+    let minor: u32 = parts
+        .next()
+        .and_then(|s| s.split('.').next())
+        .and_then(|n| n.parse().ok())
+        .unwrap_or(0);
+
+    // Tectonic incluye biblatex 3.17 que necesita biber <= 2.19 (formato .bcf 3.8).
+    // Biber 2.20+ produce formato .bcf 3.11+ que tectonic no genera todavía.
+    // Mismatch si major > 2, o si major == 2 y minor >= 20.
+    Some(major > 2 || (major == 2 && minor >= 20))
 }
 
 fn build_issue(id: &str, platform: &Platform) -> DependencyIssue {

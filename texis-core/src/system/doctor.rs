@@ -78,12 +78,27 @@ pub fn run_doctor(
     checks.push(check_cmd(
         "latexmk",
         &["--version"],
-        "Motor de compilación principal (orquesta xelatex/biber/etc.)",
+        "Backend principal (orquesta XeLaTeX + biber + glosarios). Parte de las suites LaTeX completas.",
         true,
         Some(InstallHint {
-            macos: Some("tlmgr install latexmk".into()),
-            linux: Some("tlmgr install latexmk  # o apt install latexmk".into()),
-            windows: Some("tlmgr install latexmk  (desde MiKTeX Console o TeX Live)".into()),
+            macos: Some("Instala MacTeX (incluye latexmk, XeLaTeX, biber y todos los paquetes):\n  https://www.tug.org/mactex/\n\nO solo latexmk si ya tienes TeX Live:\n  tlmgr install latexmk".into()),
+            linux: Some("Instala TeX Live completo (incluye latexmk):\n  sudo apt install texlive-full   # Debian/Ubuntu\n  sudo dnf install texlive-scheme-full  # Fedora\n\nO solo latexmk:\n  tlmgr install latexmk".into()),
+            windows: Some("Instala MiKTeX (incluye latexmk, requiere Perl):\n  https://miktex.org/download\n  + Strawberry Perl: https://strawberryperl.com\n\nO solo latexmk desde TeX Live:\n  tlmgr install latexmk".into()),
+        }),
+    ));
+
+    // Tectonic — backend alternativo (informativo, no crítico)
+    checks.push(check_cmd(
+        "tectonic",
+        &["--version"],
+        "Backend alternativo: descarga paquetes automáticamente, sin instalación de suite. \
+         Limitaciones: no soporta glosarios (makeglossaries), y la versión de biber del \
+         sistema puede ser incompatible con el biblatex que incluye Tectonic.",
+        false,
+        Some(InstallHint {
+            macos: Some("brew install tectonic\n(~50 MB; descarga paquetes LaTeX bajo demanda)".into()),
+            linux: Some("curl --proto '=https' --tlsv1.2 -fsSL https://drop.cascade.sh | sh\n(descarga paquetes LaTeX bajo demanda)".into()),
+            windows: Some("winget install tectonic\n(descarga paquetes LaTeX bajo demanda)".into()),
         }),
     ));
 
@@ -140,12 +155,14 @@ pub fn run_doctor(
     checks.push(check_cmd(
         "biber",
         &["--version"],
-        "Backend bibliográfico para biblatex",
+        "Backend bibliográfico para biblatex. Importante: la versión de biber debe ser \
+         compatible con la versión de biblatex de tu instalación LaTeX. Usar biber \
+         del sistema con Tectonic puede causar incompatibilidades.",
         biber_critical,
         Some(InstallHint {
-            macos: Some("tlmgr install biber".into()),
-            linux: Some("tlmgr install biber  # o apt install biber".into()),
-            windows: Some("tlmgr install biber  (desde MiKTeX Console)".into()),
+            macos: Some("Con MacTeX / TeX Live instalado:\n  tlmgr install biber\n\nImportante: usa el biber de tu suite LaTeX, no el de Homebrew,\npara garantizar compatibilidad de versiones con biblatex.".into()),
+            linux: Some("  sudo apt install biber         # Debian/Ubuntu (versión del repo)\n  tlmgr install biber            # TeX Live (versión compatible con tu instalación)\nUsa la versión que corresponde a tu año de TeX Live.".into()),
+            windows: Some("En MiKTeX Console:\n  Packages → buscar 'biber' → Install\nMiKTeX mantiene biber compatible automáticamente.".into()),
         }),
     ));
 

@@ -456,7 +456,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
         "\\usepackage[style={},backend={}]{{biblatex}}\n",
         bib_style, bib_backend
     ));
-    out.push_str("\\addbibresource{../content/bibliography/references.bib}\n");
+    out.push_str("\\addbibresource{references.bib}\n");
 
     out.push_str("\\usepackage[hidelinks]{hyperref}\n");
 
@@ -471,6 +471,9 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
 
     // ── Paquetes requeridos por VisualBlocks y PluginFigureBlocks ────────────
     // Auto-detectados del contenido — el usuario no necesita declararlos.
+    // needs_tikz_libs se emite más abajo, después de packages_required, para que
+    // \usetikzlibrary aparezca siempre después de \usepackage{tikz}.
+    let needs_tikz_libs: bool;
     {
         use crate::project::model::ContentBlock;
         use crate::visual::{extra_packages, required_package};
@@ -493,6 +496,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 }
             }
         }
+        needs_tikz_libs = vis_pkgs.contains("tikz");
         if !vis_pkgs.is_empty() {
             out.push_str("\n% Paquetes para elementos visuales (auto-detectados)\n");
             // Orden determinista
@@ -513,11 +517,6 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                 if !already {
                     out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
                 }
-            }
-            // TikZ libraries necesarias para ciertos tipos
-            let needs_tikz_libs = vis_pkgs.contains("tikz");
-            if needs_tikz_libs {
-                out.push_str("\\usetikzlibrary{shapes.geometric,calc,decorations.markings,decorations.pathmorphing,arrows.meta,positioning}\n");
             }
         }
     }
@@ -557,6 +556,11 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
             continue;
         } // ya cargado
         out.push_str(&format!("\\usepackage{{{}}}\n", pkg));
+    }
+
+    // TikZ libraries — emitidas aquí, después de \usepackage{tikz}
+    if needs_tikz_libs {
+        out.push_str("\\usetikzlibrary{shapes.geometric,calc,decorations.markings,decorations.pathmorphing,arrows.meta,positioning}\n");
     }
 
     // ── Operadores matemáticos personalizados ─────────────────────────────────
