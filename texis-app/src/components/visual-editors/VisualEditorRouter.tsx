@@ -69,14 +69,7 @@ function extractDoc(parsed: ParsedSource): Record<string, unknown> {
 }
 
 
-const ENGINE_HELP_TOPIC: Record<string, HelpSection> = {
-  "pgfplots-engine": "figures",
-  "graph-node-engine": "figures",
-  "math-engine": "latex",
-  "timeline-gantt-engine": "figures",
-  "table-data-engine": "figures",
-  "tree-forest-engine": "figures",
-};
+const FALLBACK_HELP_TOPIC: HelpSection = "figures";
 
 export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
   const { t } = useTranslation();
@@ -130,7 +123,7 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
   const doc = history.doc as Record<string, unknown>;
   const engineId = parsed.engineId as string;
   const meta = getEditorMetadata(engineId);
-  const helpTopic = meta?.helpTopic ?? ENGINE_HELP_TOPIC[engineId] ?? "figures";
+  const helpTopic = meta?.helpTopic ?? FALLBACK_HELP_TOPIC;
   const defaultDoc = meta?.defaultDoc?.();
   const technicalFields = meta?.technicalFields ?? [];
 
@@ -231,15 +224,15 @@ export function hasVisualEditor(
   if (!parsed) return false;
   const engineId = parsed.engineId as string;
 
-  const SUPPORTED_ENGINES = [
+  const VISUAL_EDITOR_ENGINES = new Set([
     "graph-node-engine",
     "pgfplots-engine",
     "math-engine",
     "timeline-gantt-engine",
     "table-data-engine",
     "tree-forest-engine",
-  ];
-  if (!SUPPORTED_ENGINES.includes(engineId)) return false;
+  ]);
+  if (!VISUAL_EDITOR_ENGINES.has(engineId)) return false;
 
   if (engineId === "math-engine") {
     const doc = ("data" in parsed ? (parsed as { data: unknown }).data : parsed) as { mode?: string };
