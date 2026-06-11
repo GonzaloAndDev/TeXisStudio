@@ -11,6 +11,8 @@ import { useTranslation } from "react-i18next";
 import { HelpLink } from "../help/HelpLink";
 import { VisualEditorShell } from "./VisualEditorShell";
 import { useDocumentHistory } from "../../hooks/useDocumentHistory";
+import { getEditorMetadata } from "@texisstudio/plugins";
+import "@texisstudio/plugins/engines/metadata-init.js";
 import { GraphNodeEditor } from "./GraphNodeEditor";
 import { PGFPlotsEditor } from "./PGFPlotsEditor";
 import { MatrixEditor } from "./MatrixEditor";
@@ -66,41 +68,6 @@ function extractDoc(parsed: ParsedSource): Record<string, unknown> {
   return ("data" in parsed ? (parsed as { data: unknown }).data : parsed) as Record<string, unknown>;
 }
 
-/** Default documents for the "restore example" action per engine. */
-const DEFAULT_DOCS: Record<string, unknown> = {
-  "pgfplots-engine": {
-    engineId: "pgfplots-engine",
-    series: [{ id: "s1", label: "f(x)", plotType: "function2d", expression: "sin(x)", domain: "-2*pi:2*pi", color: "blue" }],
-    axisScale: "linear",
-    xlabel: "x", ylabel: "y",
-  },
-  "graph-node-engine": {
-    engineId: "graph-node-engine",
-    nodes: [
-      { id: "A", label: "A", x: 0, y: 0, shape: "circle" },
-      { id: "B", label: "B", x: 2, y: 1, shape: "circle" },
-    ],
-    edges: [{ from: "A", to: "B", label: "" }],
-    directed: true,
-  },
-  "timeline-gantt-engine": {
-    engineId: "timeline-gantt-engine",
-    title: "Project", timeUnit: "month",
-    groups: [{ id: "g1", label: "Phase 1" }],
-    tasks: [{ id: "t1", label: "Task A", start: "1", end: "4", group: "g1", dependsOn: [] }],
-  },
-  "table-data-engine": {
-    engineId: "table-data-engine",
-    columns: [{ id: "c1", header: "A", type: "text" }, { id: "c2", header: "B", type: "number" }],
-    rows: [{ c1: "Item 1", c2: 10 }, { c1: "Item 2", c2: 20 }],
-    exportTarget: "tabular",
-  },
-  "tree-forest-engine": {
-    engineId: "tree-forest-engine",
-    root: { id: "r", label: "Root", children: [{ id: "c1", label: "Child A", children: [] }, { id: "c2", label: "Child B", children: [] }] },
-    growth: "right", style: "plain",
-  },
-};
 
 const ENGINE_HELP_TOPIC: Record<string, HelpSection> = {
   "pgfplots-engine": "figures",
@@ -162,8 +129,9 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
 
   const doc = history.doc as Record<string, unknown>;
   const engineId = parsed.engineId as string;
-  const helpTopic = ENGINE_HELP_TOPIC[engineId] ?? "figures";
-  const defaultDoc = DEFAULT_DOCS[engineId];
+  const meta = getEditorMetadata(engineId);
+  const helpTopic = meta?.helpTopic ?? ENGINE_HELP_TOPIC[engineId] ?? "figures";
+  const defaultDoc = meta?.defaultDoc?.();
 
   const handleRestore = defaultDoc ? () => {
     handleChange(defaultDoc);
