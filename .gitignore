@@ -18,6 +18,7 @@
 Thumbs.db
 
 # Tauri (Release 0.2+)
+/node_modules/
 texis-app/node_modules/
 texis-app/dist/
 texis-app/src-tauri/target/
