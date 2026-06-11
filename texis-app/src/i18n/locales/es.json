@@ -2535,7 +2535,22 @@
       "err_dollar": "Encierra el modo matemático en $…$ o \\[…\\]",
       "err_undef": "Verifica la ortografía de \\nombrecomando",
       "err_brace": "Cada { debe tener su } correspondiente",
-      "err_extra": "Elimina la } sobrante o cierra el $ abierto"
+      "err_extra": "Elimina la } sobrante o cierra el $ abierto",
+      "hint_frac": "a ÷ b como fracción",
+      "hint_exp": "e elevado a 2x",
+      "hint_sub": "x subíndice n+1",
+      "hint_curly": "x^(n−1)  (llaves para más de 1 carácter)",
+      "hint_sin": "seno de x  (pgfplots)",
+      "hint_quad": "cuadrática — usar * para multiplicación",
+      "hint_ln": "logaritmo natural",
+      "hint_sqrt": "raíz cuadrada de x  (sintaxis pgfplots)",
+      "hint_arrow": "→  (flecha de reacción)",
+      "hint_eq": "⇌  (flecha de equilibrio)",
+      "hint_pct": "% signo de porcentaje literal",
+      "hint_dollar": "$ signo de dólar literal",
+      "hint_amp": "& ampersand literal",
+      "hint_under": "_ guión bajo literal",
+      "hint_braces": "\\{ \\}  llaves literales"
     }
   }
 }

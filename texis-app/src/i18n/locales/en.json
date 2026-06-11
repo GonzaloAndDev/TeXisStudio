@@ -2535,7 +2535,22 @@
       "err_dollar": "Wrap math in $…$ or \\[…\\]",
       "err_undef": "Check spelling of \\commandname",
       "err_brace": "Every { must have a matching }",
-      "err_extra": "Remove extra } or close unclosed $"
+      "err_extra": "Remove extra } or close unclosed $",
+      "hint_frac": "a ÷ b as a fraction",
+      "hint_exp": "e raised to 2x",
+      "hint_sub": "x subscript n+1",
+      "hint_curly": "x^(n−1)  (curly braces for more than 1 char)",
+      "hint_sin": "sine of x  (pgfplots)",
+      "hint_quad": "quadratic — use * for multiplication",
+      "hint_ln": "natural logarithm",
+      "hint_sqrt": "√x  (pgfplots syntax)",
+      "hint_arrow": "→  (reaction arrow)",
+      "hint_eq": "⇌  (equilibrium arrow)",
+      "hint_pct": "% literal percent sign",
+      "hint_dollar": "$ literal dollar sign",
+      "hint_amp": "& literal ampersand",
+      "hint_under": "_ literal underscore",
+      "hint_braces": "\\{ \\}  literal curly braces"
     }
   }
 }
