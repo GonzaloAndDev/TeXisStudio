@@ -24,6 +24,7 @@ import { useProjectStore } from "../stores/project";
 import type { BibReference, ContentBlock, LatexTypography, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
 import { CitationPickerModal } from "./editor/CitationPickerModal";
+import { FigurePickerModal } from "../components/FigurePickerModal";
 
 
 import { BlockItem } from "./editor/BlockItem";
@@ -209,7 +210,8 @@ export default function EditorView() {
 
   // Toolbar académico
   const [paletteOpen, setPaletteOpen]     = useState(false);
-  const [citPickerOpen, setCitPickerOpen] = useState(false);
+  const [citPickerOpen, setCitPickerOpen]         = useState(false);
+  const [pluginPickerOpen, setPluginPickerOpen]   = useState(false);
   const { open: helpOpen, section: helpSection, openHelp, closeHelp } = useHelpStore();
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
   const [projectAssets, setProjectAssets] = useState<Array<{ name: string; path: string }>>([]);
@@ -500,6 +502,17 @@ export default function EditorView() {
     setEditingId(id);
   }, [scheduleAutoSave]);
 
+  // Insertar figura de plugin desde el FigurePickerModal
+  const insertPluginFigure = useCallback((block: import("../types").PluginFigureBlock) => {
+    setLocalBlocks((prev) => {
+      const next = [...prev, block];
+      scheduleAutoSave(next);
+      return next;
+    });
+    setEditingId(block.id);
+    setPluginPickerOpen(false);
+  }, [scheduleAutoSave]);
+
   // Reordenar bloques al soltar (dragId → antes de dropId)
   const handleDrop = useCallback((targetId: string) => {
     if (!dragId || dragId === targetId) { setDragId(null); setDropId(null); return; }
@@ -743,7 +756,7 @@ export default function EditorView() {
             <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title={t("editor.progress_title")}>
               {t("progress.tab_progress")}
             </button>
-            <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile`)}>
+            <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile?auto=1`)}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>
             {userMode === "advanced" && (
@@ -856,6 +869,16 @@ export default function EditorView() {
               style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
             >
               <IconMore size={12} /><span>{t("editor.block_citation")}</span>
+            </button>
+
+            {/* Picker de figuras de plugin */}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setPluginPickerOpen(true)}
+              title={t("editor.insert_plugin_figure_title")}
+              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+            >
+              <IconImage size={12} /><span>{t("editor.block_plugin_figure")}</span>
             </button>
 
             <div style={{ flex: 1 }} />
@@ -1048,7 +1071,7 @@ export default function EditorView() {
           activeSection={activeSection ? { ...activeSection, title: localizedSectionTitle(activeSection) } : undefined}
           userMode={userMode}
           onSave={saveMetadata}
-          onCompile={() => navigate(`/project/${encodedPath}/compile`)}
+          onCompile={() => navigate(`/project/${encodedPath}/compile?auto=1`)}
           diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
         />
       </div>
@@ -1258,6 +1281,15 @@ export default function EditorView() {
           onClose={() => setCitPickerOpen(false)}
           projectPath={activeProjectPath}
           onBibUpdated={reloadBibRefs}
+        />
+      )}
+
+      {/* Picker de figuras de plugin */}
+      {pluginPickerOpen && (
+        <FigurePickerModal
+          projectPath={activeProjectPath}
+          onInsert={insertPluginFigure}
+          onClose={() => setPluginPickerOpen(false)}
         />
       )}
 

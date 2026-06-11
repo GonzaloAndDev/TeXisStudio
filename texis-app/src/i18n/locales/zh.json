@@ -522,7 +522,9 @@
     "default_set_c": "集合 C",
     "default_set_b": "集合 B",
     "default_table_column_1": "列 1",
-    "no_bib_file": "无 .bib"
+    "no_bib_file": "无 .bib",
+    "insert_plugin_figure_title": "Insert scientific figure (61 types)",
+    "block_plugin_figure": "Figure+"
   },
   "spell": {
     "panel_title": "拼写检查",
@@ -1227,7 +1229,8 @@
     "severity_warning": "警告",
     "severity_suggestion": "建议",
     "go_to_section": "转到部分",
-    "preflight_review_first": "先回顾一下"
+    "preflight_review_first": "先回顾一下",
+    "autostart_pending": "Starting compilation…"
   },
   "community_profile": {
     "audience_label": "它是给谁的",
@@ -2639,5 +2642,38 @@
     "add_node": "节点",
     "add_connection": "连接",
     "need_nodes": "请先添加至少2个节点。"
+  },
+  "tikz": {
+    "shapes": "Shapes",
+    "canvas": "Canvas",
+    "type_point": "Point",
+    "type_line": "Line",
+    "type_arrow": "Arrow",
+    "type_rectangle": "Rectangle",
+    "type_circle": "Circle",
+    "type_ellipse": "Ellipse",
+    "type_polygon": "Polygon",
+    "type_arc": "Arc",
+    "type_bezier": "Bézier",
+    "type_label": "Label",
+    "type_axis": "Axes",
+    "type_vector": "Vector",
+    "type_angle": "Angle",
+    "ls_solid": "Solid",
+    "ls_dashed": "Dashed",
+    "ls_dotted": "Dotted",
+    "ls_densely_dashed": "Dense dashed",
+    "color": "Color",
+    "label": "Label",
+    "label_hint": "Text (opt.)",
+    "options": "Options",
+    "coords": "Coordinates",
+    "add_coord": "Coord.",
+    "add_shape": "Shape",
+    "viewbox": "Canvas size",
+    "width": "Width",
+    "height": "Height",
+    "libraries": "TikZ libraries",
+    "libraries_hint": "Comma-separated. Added to \\usetikzlibrary{...}."
   }
 }

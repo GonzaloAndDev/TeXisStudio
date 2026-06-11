@@ -25,6 +25,7 @@ export default function CompileView() {
   const { t } = useTranslation();
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const autostart = new URLSearchParams(window.location.search).get("auto") === "1";
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
   const { lang, userMode, latexPrimaryBackend, latexAllowFallback } = useSettingsStore();
 
@@ -56,6 +57,7 @@ export default function CompileView() {
 
   const logRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
+  const autostartFiredRef = useRef(false);
 
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
@@ -114,6 +116,15 @@ export default function CompileView() {
   const latexmkOk  = latexInfo?.latexmk_usable ?? null;
   const tectonicOk = latexInfo?.has_tectonic ?? null;
   const nothingInstalled = latexInfo && !latexInfo.is_usable;
+
+  // Disparar compilación automáticamente cuando se navega con ?auto=1
+  useEffect(() => {
+    if (!autostart || autostartFiredRef.current) return;
+    if (!activeProjectPath || nothingInstalled) return;
+    autostartFiredRef.current = true;
+    doCompile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autostart, activeProjectPath, nothingInstalled]);
 
   async function doCompile() {
     if (!activeProjectPath) return;
@@ -585,7 +596,10 @@ export default function CompileView() {
             {compileState === "idle" && !nothingInstalled && !glossarySummary && !glossaryIssues && (
               <div style={{ padding: "40px 24px", textAlign: "center", color: "var(--fg-faint)" }}>
                 <IconBuild size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
-                <p style={{ margin: 0 }}>{t("compile.press_compile_prefix")} <strong>{t("editor.compile")}</strong> {t("compile.press_compile_suffix")}</p>
+                {autostart && !autostartFiredRef.current
+                  ? <p style={{ margin: 0 }}>{t("compile.autostart_pending")}</p>
+                  : <p style={{ margin: 0 }}>{t("compile.press_compile_prefix")} <strong>{t("editor.compile")}</strong> {t("compile.press_compile_suffix")}</p>
+                }
                 <p style={{ fontSize: "var(--fs-xs)", marginTop: 8 }}>
                   {t("compile.regenerate_latex_run")}{" "}
                   {backend === "auto" ? (latexInfo?.preferred_backend ?? t("compile.available_engine")) : backend}.

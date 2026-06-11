@@ -522,7 +522,9 @@
     "default_set_c": "Menge C",
     "default_set_b": "Menge B",
     "default_table_column_1": "Spalte 1",
-    "no_bib_file": "kein .bib"
+    "no_bib_file": "kein .bib",
+    "insert_plugin_figure_title": "Insert scientific figure (61 types)",
+    "block_plugin_figure": "Figure+"
   },
   "spell": {
     "panel_title": "Rechtschreibprüfung",
@@ -1227,7 +1229,8 @@
     "severity_warning": "Warnung",
     "severity_suggestion": "Vorschlag",
     "go_to_section": "Gehen Sie zum Abschnitt",
-    "preflight_review_first": "Überprüfen Sie zuerst"
+    "preflight_review_first": "Überprüfen Sie zuerst",
+    "autostart_pending": "Starting compilation…"
   },
   "community_profile": {
     "audience_label": "Für wen es ist",
@@ -2639,5 +2642,38 @@
     "add_node": "Knoten",
     "add_connection": "Verbindung",
     "need_nodes": "Fügen Sie zuerst mindestens 2 Knoten hinzu."
+  },
+  "tikz": {
+    "shapes": "Shapes",
+    "canvas": "Canvas",
+    "type_point": "Point",
+    "type_line": "Line",
+    "type_arrow": "Arrow",
+    "type_rectangle": "Rectangle",
+    "type_circle": "Circle",
+    "type_ellipse": "Ellipse",
+    "type_polygon": "Polygon",
+    "type_arc": "Arc",
+    "type_bezier": "Bézier",
+    "type_label": "Label",
+    "type_axis": "Axes",
+    "type_vector": "Vector",
+    "type_angle": "Angle",
+    "ls_solid": "Solid",
+    "ls_dashed": "Dashed",
+    "ls_dotted": "Dotted",
+    "ls_densely_dashed": "Dense dashed",
+    "color": "Color",
+    "label": "Label",
+    "label_hint": "Text (opt.)",
+    "options": "Options",
+    "coords": "Coordinates",
+    "add_coord": "Coord.",
+    "add_shape": "Shape",
+    "viewbox": "Canvas size",
+    "width": "Width",
+    "height": "Height",
+    "libraries": "TikZ libraries",
+    "libraries_hint": "Comma-separated. Added to \\usetikzlibrary{...}."
   }
 }
