@@ -20,12 +20,18 @@ import { serializeGraphNode } from "@texisstudio/plugins/engines/graph-node-engi
 import { serializeForest } from "@texisstudio/plugins/engines/tree-forest-engine/serializer.js";
 import { serializeTableData } from "@texisstudio/plugins/engines/table-data-engine/serializer.js";
 import { serializeNode, wrapInEnvironment } from "@texisstudio/plugins/engines/math-engine/serializer.js";
+import { serializeElements } from "@texisstudio/plugins/engines/chemistry-engine/serializer.js";
+import { serializeCircuit } from "@texisstudio/plugins/engines/circuitikz-engine/serializer.js";
+import { serializeShape, wrapInTikzPicture } from "@texisstudio/plugins/engines/tikz-shape-engine/serializer.js";
 import type { PGFPlotsDocument } from "@texisstudio/plugins/engines/pgfplots-engine/types.js";
 import type { TimelineGanttDocument } from "@texisstudio/plugins/engines/timeline-gantt-engine/types.js";
 import type { GraphNodeDocument } from "@texisstudio/plugins/engines/graph-node-engine/types.js";
 import type { TreeForestDocument } from "@texisstudio/plugins/engines/tree-forest-engine/types.js";
 import type { TableDataDocument } from "@texisstudio/plugins/engines/table-data-engine/types.js";
 import type { MathEngineDocument } from "@texisstudio/plugins/engines/math-engine/types.js";
+import type { ChemEngineDocument } from "@texisstudio/plugins/engines/chemistry-engine/types.js";
+import type { CircuiTikZDocument } from "@texisstudio/plugins/engines/circuitikz-engine/types.js";
+import type { TikzShapeDocument } from "@texisstudio/plugins/engines/tikz-shape-engine/types.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -370,6 +376,129 @@ describe("metadata round-trip — math-engine", () => {
   });
 });
 
+// ── chemistry-engine ─────────────────────────────────────────────────────────
+
+describe("metadata round-trip — chemistry-engine", () => {
+  let meta: ReturnType<typeof getEditorMetadata>;
+
+  beforeAll(() => {
+    meta = getEditorMetadata("chemistry-engine");
+  });
+
+  it("metadata is registered", () => {
+    expect(meta).toBeDefined();
+  });
+
+  it("defaultDoc has correct engineId", () => {
+    const doc = meta!.defaultDoc() as ChemEngineDocument;
+    expect(doc.engineId).toBe("chemistry-engine");
+  });
+
+  it("defaultDoc has at least one element", () => {
+    const doc = meta!.defaultDoc() as ChemEngineDocument;
+    expect(doc.elements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("defaultDoc serializes without throwing", () => {
+    const doc = meta!.defaultDoc() as ChemEngineDocument;
+    expect(() => serializeElements(doc.elements)).not.toThrow();
+  });
+
+  it("serialized output contains \\ce{", () => {
+    const doc = meta!.defaultDoc() as ChemEngineDocument;
+    const lines = serializeElements(doc.elements);
+    expect(lines.join("\n")).toContain("\\ce{");
+  });
+
+  it("defaultDoc survives JSON round-trip and still serializes", () => {
+    const doc = jsonRoundTrip(meta!.defaultDoc() as ChemEngineDocument);
+    expect(() => serializeElements(doc.elements)).not.toThrow();
+  });
+});
+
+// ── circuitikz-engine ─────────────────────────────────────────────────────────
+
+describe("metadata round-trip — circuitikz-engine", () => {
+  let meta: ReturnType<typeof getEditorMetadata>;
+
+  beforeAll(() => {
+    meta = getEditorMetadata("circuitikz-engine");
+  });
+
+  it("metadata is registered", () => {
+    expect(meta).toBeDefined();
+  });
+
+  it("defaultDoc has correct engineId", () => {
+    const doc = meta!.defaultDoc() as CircuiTikZDocument;
+    expect(doc.engineId).toBe("circuitikz-engine");
+  });
+
+  it("defaultDoc serializes without throwing", () => {
+    const doc = meta!.defaultDoc() as CircuiTikZDocument;
+    expect(() => serializeCircuit(doc)).not.toThrow();
+  });
+
+  it("serialized output contains \\begin{circuitikz}", () => {
+    const doc = meta!.defaultDoc() as CircuiTikZDocument;
+    const latex = serializeCircuit(doc);
+    expect(latex).toContain("\\begin{circuitikz}");
+  });
+
+  it("serialized output contains \\draw", () => {
+    const doc = meta!.defaultDoc() as CircuiTikZDocument;
+    const latex = serializeCircuit(doc);
+    expect(latex).toContain("\\draw");
+  });
+
+  it("defaultDoc survives JSON round-trip and still serializes", () => {
+    const doc = jsonRoundTrip(meta!.defaultDoc() as CircuiTikZDocument);
+    expect(() => serializeCircuit(doc)).not.toThrow();
+  });
+});
+
+// ── tikz-shape-engine ─────────────────────────────────────────────────────────
+
+describe("metadata round-trip — tikz-shape-engine", () => {
+  let meta: ReturnType<typeof getEditorMetadata>;
+
+  beforeAll(() => {
+    meta = getEditorMetadata("tikz-shape-engine");
+  });
+
+  it("metadata is registered", () => {
+    expect(meta).toBeDefined();
+  });
+
+  it("defaultDoc has correct engineId", () => {
+    const doc = meta!.defaultDoc() as TikzShapeDocument;
+    expect(doc.engineId).toBe("tikz-shape-engine");
+  });
+
+  it("defaultDoc serializes without throwing", () => {
+    const doc = meta!.defaultDoc() as TikzShapeDocument;
+    const lines = doc.shapes.map(serializeShape);
+    expect(() => wrapInTikzPicture(lines, doc.tikzLibraries)).not.toThrow();
+  });
+
+  it("serialized output contains \\begin{tikzpicture}", () => {
+    const doc = meta!.defaultDoc() as TikzShapeDocument;
+    const lines = doc.shapes.map(serializeShape);
+    const latex = wrapInTikzPicture(lines, doc.tikzLibraries);
+    expect(latex).toContain("\\begin{tikzpicture}");
+  });
+
+  it("technicalFields contains tikzLibraries", () => {
+    expect(meta!.technicalFields.some((f) => f.key === "tikzLibraries")).toBe(true);
+  });
+
+  it("defaultDoc survives JSON round-trip and still serializes", () => {
+    const doc = jsonRoundTrip(meta!.defaultDoc() as TikzShapeDocument);
+    const lines = doc.shapes.map(serializeShape);
+    expect(() => wrapInTikzPicture(lines, doc.tikzLibraries)).not.toThrow();
+  });
+});
+
 // ── Registry completeness ─────────────────────────────────────────────────────
 
 describe("metadata registry — all visual engines registered", () => {
@@ -380,6 +509,9 @@ describe("metadata registry — all visual engines registered", () => {
     "table-data-engine",
     "tree-forest-engine",
     "math-engine",
+    "chemistry-engine",
+    "circuitikz-engine",
+    "tikz-shape-engine",
   ];
 
   for (const engineId of VISUAL_ENGINES) {
