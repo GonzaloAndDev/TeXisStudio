@@ -59,6 +59,17 @@ Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and m
 
 > **Note on signing:** Installer signing and notarization are not yet configured. See `CHANGELOG.md [1.1.0]` for the requirements per platform.
 
+### User documentation
+
+Canonical user-facing docs live in [`docs/user-guide/`](docs/user-guide/). These are the source of truth for the built-in Help Center and any future web documentation.
+
+| File | Help Center section |
+|---|---|
+| [getting-started.md](docs/user-guide/getting-started.md) | Getting started |
+| [figures.md](docs/user-guide/figures.md) | Figures & visual editors |
+| [minimal-latex.md](docs/user-guide/minimal-latex.md) | Minimal LaTeX |
+| [errors.md](docs/user-guide/errors.md) | Common errors |
+
 ---
 
 ### What TeXisStudio Is
@@ -277,6 +288,17 @@ git push origin v1.1.0
 Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows, Linux y macOS y publica una GitHub Release. Para probar el pipeline sin publicar, ejecuta **Build & Release** manualmente desde la pestaña Actions.
 
 > **Nota sobre firma:** La firma y notarización de instaladores aún no están configuradas. Ver `CHANGELOG.md [1.1.0]` para los requisitos por plataforma.
+
+### Documentación de usuario
+
+Los documentos canónicos para usuarios finales están en [`docs/user-guide/`](docs/user-guide/). Son la fuente de verdad del Centro de ayuda integrado y cualquier documentación web futura.
+
+| Archivo | Sección en el Centro de ayuda |
+|---|---|
+| [getting-started.md](docs/user-guide/getting-started.md) | Primeros pasos |
+| [figures.md](docs/user-guide/figures.md) | Figuras y editores visuales |
+| [minimal-latex.md](docs/user-guide/minimal-latex.md) | LaTeX mínimo |
+| [errors.md](docs/user-guide/errors.md) | Errores frecuentes |
 
 ---
 

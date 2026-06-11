@@ -25,6 +25,22 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 **Tests — frontend (255/255)**
 
+**Documentación versionada**
+- `docs/user-guide/`: fuente canónica de la documentación de usuario.
+  - `getting-started.md` — Crear proyecto, editor de bloques, compilar.
+  - `figures.md` — Tipos de figura, editores visuales, título/etiqueta.
+  - `minimal-latex.md` — Llaves, comandos, subíndices, fracciones, símbolos, expresiones para gráficas, caracteres especiales.
+  - `errors.md` — Diagnósticos y soluciones para los errores más comunes.
+  - `index.md` — Índice, convenciones y relación con el Centro de ayuda.
+- README actualizado con tabla de documentos y sección «User documentation» / «Documentación de usuario».
+
+**Contrato público `PluginEditingMetadata`** (TeXisStudio-Plugins)
+- `EditorCapabilities`, `TechnicalField`, `PluginEditingMetadata` en `common/contracts/types.ts`.
+- `registerEditorMetadata` / `getEditorMetadata` / `getAllEditorMetadata` con registro module-level.
+- `metadata.ts` en pgfplots-engine, graph-node-engine, timeline-gantt-engine, table-data-engine, tree-forest-engine.
+- `engines/metadata-init.ts`: barrel de side-effect imports.
+- `VisualEditorRouter` consume `getEditorMetadata(engineId)` para `defaultDoc` y `helpTopic`; elimina `DEFAULT_DOCS` hardcoded.
+
 ---
 
 ## [1.2.0] — 2026-06-11
