@@ -372,7 +372,7 @@ function ChemReactionEditor({ config, onChange }: { config: Extract<VisualConfig
           placeholder="H2 + O2 -> H2O  |  N2 + 3H2 <=> 2NH3  |  CaCO3 -> CaO + CO2 ^"
           style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 13 }} />
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-          Usa <code>-&gt;</code> (→), <code>&lt;=&gt;</code> (⇌), <code>^</code> (↑ gas), <code>v</code> (↓ precipitado)
+          {t("visual.chemical_syntax_hint")}
         </div>
       </div>
       <div style={{ display: "flex", gap: 10 }}>

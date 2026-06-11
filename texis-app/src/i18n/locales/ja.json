@@ -25,7 +25,8 @@
     "apply": "適用",
     "export": "エクスポート",
     "confirm": "確認",
-    "working": "処理中…"
+    "working": "処理中…",
+    "language_picker_title": "言語"
   },
   "lang": {
     "picker_label": "インターフェース言語",
@@ -279,7 +280,8 @@
     "recommend_reason_tesis": "論文の堅固なベース",
     "recommend_reason_verified": "機関認証あり",
     "recommend_reason_reviewed": "チームによる審査済み",
-    "error_vocab_install": "\"{{name}}\" を有効化できませんでした。接続を確認するか選択を外してください。詳細: {{error}}"
+    "error_vocab_install": "\"{{name}}\" を有効化できませんでした。接続を確認するか選択を外してください。詳細: {{error}}",
+    "google_drive_desktop": "デスクトップ版 Google ドライブ"
   },
   "editor": {
     "diag_title": "プロジェクト診断",
@@ -554,7 +556,9 @@
     "dismiss": "無視",
     "auto_check": "保存時に自動チェック",
     "check_now": "今すぐチェック",
-    "error_api": "LanguageTool に接続できません。接続を確認してください。"
+    "error_api": "LanguageTool に接続できません。接続を確認してください。",
+    "not_supported": "{{language}} — 文法チェックはサポートされていません",
+    "pack_remote_disabled_prefix": "この言語パックは宣言します"
   },
   "settings": {
     "title": "設定",
@@ -640,7 +644,21 @@
     "update_available": "バージョン {{version}} が利用可能 — 再起動してインストール",
     "update_up_to_date": "最新バージョンです",
     "update_disabled": "このリリースでは自動更新は設定されていません",
-    "update_error": "アップデートを確認できませんでした"
+    "update_error": "アップデートを確認できませんでした",
+    "refresh_catalog": "カタログを更新する",
+    "package_status_stable": "安定した",
+    "package_status_beta": "ベータ版",
+    "package_status_experimental": "実験的",
+    "capability_ui": "UI",
+    "capability_spelling": "スペル",
+    "capability_autocorrect": "自動修正",
+    "capability_grammar": "文法",
+    "capability_no_spelling": "スペルなし",
+    "installing_ui": "↓UI…",
+    "installing_dictionary": "↓辞書…",
+    "installing_rules": "↓ルール…",
+    "dict_format_hint": "形式: 1 行に 1 つの用語 (ヘッダーなしの .txt)",
+    "user_defaults_hint": "これらの詳細は、新しいプロジェクトを作成するときにデフォルトとして使用されます。"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "セクション '{{section}}' で参照されている画像 '{{file}}' が見つかりません。",
@@ -1038,7 +1056,8 @@
     "footer_navigate": "↑↓ ナビゲート",
     "footer_go_block": "↵ ブロックに移動",
     "footer_cancel": "Esc キャンセル",
-    "commands": "コマンド"
+    "commands": "コマンド",
+    "dialog_title": "コマンドパレット"
   },
   "block_item": {
     "not_editable": "ブロックは編集できません",
@@ -1077,7 +1096,10 @@
     "delete_block": "ブロックを削除",
     "manual_latex_warning": "マニュアル LaTeX — コンパイルが中断される可能性があります",
     "confirm_manual_latex": "このマニュアル LaTeX がコンパイルに影響を与える可能性があることを確認しました",
-    "unconfirmed_latex_hint": "未確認 — このブロックは確認するまで PDF に含まれません。"
+    "unconfirmed_latex_hint": "未確認 — このブロックは確認するまで PDF に含まれません。",
+    "packages": "パッケージ",
+    "edit_figure_title": "タイトルまたはラベルを編集するか、図を再生成します",
+    "edit_figure": "図の編集"
   },
   "compile": {
     "ensure_latex_installed_path": "LaTeX コンパイラーがインストールされており、PATH で使用できることを確認してください。",
@@ -1184,7 +1206,12 @@
     "readiness_export_subtitle": "最終モードでエクスポートするには、まず納品と品質チェックを完了してください。",
     "readiness_compile_subtitle": "下書きとしてコンパイルするか、正式版として扱う前にこれらの点を確認してください。",
     "readiness_delivery": "納品",
-    "readiness_quality": "最終品質"
+    "readiness_quality": "最終品質",
+    "severity_error": "エラー",
+    "severity_warning": "警告",
+    "severity_suggestion": "提案",
+    "go_to_section": "セクションに移動",
+    "preflight_review_first": "最初に確認してください"
   },
   "community_profile": {
     "audience_label": "対象者",
@@ -1693,7 +1720,8 @@
     "add_events": "イベントを追加",
     "empty_equation": "空の方程式",
     "custom_molecule": "カスタム分子",
-    "molecule_compile_hint": "コンパイル時に chemfig で生成される構造"
+    "molecule_compile_hint": "コンパイル時に chemfig で生成される構造",
+    "chemical_syntax_hint": "-> (反応)、<=> (平衡)、^ (ガス)、v (沈殿) を使用します。"
   },
   "vocabulary": {
     "title": "ドメインの語彙",
@@ -2535,7 +2563,27 @@
       "err_dollar": "数式を$…$または\\[…\\]で囲む",
       "err_undef": "\\コマンド名のスペルを確認する",
       "err_brace": "すべての{には対応する}が必要",
-      "err_extra": "余分な}を削除するか開いた$を閉じる"
+      "err_extra": "余分な}を削除するか開いた$を閉じる",
+      "hint_frac": "a ÷ b を分数で表す",
+      "hint_exp": "e を 2 倍に引き上げた",
+      "hint_sub": "x 添字 n+1",
+      "hint_curly": "x^(n−1) (1 文字を超える場合は中括弧)",
+      "hint_sin": "x の正弦 (pgfplots)",
+      "hint_quad": "二次関数 — 乗算には * を使用します",
+      "hint_ln": "自然対数",
+      "hint_sqrt": "√x (pgfplots 構文)",
+      "hint_arrow": "→ (反応矢印)",
+      "hint_eq": "⇌ (均衡矢印)",
+      "hint_pct": "% リテラルのパーセント記号",
+      "hint_dollar": "$ リテラルのドル記号",
+      "hint_amp": "& リテラルのアンパサンド",
+      "hint_under": "_ リテラルのアンダースコア",
+      "hint_braces": "\\{ \\} リテラル中括弧"
     }
+  },
+  "app_error": {
+    "title": "何か問題が発生しました",
+    "body": "TeXisStudio はファイルを変更していません。開始画面に戻り、プロジェクトをもう一度開いてください。",
+    "back_home": "開始画面に戻る"
   }
 }

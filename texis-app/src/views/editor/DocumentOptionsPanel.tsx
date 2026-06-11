@@ -275,7 +275,7 @@ export function DocumentOptionsPanel({
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.5, marginTop: -8 }}>
                   {t("doc_options.generates")} <code style={{ fontFamily: "var(--font-mono)", background: "var(--bg-sunken)", padding: "1px 4px", borderRadius: 3 }}>
                     \DeclareMathOperator{`{\\cmd}{text}`}
-                  </code> en el preámbulo.
+                  </code> {t("document_options.in_preamble")}
                 </div>
                 {(pc.math_operators ?? []).map((op, i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>

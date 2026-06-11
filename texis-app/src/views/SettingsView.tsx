@@ -465,7 +465,7 @@ export default function SettingsView() {
                   </button>
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 8 }}>
-                  Formato: un término por línea (.txt sin cabecera)
+                  {t("settings.dict_format_hint")}
                 </div>
               </Card>
             </div>
@@ -491,7 +491,7 @@ export default function SettingsView() {
                     className="btn btn-ghost btn-sm"
                     onClick={() => loadCatalog(true)}
                     disabled={catalogLoading}
-                    title="Refresh catalog"
+                    title={t("settings.refresh_catalog")}
                   >
                     {catalogLoading ? "…" : "↻"}
                   </button>
@@ -540,24 +540,24 @@ export default function SettingsView() {
                             color: pkg.status === "stable" ? "var(--build-ok)" : "var(--accent-deep)",
                             fontFamily: "var(--font-mono)",
                           }}>
-                            {pkg.status}
+                            {t(`settings.package_status_${pkg.status}`, pkg.status)}
                           </span>
                         </div>
                         {/* Capability pills */}
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                          {pkg.capabilities.ui && <span className="chip" style={{ fontSize: 10 }}>UI</span>}
-                          {pkg.capabilities.spelling && <span className="chip" style={{ fontSize: 10 }}>Spell</span>}
-                          {pkg.capabilities.autocorrect && <span className="chip" style={{ fontSize: 10 }}>Auto</span>}
-                          {pkg.capabilities.grammar_remote && <span className="chip" style={{ fontSize: 10 }}>Grammar</span>}
+                          {pkg.capabilities.ui && <span className="chip" style={{ fontSize: 10 }}>{t("settings.capability_ui")}</span>}
+                          {pkg.capabilities.spelling && <span className="chip" style={{ fontSize: 10 }}>{t("settings.capability_spelling")}</span>}
+                          {pkg.capabilities.autocorrect && <span className="chip" style={{ fontSize: 10 }}>{t("settings.capability_autocorrect")}</span>}
+                          {pkg.capabilities.grammar_remote && <span className="chip" style={{ fontSize: 10 }}>{t("settings.capability_grammar")}</span>}
                           {pkg.capabilities.latex_babel && <span className="chip" style={{ fontSize: 10 }}>babel</span>}
                           {pkg.capabilities.latex_polyglossia && <span className="chip" style={{ fontSize: 10 }}>polyglossia</span>}
                           {!pkg.capabilities.spelling && (
-                            <span className="chip" style={{ fontSize: 10, opacity: 0.5 }}>no spell</span>
+                            <span className="chip" style={{ fontSize: 10, opacity: 0.5 }}>{t("settings.capability_no_spelling")}</span>
                           )}
                         </div>
                         {isInstalling && progress && (
                           <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent)", marginTop: 4 }}>
-                            {progress === "ui" ? "↓ UI…" : progress === "spelling" ? "↓ Dict…" : progress === "autocorrect" ? "↓ Rules…" : "✓"}
+                            {progress === "ui" ? t("settings.installing_ui") : progress === "spelling" ? t("settings.installing_dictionary") : progress === "autocorrect" ? t("settings.installing_rules") : "✓"}
                           </div>
                         )}
                       </div>
@@ -619,7 +619,7 @@ export default function SettingsView() {
 
               <Card style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginBottom: 16, lineHeight: 1.6 }}>
-                  Estos datos se usarán como valores predeterminados al crear nuevos proyectos.
+                  {t("settings.user_defaults_hint")}
                 </div>
 
                 <FieldRow label={t("settings.user_name")}>

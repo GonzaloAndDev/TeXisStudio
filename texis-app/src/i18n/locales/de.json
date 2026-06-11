@@ -25,7 +25,8 @@
     "apply": "Anwenden",
     "export": "Exportieren",
     "confirm": "Bestätigen",
-    "working": "Wird verarbeitet…"
+    "working": "Wird verarbeitet…",
+    "language_picker_title": "Sprache"
   },
   "lang": {
     "picker_label": "Sprache der Benutzeroberfläche",
@@ -279,7 +280,8 @@
     "recommend_reason_tesis": "solide Basis für Dissertationen",
     "recommend_reason_verified": "hat institutionelle Verifizierung",
     "recommend_reason_reviewed": "vom Team geprüft",
-    "error_vocab_install": "\"{{name}}\" konnte nicht aktiviert werden. Verbindung pruefen oder Auswahl aufheben. Detail: {{error}}"
+    "error_vocab_install": "\"{{name}}\" konnte nicht aktiviert werden. Verbindung pruefen oder Auswahl aufheben. Detail: {{error}}",
+    "google_drive_desktop": "Google Drive für den Desktop"
   },
   "editor": {
     "placement_front": "Titelei",
@@ -554,7 +556,9 @@
     "check_now": "Jetzt prüfen",
     "error_api": "Verbindung zu LanguageTool fehlgeschlagen. Überprüfen Sie Ihre Verbindung.",
     "guided_title": "Revisión guiada",
-    "guided_body": "Revisa claridad, estructura y tono académico sección por sección."
+    "guided_body": "Revisa claridad, estructura y tono académico sección por sección.",
+    "not_supported": "{{language}} – Grammatikprüfung wird nicht unterstützt",
+    "pack_remote_disabled_prefix": "Dieses Sprachpaket deklariert"
   },
   "settings": {
     "title": "Einstellungen",
@@ -640,7 +644,21 @@
     "update_available": "Version {{version}} verfügbar — neu starten zum Installieren",
     "update_up_to_date": "Du bist auf dem neuesten Stand",
     "update_disabled": "Automatische Updates für diese Version nicht eingerichtet",
-    "update_error": "Updates konnten nicht geprüft werden"
+    "update_error": "Updates konnten nicht geprüft werden",
+    "refresh_catalog": "Katalog aktualisieren",
+    "package_status_stable": "Stabil",
+    "package_status_beta": "Beta",
+    "package_status_experimental": "Experimentell",
+    "capability_ui": "Benutzeroberfläche",
+    "capability_spelling": "Rechtschreibung",
+    "capability_autocorrect": "Automatische Korrektur",
+    "capability_grammar": "Grammatik",
+    "capability_no_spelling": "Keine Rechtschreibung",
+    "installing_ui": "↓ Benutzeroberfläche…",
+    "installing_dictionary": "↓ Wörterbuch…",
+    "installing_rules": "↓ Regeln…",
+    "dict_format_hint": "Format: ein Begriff pro Zeile (.txt ohne Kopfzeile)",
+    "user_defaults_hint": "Diese Details werden beim Erstellen neuer Projekte als Standard verwendet."
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Bild '{{file}}' in Abschnitt '{{section}}' nicht gefunden.",
@@ -1038,7 +1056,8 @@
     "footer_navigate": "↑↓ navigieren",
     "footer_go_block": "↵ gehe zum Block",
     "footer_cancel": "Esc abbrechen",
-    "commands": "Befehle"
+    "commands": "Befehle",
+    "dialog_title": "Befehlspalette"
   },
   "block_item": {
     "not_editable": "Block kann nicht bearbeitet werden",
@@ -1077,7 +1096,10 @@
     "delete_block": "Block löschen",
     "manual_latex_warning": "Handbuch LaTeX – kann die Kompilierung unterbrechen",
     "confirm_manual_latex": "Ich bestätige, dass dieses Handbuch LaTeX Auswirkungen auf die Kompilierung haben kann",
-    "unconfirmed_latex_hint": "Nicht bestätigt – dieser Block wird erst in den PDF aufgenommen, wenn Sie ihn bestätigen."
+    "unconfirmed_latex_hint": "Nicht bestätigt – dieser Block wird erst in den PDF aufgenommen, wenn Sie ihn bestätigen.",
+    "packages": "Pakete",
+    "edit_figure_title": "Bearbeiten Sie den Titel oder die Beschriftung oder generieren Sie die Abbildung neu",
+    "edit_figure": "Figur bearbeiten"
   },
   "compile": {
     "ensure_latex_installed_path": "Überprüfen Sie, ob ein LaTeX-Compiler installiert und in PATH verfügbar ist.",
@@ -1184,7 +1206,12 @@
     "readiness_export_subtitle": "Um im endgültigen Modus zu exportieren, schließen Sie zuerst die Liefer- und Qualitätsprüfungen ab.",
     "readiness_compile_subtitle": "Kompilieren Sie als Entwurf oder prüfen Sie diese Punkte, bevor Sie es als formelle Version behandeln.",
     "readiness_delivery": "Abgabe",
-    "readiness_quality": "Endqualität"
+    "readiness_quality": "Endqualität",
+    "severity_error": "Fehler",
+    "severity_warning": "Warnung",
+    "severity_suggestion": "Vorschlag",
+    "go_to_section": "Gehen Sie zum Abschnitt",
+    "preflight_review_first": "Überprüfen Sie zuerst"
   },
   "community_profile": {
     "audience_label": "Für wen es ist",
@@ -1693,7 +1720,8 @@
     "add_events": "Ereignisse hinzufügen",
     "empty_equation": "Leere Gleichung",
     "custom_molecule": "Benutzerdefiniertes Molekül",
-    "molecule_compile_hint": "Struktur, die beim Kompilieren mit chemfig generiert wurde"
+    "molecule_compile_hint": "Struktur, die beim Kompilieren mit chemfig generiert wurde",
+    "chemical_syntax_hint": "Verwenden Sie -> (Reaktion), <=> (Gleichgewicht), ^ (Gas) und v (Niederschlag)."
   },
   "vocabulary": {
     "title": "Domänenvokabulare",
@@ -2535,7 +2563,27 @@
       "err_dollar": "Mathematik in $…$ oder \\[…\\] einschließen",
       "err_undef": "Schreibweise von \\befehlsname prüfen",
       "err_brace": "Jede { muss eine passende } haben",
-      "err_extra": "Überzählige } entfernen oder offenes $ schließen"
+      "err_extra": "Überzählige } entfernen oder offenes $ schließen",
+      "hint_frac": "a ÷ b als Bruch",
+      "hint_exp": "e auf 2x erhöht",
+      "hint_sub": "x Index n+1",
+      "hint_curly": "x^(n−1) (geschweifte Klammern für mehr als 1 Zeichen)",
+      "hint_sin": "Sinus von x (pgfplots)",
+      "hint_quad": "quadratisch – verwenden Sie * für die Multiplikation",
+      "hint_ln": "natürlicher Logarithmus",
+      "hint_sqrt": "√x (pgfplots-Syntax)",
+      "hint_arrow": "→ (Reaktionspfeil)",
+      "hint_eq": "⇌ (Gleichgewichtspfeil)",
+      "hint_pct": "% wörtliches Prozentzeichen",
+      "hint_dollar": "$ wörtliches Dollarzeichen",
+      "hint_amp": "& wörtliches kaufmännisches Und",
+      "hint_under": "_ wörtlicher Unterstrich",
+      "hint_braces": "\\{ \\} wörtliche geschweifte Klammern"
     }
+  },
+  "app_error": {
+    "title": "Etwas ist schief gelaufen",
+    "body": "TeXisStudio hat Ihre Dateien intakt gehalten. Kehren Sie zum Startbildschirm zurück und versuchen Sie, das Projekt erneut zu öffnen.",
+    "back_home": "Zum Start"
   }
 }

@@ -25,7 +25,8 @@
     "apply": "应用",
     "export": "导出",
     "confirm": "确认",
-    "working": "处理中…"
+    "working": "处理中…",
+    "language_picker_title": "语言"
   },
   "lang": {
     "picker_label": "界面语言",
@@ -279,7 +280,8 @@
     "recommend_reason_tesis": "论文的可靠基础",
     "recommend_reason_verified": "具有机构认证",
     "recommend_reason_reviewed": "经团队审核",
-    "error_vocab_install": "\"{{name}}\"无法激活。请检查网络连接或取消选择。详情：{{error}}"
+    "error_vocab_install": "\"{{name}}\"无法激活。请检查网络连接或取消选择。详情：{{error}}",
+    "google_drive_desktop": "桌面版 Google 云端硬盘"
   },
   "editor": {
     "placement_front": "前置内容",
@@ -554,7 +556,9 @@
     "check_now": "立即检查",
     "error_api": "无法连接到 LanguageTool。检查您的连接。",
     "guided_title": "这个工具评论什么",
-    "guided_body": "用它来发现措辞、协议和标点符号问题。它在交付前很有帮助，但不能取代您的学术判断或导师的评论。"
+    "guided_body": "用它来发现措辞、协议和标点符号问题。它在交付前很有帮助，但不能取代您的学术判断或导师的评论。",
+    "not_supported": "{{language}} — 不支持语法检查",
+    "pack_remote_disabled_prefix": "该语言包声明"
   },
   "settings": {
     "title": "设置",
@@ -640,7 +644,21 @@
     "update_available": "{{version}} 版本可用 — 重启以安装",
     "update_up_to_date": "已是最新版本",
     "update_disabled": "此版本未配置自动更新",
-    "update_error": "无法检查更新"
+    "update_error": "无法检查更新",
+    "refresh_catalog": "刷新目录",
+    "package_status_stable": "稳定",
+    "package_status_beta": "贝塔",
+    "package_status_experimental": "实验性的",
+    "capability_ui": "用户界面",
+    "capability_spelling": "拼写",
+    "capability_autocorrect": "自动更正",
+    "capability_grammar": "语法",
+    "capability_no_spelling": "没有拼写",
+    "installing_ui": "↓ 用户界面...",
+    "installing_dictionary": "↓ 词典...",
+    "installing_rules": "↓ 规则...",
+    "dict_format_hint": "格式：每行一个术语（.txt，无标题）",
+    "user_defaults_hint": "创建新项目时，这些详细信息将用作默认值。"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "未找到“{{section}}”部分引用的图像“{{file}}”。",
@@ -1038,7 +1056,8 @@
     "footer_navigate": "↑↓导航",
     "footer_go_block": "↵前往区块",
     "footer_cancel": "Esc 取消",
-    "commands": "命令"
+    "commands": "命令",
+    "dialog_title": "命令面板"
   },
   "block_item": {
     "not_editable": "块不可编辑",
@@ -1077,7 +1096,10 @@
     "delete_block": "删除块",
     "manual_latex_warning": "手动 LaTeX — 可能会破坏编译",
     "confirm_manual_latex": "我确认本手册LaTeX可能会影响编译",
-    "unconfirmed_latex_hint": "未确认 - 在您确认之前，该区块不会包含在 PDF 中。"
+    "unconfirmed_latex_hint": "未确认 - 在您确认之前，该区块不会包含在 PDF 中。",
+    "packages": "套餐",
+    "edit_figure_title": "编辑标题或标签，或重新生成图形",
+    "edit_figure": "编辑图"
   },
   "compile": {
     "ensure_latex_installed_path": "检查 LaTeX 编译器是否已安装并且在 PATH 中可用。",
@@ -1184,7 +1206,12 @@
     "readiness_export_subtitle": "要以最终模式导出，请先完成交付和质量检查。",
     "readiness_compile_subtitle": "以草稿形式编译，或在将其视为正式版本之前检查这些事项。",
     "readiness_delivery": "提交",
-    "readiness_quality": "最终质量"
+    "readiness_quality": "最终质量",
+    "severity_error": "错误",
+    "severity_warning": "警告",
+    "severity_suggestion": "建议",
+    "go_to_section": "转到部分",
+    "preflight_review_first": "先回顾一下"
   },
   "community_profile": {
     "audience_label": "它是给谁的",
@@ -1693,7 +1720,8 @@
     "add_events": "添加事件",
     "empty_equation": "空方程",
     "custom_molecule": "自定义分子",
-    "molecule_compile_hint": "编译时使用chemfig生成的结构"
+    "molecule_compile_hint": "编译时使用chemfig生成的结构",
+    "chemical_syntax_hint": "使用 ->（反应）、<=>（平衡）、^（气体）和 v（沉淀）"
   },
   "vocabulary": {
     "title": "领域词汇",
@@ -2535,7 +2563,27 @@
       "err_dollar": "将数学公式包裹在$…$或\\[…\\]中",
       "err_undef": "检查\\命令名的拼写",
       "err_brace": "每个{必须有对应的}",
-      "err_extra": "删除多余的}或关闭未关闭的$"
+      "err_extra": "删除多余的}或关闭未关闭的$",
+      "hint_frac": "a ÷ b 作为分数",
+      "hint_exp": "e 提升至 2x",
+      "hint_sub": "x下标n+1",
+      "hint_curly": "x^(n−1)（花括号表示超过 1 个字符）",
+      "hint_sin": "x 的正弦（pgfplots）",
+      "hint_quad": "二次 — 使用 * 进行乘法",
+      "hint_ln": "自然对数",
+      "hint_sqrt": "√x（pgfplots 语法）",
+      "hint_arrow": "→（反应箭头）",
+      "hint_eq": "⇌（平衡箭头）",
+      "hint_pct": "% 字面百分号",
+      "hint_dollar": "$ 字面美元符号",
+      "hint_amp": "& 字面&符号",
+      "hint_under": "_ 文字下划线",
+      "hint_braces": "\\{ \\} 文字大括号"
     }
+  },
+  "app_error": {
+    "title": "出了点问题",
+    "body": "TeXisStudio 保留了您的文件。请返回开始界面，然后尝试重新打开项目。",
+    "back_home": "返回开始界面"
   }
 }

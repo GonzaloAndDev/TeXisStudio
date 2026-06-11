@@ -10,6 +10,7 @@ import { useProjectStore } from "./stores/project";
 import type { ProjectModel } from "./types";
 import { ConfirmProvider } from "./components/ui/useConfirm";
 import { ToastProvider } from "./components/ui/ToastProvider";
+import i18n from "./i18n";
 
 import { WELCOME_SHOWN_KEY } from "./constants/welcome";
 
@@ -43,16 +44,16 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
       <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-app)", color: "var(--fg-default)", padding: 24 }}>
         <div style={{ width: "min(620px, 100%)", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-lg)", padding: 20, boxShadow: "var(--shadow-soft)" }}>
           <h1 style={{ margin: "0 0 8px", fontSize: "var(--fs-xl)", fontFamily: "var(--font-display)", fontWeight: 500 }}>
-            Something went wrong
+            {i18n.t("app_error.title")}
           </h1>
           <p style={{ margin: "0 0 14px", color: "var(--fg-muted)", fontSize: "var(--fs-sm)", lineHeight: 1.6 }}>
-            TeXisStudio kept your files intact. Go back home and try reopening the project.
+            {i18n.t("app_error.body")}
           </p>
           <pre style={{ maxHeight: 160, overflow: "auto", whiteSpace: "pre-wrap", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-md)", padding: 12, color: "var(--build-err)", fontSize: "var(--fs-xs)" }}>
             {this.state.error.message}
           </pre>
           <button className="btn btn-accent btn-sm" onClick={() => { window.location.href = "/"; }}>
-            Back to home
+            {i18n.t("app_error.back_home")}
           </button>
         </div>
       </div>

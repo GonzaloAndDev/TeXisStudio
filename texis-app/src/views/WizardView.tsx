@@ -1525,7 +1525,7 @@ export default function WizardView() {
                   <br />
                   {t("wizard.cloud_tip_prefix")}{" "}
                   <em>OneDrive</em> {t("wizard.cloud_tip_or")}{" "}
-                  <em>Google Drive para escritorio</em>{" "}
+                  <em>{t("wizard.google_drive_desktop")}</em>{" "}
                   {t("wizard.cloud_tip_suffix")}
                 </div>
               )}

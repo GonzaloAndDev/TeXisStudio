@@ -208,7 +208,7 @@ export default function LibraryView() {
           ))}
           <div style={{ flex: 1 }} />
           <div style={{ padding: "10px", borderRadius: "var(--r-md)", background: "var(--bg-panel)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>Release 1.0</div>
+            <div style={{ fontWeight: 600, color: "var(--fg-muted)", marginBottom: 3 }}>v{APP_VERSION}</div>
             {t("library.sidebar_counts", { profiles: profiles.length })}
           </div>
         </div>

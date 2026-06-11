@@ -25,7 +25,8 @@
     "apply": "Appliquer",
     "export": "Exporter",
     "confirm": "Confirmer",
-    "working": "En cours…"
+    "working": "En cours…",
+    "language_picker_title": "Langue"
   },
   "lang": {
     "picker_label": "Langue de l'interface",
@@ -279,7 +280,8 @@
     "recommend_reason_tesis": "base solide pour les thèses",
     "recommend_reason_verified": "dispose d'une vérification institutionnelle",
     "recommend_reason_reviewed": "révisé par l'équipe",
-    "error_vocab_install": "Impossible d'activer \"{{name}}\". Verifie ta connexion ou deselectionnez-le. Detail: {{error}}"
+    "error_vocab_install": "Impossible d'activer \"{{name}}\". Verifie ta connexion ou deselectionnez-le. Detail: {{error}}",
+    "google_drive_desktop": "Google Drive pour ordinateur"
   },
   "editor": {
     "placement_front": "Pages liminaires",
@@ -554,7 +556,9 @@
     "check_now": "Vérifier maintenant",
     "error_api": "Impossible de se connecter à LanguageTool. Vérifiez votre connexion.",
     "guided_title": "Ce que cet outil vérifie",
-    "guided_body": "Utilisez-le pour repérer les problèmes de formulation, d'accord et de ponctuation. Il est utile avant la remise, mais ne remplace pas votre jugement académique ni la révision de votre directeur."
+    "guided_body": "Utilisez-le pour repérer les problèmes de formulation, d'accord et de ponctuation. Il est utile avant la remise, mais ne remplace pas votre jugement académique ni la révision de votre directeur.",
+    "not_supported": "{{language}} — la vérification grammaticale n'est pas prise en charge",
+    "pack_remote_disabled_prefix": "Ce pack de langue déclare"
   },
   "settings": {
     "title": "Paramètres",
@@ -640,7 +644,21 @@
     "update_available": "Version {{version}} disponible — redémarrer pour installer",
     "update_up_to_date": "Vous êtes à jour",
     "update_disabled": "Mise à jour automatique non configurée pour cette version",
-    "update_error": "Impossible de vérifier les mises à jour"
+    "update_error": "Impossible de vérifier les mises à jour",
+    "refresh_catalog": "Actualiser le catalogue",
+    "package_status_stable": "Stable",
+    "package_status_beta": "Bêta",
+    "package_status_experimental": "Expérimental",
+    "capability_ui": "Interface utilisateur",
+    "capability_spelling": "Orthographe",
+    "capability_autocorrect": "Correction automatique",
+    "capability_grammar": "Grammaire",
+    "capability_no_spelling": "Pas d'orthographe",
+    "installing_ui": "↓ Interface utilisateur…",
+    "installing_dictionary": "↓ Dictionnaire…",
+    "installing_rules": "↓ Règles…",
+    "dict_format_hint": "Format : un terme par ligne (.txt sans en-tête)",
+    "user_defaults_hint": "Ces détails seront utilisés par défaut lors de la création de nouveaux projets."
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Image '{{file}}' référencée dans la section '{{section}}' introuvable.",
@@ -1038,7 +1056,8 @@
     "footer_navigate": "↑↓ naviguer",
     "footer_go_block": "↵ aller au bloc",
     "footer_cancel": "Échap annuler",
-    "commands": "Commandes"
+    "commands": "Commandes",
+    "dialog_title": "Palette de commandes"
   },
   "block_item": {
     "not_editable": "Le bloc n'est pas modifiable",
@@ -1077,7 +1096,10 @@
     "delete_block": "Supprimer le bloc",
     "manual_latex_warning": "LaTeX manuel — peut perturber la compilation",
     "confirm_manual_latex": "Je confirme que ce LaTeX manuel peut affecter la compilation",
-    "unconfirmed_latex_hint": "Non confirmé — ce bloc ne sera pas inclus dans le PDF tant que vous ne l'aurez pas confirmé."
+    "unconfirmed_latex_hint": "Non confirmé — ce bloc ne sera pas inclus dans le PDF tant que vous ne l'aurez pas confirmé.",
+    "packages": "Forfaits",
+    "edit_figure_title": "Modifiez le titre ou l'étiquette, ou régénérez la figure",
+    "edit_figure": "Modifier le chiffre"
   },
   "compile": {
     "ensure_latex_installed_path": "Vérifiez qu'un compilateur LaTeX est installé et disponible dans le PATH.",
@@ -1184,7 +1206,12 @@
     "readiness_export_subtitle": "Pour exporter en mode final, complétez d'abord les contrôles de livraison et de qualité.",
     "readiness_compile_subtitle": "Compilez en brouillon ou révisez ces points avant de le traiter comme une version formelle.",
     "readiness_delivery": "Livraison",
-    "readiness_quality": "Qualité finale"
+    "readiness_quality": "Qualité finale",
+    "severity_error": "Erreur",
+    "severity_warning": "Avertissement",
+    "severity_suggestion": "Suggestions",
+    "go_to_section": "Aller à la rubrique",
+    "preflight_review_first": "Examinez d'abord"
   },
   "community_profile": {
     "audience_label": "Pour qui",
@@ -1693,7 +1720,8 @@
     "add_events": "Ajouter des événements",
     "empty_equation": "Équation vide",
     "custom_molecule": "Molécule personnalisée",
-    "molecule_compile_hint": "Structure générée avec chemfig lors de la compilation"
+    "molecule_compile_hint": "Structure générée avec chemfig lors de la compilation",
+    "chemical_syntax_hint": "Utilisez -> (réaction), <=> (équilibre), ^ (gaz) et v (précipité)"
   },
   "vocabulary": {
     "title": "Vocabulaires disciplinaires",
@@ -2535,7 +2563,27 @@
       "err_dollar": "Entourez les maths avec $…$ ou \\[…\\]",
       "err_undef": "Vérifiez l'orthographe de \\nomcommande",
       "err_brace": "Chaque { doit avoir un } correspondant",
-      "err_extra": "Supprimez les } en trop ou fermez le $ non fermé"
+      "err_extra": "Supprimez les } en trop ou fermez le $ non fermé",
+      "hint_frac": "a ÷ b sous forme de fraction",
+      "hint_exp": "e augmenté à 2x",
+      "hint_sub": "x indice n+1",
+      "hint_curly": "x^(n−1) (accolades pour plus de 1 caractère)",
+      "hint_sin": "sinus de x (pgfplots)",
+      "hint_quad": "quadratique - utilisez * pour la multiplication",
+      "hint_ln": "logarithme népérien",
+      "hint_sqrt": "√x (syntaxe pgfplots)",
+      "hint_arrow": "→ (flèche de réaction)",
+      "hint_eq": "⇌ (flèche d'équilibre)",
+      "hint_pct": "% signe de pourcentage littéral",
+      "hint_dollar": "$ signe dollar littéral",
+      "hint_amp": "& esperluette littérale",
+      "hint_under": "_ soulignement littéral",
+      "hint_braces": "\\{ \\} accolades littérales"
     }
+  },
+  "app_error": {
+    "title": "Quelque chose s'est mal passé",
+    "body": "TeXisStudio a conservé vos fichiers intacts. Revenez à l’écran d’accueil et essayez de rouvrir le projet.",
+    "back_home": "Revenir à l’accueil"
   }
 }

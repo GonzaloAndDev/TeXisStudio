@@ -161,10 +161,10 @@ const SEV_COLOR: Record<string, string> = {
   Suggestion: "var(--accent)",
 };
 
-const SEV_LABEL: Record<string, string> = {
-  Error: "Error",
-  Warning: "Advertencia",
-  Suggestion: "Sugerencia",
+const SEV_LABEL_KEY: Record<string, string> = {
+  Error: "compile.severity_error",
+  Warning: "compile.severity_warning",
+  Suggestion: "compile.severity_suggestion",
 };
 
 function IssueRow({
@@ -174,6 +174,7 @@ function IssueRow({
   issue: ValidationIssue;
   onGoTo?: () => void;
 }) {
+  const { t } = useTranslation();
   const color = SEV_COLOR[issue.severity] ?? "var(--fg-muted)";
   return (
     <div
@@ -198,7 +199,7 @@ function IssueRow({
             letterSpacing: "0.04em",
           }}
         >
-          {SEV_LABEL[issue.severity]}
+          {t(SEV_LABEL_KEY[issue.severity] ?? "compile.severity_suggestion")}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", lineHeight: 1.5 }}>
@@ -223,7 +224,7 @@ function IssueRow({
             style={{ fontSize: 11, flexShrink: 0 }}
             onClick={onGoTo}
           >
-            Ir a sección
+            {t("compile.go_to_section")}
           </button>
         )}
       </div>
@@ -364,7 +365,7 @@ export function DeliveryCheckModal({
           }}
         >
           <button className="btn btn-ghost" onClick={onClose}>
-            Revisar primero
+            {t("compile.preflight_review_first")}
           </button>
           <button className="btn btn-accent" onClick={onProceed} disabled={hasErrors}>
             {actionLabel}

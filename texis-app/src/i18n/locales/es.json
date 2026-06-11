@@ -25,7 +25,13 @@
     "apply": "Aplicar",
     "export": "Exportar",
     "confirm": "Confirmar",
-    "working": "Trabajando…"
+    "working": "Trabajando…",
+    "language_picker_title": "Idioma"
+  },
+  "app_error": {
+    "title": "Algo salió mal",
+    "body": "TeXisStudio mantuvo tus archivos intactos. Vuelve al inicio e intenta abrir el proyecto de nuevo.",
+    "back_home": "Volver al inicio"
   },
   "lang": {
     "picker_label": "Idioma de la interfaz",
@@ -269,6 +275,7 @@
     "placement_back_short": "Final",
     "placement_appendix_short": "Anexos",
     "cloud_tip_or": "o",
+    "google_drive_desktop": "Google Drive para escritorio",
     "esc_to_cancel": "Esc para cancelar · ↵ para continuar",
     "error_author_required": "Escribe tu nombre completo antes de continuar.",
     "recommend_reason_institution": "coincide con {{name}}",
@@ -554,7 +561,9 @@
     "dismiss": "Descartar",
     "auto_check": "Revisar automáticamente al guardar",
     "check_now": "Revisar ahora",
-    "error_api": "Error al conectar con LanguageTool. Verifica tu conexión."
+    "error_api": "Error al conectar con LanguageTool. Verifica tu conexión.",
+    "not_supported": "{{language}} — revisión gramatical no disponible",
+    "pack_remote_disabled_prefix": "Este paquete de idioma declara"
   },
   "settings": {
     "title": "Configuración",
@@ -575,6 +584,7 @@
     "dict_add_btn": "Agregar",
     "dict_import_btn": "Importar .txt",
     "dict_export_btn": "Exportar diccionario",
+    "dict_format_hint": "Formato: un término por línea (.txt sin cabecera)",
     "dict_word_count_one": "{{count}} palabra",
     "dict_word_count_other": "{{count}} palabras",
     "community_title": "Diccionarios y paquetes de idioma",
@@ -584,6 +594,19 @@
     "community_remove": "Eliminar",
     "community_contribute": "¿Quieres contribuir un diccionario o traducción? Visita el repositorio.",
     "community_none": "No hay paquetes disponibles todavía.",
+    "user_defaults_hint": "Estos datos se usarán como valores predeterminados al crear nuevos proyectos.",
+    "refresh_catalog": "Actualizar catálogo",
+    "package_status_stable": "Estable",
+    "package_status_beta": "Beta",
+    "package_status_experimental": "Experimental",
+    "capability_ui": "Interfaz",
+    "capability_spelling": "Ortografía",
+    "capability_autocorrect": "Autocorrección",
+    "capability_grammar": "Gramática",
+    "capability_no_spelling": "Sin ortografía",
+    "installing_ui": "↓ Interfaz…",
+    "installing_dictionary": "↓ Diccionario…",
+    "installing_rules": "↓ Reglas…",
     "user_name": "Nombre completo",
     "user_name_placeholder": "Tu nombre para nuevos proyectos",
     "user_institution": "Institución",
@@ -1020,6 +1043,7 @@
     "compile_pdf": "Compilar PDF"
   },
   "command_palette": {
+    "dialog_title": "Paleta de comandos",
     "hint_free_text": "Texto libre",
     "hint_heading_levels": "H1 / H2 / H3",
     "hint_list": "Viñetas o numerada",
@@ -1103,6 +1127,9 @@
     "visual_feynman": "Diagrama de Feynman",
     "visual_bio_pathway": "Vía biológica",
     "visual_music": "Partitura",
+    "packages": "Paquetes",
+    "edit_figure_title": "Editar el título o la etiqueta, o regenerar la figura",
+    "edit_figure": "Editar figura",
     "visual_compile_hint": "Clic para editar • se genera al compilar",
     "unknown_block": "[bloque desconocido]",
     "delete_block": "Eliminar bloque",
@@ -1111,6 +1138,11 @@
     "unconfirmed_latex_hint": "No confirmado — este bloque no se incluirá en el PDF hasta que lo confirmes."
   },
   "compile": {
+    "severity_error": "Error",
+    "severity_warning": "Advertencia",
+    "severity_suggestion": "Sugerencia",
+    "go_to_section": "Ir a sección",
+    "preflight_review_first": "Revisar primero",
     "ensure_latex_installed_path": "Verifica que el compilador LaTeX esté instalado y en el PATH.",
     "export_error": "Error al exportar: {{error}}",
     "postflight_error": "Error en verificación PDF: {{error}}",
@@ -1690,6 +1722,7 @@
     "add_event": "Añadir evento",
     "chemical_equation": "Ecuación química",
     "mhchem_notation": "notación mhchem",
+    "chemical_syntax_hint": "Usa -> (reacción), <=> (equilibrio), ^ (gas) y v (precipitado)",
     "catalyst_condition": "Catalizador / condición",
     "lower_condition": "Condición inferior",
     "type": "Tipo",

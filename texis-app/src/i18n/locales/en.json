@@ -25,7 +25,13 @@
     "apply": "Apply",
     "export": "Export",
     "confirm": "Confirm",
-    "working": "Working…"
+    "working": "Working…",
+    "language_picker_title": "Language"
+  },
+  "app_error": {
+    "title": "Something went wrong",
+    "body": "TeXisStudio kept your files intact. Return to the start screen and try reopening the project.",
+    "back_home": "Return to start"
   },
   "lang": {
     "picker_label": "Interface language",
@@ -269,6 +275,7 @@
     "placement_back_short": "Back",
     "placement_appendix_short": "Appendix",
     "cloud_tip_or": "or",
+    "google_drive_desktop": "Google Drive for desktop",
     "esc_to_cancel": "Esc to cancel · ↵ to continue",
     "error_author_required": "Enter your full name before continuing.",
     "recommend_reason_institution": "matches {{name}}",
@@ -554,7 +561,9 @@
     "dismiss": "Dismiss",
     "auto_check": "Check automatically on save",
     "check_now": "Check now",
-    "error_api": "Could not connect to LanguageTool. Check your connection."
+    "error_api": "Could not connect to LanguageTool. Check your connection.",
+    "not_supported": "{{language}} — grammar checking is not supported",
+    "pack_remote_disabled_prefix": "This language pack declares"
   },
   "settings": {
     "title": "Settings",
@@ -575,6 +584,7 @@
     "dict_add_btn": "Add",
     "dict_import_btn": "Import .txt",
     "dict_export_btn": "Export dictionary",
+    "dict_format_hint": "Format: one term per line (.txt without a header)",
     "dict_word_count_one": "{{count}} word",
     "dict_word_count_other": "{{count}} words",
     "community_title": "Dictionaries and language packs",
@@ -584,6 +594,19 @@
     "community_remove": "Remove",
     "community_contribute": "Want to contribute a dictionary or translation? Visit the repository.",
     "community_none": "No packages available yet.",
+    "user_defaults_hint": "These details will be used as defaults when creating new projects.",
+    "refresh_catalog": "Refresh catalog",
+    "package_status_stable": "Stable",
+    "package_status_beta": "Beta",
+    "package_status_experimental": "Experimental",
+    "capability_ui": "UI",
+    "capability_spelling": "Spelling",
+    "capability_autocorrect": "Auto-correct",
+    "capability_grammar": "Grammar",
+    "capability_no_spelling": "No spelling",
+    "installing_ui": "↓ UI…",
+    "installing_dictionary": "↓ Dictionary…",
+    "installing_rules": "↓ Rules…",
     "user_name": "Full name",
     "user_name_placeholder": "Your name for new projects",
     "user_institution": "Institution",
@@ -1020,6 +1043,7 @@
     "compile_pdf": "Compile PDF"
   },
   "command_palette": {
+    "dialog_title": "Command palette",
     "hint_free_text": "Free text",
     "hint_heading_levels": "H1 / H2 / H3",
     "hint_list": "Bulleted or numbered",
@@ -1103,6 +1127,9 @@
     "visual_feynman": "Feynman diagram",
     "visual_bio_pathway": "Biological pathway",
     "visual_music": "Score",
+    "packages": "Packages",
+    "edit_figure_title": "Edit the title or label, or regenerate the figure",
+    "edit_figure": "Edit figure",
     "visual_compile_hint": "Click to edit • generated when compiling",
     "unknown_block": "[unknown block]",
     "delete_block": "Delete block",
@@ -1111,6 +1138,11 @@
     "unconfirmed_latex_hint": "Not confirmed — this block will not be included in the PDF until you confirm it."
   },
   "compile": {
+    "severity_error": "Error",
+    "severity_warning": "Warning",
+    "severity_suggestion": "Suggestion",
+    "go_to_section": "Go to section",
+    "preflight_review_first": "Review first",
     "ensure_latex_installed_path": "Check that a LaTeX compiler is installed and available in PATH.",
     "export_error": "Export error: {{error}}",
     "postflight_error": "PDF verification error: {{error}}",
@@ -1690,6 +1722,7 @@
     "add_event": "Add event",
     "chemical_equation": "Chemical equation",
     "mhchem_notation": "mhchem notation",
+    "chemical_syntax_hint": "Use -> (reaction), <=> (equilibrium), ^ (gas), and v (precipitate)",
     "catalyst_condition": "Catalyst / condition",
     "lower_condition": "Lower condition",
     "type": "Type",

@@ -222,7 +222,7 @@ export function BlockItem({
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>{t("editor.label_ref")}</label>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>{t("visual.label_ref")}</label>
                 <input
                   value={block.label}
                   onChange={(e) => onUpdate({ label: e.target.value } as Partial<ContentBlock>)}
@@ -445,7 +445,7 @@ export function BlockItem({
               </div>
               {block.requiredPackages.length > 0 && (
                 <div style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 3 }}>
-                  Paquetes: {block.requiredPackages.join(", ")}
+                  {t("block_item.packages")}: {block.requiredPackages.join(", ")}
                 </div>
               )}
               {block.warnings.length > 0 && (
@@ -457,10 +457,10 @@ export function BlockItem({
             <button
               className="btn btn-ghost btn-sm"
               onClick={(e) => { e.stopPropagation(); onEditPluginFigure?.(); }}
-              title="Editar título, etiqueta o regenerar la figura"
+              title={t("block_item.edit_figure_title")}
               style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
             >
-              Editar figura
+              {t("block_item.edit_figure")}
             </button>
           </div>
         );

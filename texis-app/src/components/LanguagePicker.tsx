@@ -16,7 +16,7 @@ interface PickerEntry {
 }
 
 export function LanguagePicker() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { lang, spellLang, setLang, setSpellLang } = useSettingsStore();
   const { installed } = useLangPacksStore();
   const [open, setOpen] = useState(false);
@@ -68,7 +68,7 @@ export function LanguagePicker() {
         className="btn btn-ghost btn-sm"
         onClick={() => setOpen((v) => !v)}
         style={{ gap: 4, fontFamily: "var(--font-mono)", fontSize: "var(--fs-xs)" }}
-        title="Language / Idioma"
+        title={t("common.language_picker_title")}
       >
         <span>{current.flag}</span>
         <span>{current.code.toUpperCase()}</span>

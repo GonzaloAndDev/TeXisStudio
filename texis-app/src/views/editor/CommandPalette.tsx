@@ -210,7 +210,7 @@ export function CommandPalette({
       >
         {/* Título visualmente oculto para lectores de pantalla */}
         <div id={titleId} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}>
-          {t("command_palette.dialog_title", { defaultValue: "Paleta de comandos" })}
+          {t("command_palette.dialog_title")}
         </div>
 
         {/* Barra de búsqueda */}

@@ -81,10 +81,10 @@ export function GrammarPanel({ text, onAccept, onClose }: Props) {
           <div style={{ fontWeight: 500, color: "var(--fg-default)", marginBottom: 4 }}>
             {t("lang.spell_not_available")}
           </div>
-          <div>{lang.toUpperCase()} — grammar check not supported</div>
+          <div>{t("grammar.not_supported", { language: lang.toUpperCase() })}</div>
           {installedPack && (
             <div style={{ marginTop: 4, color: "var(--fg-faint)" }}>
-              This language pack declares <code>grammar_remote: false</code>
+              {t("grammar.pack_remote_disabled_prefix")} <code>grammar_remote: false</code>
             </div>
           )}
         </div>
