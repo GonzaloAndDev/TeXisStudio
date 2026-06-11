@@ -23,9 +23,9 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 - Claves nuevas en `visual_editor.*`: `undo`, `redo`, `restore_btn`, `restore_title` — traducidas en EN, ES, DE, FR, JA, PT-BR, ZH.
 - Extracción de strings hardcoded restantes: `AppErrorBoundary`, `GrammarPanel`, `LanguagePicker`, `SettingsView`, `CompileSupport`, `BlockItem`, `WizardView`.
 
-**Tests — frontend (320/320)**
+**Tests — frontend (331/331)**
 - `document-history.test.ts`: 18 casos — push, undo, redo, cap MAX_HISTORY, objetos por referencia.
-- `metadata-roundtrip.test.ts`: 51 casos — metadata registrada, defaultDoc→serializer→LaTeX válido, JSON round-trip, pgfplots/gantt/graph-node/tree-forest/table-data (incl. booktabs/longtable/pgfplots export targets, escape de caracteres especiales, columnas vacías).
+- `metadata-roundtrip.test.ts`: 62 casos — metadata registrada, defaultDoc→serializer→LaTeX válido, JSON round-trip, pgfplots/gantt/graph-node/tree-forest/table-data/math-engine (incl. booktabs/longtable/pgfplots export targets, escape de caracteres especiales, columnas vacías, ecuaciones con \\frac).
 
 **TechnicalFields en VisualEditorShell**
 - `VisualEditorShell` acepta `technicalFields`, `technicalValues`, `onTechnicalFieldChange`.
@@ -49,6 +49,10 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 - `metadata.ts` en pgfplots-engine, graph-node-engine, timeline-gantt-engine, table-data-engine, tree-forest-engine.
 - `engines/metadata-init.ts`: barrel de side-effect imports.
 - `VisualEditorRouter` consume `getEditorMetadata(engineId)` para `defaultDoc` y `helpTopic`; elimina `DEFAULT_DOCS` hardcoded.
+
+**Metadata `math-engine`** (TeXisStudio-Plugins)
+- `math-engine/metadata.ts`: registra el engine con `helpTopic: "latex"`, `defaultDoc()` con ecuación cuadrática en modo `equation` numerado, y `technicalFields: [{ key: "label" }]` para referencias cruzadas.
+- Añadido a `metadata-init.ts`; incluido en el comprobador de completitud del registry.
 
 **Serializer `table-data-engine`**
 - `table-data-engine/serializer.ts`: genera LaTeX para `booktabs` (`\begin{tabular}` con `\toprule/\midrule/\bottomrule` o `\hline`), `longtable` (con `\endfirsthead`/`\endhead` y header repetido) y `pgfplots` (`\pgfplotstableread` CSV).

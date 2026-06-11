@@ -19,11 +19,13 @@ import { serializeGantt } from "@texisstudio/plugins/engines/timeline-gantt-engi
 import { serializeGraphNode } from "@texisstudio/plugins/engines/graph-node-engine/serializer.js";
 import { serializeForest } from "@texisstudio/plugins/engines/tree-forest-engine/serializer.js";
 import { serializeTableData } from "@texisstudio/plugins/engines/table-data-engine/serializer.js";
+import { serializeNode, wrapInEnvironment } from "@texisstudio/plugins/engines/math-engine/serializer.js";
 import type { PGFPlotsDocument } from "@texisstudio/plugins/engines/pgfplots-engine/types.js";
 import type { TimelineGanttDocument } from "@texisstudio/plugins/engines/timeline-gantt-engine/types.js";
 import type { GraphNodeDocument } from "@texisstudio/plugins/engines/graph-node-engine/types.js";
 import type { TreeForestDocument } from "@texisstudio/plugins/engines/tree-forest-engine/types.js";
 import type { TableDataDocument } from "@texisstudio/plugins/engines/table-data-engine/types.js";
+import type { MathEngineDocument } from "@texisstudio/plugins/engines/math-engine/types.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -309,6 +311,65 @@ describe("metadata round-trip — table-data-engine", () => {
   });
 });
 
+// ── math-engine ───────────────────────────────────────────────────────────────
+
+describe("metadata round-trip — math-engine", () => {
+  let meta: ReturnType<typeof getEditorMetadata>;
+
+  beforeAll(() => {
+    meta = getEditorMetadata("math-engine");
+  });
+
+  it("metadata is registered", () => {
+    expect(meta).toBeDefined();
+  });
+
+  it("defaultDoc has correct engineId", () => {
+    const doc = meta!.defaultDoc() as MathEngineDocument;
+    expect(doc.engineId).toBe("math-engine");
+  });
+
+  it("defaultDoc mode is equation", () => {
+    const doc = meta!.defaultDoc() as MathEngineDocument;
+    expect(doc.mode).toBe("equation");
+  });
+
+  it("defaultDoc serializes without throwing", () => {
+    const doc = meta!.defaultDoc() as MathEngineDocument;
+    const body = doc.tree.map(serializeNode).join(" ");
+    expect(() => wrapInEnvironment(body, doc.mode, doc.numbered, doc.label)).not.toThrow();
+  });
+
+  it("serialized latex contains \\begin{equation}", () => {
+    const doc = meta!.defaultDoc() as MathEngineDocument;
+    const body = doc.tree.map(serializeNode).join(" ");
+    const latex = wrapInEnvironment(body, doc.mode, doc.numbered, doc.label);
+    expect(latex).toContain("\\begin{equation}");
+    expect(latex).toContain("\\end{equation}");
+  });
+
+  it("serialized latex contains \\frac", () => {
+    const doc = meta!.defaultDoc() as MathEngineDocument;
+    const body = doc.tree.map(serializeNode).join(" ");
+    const latex = wrapInEnvironment(body, doc.mode, doc.numbered, doc.label);
+    expect(latex).toContain("\\frac");
+  });
+
+  it("helpTopic is latex", () => {
+    expect(meta!.helpTopic).toBe("latex");
+  });
+
+  it("technicalFields contains label key", () => {
+    expect(meta!.technicalFields.some((f) => f.key === "label")).toBe(true);
+  });
+
+  it("defaultDoc survives JSON round-trip and still serializes", () => {
+    const doc = jsonRoundTrip(meta!.defaultDoc() as MathEngineDocument);
+    const body = doc.tree.map(serializeNode).join(" ");
+    expect(() => wrapInEnvironment(body, doc.mode, doc.numbered, doc.label)).not.toThrow();
+  });
+});
+
 // ── Registry completeness ─────────────────────────────────────────────────────
 
 describe("metadata registry — all visual engines registered", () => {
@@ -318,6 +379,7 @@ describe("metadata registry — all visual engines registered", () => {
     "timeline-gantt-engine",
     "table-data-engine",
     "tree-forest-engine",
+    "math-engine",
   ];
 
   for (const engineId of VISUAL_ENGINES) {
