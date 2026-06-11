@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { listPlugins, groupPluginsByCategory, createPluginFigure } from "../services/figure-plugin-service";
 import type { PluginInfo } from "../services/figure-plugin-service";
 import type { PluginFigureBlock } from "../types";
-import type { PluginCategory } from "@texisstudio/plugins";
+import type { PluginCategory, UserLevel } from "@texisstudio/plugins";
 
 // ── Category display metadata ──────────────────────────────────────
 
@@ -24,12 +24,20 @@ const CATEGORY_ORDER: PluginCategory[] = [
 ];
 
 type QualityFilter = "all" | "official-core" | "official-extended" | "experimental";
+type LevelFilter   = "all" | UserLevel;
 
 const QUALITY_COLOR: Record<QualityFilter, { color: string; dot: string }> = {
   "all":               { color: "var(--fg-muted)",   dot: "" },
   "official-core":     { color: "var(--build-ok)",   dot: "●" },
   "official-extended": { color: "var(--accent)",     dot: "●" },
   "experimental":      { color: "var(--fg-faint)",   dot: "●" },
+};
+
+const LEVEL_META: Record<LevelFilter, { color: string }> = {
+  "all":          { color: "var(--fg-muted)" },
+  "easy":         { color: "var(--build-ok)" },
+  "intermediate": { color: "var(--build-warn, #f5a623)" },
+  "advanced":     { color: "var(--build-err, #e55)" },
 };
 
 // ── Main modal ────────────────────────────────────────────────────
@@ -45,6 +53,7 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
   const [search, setSearch]                 = useState("");
   const [selectedCategory, setSelectedCategory] = useState<PluginCategory | "all">("all");
   const [qualityFilter, setQualityFilter]   = useState<QualityFilter>("all");
+  const [levelFilter, setLevelFilter]       = useState<LevelFilter>("all");
   const [loading, setLoading]               = useState<string | null>(null);
   const [error, setError]                   = useState<string | null>(null);
 
@@ -70,15 +79,16 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return plugins.filter((p) => {
-      const matchCat  = selectedCategory === "all" || p.category === selectedCategory;
-      const matchQual = qualityFilter === "all"    || p.qualityLevel === qualityFilter;
-      const matchQ    = !q
+      const matchCat   = selectedCategory === "all" || p.category === selectedCategory;
+      const matchQual  = qualityFilter === "all"    || p.qualityLevel === qualityFilter;
+      const matchLevel = levelFilter === "all"      || p.userLevel === levelFilter;
+      const matchQ     = !q
         || p.displayName.toLowerCase().includes(q)
         || p.description.toLowerCase().includes(q)
         || p.category.includes(q);
-      return matchCat && matchQual && matchQ;
+      return matchCat && matchQual && matchLevel && matchQ;
     });
-  }, [plugins, search, selectedCategory, qualityFilter]);
+  }, [plugins, search, selectedCategory, qualityFilter, levelFilter]);
 
   const grouped = useMemo(() => {
     const map = new Map<PluginCategory, PluginInfo[]>();
@@ -94,6 +104,13 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
   const qualityCounts = useMemo(() => {
     const counts: Record<string, number> = { "all": plugins.length };
     for (const p of plugins) counts[p.qualityLevel] = (counts[p.qualityLevel] ?? 0) + 1;
+    return counts;
+  }, [plugins]);
+
+  // Count per user level
+  const levelCounts = useMemo(() => {
+    const counts: Record<string, number> = { "all": plugins.length };
+    for (const p of plugins) counts[p.userLevel] = (counts[p.userLevel] ?? 0) + 1;
     return counts;
   }, [plugins]);
 
@@ -144,6 +161,36 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
             style={{ width: "100%", padding: "7px 12px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", outline: "none", boxSizing: "border-box", marginBottom: 8 }}
           />
 
+          {/* Difficulty filter (primary) */}
+          <div style={{ display: "flex", gap: 6, padding: "6px 0 4px", alignItems: "center" }}>
+            <span style={{ fontSize: 10, color: "var(--fg-faint)", marginRight: 2 }}>{t("figure_picker.difficulty_label")}</span>
+            {(["all", "easy", "intermediate", "advanced"] as LevelFilter[]).map((lv) => {
+              const meta = LEVEL_META[lv];
+              const active = levelFilter === lv;
+              const labelKey = lv === "all" ? "figure_picker.quality_all" : `figure_picker.level_${lv}`;
+              return (
+                <button
+                  key={lv}
+                  onClick={() => setLevelFilter(lv)}
+                  style={{
+                    fontSize: 10, padding: "2px 9px", borderRadius: 10,
+                    border: active ? `1px solid ${meta.color}` : "1px solid var(--border-soft)",
+                    background: active ? `color-mix(in srgb, ${meta.color} 15%, transparent)` : "transparent",
+                    color: active ? meta.color : "var(--fg-faint)",
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontWeight: active ? 600 : 400,
+                    transition: "all 0.12s",
+                  }}
+                >
+                  {lv !== "all" && <span style={{ fontSize: 6, color: meta.color }}>●</span>}
+                  {t(labelKey, lv)}
+                  <span style={{ opacity: 0.7, fontFamily: "var(--font-mono)", fontSize: 9 }}>
+                    {levelCounts[lv === "all" ? "all" : lv] ?? 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Category tabs */}
           <div style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 0 }}>
             <CategoryTab label={t("figure_picker.all_tab")} icon="⬛" active={selectedCategory === "all"} count={filtered.length} onClick={() => setSelectedCategory("all")} />
@@ -180,9 +227,9 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
                 </button>
               );
             })}
-            {(search || qualityFilter !== "all" || selectedCategory !== "all") && (
+            {(search || qualityFilter !== "all" || selectedCategory !== "all" || levelFilter !== "all") && (
               <button
-                onClick={() => { setSearch(""); setQualityFilter("all"); setSelectedCategory("all"); }}
+                onClick={() => { setSearch(""); setQualityFilter("all"); setSelectedCategory("all"); setLevelFilter("all"); }}
                 style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, border: "1px solid var(--border-soft)", background: "transparent", color: "var(--fg-faint)", cursor: "pointer", marginLeft: "auto" }}
               >
                 {t("figure_picker.clear_filters")}
@@ -268,12 +315,14 @@ function PluginCard({ plugin, loading, disabled, onInsert }: {
 }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
-  const qMeta: Record<string, { label: string; color: string }> = {
-    "official-core":     { label: "Core",         color: "var(--build-ok)" },
-    "official-extended": { label: "Extended",     color: "var(--accent)" },
-    "experimental":      { label: "Experimental", color: "var(--fg-faint)" },
+
+  const levelColor: Record<string, string> = {
+    easy:         "var(--build-ok)",
+    intermediate: "var(--build-warn, #f5a623)",
+    advanced:     "var(--build-err, #e55)",
   };
-  const q = qMeta[plugin.qualityLevel] ?? { label: plugin.qualityLevel, color: "var(--fg-faint)" };
+  const lvColor = levelColor[plugin.userLevel] ?? "var(--fg-faint)";
+  const lvLabel = t(`figure_picker.level_${plugin.userLevel}`, plugin.userLevel);
 
   return (
     <button
@@ -293,8 +342,8 @@ function PluginCard({ plugin, loading, disabled, onInsert }: {
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--fg-strong)", flex: 1, lineHeight: 1.2 }}>
           {loading ? t("figure_picker.generating") : plugin.displayName}
         </span>
-        <span style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: q.color, border: `1px solid ${q.color}`, borderRadius: "var(--r-xs)", padding: "1px 4px", flexShrink: 0 }}>
-          {q.label}
+        <span style={{ fontSize: 8, color: lvColor, border: `1px solid ${lvColor}`, borderRadius: "var(--r-xs)", padding: "1px 5px", flexShrink: 0, display: "flex", alignItems: "center", gap: 3 }}>
+          <span style={{ fontSize: 6 }}>●</span>{lvLabel}
         </span>
       </div>
       <div style={{ fontSize: 11, color: "var(--fg-muted)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>

@@ -29,6 +29,7 @@ import { CitationPickerModal } from "./editor/CitationPickerModal";
 import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
+import { HelpCenter } from "../components/help/HelpCenter";
 
 const SECTION_KEY_ALIASES: Record<string, string[]> = {
   abstract: ["resumen", "abstract_ingles", "abstract_en", "summary"],
@@ -208,6 +209,7 @@ export default function EditorView() {
   // Toolbar académico
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen] = useState(false);
+  const [helpOpen, setHelpOpen]           = useState(false);
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
   const [projectAssets, setProjectAssets] = useState<Array<{ name: string; path: string }>>([]);
 
@@ -755,6 +757,13 @@ export default function EditorView() {
             <LanguagePicker />
             <button
               className="btn btn-ghost btn-icon"
+              title={t("help.open_help")}
+              onClick={() => setHelpOpen(true)}
+            >
+              ?
+            </button>
+            <button
+              className="btn btn-ghost btn-icon"
               title={t("common.settings")}
               onClick={() => navigate("/settings")}
             >
@@ -763,6 +772,7 @@ export default function EditorView() {
           </>
         }
       />
+      {helpOpen && <HelpCenter onClose={() => setHelpOpen(false)} />}
 
       <div className="editor-shell">
       <div className="editor-grid">

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
-import { editPluginFigure, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
+import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
+import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
 import type { PluginFigureBlock } from "../types";
 
 const QUALITY_BADGE: Record<string, { label: string; color: string }> = {
@@ -10,7 +11,11 @@ const QUALITY_BADGE: Record<string, { label: string; color: string }> = {
   "experimental":      { label: "Experimental",color: "var(--fg-faint)" },
 };
 
-// Category labels are built from i18n inside the component
+const DIFFICULTY_BADGE: Record<string, { label: string; color: string }> = {
+  easy:         { label: "●", color: "var(--build-ok)" },
+  intermediate: { label: "●", color: "var(--build-warn, #f5a623)" },
+  advanced:     { label: "●", color: "var(--build-err, #e55)" },
+};
 
 interface Props {
   block: PluginFigureBlock;
@@ -18,6 +23,8 @@ interface Props {
   onUpdate: (updated: PluginFigureBlock) => void;
   onClose: () => void;
 }
+
+type ActiveTab = "visual" | "meta";
 
 export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props) {
   const { t } = useTranslation();
@@ -31,19 +38,30 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     "arts-visual":       t("figure_picker.cat_arts"),
     "import-external":   t("figure_picker.cat_import"),
   }), [t]);
+
   const [caption, setCaption] = useState(block.caption);
   const [label, setLabel]     = useState(block.label);
-  const [busy, setBusy]       = useState<"save" | "regen" | null>(null);
+  const [busy, setBusy]       = useState<"save" | "regen" | "visual" | null>(null);
   const [error, setError]     = useState<string | null>(null);
   const [done, setDone]       = useState(false);
   const [showLatex, setShowLatex] = useState(false);
+  const [editedSourceJson, setEditedSourceJson] = useState(block.sourceJson ?? "");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() =>
+    hasVisualEditor(block.sourceJson, getPluginInfo(block.pluginId)?.editorType) ? "visual" : "meta"
+  );
   const captionRef = useRef<HTMLInputElement>(null);
 
   const info = getPluginInfo(block.pluginId);
   const quality = QUALITY_BADGE[info?.qualityLevel ?? ""] ?? { label: info?.qualityLevel ?? "", color: "var(--fg-faint)" };
-  const dirty = caption !== block.caption || label !== block.label;
+  const difficulty = DIFFICULTY_BADGE[info?.userLevel ?? "intermediate"] ?? DIFFICULTY_BADGE.intermediate;
+  const userLevelLabel = info?.userLevel
+    ? t(`figure_picker.level_${info.userLevel}`, info.userLevel)
+    : "";
 
-  // Preview LaTeX en tiempo real: reconstruye el bloque con los valores actuales del formulario
+  const metaDirty = caption !== block.caption || label !== block.label;
+  const visualDirty = editedSourceJson !== (block.sourceJson ?? "");
+  const anyDirty = metaDirty || visualDirty;
+
   const previewLatex = useMemo(() => {
     const texPath = `texisstudio-assets/figures/${block.figureId}/output.tex`;
     const currentCaption = caption.trim() || block.caption;
@@ -51,21 +69,47 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     return buildLatexInputBlock({ figureId: block.figureId, inputPath: texPath, caption: currentCaption, label: currentLabel });
   }, [caption, label, block.figureId, block.caption, block.label]);
 
-  useEffect(() => { captionRef.current?.focus(); }, []);
+  useEffect(() => {
+    if (activeTab === "meta") captionRef.current?.focus();
+  }, [activeTab]);
+
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onClose(); };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [busy, onClose]);
 
-  async function handleSave() {
-    if (!dirty || busy) return;
+  const handleSourceChange = useCallback((json: string) => {
+    setEditedSourceJson(json);
+  }, []);
+
+  async function handleSaveMeta() {
+    if (!metaDirty || busy) return;
     setBusy("save"); setError(null);
     try {
       const updated = await updatePluginFigureMeta(block, caption.trim() || block.caption, label.trim() || block.label, projectPath);
       onUpdate(updated);
       setDone(true);
       setTimeout(onClose, 600);
+    } catch (e) { setError(`${e}`); }
+    finally { setBusy(null); }
+  }
+
+  async function handleApplyVisual() {
+    if (!visualDirty && !metaDirty) return;
+    if (busy) return;
+    setBusy("visual"); setError(null);
+    try {
+      const updated = await editPluginFigureWithSource(
+        block,
+        editedSourceJson,
+        projectPath,
+        caption.trim() || block.caption,
+        label.trim() || block.label,
+      );
+      onUpdate(updated);
+      setDone(true);
+      setTimeout(onClose, 700);
     } catch (e) { setError(`${e}`); }
     finally { setBusy(null); }
   }
@@ -82,111 +126,172 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     finally { setBusy(null); }
   }
 
+  const showVisualTab = hasVisualEditor(block.sourceJson, info?.editorType);
+
   return (
     <div
       style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
     >
-      <div style={{ width: "min(560px, 94vw)", maxHeight: "92vh", background: "var(--bg-panel)", border: "1px solid var(--border-firm)", borderRadius: 10, boxShadow: "0 20px 56px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ width: showVisualTab ? "min(700px, 96vw)" : "min(560px, 94vw)", maxHeight: "92vh", background: "var(--bg-panel)", border: "1px solid var(--border-firm)", borderRadius: 10, boxShadow: "0 20px 56px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* Header */}
-        <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "flex-start", gap: 10, flexShrink: 0 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: "var(--fg-strong)" }}>
-                {info?.displayName ?? block.pluginId}
-              </span>
-              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: quality.color, border: `1px solid ${quality.color}`, borderRadius: "var(--r-xs)", padding: "1px 5px" }}>
-                {quality.label}
-              </span>
+        <div style={{ padding: "14px 18px 0", borderBottom: "1px solid var(--border-subtle)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "var(--fg-strong)" }}>
+                  {info?.displayName ?? block.pluginId}
+                </span>
+                <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: quality.color, border: `1px solid ${quality.color}`, borderRadius: "var(--r-xs)", padding: "1px 5px" }}>
+                  {quality.label}
+                </span>
+                {info?.userLevel && (
+                  <span
+                    title={t("figure_picker.level_label") + " " + userLevelLabel}
+                    style={{ fontSize: 9, color: difficulty.color, display: "flex", alignItems: "center", gap: 2 }}
+                  >
+                    {difficulty.label} {userLevelLabel}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                {categoryLabel[info?.category ?? ""] ?? info?.category} · {block.figureId}
+              </div>
             </div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
-              {categoryLabel[info?.category ?? ""] ?? info?.category} · {block.figureId}
-            </div>
+            <button className="btn btn-ghost btn-icon" onClick={onClose} disabled={!!busy} title={t("figure_edit.close_title")}>✕</button>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} disabled={!!busy} title={t("figure_edit.close_title")}>✕</button>
+
+          {/* Tab bar */}
+          {showVisualTab && (
+            <div style={{ display: "flex", gap: 0 }}>
+              {(["visual", "meta"] as ActiveTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: "5px 14px",
+                    border: "none",
+                    borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
+                    background: "transparent",
+                    color: activeTab === tab ? "var(--accent)" : "var(--fg-muted)",
+                    fontSize: "var(--fs-sm)",
+                    cursor: "pointer",
+                    fontWeight: activeTab === tab ? 600 : 400,
+                  }}
+                >
+                  {tab === "visual" ? t("figure_edit.tab_visual") : t("figure_edit.tab_meta")}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Scrollable body */}
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {/* Fields */}
-          <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
-                {t("figure_edit.caption_label")}
-              </label>
-              <input
-                ref={captionRef}
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                disabled={!!busy}
-                onKeyDown={(e) => { if (e.key === "Enter" && dirty) handleSave(); }}
-                style={{ width: "100%", padding: "7px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
-                {t("figure_edit.label_latex")}
-              </label>
-              <input
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                disabled={!!busy}
-                onKeyDown={(e) => { if (e.key === "Enter" && dirty) handleSave(); }}
-                style={{ width: "100%", padding: "7px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", fontFamily: "var(--font-mono)", boxSizing: "border-box" }}
-              />
-            </div>
-
-            {/* Packages */}
-            {block.requiredPackages.length > 0 && (
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-                {t("figure_edit.packages_label")} <span style={{ fontFamily: "var(--font-mono)" }}>{block.requiredPackages.join(", ")}</span>
+          {/* ── Visual editor tab ── */}
+          {activeTab === "visual" && showVisualTab && (
+            <div style={{ padding: "14px 18px" }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10 }}>
+                {t("figure_edit.visual_hint")}
               </div>
-            )}
+              <VisualEditorRouter sourceJson={editedSourceJson} onSourceChange={handleSourceChange} />
 
-            {/* LaTeX preview accordion */}
-            <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
-              <button
-                onClick={() => setShowLatex((v) => !v)}
-                style={{ width: "100%", padding: "7px 12px", background: "var(--bg-app)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "left" }}
-              >
-                <span style={{ transform: showLatex ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block", fontSize: 10 }}>▶</span>
-                {dirty ? t("figure_edit.latex_preview_dirty") : t("figure_edit.latex_preview")}
-                {dirty && <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--accent)", fontWeight: 600 }}>{t("figure_edit.edited_badge")}</span>}
-              </button>
-              {showLatex && (
-                <pre style={{
-                  margin: 0, padding: "10px 12px",
-                  background: "var(--ink-900, #14110f)",
-                  color: "#C8C2B5",
-                  fontSize: 11, fontFamily: "var(--font-mono)", lineHeight: 1.55,
-                  overflowX: "auto", whiteSpace: "pre",
-                  maxHeight: 220, overflowY: "auto",
-                  borderTop: "1px solid var(--border-soft)",
-                }}>
-                  {previewLatex}
-                </pre>
-              )}
+              {/* Caption / label mini-form below the visual editor */}
+              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--border-soft)", paddingTop: 12 }}>
+                <div>
+                  <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>
+                    {t("figure_edit.caption_label")}
+                  </label>
+                  <input
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    disabled={!!busy}
+                    style={{ width: "100%", padding: "6px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Scope warning */}
+          {/* ── Meta tab (caption / label / LaTeX) ── */}
+          {(activeTab === "meta" || !showVisualTab) && (
+            <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
+                  {t("figure_edit.caption_label")}
+                </label>
+                <input
+                  ref={captionRef}
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  disabled={!!busy}
+                  onKeyDown={(e) => { if (e.key === "Enter" && metaDirty) handleSaveMeta(); }}
+                  style={{ width: "100%", padding: "7px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
+                  {t("figure_edit.label_latex")}
+                </label>
+                <input
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  disabled={!!busy}
+                  onKeyDown={(e) => { if (e.key === "Enter" && metaDirty) handleSaveMeta(); }}
+                  style={{ width: "100%", padding: "7px 10px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-firm)", background: "var(--bg-app)", color: "var(--fg-default)", fontSize: "var(--fs-sm)", fontFamily: "var(--font-mono)", boxSizing: "border-box" }}
+                />
+              </div>
+
+              {/* Packages */}
+              {block.requiredPackages.length > 0 && (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+                  {t("figure_edit.packages_label")} <span style={{ fontFamily: "var(--font-mono)" }}>{block.requiredPackages.join(", ")}</span>
+                </div>
+              )}
+
+              {/* LaTeX preview accordion */}
+              <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
+                <button
+                  onClick={() => setShowLatex((v) => !v)}
+                  style={{ width: "100%", padding: "7px 12px", background: "var(--bg-app)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "left" }}
+                >
+                  <span style={{ transform: showLatex ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block", fontSize: 10 }}>▶</span>
+                  {metaDirty ? t("figure_edit.latex_preview_dirty") : t("figure_edit.latex_preview")}
+                  {metaDirty && <span style={{ marginLeft: "auto", fontSize: 9, color: "var(--accent)", fontWeight: 600 }}>{t("figure_edit.edited_badge")}</span>}
+                </button>
+                {showLatex && (
+                  <pre style={{
+                    margin: 0, padding: "10px 12px",
+                    background: "var(--ink-900, #14110f)",
+                    color: "#C8C2B5",
+                    fontSize: 11, fontFamily: "var(--font-mono)", lineHeight: 1.55,
+                    overflowX: "auto", whiteSpace: "pre",
+                    maxHeight: 220, overflowY: "auto",
+                    borderTop: "1px solid var(--border-soft)",
+                  }}>
+                    {previewLatex}
+                  </pre>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Shared: warnings + feedback ── */}
+          <div style={{ padding: "0 18px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             {info?.scopeWarning && (
               <div style={{ fontSize: 11, color: "var(--build-warn)", padding: "7px 10px", background: "var(--build-warn-tint, #ffcc0015)", borderRadius: "var(--r-xs)", lineHeight: 1.4 }}>
                 ⚠ {info.scopeWarning}
               </div>
             )}
-
-            {/* Error */}
             {error && (
               <div style={{ fontSize: 11, color: "var(--build-err, #e55)", padding: "7px 10px", background: "rgba(255,0,0,0.08)", borderRadius: "var(--r-xs)" }}>
                 {error}
               </div>
             )}
-
-            {/* Done */}
             {done && (
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-ok)", textAlign: "center" }}>
-                Figura actualizada
+                {t("figure_edit.done_msg")}
               </div>
             )}
           </div>
@@ -197,23 +302,40 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={!!busy} style={{ marginRight: "auto" }}>
             {t("common.cancel")}
           </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={handleRegen}
-            disabled={!!busy}
-            title={t("figure_edit.regen_title")}
-            style={{ fontSize: "var(--fs-xs)" }}
-          >
-            {busy === "regen" ? t("figure_edit.regenerating") : t("figure_edit.regen_btn")}
-          </button>
-          <button
-            className="btn btn-accent btn-sm"
-            onClick={handleSave}
-            disabled={!dirty || !!busy}
-            title={dirty ? t("figure_edit.save_title_dirty") : t("figure_edit.save_title_clean")}
-          >
-            {busy === "save" ? t("figure_edit.saving") : t("figure_edit.save_btn")}
-          </button>
+
+          {/* Regen only on meta tab or non-visual plugins */}
+          {(activeTab === "meta" || !showVisualTab) && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={handleRegen}
+              disabled={!!busy}
+              title={t("figure_edit.regen_title")}
+              style={{ fontSize: "var(--fs-xs)" }}
+            >
+              {busy === "regen" ? t("figure_edit.regenerating") : t("figure_edit.regen_btn")}
+            </button>
+          )}
+
+          {/* Primary action differs by tab */}
+          {activeTab === "visual" && showVisualTab ? (
+            <button
+              className="btn btn-accent btn-sm"
+              onClick={handleApplyVisual}
+              disabled={(!anyDirty) || !!busy}
+              title={t("figure_edit.apply_visual_title")}
+            >
+              {busy === "visual" ? t("figure_edit.applying") : t("figure_edit.apply_visual_btn")}
+            </button>
+          ) : (
+            <button
+              className="btn btn-accent btn-sm"
+              onClick={handleSaveMeta}
+              disabled={!metaDirty || !!busy}
+              title={metaDirty ? t("figure_edit.save_title_dirty") : t("figure_edit.save_title_clean")}
+            >
+              {busy === "save" ? t("figure_edit.saving") : t("figure_edit.save_btn")}
+            </button>
+          )}
         </div>
       </div>
     </div>

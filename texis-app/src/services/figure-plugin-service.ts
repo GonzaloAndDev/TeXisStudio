@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { PLUGIN_REGISTRY, buildLatexInputBlock, setPluginLocale } from "@texisstudio/plugins";
-import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory } from "@texisstudio/plugins";
+import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory, UserLevel, EditorType } from "@texisstudio/plugins";
 import type { PluginFigureBlock } from "../types";
 import i18n from "../i18n";
 
@@ -33,21 +33,30 @@ export interface PluginInfo {
   description: string;
   category: PluginCategory;
   qualityLevel: string;
+  userLevel: UserLevel;
+  editorType: EditorType;
   requiredPackages: readonly string[];
   scopeWarning?: string;
 }
 
 /** Returns metadata for all available plugins, grouped by category. */
 export function listPlugins(): PluginInfo[] {
-  return Array.from(getInstances().values()).map((p) => ({
-    pluginId: p.pluginId,
-    displayName: p.displayName,
-    description: p.description,
-    category: p.category,
-    qualityLevel: p.qualityLevel,
-    requiredPackages: p.requiredPackages,
-    scopeWarning: p.scopeWarning,
-  }));
+  return Array.from(getInstances().values()).map((p) => {
+    const entry = PLUGIN_REGISTRY.find((e) => {
+      try { return new e.plugin().pluginId === p.pluginId; } catch { return false; }
+    });
+    return {
+      pluginId: p.pluginId,
+      displayName: p.displayName,
+      description: p.description,
+      category: p.category,
+      qualityLevel: p.qualityLevel,
+      userLevel: entry?.userLevel ?? "intermediate",
+      editorType: entry?.editorType ?? "advanced",
+      requiredPackages: p.requiredPackages,
+      scopeWarning: p.scopeWarning,
+    };
+  });
 }
 
 export function groupPluginsByCategory(plugins: PluginInfo[]): Map<PluginCategory, PluginInfo[]> {
@@ -117,12 +126,17 @@ export async function createPluginFigure(
 export function getPluginInfo(pluginId: string): PluginInfo | undefined {
   const plugin = getInstances().get(pluginId);
   if (!plugin) return undefined;
+  const entry = PLUGIN_REGISTRY.find((e) => {
+    try { return new e.plugin().pluginId === pluginId; } catch { return false; }
+  });
   return {
     pluginId: plugin.pluginId,
     displayName: plugin.displayName,
     description: plugin.description,
     category: plugin.category,
     qualityLevel: plugin.qualityLevel,
+    userLevel: entry?.userLevel ?? "intermediate",
+    editorType: entry?.editorType ?? "advanced",
     requiredPackages: plugin.requiredPackages,
     scopeWarning: plugin.scopeWarning,
   };
@@ -164,6 +178,60 @@ export async function deletePluginFigureAssets(
   } catch {
     // Non-fatal: assets might already be gone, block still gets removed from section
   }
+}
+
+/**
+ * Re-generates a figure from an already-edited sourceJson document.
+ * Used by visual editors: the editor mutates the doc in memory and passes
+ * the updated JSON here, bypassing the disk-load step.
+ */
+export async function editPluginFigureWithSource(
+  block: PluginFigureBlock,
+  editedSourceJson: string,
+  projectPath: string,
+  caption?: string,
+  label?: string,
+): Promise<PluginFigureBlock> {
+  const plugin = getInstances().get(block.pluginId);
+  if (!plugin) throw new Error(`Plugin not found: ${block.pluginId}`);
+
+  let result: VisualFigureResult;
+  if (plugin.editWithSource) {
+    result = await plugin.editWithSource(
+      block.figureId,
+      editedSourceJson,
+      caption ?? block.caption,
+      label ?? block.label,
+    );
+  } else {
+    result = await plugin.edit(block.figureId);
+  }
+
+  const newSourceJson = result.sourceJson ?? editedSourceJson;
+  const finalCaption  = caption ?? block.caption;
+  const finalLabel    = label ?? block.label;
+
+  await invoke("save_plugin_figure", {
+    projectPath,
+    figureId: block.figureId,
+    latexTex: result.latexBlock,
+    sourceJson: newSourceJson,
+    requiredPackages: [...result.requiredPackages],
+    pluginId: block.pluginId,
+    caption: finalCaption,
+    label: finalLabel,
+    warnings: result.warnings,
+  });
+
+  return {
+    ...block,
+    latexBlock: result.latexBlock,
+    caption: finalCaption,
+    label: finalLabel,
+    requiredPackages: [...result.requiredPackages],
+    sourceJson: newSourceJson,
+    warnings: result.warnings,
+  };
 }
 
 /** Re-edits a figure by loading its source from disk and calling editWithSource. */

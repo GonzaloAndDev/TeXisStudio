@@ -29,7 +29,7 @@ After the machine is prepared:
 | Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
 | Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
-| Test frontend | `npm test` (in `texis-app/`) | 173 tests for stores, services, i18n coverage, and UI helpers. |
+| Test frontend | `npm test` (in `texis-app/`) | 249 tests for stores, services, i18n coverage, UI helpers, visual-editor transforms, and serializer round-trips. |
 
 Command aliases:
 - Run app: `dev`, `start`, `app`
@@ -97,6 +97,21 @@ Supports: thesis (`tesis`), short thesis (`tesina`), and postgraduate research d
 15 content block types: paragraph, heading, list, figure, table, equation, code, algorithm, theorem, citation, raw LaTeX, glossary entry, acronym entry, visual figure, and plugin figure.
 
 Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking (`draft → in_review → revised → approved`). Autosave with debounce.
+
+#### Plugin visual editors
+
+6 GUI editors for plugin-backed figures — no LaTeX required:
+
+| Editor | Plugin types covered |
+|---|---|
+| `GraphNodeEditor` | Graph nodes, edges, shapes, arc styles |
+| `PGFPlotsEditor` | function2d, scatter, bar, histogram, boxplot, errorbar, heatmap |
+| `MatrixEditor` | Matrices with bracket selector and cell-by-cell editing |
+| `GanttEditor` | Groups, tasks, dependencies; ISO / year / numeric positions |
+| `TableDataEditor` | Dynamic rows and columns with collision-safe IDs |
+| `TreeForestEditor` | Hierarchical trees with growth-direction control |
+
+The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` filters by difficulty (Easy / Intermediate / Advanced).
 
 #### Visual figures
 
@@ -212,7 +227,7 @@ Escribe tu tesis con calidad de publicación sin aprender LaTeX.
 
 Autor: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
 Licencia: AGPL v3 + Commons Clause
-Versión: 1.1.0 — Release Candidate
+Versión: 1.2.0
 
 ### Compilar y Ejecutar
 
@@ -233,7 +248,7 @@ Después de preparar la máquina:
 | Generar instalador | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
 | Revisar solo frontend | `./check` o `.\check.ps1` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
 | Probar core Rust | `cargo test -p texis-core` | 305+ pruebas unitarias e integración para generador LaTeX, compilador, bibliografía, snapshots, perfiles y migraciones. |
-| Probar frontend | `npm test` (en `texis-app/`) | 173 pruebas de stores, servicios, cobertura i18n y helpers de UI. |
+| Probar frontend | `npm test` (en `texis-app/`) | 249 pruebas de stores, servicios, cobertura i18n, helpers de editores visuales y round-trips de serialización. |
 
 Alias:
 - Correr app: `dev`, `start`, `app`

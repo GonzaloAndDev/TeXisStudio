@@ -4,6 +4,46 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 ---
 
+## [1.2.0] — 2026-06-11
+
+### Editores visuales para plugins — "TeXisStudio sin LaTeX obligatorio"
+
+**Visual editors — 6 nuevos editores integrados**
+- `GraphNodeEditor`: editor de nodos/aristas con formas, estilos de arco y etiquetas.
+- `PGFPlotsEditor`: editor de series de datos con soporte para function2d, scatter, bar, histogram, boxplot, errorbar, heatmap; columna extra configurable por tipo (±y error, ½ IQR, meta/color).
+- `MatrixEditor`: editor de matrices con selector de delimitadores y edición celda a celda.
+- `GanttEditor`: editor de diagrama de Gantt con grupos, tareas, dependencias, y posiciones ISO/año/numérico.
+- `TableDataEditor`: editor de tablas con columnas de ID collision-safe y filas dinámicas.
+- `TreeForestEditor`: editor de árboles con nodos jerárquicos y dirección de crecimiento.
+
+**FigureEditModal y FigurePickerModal**
+- `FigureEditModal`: nuevo tab «Visual Editor» / «Caption & Label»; tab visual se omite automáticamente para engines sin editor.
+- `FigurePickerModal`: filtro de dificultad (Fácil / Intermediario / Avanzado) basado en `userLevel`.
+
+**Plugin registry — clasificación correcta**
+- 70 plugins clasificados con `userLevel` + `editorType` consistentes.
+- ErrorBars y HeatMaps reclasificados como `visual-assisted` tras añadir soporte de editor.
+- Plugins sin editor visual declarados como `advanced` (VennDiagram, PlaneGeometry, Vectors, BasicCircuits, ChemicalFormulas, etc.).
+
+**Serializer PGFPlots — semántica correcta de barras**
+- `bar` y `histogram`: `ybar`/`ybar interval` emitidos dentro del `\addplot` de cada serie (no global).
+- Documentos con `pgfplotsOptions: "xbar"` (ej. PopulationPyramid): detección automática; emite `xbar`/`xbar interval` y transpone coordenadas `(y, x)` para respetar la semántica horizontal de PGFPlots.
+- Colores compuestos xcolor (`blue!60`, `orange!70`): reemplazado `fill=color!40` por `fill=color, fill opacity=0.4` para evitar doble mezcla inválida (`blue!60!40`).
+- Fallback de color: `s.color?.trim() || "blue"` en bar, histogram y boxplot.
+
+**Helpers puros y tests**
+- `transforms.ts`: `applyPlotTypeChange`, `deleteGanttGroup`, `deleteGanttTask`, `parseFiniteNumberDraft`, `nextColId`, `EXTRA_COL_FOR_TYPE` con `defaultValue` por tipo.
+- `round-trip.test.ts`: 26 tests — scatter, errorbar, heatmap, bar, histogram, type switches, empty color, compound xcolor, mixed series, xbar transposition, Gantt group/task deletion.
+- `visual-editor-transforms.test.ts`: 210+ tests para todos los helpers puros.
+
+**i18n — cobertura completa en 7 idiomas**
+- Claves nuevas: `figure_picker.*`, `figure_edit.*`, `visual_editor.*` (95 claves), `help.*` (44 claves).
+- Traducidas en: EN, ES, DE, FR, JA, PT-BR, ZH.
+
+**Tests — frontend (249/249)**
+
+---
+
 ## [1.1.0] — 2026-06-08
 
 ### Release hardening — preparación para distribución pública
