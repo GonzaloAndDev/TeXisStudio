@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { AppDialog } from "../components/AppDialog";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -25,7 +25,8 @@ export default function CompileView() {
   const { t } = useTranslation();
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const autostart = new URLSearchParams(window.location.search).get("auto") === "1";
+  const [searchParams] = useSearchParams();
+  const autostart = searchParams.get("auto") === "1";
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
   const { lang, userMode, latexPrimaryBackend, latexAllowFallback } = useSettingsStore();
 

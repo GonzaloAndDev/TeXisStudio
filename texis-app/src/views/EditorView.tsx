@@ -21,10 +21,11 @@ import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { ensureProfileLocale, localizeProfile } from "../services/profile-i18n";
 import { useProjectStore } from "../stores/project";
-import type { BibReference, ContentBlock, LatexTypography, ProjectSection, SectionStatus } from "../types";
+import type { BibReference, ContentBlock, LatexTypography, PluginFigureBlock, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
 import { CitationPickerModal } from "./editor/CitationPickerModal";
 import { FigurePickerModal } from "../components/FigurePickerModal";
+import { FigureEditModal } from "../components/FigureEditModal";
 
 
 import { BlockItem } from "./editor/BlockItem";
@@ -212,6 +213,7 @@ export default function EditorView() {
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen]         = useState(false);
   const [pluginPickerOpen, setPluginPickerOpen]   = useState(false);
+  const [figureEditBlock, setFigureEditBlock] = useState<PluginFigureBlock | null>(null);
   const { open: helpOpen, section: helpSection, openHelp, closeHelp } = useHelpStore();
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
   const [projectAssets, setProjectAssets] = useState<Array<{ name: string; path: string }>>([]);
@@ -1028,6 +1030,7 @@ export default function EditorView() {
                         highlighted={jumpTargetBlockId === block.id}
                         onStartEdit={() => setEditingId(block.id)}
                         onUpdate={(updates) => updateBlock(block.id, updates as Record<string, unknown>)}
+                        onEditPluginFigure={block.type === "plugin_figure" ? () => setFigureEditBlock(block) : undefined}
                         onDelete={() => deleteBlock(block.id)}
                         dragging={dragId === block.id}
                         dragOver={dropId === block.id}
@@ -1427,6 +1430,18 @@ export default function EditorView() {
           />
         );
       })()}
+
+      {figureEditBlock && (
+        <FigureEditModal
+          block={figureEditBlock}
+          projectPath={activeProjectPath}
+          onUpdate={(updated) => {
+            updateBlock(updated.id, { ...updated });
+            setFigureEditBlock(updated);
+          }}
+          onClose={() => setFigureEditBlock(null)}
+        />
+      )}
 
       {/* ── Modal: cambios sin guardar al navegar ─────────────────── */}
       {blocker.state === "blocked" && (
