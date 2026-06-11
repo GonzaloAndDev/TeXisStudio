@@ -2590,5 +2590,22 @@
     "title": "Quelque chose s'est mal passé",
     "body": "TeXisStudio a conservé vos fichiers intacts. Revenez à l’écran d’accueil et essayez de rouvrir le projet.",
     "back_home": "Revenir à l’accueil"
+  },
+  "chem": {
+    "formula": "Formula",
+    "reaction": "Reaction",
+    "formula_text": "Formula",
+    "charge": "Charge",
+    "state": "State",
+    "reactants": "Reactants",
+    "products": "Products",
+    "conditions_above": "Above arrow",
+    "conditions_below": "Below arrow",
+    "conditions_hint": "Δ, hν, cat.",
+    "add_formula": "Formula",
+    "add_reaction": "Reaction",
+    "add_reactant": "Reactant",
+    "add_product": "Product",
+    "empty_hint": "Add a formula or a reaction to get started."
   }
 }

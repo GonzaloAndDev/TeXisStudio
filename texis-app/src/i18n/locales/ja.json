@@ -2590,5 +2590,22 @@
     "title": "何か問題が発生しました",
     "body": "TeXisStudio はファイルを変更していません。開始画面に戻り、プロジェクトをもう一度開いてください。",
     "back_home": "開始画面に戻る"
+  },
+  "chem": {
+    "formula": "Formula",
+    "reaction": "Reaction",
+    "formula_text": "Formula",
+    "charge": "Charge",
+    "state": "State",
+    "reactants": "Reactants",
+    "products": "Products",
+    "conditions_above": "Above arrow",
+    "conditions_below": "Below arrow",
+    "conditions_hint": "Δ, hν, cat.",
+    "add_formula": "Formula",
+    "add_reaction": "Reaction",
+    "add_reactant": "Reactant",
+    "add_product": "Product",
+    "empty_hint": "Add a formula or a reaction to get started."
   }
 }

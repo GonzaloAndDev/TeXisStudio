@@ -19,12 +19,14 @@ import { MatrixEditor } from "./MatrixEditor";
 import { GanttEditor } from "./GanttEditor";
 import { TableDataEditor } from "./TableDataEditor";
 import { TreeEditor } from "./TreeEditor";
+import { ChemistryEditor } from "./ChemistryEditor";
 import type { GraphNodeDocument } from "../../types-engines";
 import type { PGFPlotsDocument } from "../../types-engines";
 import type { MatrixDocument } from "../../types-engines";
 import type { TimelineGanttDocument } from "../../types-engines";
 import type { TableDataDocument } from "../../types-engines";
 import type { TreeForestDocument } from "../../types-engines";
+import type { ChemEngineDocument } from "../../types-engines";
 import type { HelpSection } from "../../stores/help";
 
 interface Props {
@@ -199,6 +201,13 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
         </VisualEditorShell>
       );
 
+    case "chemistry-engine":
+      return (
+        <VisualEditorShell {...shellProps}>
+          <ChemistryEditor doc={doc as unknown as ChemEngineDocument} onChange={handleChange} />
+        </VisualEditorShell>
+      );
+
     default:
       return (
         <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", padding: "8px 0", display: "flex", alignItems: "center", gap: 8 }}>
@@ -231,6 +240,7 @@ export function hasVisualEditor(
     "timeline-gantt-engine",
     "table-data-engine",
     "tree-forest-engine",
+    "chemistry-engine",
   ]);
   if (!VISUAL_EDITOR_ENGINES.has(engineId)) return false;
 

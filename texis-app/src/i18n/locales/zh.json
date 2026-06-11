@@ -2590,5 +2590,22 @@
     "title": "出了点问题",
     "body": "TeXisStudio 保留了您的文件。请返回开始界面，然后尝试重新打开项目。",
     "back_home": "返回开始界面"
+  },
+  "chem": {
+    "formula": "Formula",
+    "reaction": "Reaction",
+    "formula_text": "Formula",
+    "charge": "Charge",
+    "state": "State",
+    "reactants": "Reactants",
+    "products": "Products",
+    "conditions_above": "Above arrow",
+    "conditions_below": "Below arrow",
+    "conditions_hint": "Δ, hν, cat.",
+    "add_formula": "Formula",
+    "add_reaction": "Reaction",
+    "add_reactant": "Reactant",
+    "add_product": "Product",
+    "empty_hint": "Add a formula or a reaction to get started."
   }
 }

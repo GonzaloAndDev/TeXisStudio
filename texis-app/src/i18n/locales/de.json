@@ -2590,5 +2590,22 @@
     "title": "Etwas ist schief gelaufen",
     "body": "TeXisStudio hat Ihre Dateien intakt gehalten. Kehren Sie zum Startbildschirm zurück und versuchen Sie, das Projekt erneut zu öffnen.",
     "back_home": "Zum Start"
+  },
+  "chem": {
+    "formula": "Formula",
+    "reaction": "Reaction",
+    "formula_text": "Formula",
+    "charge": "Charge",
+    "state": "State",
+    "reactants": "Reactants",
+    "products": "Products",
+    "conditions_above": "Above arrow",
+    "conditions_below": "Below arrow",
+    "conditions_hint": "Δ, hν, cat.",
+    "add_formula": "Formula",
+    "add_reaction": "Reaction",
+    "add_reactant": "Reactant",
+    "add_product": "Product",
+    "empty_hint": "Add a formula or a reaction to get started."
   }
 }

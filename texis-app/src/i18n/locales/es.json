@@ -2606,5 +2606,22 @@
       "hint_under": "_ guión bajo literal",
       "hint_braces": "\\{ \\}  llaves literales"
     }
+  },
+  "chem": {
+    "formula": "Fórmula",
+    "reaction": "Reacción",
+    "formula_text": "Fórmula",
+    "charge": "Carga",
+    "state": "Estado",
+    "reactants": "Reactivos",
+    "products": "Productos",
+    "conditions_above": "Encima de la flecha",
+    "conditions_below": "Debajo de la flecha",
+    "conditions_hint": "Δ, hν, cat.",
+    "add_formula": "Fórmula",
+    "add_reaction": "Reacción",
+    "add_reactant": "Reactivo",
+    "add_product": "Producto",
+    "empty_hint": "Añade una fórmula o una reacción para empezar."
   }
 }
