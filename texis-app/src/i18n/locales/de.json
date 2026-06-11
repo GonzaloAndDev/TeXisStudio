@@ -2498,7 +2498,11 @@
     "plot_heatmap": "Heatmap",
     "col_y_error": "±y Fehler",
     "col_iqr": "½ IQR",
-    "col_meta": "Meta (Farbe)"
+    "col_meta": "Meta (Farbe)",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "restore_btn": "Beispiel wiederherstellen",
+    "restore_title": "Durch ein minimales funktionierendes Beispiel ersetzen"
   },
   "help": {
     "title": "Hilfe-Center",

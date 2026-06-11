@@ -2498,7 +2498,11 @@
     "plot_heatmap": "热力图",
     "col_y_error": "±y误差",
     "col_iqr": "½ IQR",
-    "col_meta": "元数据（颜色）"
+    "col_meta": "元数据（颜色）",
+    "undo": "撤销",
+    "redo": "重做",
+    "restore_btn": "恢复示例",
+    "restore_title": "替换为最小可用示例"
   },
   "help": {
     "title": "帮助中心",

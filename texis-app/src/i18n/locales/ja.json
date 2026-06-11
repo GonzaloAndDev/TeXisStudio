@@ -2498,7 +2498,11 @@
     "plot_heatmap": "ヒートマップ",
     "col_y_error": "±y誤差",
     "col_iqr": "½ IQR",
-    "col_meta": "メタ（色）"
+    "col_meta": "メタ（色）",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "restore_btn": "例を復元",
+    "restore_title": "最小限の動作例に置き換える"
   },
   "help": {
     "title": "ヘルプセンター",

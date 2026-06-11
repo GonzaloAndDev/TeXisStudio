@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
 import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
+import { HelpLink } from "./help/HelpLink";
 import type { PluginFigureBlock } from "../types";
 
 const QUALITY_BADGE: Record<string, { label: string; color: string }> = {
@@ -192,8 +193,9 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           {/* ── Visual editor tab ── */}
           {activeTab === "visual" && showVisualTab && (
             <div style={{ padding: "14px 18px" }}>
-              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                 {t("figure_edit.visual_hint")}
+                <HelpLink topic="figures" style={{ marginLeft: "auto" }} />
               </div>
               <VisualEditorRouter sourceJson={editedSourceJson} onSourceChange={handleSourceChange} />
 

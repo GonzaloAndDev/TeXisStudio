@@ -2503,7 +2503,11 @@
     "plot_heatmap": "Heat map",
     "col_y_error": "±y error",
     "col_iqr": "½ IQR",
-    "col_meta": "Meta (color)"
+    "col_meta": "Meta (color)",
+    "undo": "Undo",
+    "redo": "Redo",
+    "restore_btn": "Restore example",
+    "restore_title": "Replace with a minimal working example"
   },
   "help": {
     "title": "Help Center",

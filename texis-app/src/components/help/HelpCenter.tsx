@@ -30,6 +30,10 @@ export function HelpCenter({ onClose, initialSection = "start" }: Props) {
   const [active, setActive] = useState<HelpSection>(initialSection);
 
   useEffect(() => {
+    setActive(initialSection);
+  }, [initialSection]);
+
+  useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);

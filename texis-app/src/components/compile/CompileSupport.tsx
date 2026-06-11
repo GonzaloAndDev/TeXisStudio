@@ -5,6 +5,7 @@ import {
   IconWarn,
   IconX,
 } from "../Icons";
+import { HelpLink } from "../help/HelpLink";
 import type {
   UserError,
   ValidationIssue,
@@ -305,6 +306,7 @@ export function DeliveryCheckModal({
                 : t("compile.preflight_has_warnings", { count: warnings.length })}
             </div>
           </div>
+          <HelpLink topic="errors" style={{ flexShrink: 0 }} />
           <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }}>
             <IconX size={12} />
           </button>

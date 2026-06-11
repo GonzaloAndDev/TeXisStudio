@@ -4,7 +4,7 @@ Write your thesis at publication quality without learning LaTeX.
 
 Author: Gonzalo Andrade Estrella, [@GonzaloAndDev](https://github.com/GonzaloAndDev)
 License: AGPL v3 + Commons Clause
-Version: 1.1.0 — Release Candidate
+Version: 1.2.0
 
 ---
 
@@ -29,7 +29,7 @@ After the machine is prepared:
 | Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
 | Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
-| Test frontend | `npm test` (in `texis-app/`) | 249 tests for stores, services, i18n coverage, UI helpers, visual-editor transforms, and serializer round-trips. |
+| Test frontend | `npm test` (in `texis-app/`) | 255 tests for stores, services, i18n coverage, UI helpers, visual-editor transforms, and serializer round-trips. |
 
 Command aliases:
 - Run app: `dev`, `start`, `app`
@@ -111,7 +111,7 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 | `TableDataEditor` | Dynamic rows and columns with collision-safe IDs |
 | `TreeForestEditor` | Hierarchical trees with growth-direction control |
 
-The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` filters by difficulty (Easy / Intermediate / Advanced).
+Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` filters by difficulty (Easy / Intermediate / Advanced).
 
 #### Visual figures
 
@@ -248,7 +248,7 @@ Después de preparar la máquina:
 | Generar instalador | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
 | Revisar solo frontend | `./check` o `.\check.ps1` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
 | Probar core Rust | `cargo test -p texis-core` | 305+ pruebas unitarias e integración para generador LaTeX, compilador, bibliografía, snapshots, perfiles y migraciones. |
-| Probar frontend | `npm test` (en `texis-app/`) | 249 pruebas de stores, servicios, cobertura i18n, helpers de editores visuales y round-trips de serialización. |
+| Probar frontend | `npm test` (en `texis-app/`) | 255 pruebas de stores, servicios, cobertura i18n, helpers de editores visuales y round-trips de serialización. |
 
 Alias:
 - Correr app: `dev`, `start`, `app`
@@ -316,6 +316,21 @@ Soporta: tesis, tesina, especialidad, maestría, doctorado y posdoctorado. El ni
 15 tipos de bloque de contenido: párrafo, título, lista, figura, tabla, ecuación, código, algoritmo, teorema, cita, LaTeX libre, entrada de glosario, entrada de acrónimo, figura visual y figura de plugin.
 
 Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX. Seguimiento de estado por sección (`borrador → revisión → revisado → aprobado`). Autoguardado con debounce.
+
+#### Editores visuales de plugins
+
+6 editores GUI para figuras de plugin — sin LaTeX:
+
+| Editor | Tipos cubiertos |
+|---|---|
+| `GraphNodeEditor` | Nodos, aristas, formas, estilos de arco |
+| `PGFPlotsEditor` | function2d, scatter, bar, histogram, boxplot, errorbar, heatmap |
+| `MatrixEditor` | Matrices con selector de delimitadores y edición celda a celda |
+| `GanttEditor` | Grupos, tareas, dependencias; posiciones ISO / año / numérico |
+| `TableDataEditor` | Filas y columnas dinámicas con IDs collision-safe |
+| `TreeForestEditor` | Árboles jerárquicos con control de dirección de crecimiento |
+
+Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`).
 
 #### Figuras visuales
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconDrag, IconTrash } from "../../components/Icons";
+import { HelpLink } from "../../components/help/HelpLink";
 import type { ContentBlock, HeadingLevel } from "../../types";
 import {
   ParagraphEditor, HeadingEditor, KaTeXPreview, EquationEditor, ListEditor,
@@ -65,13 +66,18 @@ export function BlockItem({
         );
       case "equation":
         return (
-          <EquationEditor
-            latex_content={block.latex_content}
-            numbered={block.numbered}
-            onChange={(latex_content) => onUpdate({ latex_content } as Partial<ContentBlock>)}
-            onNumberedChange={(numbered) => onUpdate({ numbered } as Partial<ContentBlock>)}
-            onBlur={() => {}}
-          />
+          <div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+              <HelpLink topic="latex" />
+            </div>
+            <EquationEditor
+              latex_content={block.latex_content}
+              numbered={block.numbered}
+              onChange={(latex_content) => onUpdate({ latex_content } as Partial<ContentBlock>)}
+              onNumberedChange={(numbered) => onUpdate({ numbered } as Partial<ContentBlock>)}
+              onBlur={() => {}}
+            />
+          </div>
         );
       case "list":
         return (
@@ -119,6 +125,7 @@ export function BlockItem({
           <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
               ⚠ {t("block_item.manual_latex_warning")}
+              <HelpLink topic="latex" style={{ marginLeft: "auto" }} />
             </div>
             <textarea
               autoFocus

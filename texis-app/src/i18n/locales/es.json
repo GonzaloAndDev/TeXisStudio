@@ -2503,7 +2503,11 @@
     "plot_heatmap": "Mapa de calor",
     "col_y_error": "±error y",
     "col_iqr": "½ IQR",
-    "col_meta": "Meta (color)"
+    "col_meta": "Meta (color)",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "restore_btn": "Restaurar ejemplo",
+    "restore_title": "Reemplazar con un ejemplo mínimo funcional"
   },
   "help": {
     "title": "Centro de ayuda",

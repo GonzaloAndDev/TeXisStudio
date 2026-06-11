@@ -4,6 +4,29 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 ---
 
+## [Unreleased]
+
+### Ayuda contextual + VisualEditorShell
+
+**Ayuda contextual enrutada**
+- `stores/help.ts` (`useHelpStore`): estado global para abrir `HelpCenter` en cualquier sección desde cualquier componente, sin prop drilling.
+- `components/help/HelpLink.tsx`: botón "?" reutilizable que abre `HelpCenter` en el tema indicado.
+- `HelpCenter` ya reacciona a cambios en `initialSection` (puede cambiarse con el modal abierto).
+- Puntos de entrada: bloque ecuación → sección "latex"; bloque raw_latex → "latex"; `FigureEditModal` pestaña visual → "figures"; `VisualEditorRouter` sin editor → "figures"; `DeliveryCheckModal` → "errors".
+
+**`VisualEditorShell`** — envoltorio común para todos los editores visuales
+- Barra de herramientas con botones de deshacer/rehacer, separador, botón "Restaurar ejemplo" (condicional) y `HelpLink`.
+- `useDocumentHistory<T>`: hook genérico con pila de hasta 50 estados; `undo()`/`redo()` devuelven el documento restaurado de forma síncrona para poder llamar `onSourceChange` en el mismo ciclo.
+- `VisualEditorRouter`: integra historial por engine; sincroniza con cambios externos via `lastEmittedRef`; documentos de ejemplo por defecto para los 5 engines con datos.
+
+**i18n — cobertura completa en 7 idiomas**
+- Claves nuevas en `visual_editor.*`: `undo`, `redo`, `restore_btn`, `restore_title` — traducidas en EN, ES, DE, FR, JA, PT-BR, ZH.
+- Extracción de strings hardcoded restantes: `AppErrorBoundary`, `GrammarPanel`, `LanguagePicker`, `SettingsView`, `CompileSupport`, `BlockItem`, `WizardView`.
+
+**Tests — frontend (255/255)**
+
+---
+
 ## [1.2.0] — 2026-06-11
 
 ### Editores visuales para plugins — "TeXisStudio sin LaTeX obligatorio"

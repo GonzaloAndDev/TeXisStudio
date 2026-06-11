@@ -30,6 +30,7 @@ import { BlockItem } from "./editor/BlockItem";
 import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
 import { HelpCenter } from "../components/help/HelpCenter";
+import { useHelpStore } from "../stores/help";
 
 const SECTION_KEY_ALIASES: Record<string, string[]> = {
   abstract: ["resumen", "abstract_ingles", "abstract_en", "summary"],
@@ -209,7 +210,7 @@ export default function EditorView() {
   // Toolbar académico
   const [paletteOpen, setPaletteOpen]     = useState(false);
   const [citPickerOpen, setCitPickerOpen] = useState(false);
-  const [helpOpen, setHelpOpen]           = useState(false);
+  const { open: helpOpen, section: helpSection, openHelp, closeHelp } = useHelpStore();
   const [bibRefs, setBibRefs]             = useState<BibReference[]>([]);
   const [projectAssets, setProjectAssets] = useState<Array<{ name: string; path: string }>>([]);
 
@@ -758,7 +759,7 @@ export default function EditorView() {
             <button
               className="btn btn-ghost btn-icon"
               title={t("help.open_help")}
-              onClick={() => setHelpOpen(true)}
+              onClick={() => openHelp("start")}
             >
               ?
             </button>
@@ -772,7 +773,7 @@ export default function EditorView() {
           </>
         }
       />
-      {helpOpen && <HelpCenter onClose={() => setHelpOpen(false)} />}
+      {helpOpen && <HelpCenter onClose={closeHelp} initialSection={helpSection} />}
 
       <div className="editor-shell">
       <div className="editor-grid">
