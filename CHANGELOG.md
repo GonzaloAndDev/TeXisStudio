@@ -6,6 +6,32 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 ## [Unreleased]
 
+### Editor visual de química (`ChemistryEditor`)
+
+- `ChemistryEditor.tsx`: editor de fórmulas (texto, carga, estado físico) y reacciones (reactivos + productos múltiples, tipo de flecha `->` / `<->` / `<=>`, condiciones encima/debajo) usando mhchem.
+- Integrado en `VisualEditorRouter` bajo `"chemistry-engine"`.
+- `ChemicalFormulasPlugin`, `ChemicalReactionsPlugin`, `ReactionEquilibriaPlugin` reclasificados de `"advanced"` → `"visual-assisted"` en el registry.
+- `VisualEditorEngineId` extendido con `"chemistry-engine"`.
+- i18n: namespace `chem.*` (17 claves) añadido a EN y ES.
+- `types-engines.ts`: exporta tipos `ChemEngineDocument`, `CircuiTikZDocument`, `TikzShapeDocument`.
+
+### Metadata + serializer de engines
+
+**Metadata 9 engines registrados** (TeXisStudio-Plugins)
+- `math-engine/metadata.ts`: ecuación cuadrática, `helpTopic: "latex"`, `technicalField: label`.
+- `chemistry-engine/metadata.ts`: reacción H₂+O₂→H₂O (mhchem).
+- `circuitikz-engine/metadata.ts`: divisor de voltaje V-R-R.
+- `tikz-shape-engine/metadata.ts`: rectángulo + flecha + etiqueta.
+- `metadata-init.ts` actualizado con los 9 engines.
+- `ENGINE_HELP_TOPIC` hardcoded eliminado del router — `meta?.helpTopic` es fuente única.
+
+**Serializer `table-data-engine`**
+- `serializer.ts`: booktabs, longtable, pgfplots; escape completo de caracteres especiales.
+
+**Tests — frontend (358 total, 348 passing)**
+- `metadata-roundtrip.test.ts`: 86 casos, 9 engines.
+- 10 fallos pre-existentes en `i18n-coverage` (de/fr/ja/pt-BR/zh con claves `settings.*` pendientes de traducción por chat).
+
 ### Ayuda contextual + VisualEditorShell
 
 **Ayuda contextual enrutada**

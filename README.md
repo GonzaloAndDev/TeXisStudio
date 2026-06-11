@@ -111,7 +111,7 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 
 #### Plugin visual editors
 
-6 GUI editors for plugin-backed figures — no LaTeX required:
+7 GUI editors for plugin-backed figures — no LaTeX required:
 
 | Editor | Plugin types covered |
 |---|---|
@@ -121,6 +121,7 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 | `GanttEditor` | Groups, tasks, dependencies; ISO / year / numeric positions |
 | `TableDataEditor` | Dynamic rows and columns with collision-safe IDs |
 | `TreeForestEditor` | Hierarchical trees with growth-direction control |
+| `ChemistryEditor` | Chemical formulas (charge/state) and reactions (arrow, conditions) |
 
 Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` filters by difficulty (Easy / Intermediate / Advanced).
 
@@ -341,7 +342,7 @@ Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX
 
 #### Editores visuales de plugins
 
-6 editores GUI para figuras de plugin — sin LaTeX:
+7 editores GUI para figuras de plugin — sin LaTeX:
 
 | Editor | Tipos cubiertos |
 |---|---|
@@ -351,6 +352,7 @@ Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX
 | `GanttEditor` | Grupos, tareas, dependencias; posiciones ISO / año / numérico |
 | `TableDataEditor` | Filas y columnas dinámicas con IDs collision-safe |
 | `TreeForestEditor` | Árboles jerárquicos con control de dirección de crecimiento |
+| `ChemistryEditor` | Fórmulas químicas (carga/estado) y reacciones (flecha, condiciones) |
 
 Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`).
 
