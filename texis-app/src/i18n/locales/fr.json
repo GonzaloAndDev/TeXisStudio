@@ -2502,7 +2502,8 @@
     "undo": "Annuler",
     "redo": "Rétablir",
     "restore_btn": "Restaurer l'exemple",
-    "restore_title": "Remplacer par un exemple minimal fonctionnel"
+    "restore_title": "Remplacer par un exemple minimal fonctionnel",
+    "advanced_section": "Options avancées"
   },
   "help": {
     "title": "Centre d'aide",

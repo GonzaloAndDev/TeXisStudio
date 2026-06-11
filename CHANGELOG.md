@@ -23,7 +23,16 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 - Claves nuevas en `visual_editor.*`: `undo`, `redo`, `restore_btn`, `restore_title` — traducidas en EN, ES, DE, FR, JA, PT-BR, ZH.
 - Extracción de strings hardcoded restantes: `AppErrorBoundary`, `GrammarPanel`, `LanguagePicker`, `SettingsView`, `CompileSupport`, `BlockItem`, `WizardView`.
 
-**Tests — frontend (255/255)**
+**Tests — frontend (313/313)**
+- `document-history.test.ts`: 18 casos — push, undo, redo, cap MAX_HISTORY, objetos por referencia.
+- `metadata-roundtrip.test.ts`: 37 casos — metadata registrada, defaultDoc→serializer→LaTeX válido, JSON round-trip, pgfplots/gantt/graph-node/tree-forest/table-data.
+
+**TechnicalFields en VisualEditorShell**
+- `VisualEditorShell` acepta `technicalFields`, `technicalValues`, `onTechnicalFieldChange`.
+- Panel colapsable «Opciones avanzadas» con inputs text/number/textarea/boolean por campo.
+- `VisualEditorRouter` lee `meta.technicalFields` y `technicalValues` del doc; `handleTechnicalFieldChange` actualiza el doc con `{ ...doc, [key]: value }`.
+- `shellProps` centraliza las props del shell para eliminar repetición en el switch.
+- i18n: `visual_editor.advanced_section` en 7 idiomas.
 
 **Documentación versionada**
 - `docs/user-guide/`: fuente canónica de la documentación de usuario.

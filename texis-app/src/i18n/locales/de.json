@@ -2502,7 +2502,8 @@
     "undo": "Rückgängig",
     "redo": "Wiederholen",
     "restore_btn": "Beispiel wiederherstellen",
-    "restore_title": "Durch ein minimales funktionierendes Beispiel ersetzen"
+    "restore_title": "Durch ein minimales funktionierendes Beispiel ersetzen",
+    "advanced_section": "Erweiterte Optionen"
   },
   "help": {
     "title": "Hilfe-Center",

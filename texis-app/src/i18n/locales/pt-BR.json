@@ -2502,7 +2502,8 @@
     "undo": "Desfazer",
     "redo": "Refazer",
     "restore_btn": "Restaurar exemplo",
-    "restore_title": "Substituir por um exemplo mínimo funcional"
+    "restore_title": "Substituir por um exemplo mínimo funcional",
+    "advanced_section": "Opções avançadas"
   },
   "help": {
     "title": "Central de Ajuda",

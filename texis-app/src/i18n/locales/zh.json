@@ -2502,7 +2502,8 @@
     "undo": "撤销",
     "redo": "重做",
     "restore_btn": "恢复示例",
-    "restore_title": "替换为最小可用示例"
+    "restore_title": "替换为最小可用示例",
+    "advanced_section": "高级选项"
   },
   "help": {
     "title": "帮助中心",

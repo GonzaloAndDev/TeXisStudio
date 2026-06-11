@@ -2502,7 +2502,8 @@
     "undo": "元に戻す",
     "redo": "やり直す",
     "restore_btn": "例を復元",
-    "restore_title": "最小限の動作例に置き換える"
+    "restore_title": "最小限の動作例に置き換える",
+    "advanced_section": "詳細オプション"
   },
   "help": {
     "title": "ヘルプセンター",

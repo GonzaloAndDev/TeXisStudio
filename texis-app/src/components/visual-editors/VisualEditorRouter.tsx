@@ -132,23 +132,40 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
   const meta = getEditorMetadata(engineId);
   const helpTopic = meta?.helpTopic ?? ENGINE_HELP_TOPIC[engineId] ?? "figures";
   const defaultDoc = meta?.defaultDoc?.();
+  const technicalFields = meta?.technicalFields ?? [];
 
   const handleRestore = defaultDoc ? () => {
     handleChange(defaultDoc);
     history.reset(defaultDoc);
   } : undefined;
 
+  const technicalValues = Object.fromEntries(
+    technicalFields.map((f) => [f.key, String(doc[f.key] ?? "")])
+  );
+
+  const handleTechnicalFieldChange = (key: string, value: string) => {
+    handleChange({ ...doc, [key]: value });
+  };
+
+  const shellProps = {
+    canUndo: history.canUndo, canRedo: history.canRedo,
+    onUndo: handleUndo, onRedo: handleRedo,
+    onRestore: handleRestore, helpTopic,
+    technicalFields, technicalValues,
+    onTechnicalFieldChange: technicalFields.length > 0 ? handleTechnicalFieldChange : undefined,
+  };
+
   switch (engineId) {
     case "graph-node-engine":
       return (
-        <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} onRestore={handleRestore} helpTopic={helpTopic}>
+        <VisualEditorShell {...shellProps}>
           <GraphNodeEditor doc={doc as unknown as GraphNodeDocument} onChange={handleChange} />
         </VisualEditorShell>
       );
 
     case "pgfplots-engine":
       return (
-        <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} onRestore={handleRestore} helpTopic={helpTopic}>
+        <VisualEditorShell {...shellProps}>
           <PGFPlotsEditor doc={doc as unknown as PGFPlotsDocument} onChange={handleChange} />
         </VisualEditorShell>
       );
@@ -156,7 +173,7 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
     case "math-engine":
       if ((doc as { mode?: string }).mode === "matrix") {
         return (
-          <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} helpTopic="latex">
+          <VisualEditorShell {...shellProps} helpTopic="latex">
             <MatrixEditor doc={doc as unknown as MatrixDocument} onChange={handleChange} />
           </VisualEditorShell>
         );
@@ -170,21 +187,21 @@ export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
 
     case "timeline-gantt-engine":
       return (
-        <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} onRestore={handleRestore} helpTopic={helpTopic}>
+        <VisualEditorShell {...shellProps}>
           <GanttEditor doc={doc as unknown as TimelineGanttDocument} onChange={handleChange} />
         </VisualEditorShell>
       );
 
     case "table-data-engine":
       return (
-        <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} onRestore={handleRestore} helpTopic={helpTopic}>
+        <VisualEditorShell {...shellProps}>
           <TableDataEditor doc={doc as unknown as TableDataDocument} onChange={handleChange} />
         </VisualEditorShell>
       );
 
     case "tree-forest-engine":
       return (
-        <VisualEditorShell canUndo={history.canUndo} canRedo={history.canRedo} onUndo={handleUndo} onRedo={handleRedo} onRestore={handleRestore} helpTopic={helpTopic}>
+        <VisualEditorShell {...shellProps}>
           <TreeEditor doc={doc as unknown as TreeForestDocument} onChange={handleChange} />
         </VisualEditorShell>
       );

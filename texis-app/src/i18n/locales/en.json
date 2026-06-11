@@ -2507,7 +2507,8 @@
     "undo": "Undo",
     "redo": "Redo",
     "restore_btn": "Restore example",
-    "restore_title": "Replace with a minimal working example"
+    "restore_title": "Replace with a minimal working example",
+    "advanced_section": "Advanced options"
   },
   "help": {
     "title": "Help Center",
