@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useBlocker, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/ui/useConfirm";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
@@ -180,7 +180,6 @@ function sectionTexPath(
 type SaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 export default function EditorView() {
-  const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const confirm = useConfirm();
@@ -661,6 +660,8 @@ export default function EditorView() {
     );
   }
 
+  const projectRouteId = encodeURIComponent(activeProjectPath);
+
   const groups = usePlacementGroup(activeProject.sections);
   const activeSection = activeProject.sections.find((s) => s.id === activeSectionId)
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
@@ -755,10 +756,10 @@ export default function EditorView() {
             >
               <IconRefresh size={13} /> {t("editor.snapshots")}
             </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${encodedPath}/progress`)} title={t("editor.progress_title")}>
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/progress`)} title={t("editor.progress_title")}>
               {t("progress.tab_progress")}
             </button>
-            <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${encodedPath}/compile?auto=1`)}>
+            <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${projectRouteId}/compile?auto=1`)}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>
             {userMode === "advanced" && (
@@ -1074,7 +1075,7 @@ export default function EditorView() {
           activeSection={activeSection ? { ...activeSection, title: localizedSectionTitle(activeSection) } : undefined}
           userMode={userMode}
           onSave={saveMetadata}
-          onCompile={() => navigate(`/project/${encodedPath}/compile?auto=1`)}
+          onCompile={() => navigate(`/project/${projectRouteId}/compile?auto=1`)}
           diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
         />
       </div>

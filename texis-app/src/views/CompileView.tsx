@@ -62,6 +62,7 @@ export default function CompileView() {
 
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
+  const projectRouteId = encodeURIComponent(activeProjectPath ?? encodedPath ?? "");
 
   // Apply the user's default; the compile screen can still override it locally.
   useEffect(() => {
@@ -259,8 +260,8 @@ export default function CompileView() {
   }
 
   function handleGoToSection(sectionId: string) {
-    if (!encodedPath) return;
-    navigate(`/project/${encodedPath}?section=${sectionId}`);
+    if (!projectRouteId) return;
+    navigate(`/project/${projectRouteId}?section=${sectionId}`);
   }
 
   async function handleCancel() {
@@ -396,7 +397,7 @@ export default function CompileView() {
         }
         right={
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/project/${encodedPath}`)}>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/project/${projectRouteId}`)}>
               <IconChevronL size={13} /> {t("progress.back_to_editor").replace("← ", "")}
             </button>
             {userMode === "advanced" && (

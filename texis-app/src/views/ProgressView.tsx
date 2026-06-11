@@ -270,7 +270,7 @@ export default function ProgressView() {
   ];
 
   const projectTitle = activeProject?.metadata.title ?? t("progress.project_fallback");
-  const projectId    = activeProjectPath?.split("/").pop() ?? "proyecto";
+  const projectRouteId = encodeURIComponent(activeProjectPath ?? "proyecto");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
 
   return (
@@ -293,7 +293,7 @@ export default function ProgressView() {
         }
         right={
           <div style={{ display: "flex", gap: 6 }}>
-            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectId}`)}>
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}`)}>
               {t("progress.back_to_editor")}
             </button>
           </div>

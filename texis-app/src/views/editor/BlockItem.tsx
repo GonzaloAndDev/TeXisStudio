@@ -216,8 +216,19 @@ export function BlockItem({
       case "plugin_figure":
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
-              {t("figure_edit.plugin_figure_hint", { pluginId: block.pluginId })}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>
+                {t("figure_edit.plugin_figure_hint", { pluginId: block.pluginId })}
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={(e) => { e.stopPropagation(); onEditPluginFigure?.(); }}
+                title={t("block_item.edit_figure_title")}
+                style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
+              >
+                {t("block_item.edit_figure")}
+              </button>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
