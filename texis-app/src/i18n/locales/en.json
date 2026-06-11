@@ -2607,6 +2607,22 @@
       "hint_braces": "\\{ \\}  literal curly braces"
     }
   },
+  "circuit": {
+    "components": "Components",
+    "nodes": "Nodes",
+    "connections": "Connections",
+    "connections_hint": "Direct wire connections between nodes not passing through a component.",
+    "from": "From",
+    "to": "To",
+    "label": "Label",
+    "label_hint": "R1, C1...",
+    "value": "Value",
+    "node_label": "Label (opt.)",
+    "add_component": "Component",
+    "add_node": "Node",
+    "add_connection": "Connection",
+    "need_nodes": "Add at least 2 nodes first."
+  },
   "chem": {
     "formula": "Formula",
     "reaction": "Reaction",
