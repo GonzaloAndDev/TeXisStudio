@@ -23,9 +23,9 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 - Claves nuevas en `visual_editor.*`: `undo`, `redo`, `restore_btn`, `restore_title` — traducidas en EN, ES, DE, FR, JA, PT-BR, ZH.
 - Extracción de strings hardcoded restantes: `AppErrorBoundary`, `GrammarPanel`, `LanguagePicker`, `SettingsView`, `CompileSupport`, `BlockItem`, `WizardView`.
 
-**Tests — frontend (313/313)**
+**Tests — frontend (320/320)**
 - `document-history.test.ts`: 18 casos — push, undo, redo, cap MAX_HISTORY, objetos por referencia.
-- `metadata-roundtrip.test.ts`: 37 casos — metadata registrada, defaultDoc→serializer→LaTeX válido, JSON round-trip, pgfplots/gantt/graph-node/tree-forest/table-data.
+- `metadata-roundtrip.test.ts`: 51 casos — metadata registrada, defaultDoc→serializer→LaTeX válido, JSON round-trip, pgfplots/gantt/graph-node/tree-forest/table-data (incl. booktabs/longtable/pgfplots export targets, escape de caracteres especiales, columnas vacías).
 
 **TechnicalFields en VisualEditorShell**
 - `VisualEditorShell` acepta `technicalFields`, `technicalValues`, `onTechnicalFieldChange`.
@@ -49,6 +49,12 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 - `metadata.ts` en pgfplots-engine, graph-node-engine, timeline-gantt-engine, table-data-engine, tree-forest-engine.
 - `engines/metadata-init.ts`: barrel de side-effect imports.
 - `VisualEditorRouter` consume `getEditorMetadata(engineId)` para `defaultDoc` y `helpTopic`; elimina `DEFAULT_DOCS` hardcoded.
+
+**Serializer `table-data-engine`**
+- `table-data-engine/serializer.ts`: genera LaTeX para `booktabs` (`\begin{tabular}` con `\toprule/\midrule/\bottomrule` o `\hline`), `longtable` (con `\endfirsthead`/`\endhead` y header repetido) y `pgfplots` (`\pgfplotstableread` CSV).
+- Escape automático de caracteres especiales LaTeX (`\`, `%`, `$`, `&`, `#`, `_`, `^`, `{`, `}`, `~`) en celdas de texto; celdas numéricas sin escape.
+- Soporte para `col.latexHeader` (override manual) y `col.unit` (añadido entre paréntesis al encabezado).
+- Exportado desde `table-data-engine/index.ts` y desde `@texisstudio/plugins`.
 
 ---
 

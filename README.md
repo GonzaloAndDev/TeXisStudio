@@ -29,7 +29,7 @@ After the machine is prepared:
 | Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
 | Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
-| Test frontend | `npm test` (in `texis-app/`) | 313 tests for stores, services, i18n coverage, UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
+| Test frontend | `npm test` (in `texis-app/`) | 320 tests for stores, services, i18n coverage, UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
 
 Command aliases:
 - Run app: `dev`, `start`, `app`
@@ -259,7 +259,7 @@ Después de preparar la máquina:
 | Generar instalador | `./build` o `.\build.ps1` | Genera artefactos para el sistema operativo actual. |
 | Revisar solo frontend | `./check` o `.\check.ps1` | Ejecuta TypeScript y Vite sin compilar la app nativa. |
 | Probar core Rust | `cargo test -p texis-core` | 305+ pruebas unitarias e integración para generador LaTeX, compilador, bibliografía, snapshots, perfiles y migraciones. |
-| Probar frontend | `npm test` (en `texis-app/`) | 313 pruebas de stores, servicios, cobertura i18n, historial de documento, transforms, recorridos de metadata y round-trips de serialización. |
+| Probar frontend | `npm test` (en `texis-app/`) | 320 pruebas de stores, servicios, cobertura i18n, historial de documento, transforms, recorridos de metadata y round-trips de serialización. |
 
 Alias:
 - Correr app: `dev`, `start`, `app`

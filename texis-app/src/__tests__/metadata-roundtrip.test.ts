@@ -18,10 +18,12 @@ import { serializePGFPlots } from "@texisstudio/plugins/engines/pgfplots-engine/
 import { serializeGantt } from "@texisstudio/plugins/engines/timeline-gantt-engine/serializer.js";
 import { serializeGraphNode } from "@texisstudio/plugins/engines/graph-node-engine/serializer.js";
 import { serializeForest } from "@texisstudio/plugins/engines/tree-forest-engine/serializer.js";
+import { serializeTableData } from "@texisstudio/plugins/engines/table-data-engine/serializer.js";
 import type { PGFPlotsDocument } from "@texisstudio/plugins/engines/pgfplots-engine/types.js";
 import type { TimelineGanttDocument } from "@texisstudio/plugins/engines/timeline-gantt-engine/types.js";
 import type { GraphNodeDocument } from "@texisstudio/plugins/engines/graph-node-engine/types.js";
 import type { TreeForestDocument } from "@texisstudio/plugins/engines/tree-forest-engine/types.js";
+import type { TableDataDocument } from "@texisstudio/plugins/engines/table-data-engine/types.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -231,20 +233,79 @@ describe("metadata round-trip — table-data-engine", () => {
   });
 
   it("defaultDoc has correct engineId", () => {
-    const doc = meta!.defaultDoc() as { engineId: string; columns: unknown[]; rows: unknown[] };
+    const doc = meta!.defaultDoc() as TableDataDocument;
     expect(doc.engineId).toBe("table-data-engine");
   });
 
   it("defaultDoc has columns and rows", () => {
-    const doc = meta!.defaultDoc() as { columns: unknown[]; rows: unknown[] };
+    const doc = meta!.defaultDoc() as TableDataDocument;
     expect(doc.columns.length).toBeGreaterThanOrEqual(1);
     expect(doc.rows.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("defaultDoc survives JSON round-trip", () => {
-    const doc = meta!.defaultDoc();
-    const roundTripped = jsonRoundTrip(doc);
-    expect(roundTripped).toMatchObject({ engineId: "table-data-engine" });
+  it("defaultDoc serializes without throwing", () => {
+    const doc = meta!.defaultDoc() as TableDataDocument;
+    expect(() => serializeTableData(doc)).not.toThrow();
+  });
+
+  it("booktabs mode contains \\begin{tabular}", () => {
+    const doc = { ...(meta!.defaultDoc() as TableDataDocument), exportTarget: "booktabs" as const, booktabsStyle: true };
+    const latex = serializeTableData(doc);
+    expect(latex).toContain("\\begin{tabular}");
+    expect(latex).toContain("\\toprule");
+    expect(latex).toContain("\\midrule");
+    expect(latex).toContain("\\bottomrule");
+    expect(latex).toContain("\\end{tabular}");
+  });
+
+  it("longtable mode contains \\begin{longtable}", () => {
+    const doc = { ...(meta!.defaultDoc() as TableDataDocument), exportTarget: "longtable" as const, booktabsStyle: true };
+    const latex = serializeTableData(doc);
+    expect(latex).toContain("\\begin{longtable}");
+    expect(latex).toContain("\\endfirsthead");
+    expect(latex).toContain("\\endhead");
+    expect(latex).toContain("\\end{longtable}");
+  });
+
+  it("pgfplots mode contains \\pgfplotstableread", () => {
+    const doc = { ...(meta!.defaultDoc() as TableDataDocument), exportTarget: "pgfplots" as const };
+    const latex = serializeTableData(doc);
+    expect(latex).toContain("\\pgfplotstableread");
+  });
+
+  it("hline style uses \\hline instead of booktabs rules", () => {
+    const doc = { ...(meta!.defaultDoc() as TableDataDocument), exportTarget: "booktabs" as const, booktabsStyle: false };
+    const latex = serializeTableData(doc);
+    expect(latex).toContain("\\hline");
+    expect(latex).not.toContain("\\toprule");
+  });
+
+  it("special chars in headers are escaped", () => {
+    const doc: TableDataDocument = {
+      ...(meta!.defaultDoc() as TableDataDocument),
+      columns: [{ id: "c1", header: "Cost & Fee", type: "number" }],
+      rows: [{ c1: 42 }],
+      exportTarget: "booktabs",
+      booktabsStyle: true,
+    };
+    const latex = serializeTableData(doc);
+    expect(latex).toContain("\\&");
+  });
+
+  it("empty columns produces a comment", () => {
+    const doc: TableDataDocument = {
+      ...(meta!.defaultDoc() as TableDataDocument),
+      columns: [],
+      rows: [],
+    };
+    const latex = serializeTableData(doc);
+    expect(latex).toMatch(/^% TableData:/);
+  });
+
+  it("defaultDoc survives JSON round-trip and still serializes", () => {
+    const doc = jsonRoundTrip(meta!.defaultDoc() as TableDataDocument);
+    expect(() => serializeTableData(doc)).not.toThrow();
+    expect(serializeTableData(doc)).toContain("\\begin{tabular}");
   });
 });
 
