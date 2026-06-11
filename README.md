@@ -29,7 +29,7 @@ After the machine is prepared:
 | Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
 | Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
-| Test frontend | `npm test` (in `texis-app/`) | 355 tests for stores, services, i18n coverage, UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
+| Test frontend | `npm test` (in `texis-app/`) | 358 tests for stores, services, i18n coverage, UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
 
 Command aliases:
 - Run app: `dev`, `start`, `app`
@@ -111,7 +111,7 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 
 #### Plugin visual editors
 
-8 GUI editors for plugin-backed figures — no LaTeX required:
+9 GUI editors for plugin-backed figures — no LaTeX required:
 
 | Editor | Plugin types covered |
 |---|---|
@@ -123,8 +123,9 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 | `TreeForestEditor` | Hierarchical trees with growth-direction control |
 | `ChemistryEditor` | Chemical formulas (charge/state) and reactions (arrow, conditions) |
 | `CircuitEditor` | Electronic circuits: components, nodes, direct wire connections |
+| `TikzShapeEditor` | 13 shape types (point/line/arrow/rect/circle/polygon/…), per-shape coordinates, line style, color, and TikZ library management |
 
-Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` filters by difficulty (Easy / Intermediate / Advanced).
+Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` (accessible via the **Figura+** toolbar button) browses all 61 plugin types by category and difficulty.
 
 #### Visual figures
 
@@ -355,8 +356,9 @@ Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX
 | `TreeForestEditor` | Árboles jerárquicos con control de dirección de crecimiento |
 | `ChemistryEditor` | Fórmulas químicas (carga/estado) y reacciones (flecha, condiciones) |
 | `CircuitEditor` | Circuitos electrónicos: componentes, nodos, conexiones directas |
+| `TikzShapeEditor` | 13 tipos de forma (punto/línea/flecha/rect/círculo/polígono/…), coordenadas por forma, estilo de línea, color y gestión de bibliotecas TikZ |
 
-Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`).
+Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`). El botón **Figura+** de la barra de herramientas abre el `FigurePickerModal` para explorar los 61 tipos de plugin por categoría y dificultad.
 
 #### Figuras visuales
 
