@@ -156,7 +156,7 @@ The wizard detects the user's discipline from a text field and shows relevant hi
 
 #### LaTeX compilation
 
-Backends: `latexmk`, Tectonic (bundled, no TeX Live required), `xelatex`, `pdflatex`, `lualatex`. Automatic backend detection. Draft mode. In-app PDF preview. Toolchain diagnostics and system doctor.
+Backends: `latexmk`, Tectonic (bundled, no TeX Live required), `xelatex`, `pdflatex`, `lualatex`. Settings include a configurable primary backend and optional fallback when that backend is unavailable. Draft mode. In-app PDF preview. Toolchain diagnostics and system doctor.
 
 #### AI assistant
 
@@ -172,7 +172,7 @@ Manual snapshots with labels and timestamps. One-click restore. Delivery export 
 
 #### Settings and accessibility
 
-UI scale: normal, large, x-large. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail).
+UI scale: normal, large, x-large. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail). LaTeX engine preferences can prioritize Tectonic or a complete TeX suite and optionally use the other backend as a fallback.
 
 ---
 
@@ -372,7 +372,7 @@ El wizard detecta la disciplina del usuario y muestra hints relevantes, paquetes
 
 #### Compilación LaTeX
 
-Backends: `latexmk`, Tectonic (sin instalación de TeX Live), `xelatex`, `pdflatex`, `lualatex`. Detección automática de backend. Modo borrador. Vista previa de PDF en la app. Diagnósticos del toolchain y doctor del sistema.
+Backends: `latexmk`, Tectonic (sin instalación de TeX Live), `xelatex`, `pdflatex`, `lualatex`. Configuración de motor principal y respaldo opcional cuando el motor elegido no está disponible. Modo borrador. Vista previa de PDF en la app. Diagnósticos del toolchain y doctor del sistema.
 
 #### Asistente de IA
 
@@ -384,7 +384,7 @@ Vista de progreso sección por sección con estado editorial, conteo de palabras
 
 #### Configuración y accesibilidad
 
-Escala de UI: normal, grande, extra grande. 7 idiomas de interfaz: ES, EN, FR, DE, PT-BR, ZH, JA. Ortografía para ES y EN incluida; FR y DE como paquetes descargables. Revisión gramatical. Diccionario personalizado.
+Escala de UI: normal, grande, extra grande. 7 idiomas de interfaz: ES, EN, FR, DE, PT-BR, ZH, JA. Ortografía para ES y EN incluida; FR y DE como paquetes descargables. Revisión gramatical. Diccionario personalizado. Las preferencias del motor LaTeX permiten priorizar Tectonic o una suite TeX completa y usar el otro backend como respaldo opcional.
 
 ---
 

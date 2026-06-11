@@ -14,6 +14,7 @@ import { getLatexConfig } from "../services/languagePacks";
 import { useAiStore } from "../stores/ai";
 import type { CompilationResult, DependencyIssue, ExportDeliveryResult, PdfPostflightResult, ValidationReport } from "../types";
 import { useToast } from "../components/ui/ToastProvider";
+import { resolvePreferredLatexBackend } from "../lib/latexBackendPreference";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
@@ -25,7 +26,7 @@ export default function CompileView() {
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
-  const { lang, userMode } = useSettingsStore();
+  const { lang, userMode, latexPrimaryBackend, latexAllowFallback } = useSettingsStore();
 
   const [compileState, setCompileState] = useState<CompileState>("idle");
   const [result, setResult] = useState<CompilationResult | null>(null);
@@ -59,12 +60,10 @@ export default function CompileView() {
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
 
-  // Detectar backend preferido al montar
+  // Apply the user's default; the compile screen can still override it locally.
   useEffect(() => {
-    if (latexInfo?.preferred_backend) {
-      setBackend(latexInfo.preferred_backend as Backend);
-    }
-  }, [latexInfo]);
+    setBackend(resolvePreferredLatexBackend(latexPrimaryBackend, latexAllowFallback, latexInfo));
+  }, [latexAllowFallback, latexInfo, latexPrimaryBackend]);
 
   // Detectar plataforma al montar
   useEffect(() => {

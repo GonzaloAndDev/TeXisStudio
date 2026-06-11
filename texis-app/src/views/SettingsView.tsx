@@ -12,6 +12,7 @@ import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import type { LangPackEntry } from "../types";
 import { VocabularyPacksPanel } from "../components/settings/VocabularyPacksPanel";
+import { LatexEngineSettings } from "../components/settings/LatexEngineSettings";
 
 import { SectionHeading, Card, Toggle, FieldRow } from "./settings/SettingsWidgets";
 import { checkForUpdate, UPDATER_ENABLED } from "../services/updater";
@@ -23,6 +24,7 @@ const SECTIONS = [
   "community",
   "user",
   "projects",
+  "latex",
   "text",
   "help",
   "about",
@@ -33,6 +35,7 @@ type Section = (typeof SECTIONS)[number];
 const BASIC_SECTIONS: Section[] = [
   "language",
   "community",
+  "latex",
   "text",
   "help",
   "about",
@@ -374,6 +377,8 @@ export default function SettingsView() {
               </Card>
             </div>
           )}
+
+          {activeSection === "latex" && <LatexEngineSettings />}
 
           {/* ── Personal dictionary ── */}
           {activeSection === "dictionary" && (

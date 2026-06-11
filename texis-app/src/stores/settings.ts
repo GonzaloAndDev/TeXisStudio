@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persistUiLanguage, readStoredUiLanguage } from "../i18n/languageState";
+import type { LatexBackend } from "../lib/latexBackendPreference";
 
 interface SettingsState {
   lang: string;
@@ -14,6 +15,8 @@ interface SettingsState {
   userInstitution: string;
   userEmail: string;
   projectDir: string;
+  latexPrimaryBackend: LatexBackend;
+  latexAllowFallback: boolean;
 
   setLang: (lang: string) => void;
   setUserMode: (mode: "basic" | "advanced") => void;
@@ -28,6 +31,8 @@ interface SettingsState {
   setUserInstitution: (v: string) => void;
   setUserEmail: (v: string) => void;
   setProjectDir: (v: string) => void;
+  setLatexPrimaryBackend: (backend: LatexBackend) => void;
+  setLatexAllowFallback: (enabled: boolean) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -56,6 +61,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   userInstitution: load("tx-user-institution", ""),
   userEmail: load("tx-user-email", ""),
   projectDir: load("tx-project-dir", ""),
+  latexPrimaryBackend: load("tx-latex-primary-backend", "tectonic"),
+  latexAllowFallback: load("tx-latex-allow-fallback", true),
 
   setLang: (lang) => {
     set({ lang: persistUiLanguage(lang) });
@@ -102,4 +109,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setUserInstitution: (v) => { save("tx-user-institution", v); set({ userInstitution: v }); },
   setUserEmail: (v) => { save("tx-user-email", v); set({ userEmail: v }); },
   setProjectDir: (v) => { save("tx-project-dir", v); set({ projectDir: v }); },
+  setLatexPrimaryBackend: (latexPrimaryBackend) => {
+    save("tx-latex-primary-backend", latexPrimaryBackend);
+    set({ latexPrimaryBackend });
+  },
+  setLatexAllowFallback: (latexAllowFallback) => {
+    save("tx-latex-allow-fallback", latexAllowFallback);
+    set({ latexAllowFallback });
+  },
 }));
