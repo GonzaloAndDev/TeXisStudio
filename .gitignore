@@ -36,3 +36,6 @@ texis-app/src-tauri/icons/ios/
 
 # Claude Code — configuración local del IDE, no pertenece al repo
 .claude/
+
+# Codex — memoria operativa local, no pertenece al repo
+.codex/
