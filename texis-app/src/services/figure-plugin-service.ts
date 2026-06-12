@@ -96,11 +96,12 @@ export async function createPluginFigure(
   const finalCaption = caption ?? result.latexBlock.match(/\\caption\{([^}]+)\}/)?.[1] ?? plugin.displayName;
   const finalLabel = label ?? result.latexBlock.match(/\\label\{([^}]+)\}/)?.[1] ?? `fig:${fid}`;
 
-  // Persist to disk via Tauri
+  // Persist to disk via Tauri. output.tex must hold the bare figure body
+  // (texContent), which latexBlock references via \input — never the wrapper.
   await invoke("save_plugin_figure", {
     projectPath,
     figureId: fid,
-    latexTex: result.latexBlock,
+    latexTex: result.texContent,
     sourceJson,
     requiredPackages: [...result.requiredPackages],
     pluginId,
@@ -157,10 +158,13 @@ export async function updatePluginFigureMeta(
   const texPath = `texisstudio-assets/figures/${block.figureId}/output.tex`;
   const newLatexBlock = buildLatexInputBlock({ figureId: block.figureId, inputPath: texPath, caption, label });
 
+  // Meta-only edit: the figure body (output.tex) is unchanged, so we pass an
+  // empty latexTex to tell the backend to leave output.tex untouched and only
+  // refresh the manifest (caption/label).
   await invoke("save_plugin_figure", {
     projectPath,
     figureId: block.figureId,
-    latexTex: newLatexBlock,
+    latexTex: "",
     sourceJson: block.sourceJson,
     requiredPackages: block.requiredPackages,
     pluginId: block.pluginId,
@@ -218,7 +222,7 @@ export async function editPluginFigureWithSource(
   await invoke("save_plugin_figure", {
     projectPath,
     figureId: block.figureId,
-    latexTex: result.latexBlock,
+    latexTex: result.texContent,
     sourceJson: newSourceJson,
     requiredPackages: [...result.requiredPackages],
     pluginId: block.pluginId,
@@ -278,7 +282,7 @@ export async function editPluginFigure(
   await invoke("save_plugin_figure", {
     projectPath,
     figureId: block.figureId,
-    latexTex: result.latexBlock,
+    latexTex: result.texContent,
     sourceJson: newSourceJson,
     requiredPackages: [...result.requiredPackages],
     pluginId: block.pluginId,

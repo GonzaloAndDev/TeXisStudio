@@ -56,8 +56,11 @@ pub fn save_plugin_figure(
     let dir = figure_dir(&project_path, &figure_id);
     std::fs::create_dir_all(&dir).map_err(err)?;
 
-    // Write output.tex
-    std::fs::write(dir.join("output.tex"), &latex_tex).map_err(err)?;
+    // Write output.tex (the bare figure body). An empty latex_tex signals a
+    // meta-only update (caption/label), so the existing body is left intact.
+    if !latex_tex.is_empty() {
+        std::fs::write(dir.join("output.tex"), &latex_tex).map_err(err)?;
+    }
 
     // Write source.json (engine document for re-editing)
     std::fs::write(dir.join("source.json"), &source_json).map_err(err)?;
