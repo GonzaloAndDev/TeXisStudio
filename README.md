@@ -29,7 +29,7 @@ After the machine is prepared:
 | Build installer/package | `./build` or `.\build.ps1` | Builds artifacts for the current OS. |
 | Check frontend only | `./check` or `.\check.ps1` | Runs TypeScript check and Vite build without compiling the native app. |
 | Test Rust core | `cargo test -p texis-core` | 305+ unit and integration tests for LaTeX generation, compilation, bibliography, snapshots, profiles, and migrations. |
-| Test frontend | `npm test` (in `texis-app/`) | 358 tests for stores, services, i18n coverage, UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
+| Test frontend | `npm test` (in `texis-app/`) | 358 tests for stores, services, i18n coverage (all 7 bundled locales), UI helpers, document history, visual-editor transforms, metadata round-trips, and serializer round-trips. |
 
 Command aliases:
 - Run app: `dev`, `start`, `app`
@@ -131,7 +131,7 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 | `CircuitEditor` | Electronic circuits: components, nodes, direct wire connections |
 | `TikzShapeEditor` | 13 shape types (point/line/arrow/rect/circle/polygon/…), per-shape coordinates, line style, color, and TikZ library management |
 
-Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens a «Visual Editor» tab for supported figures; the `FigurePickerModal` (accessible via the **Figura+** toolbar button) browses all 61 plugin types by category and difficulty.
+Every visual editor includes **undo/redo** (up to 50 steps) and a **restore example** button via `VisualEditorShell`. The `FigureEditModal` opens three tabs: **Visual Editor** (for supported figures), **Caption & Label**, and **Preview** — the Preview tab compiles the figure's saved `output.tex` as a standalone document with Tectonic and renders the PDF inline. `FigurePickerModal` (accessible via the **Figura+** toolbar button) browses all 61 plugin types by category and difficulty.
 
 #### Visual figures
 
@@ -370,7 +370,7 @@ Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX
 | `CircuitEditor` | Circuitos electrónicos: componentes, nodos, conexiones directas |
 | `TikzShapeEditor` | 13 tipos de forma (punto/línea/flecha/rect/círculo/polígono/…), coordenadas por forma, estilo de línea, color y gestión de bibliotecas TikZ |
 
-Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`). El botón **Figura+** de la barra de herramientas abre el `FigurePickerModal` para explorar los 61 tipos de plugin por categoría y dificultad.
+Todos los editores visuales incluyen **deshacer/rehacer** (hasta 50 pasos) y botón de **restaurar ejemplo** (`VisualEditorShell`). El `FigureEditModal` incluye tres pestañas: **Editor visual** (para figuras compatibles), **Título y etiqueta** y **Vista previa** — la pestaña de vista previa compila el `output.tex` guardado de la figura como documento standalone con Tectonic y muestra el PDF inline. El botón **Figura+** de la barra de herramientas abre el `FigurePickerModal` para explorar los 61 tipos de plugin por categoría y dificultad.
 
 #### Figuras visuales
 

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
 import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
 import { HelpLink } from "./help/HelpLink";
+import { api } from "../lib/tauri";
 import type { PluginFigureBlock } from "../types";
 
 const QUALITY_BADGE: Record<string, { label: string; color: string }> = {
@@ -25,7 +27,7 @@ interface Props {
   onClose: () => void;
 }
 
-type ActiveTab = "visual" | "meta";
+type ActiveTab = "visual" | "meta" | "preview";
 
 export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props) {
   const { t } = useTranslation();
@@ -47,9 +49,13 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
   const [done, setDone]       = useState(false);
   const [showLatex, setShowLatex] = useState(false);
   const [editedSourceJson, setEditedSourceJson] = useState(block.sourceJson ?? "");
+  const [previewPdfPath, setPreviewPdfPath] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>(() =>
     hasVisualEditor(block.sourceJson, getPluginInfo(block.pluginId)?.editorType) ? "visual" : "meta"
   );
+
   const captionRef = useRef<HTMLInputElement>(null);
 
   const info = getPluginInfo(block.pluginId);
@@ -115,6 +121,23 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     finally { setBusy(null); }
   }
 
+  async function handleCompilePreview() {
+    if (previewBusy) return;
+    setPreviewBusy(true); setPreviewError(null); setPreviewPdfPath(null);
+    try {
+      const path = await api.compileSnippetPreview(projectPath, block.figureId);
+      if (!path) {
+        setPreviewError(t("figure_edit.preview_no_tectonic"));
+      } else {
+        setPreviewPdfPath(path);
+      }
+    } catch (e) {
+      setPreviewError(`${t("figure_edit.preview_error_prefix")} ${e}`);
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
+
   async function handleRegen() {
     if (busy) return;
     setBusy("regen"); setError(null);
@@ -128,6 +151,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
   }
 
   const showVisualTab = hasVisualEditor(block.sourceJson, info?.editorType);
+  const tabs: ActiveTab[] = showVisualTab ? ["visual", "meta", "preview"] : ["meta", "preview"];
 
   return (
     <div
@@ -164,28 +188,29 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           </div>
 
           {/* Tab bar */}
-          {showVisualTab && (
-            <div style={{ display: "flex", gap: 0 }}>
-              {(["visual", "meta"] as ActiveTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: "5px 14px",
-                    border: "none",
-                    borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
-                    background: "transparent",
-                    color: activeTab === tab ? "var(--accent)" : "var(--fg-muted)",
-                    fontSize: "var(--fs-sm)",
-                    cursor: "pointer",
-                    fontWeight: activeTab === tab ? 600 : 400,
-                  }}
-                >
-                  {tab === "visual" ? t("figure_edit.tab_visual") : t("figure_edit.tab_meta")}
-                </button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 0 }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: "5px 14px",
+                  border: "none",
+                  borderBottom: activeTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
+                  background: "transparent",
+                  color: activeTab === tab ? "var(--accent)" : "var(--fg-muted)",
+                  fontSize: "var(--fs-sm)",
+                  cursor: "pointer",
+                  fontWeight: activeTab === tab ? 600 : 400,
+                }}
+              >
+                {tab === "visual" ? t("figure_edit.tab_visual")
+                  : tab === "preview" ? t("figure_edit.tab_preview")
+                  : t("figure_edit.tab_meta")}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Scrollable body */}
@@ -217,7 +242,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           )}
 
           {/* ── Meta tab (caption / label / LaTeX) ── */}
-          {(activeTab === "meta" || !showVisualTab) && (
+          {activeTab === "meta" && (
             <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 4 }}>
@@ -279,6 +304,37 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
             </div>
           )}
 
+          {/* ── Preview tab ── */}
+          {activeTab === "preview" && (
+            <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {visualDirty && (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", padding: "6px 10px", background: "var(--build-warn-tint, #ffcc0015)", borderRadius: "var(--r-xs)" }}>
+                  {t("figure_edit.preview_apply_first")}
+                </div>
+              )}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleCompilePreview}
+                disabled={previewBusy || visualDirty}
+              >
+                {previewBusy ? t("figure_edit.preview_compiling") : t("figure_edit.preview_compile_btn")}
+              </button>
+              {previewError && (
+                <div style={{ fontSize: 11, color: "var(--build-err, #e55)", padding: "7px 10px", background: "rgba(255,0,0,0.08)", borderRadius: "var(--r-xs)", whiteSpace: "pre-wrap", fontFamily: "var(--font-mono)" }}>
+                  {previewError}
+                </div>
+              )}
+              {previewPdfPath && (
+                <iframe
+                  src={convertFileSrc(previewPdfPath)}
+                  style={{ width: "100%", height: 380, border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}
+                  title={t("figure_edit.tab_preview")}
+                />
+              )}
+            </div>
+          )}
+
           {/* ── Shared: warnings + feedback ── */}
           <div style={{ padding: "0 18px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             {info?.scopeWarning && (
@@ -305,8 +361,8 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
             {t("common.cancel")}
           </button>
 
-          {/* Regen only on meta tab or non-visual plugins */}
-          {(activeTab === "meta" || !showVisualTab) && (
+          {/* Regen only on meta/preview tab or non-visual plugins */}
+          {(activeTab === "meta" || activeTab === "preview" || !showVisualTab) && (
             <button
               className="btn btn-ghost btn-sm"
               onClick={handleRegen}
@@ -319,7 +375,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           )}
 
           {/* Primary action differs by tab */}
-          {activeTab === "visual" && showVisualTab ? (
+          {activeTab === "visual" && showVisualTab && (
             <button
               className="btn btn-accent btn-sm"
               onClick={handleApplyVisual}
@@ -328,7 +384,8 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
             >
               {busy === "visual" ? t("figure_edit.applying") : t("figure_edit.apply_visual_btn")}
             </button>
-          ) : (
+          )}
+          {activeTab === "meta" && (
             <button
               className="btn btn-accent btn-sm"
               onClick={handleSaveMeta}

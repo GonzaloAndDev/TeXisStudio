@@ -97,6 +97,8 @@ pub fn run() {
             commands::figure_plugin::load_figure_source,
             commands::figure_plugin::delete_plugin_figure,
             commands::figure_plugin::list_plugin_figures,
+            // Snippet preview
+            commands::snippet_preview::compile_snippet_preview,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start TeXisStudio");

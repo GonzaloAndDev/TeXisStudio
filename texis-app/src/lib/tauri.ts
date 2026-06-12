@@ -324,6 +324,12 @@ export const api = {
   createProfileLock: (projectPath: string, profileId: string): Promise<ProfileLockStatus> =>
     call("create_profile_lock", { projectPath, profileId }),
 
+  /** Compila una vista previa standalone del output.tex de una figura y devuelve la ruta al PDF. */
+  compileSnippetPreview: (projectPath: string, figureId: string): Promise<string | null> => {
+    if (!isTauri()) return Promise.resolve(null);
+    return call("compile_snippet_preview", { projectPath, figureId });
+  },
+
   /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */
   pickFolder: async (): Promise<string | null> => {
     if (!isTauri()) return null;

@@ -2023,7 +2023,13 @@
     "apply_visual_title": "変更を適用して図を再生成する",
     "apply_visual_btn": "変更を適用",
     "applying": "適用中…",
-    "done_msg": "図が更新されました"
+    "done_msg": "図が更新されました",
+    "tab_preview": "Preview",
+    "preview_compile_btn": "Compile preview",
+    "preview_compiling": "Compiling…",
+    "preview_apply_first": "Apply changes before previewing.",
+    "preview_error_prefix": "Compilation error:",
+    "preview_no_tectonic": "Tectonic is not installed or could not be found."
   },
   "elements_tab": {
     "title": "要素",

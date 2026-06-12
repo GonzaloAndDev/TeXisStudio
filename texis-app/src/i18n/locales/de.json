@@ -2309,7 +2309,13 @@
     "apply_visual_title": "Änderungen übernehmen und Abbildung regenerieren",
     "apply_visual_btn": "Änderungen übernehmen",
     "applying": "Wird übernommen…",
-    "done_msg": "Abbildung aktualisiert"
+    "done_msg": "Abbildung aktualisiert",
+    "tab_preview": "Preview",
+    "preview_compile_btn": "Compile preview",
+    "preview_compiling": "Compiling…",
+    "preview_apply_first": "Apply changes before previewing.",
+    "preview_error_prefix": "Compilation error:",
+    "preview_no_tectonic": "Tectonic is not installed or could not be found."
   },
   "elements_tab": {
     "title": "Elemente",

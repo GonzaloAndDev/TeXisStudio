@@ -15,5 +15,6 @@ pub mod project;
 pub mod remote;
 pub mod semantic_scholar;
 pub mod system;
+pub mod snippet_preview;
 pub mod template;
 pub mod zotero;

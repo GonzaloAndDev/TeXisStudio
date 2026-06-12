@@ -2309,7 +2309,13 @@
     "apply_visual_title": "Aplicar alterações e regenerar a figura",
     "apply_visual_btn": "Aplicar alterações",
     "applying": "Aplicando…",
-    "done_msg": "Figura atualizada"
+    "done_msg": "Figura atualizada",
+    "tab_preview": "Preview",
+    "preview_compile_btn": "Compile preview",
+    "preview_compiling": "Compiling…",
+    "preview_apply_first": "Apply changes before previewing.",
+    "preview_error_prefix": "Compilation error:",
+    "preview_no_tectonic": "Tectonic is not installed or could not be found."
   },
   "elements_tab": {
     "title": "Elementos",
