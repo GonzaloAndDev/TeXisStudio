@@ -224,7 +224,10 @@ y el fallback explícito.
 
 ## Trabajo siguiente recomendado
 
-1. Sustituir la wiki por una portada de migración que apunte a GitHub Pages.
+1. Cuando la app esté lista para lanzamiento: activar GitHub Pages (Settings →
+   Pages → Source: GitHub Actions), actualizar el enlace "Documentación →" en
+   `SettingsView.tsx` a `gonzaloanddev.github.io/TeXisStudio`, y convertir la
+   wiki en página de redirección. Hasta entonces, no tocar nada de esto.
 2. Añadir capturas estandarizadas de Windows, macOS y Linux.
 3. Crear una matriz automática de atajos para compartir entre app y docs.
 4. Añadir comprobación de enlaces externos y paridad ES/EN en CI.
