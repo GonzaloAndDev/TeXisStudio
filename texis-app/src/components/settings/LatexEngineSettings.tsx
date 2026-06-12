@@ -144,14 +144,14 @@ export function LatexEngineSettings() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
-                  <strong style={{ color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}>{option.title}</strong>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end", flexShrink: 0 }}>
+                  <strong style={{ color: "var(--fg-strong)", fontSize: "var(--fs-sm)", flexShrink: 1, minWidth: 0 }}>{option.title}</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
                     {option.isBest && option.available && (
-                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: "var(--r-xs)", background: "var(--build-ok)", color: "#fff" }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: "var(--r-xs)", background: "var(--build-ok)", color: "#fff", whiteSpace: "nowrap" }}>
                         {t("settings.latex_recommended_badge")}
                       </span>
                     )}
-                    <span style={{ fontSize: "var(--fs-xs)", color: option.available ? "var(--build-ok)" : "var(--fg-faint)" }}>
+                    <span style={{ fontSize: "var(--fs-xs)", color: option.available ? "var(--build-ok)" : "var(--fg-faint)", whiteSpace: "nowrap" }}>
                       {option.available ? t("settings.latex_available") : t("settings.latex_not_available")}
                     </span>
                   </div>
