@@ -25,6 +25,7 @@ texis-app/src-tauri/target/
 docs-site/node_modules/
 docs-site/dist/
 docs-site/.astro/
+/TeXisStudio-documentation-and-claude-instructions.zip
 
 # Tauri — schemas generados automáticamente en cada build
 texis-app/src-tauri/gen/
