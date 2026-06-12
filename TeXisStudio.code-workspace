@@ -14,7 +14,20 @@
     }
   ],
   "settings": {
-    "java.autobuild.enabled": false
+    "java.autobuild.enabled": false,
+
+    // ── rust-analyzer: modo bajo consumo ─────────────────────────────────
+    // Tauri indexa cientos de crates y expande muchos proc-macros, lo que
+    // puede llevar rust-analyzer a >1.5 GB en 16 GB de RAM.
+    // Estas opciones lo mantienen útil (autocompletado, goto-def, hover)
+    // sin ejecutar cargo check ni expandir proc-macros en cada guardado.
+    // Para trabajo Rust intensivo descomenta "rust-analyzer.checkOnSave"
+    // y "rust-analyzer.procMacro.enable" temporalmente.
+    "rust-analyzer.checkOnSave": false,
+    "rust-analyzer.procMacro.enable": false,
+    "rust-analyzer.diagnostics.enable": false,
+    "rust-analyzer.cargo.buildScripts.enable": false,
+    "rust-analyzer.lru.capacity": 64
   },
   "launch": {
     "version": "0.2.0",
