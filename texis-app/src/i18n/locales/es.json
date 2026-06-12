@@ -2222,7 +2222,7 @@
     "applying": "Aplicando…",
     "done_msg": "Figura actualizada",
     "tab_preview": "Vista previa",
-    "preview_compile_btn": "Compilar vista previa",
+    "preview_compile_btn": "Recompilar vista previa",
     "preview_compiling": "Compilando…",
     "preview_apply_first": "Aplica los cambios antes de previsualizar.",
     "preview_tectonic_note": "Tectonic es el motor activo. Si la vista previa falla, es posible que esta figura requiera una suite LaTeX completa (MacTeX / MiKTeX / TeX Live). Puedes cambiar el motor en Configuración → Motor LaTeX.",

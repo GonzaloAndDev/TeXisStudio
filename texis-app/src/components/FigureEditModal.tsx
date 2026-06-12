@@ -51,6 +51,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
   const [showLatex, setShowLatex] = useState(false);
   const [editedSourceJson, setEditedSourceJson] = useState(block.sourceJson ?? "");
   const [previewPdfPath, setPreviewPdfPath] = useState<string | null>(null);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>(() =>
@@ -123,22 +124,40 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     finally { setBusy(null); }
   }
 
-  async function handleCompilePreview() {
-    if (previewBusy) return;
-    setPreviewBusy(true); setPreviewError(null); setPreviewPdfPath(null);
+  const handleCompilePreview = useCallback(async () => {
+    setPreviewBusy(true); setPreviewError(null);
     try {
       const path = await api.compileSnippetPreview(projectPath, block.figureId, latexPrimaryBackend);
       if (!path) {
         setPreviewError(t("figure_edit.preview_no_tectonic"));
+        setPreviewPdfPath(null);
       } else {
         setPreviewPdfPath(path);
+        setPreviewVersion(Date.now()); // cache-bust so the iframe reloads
       }
     } catch (e) {
       setPreviewError(`${t("figure_edit.preview_error_prefix")} ${e}`);
+      setPreviewPdfPath(null);
     } finally {
       setPreviewBusy(false);
     }
-  }
+  }, [projectPath, block.figureId, latexPrimaryBackend, t]);
+
+  // Invalidate a stale preview whenever the figure source changes, so the next
+  // visit to the Preview tab recompiles instead of showing an outdated PDF.
+  useEffect(() => {
+    setPreviewPdfPath(null);
+    setPreviewError(null);
+  }, [editedSourceJson]);
+
+  // Auto-compile the preview when the user opens the Preview tab — mirrors the
+  // inline document block, which renders the figure PDF without an extra click.
+  useEffect(() => {
+    if (activeTab !== "preview" || visualDirty || previewBusy) return;
+    if (previewPdfPath !== null || previewError !== null) return;
+    void handleCompilePreview();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, visualDirty, previewPdfPath, previewError]);
 
   async function handleRegen() {
     if (busy) return;
@@ -334,7 +353,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
               )}
               {previewPdfPath && (
                 <iframe
-                  src={convertFileSrc(previewPdfPath)}
+                  src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}`}
                   style={{ width: "100%", height: 380, border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}
                   title={t("figure_edit.tab_preview")}
                 />
