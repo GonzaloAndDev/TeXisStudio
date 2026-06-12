@@ -352,11 +352,16 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
                 </div>
               )}
               {previewPdfPath && (
-                <iframe
-                  src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                  style={{ width: "100%", height: 380, border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}
-                  title={t("figure_edit.tab_preview")}
-                />
+                // The viewport is shorter than the iframe and clips its overflow,
+                // so the WebView's floating PDF toolbar (anchored near the
+                // iframe's bottom) is cropped out instead of covering the figure.
+                <div style={{ height: 380, overflow: "hidden", border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}>
+                  <iframe
+                    src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}`}
+                    style={{ width: "100%", height: 480, border: "none", display: "block" }}
+                    title={t("figure_edit.tab_preview")}
+                  />
+                </div>
               )}
             </div>
           )}
