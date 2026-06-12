@@ -848,7 +848,7 @@ export default function EditorView() {
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
-          <div className="editor-toolbar scroll" style={{ height: 60, flexShrink: 0, borderBottom: "1px solid var(--border-firm)", padding: "4px 10px 6px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }}>
+          <div className="editor-toolbar scroll" style={{ height: 60, flexShrink: 0, borderBottom: "1px solid var(--border-firm)", padding: "3px 10px 2px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }}>
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
