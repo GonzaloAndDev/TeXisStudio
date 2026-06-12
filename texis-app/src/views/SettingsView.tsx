@@ -16,6 +16,7 @@ import { LatexEngineSettings } from "../components/settings/LatexEngineSettings"
 
 import { SectionHeading, Card, Toggle, FieldRow } from "./settings/SettingsWidgets";
 import { checkForUpdate, UPDATER_ENABLED } from "../services/updater";
+import { LatexMinimalGuide } from "../components/help/LatexMinimalGuide";
 // ── Layout constants ──────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -52,6 +53,32 @@ const SHORTCUT_ROWS: Array<[string, string]> = [
   ["shortcut_toggle_section", "Ctrl+Shift+E"],
 ];
 
+
+function LatexGuideCard() {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: 0, color: "var(--fg-strong)", fontSize: "var(--fs-sm)", fontWeight: 600,
+        }}
+      >
+        <span>{t("help.section_latex")}</span>
+        <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s", fontSize: 10, color: "var(--fg-muted)" }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 14 }}>
+          <LatexMinimalGuide />
+        </div>
+      )}
+    </Card>
+  );
+}
 
 // ── Main view ─────────────────────────────────────────────────────────────
 
@@ -844,6 +871,8 @@ export default function SettingsView() {
                   ))}
                 </div>
               </Card>
+
+              <LatexGuideCard />
 
               <Card>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
