@@ -40,11 +40,11 @@ Arrastra el ícono de la izquierda de cada bloque para moverlo dentro de la secc
 
 ## Compilar el PDF
 
-1. En la barra superior, haz clic en **Compilar** (o Ctrl+Enter).
+1. En la barra superior, haz clic en **Compilar**.
 2. Si hay advertencias, aparece el panel de revisión previo. Puedes ignorarlas y continuar.
 3. El PDF se abre en el visor integrado.
 
-> **Nota:** Para compilar necesitas LaTeX instalado (recomendado: TeX Live completo). Si no tienes LaTeX, TeXisStudio detecta el problema y te muestra instrucciones de instalación.
+> **Nota:** Para compilar necesitas Tectonic o una suite completa compatible con latexmk, como TeX Live, MacTeX o MiKTeX. TeXisStudio detecta lo disponible y muestra instrucciones según tu sistema.
 
 ---
 

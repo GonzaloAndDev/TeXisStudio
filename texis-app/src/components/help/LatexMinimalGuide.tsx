@@ -117,9 +117,9 @@ const SECTIONS: Section[] = [
     id: "resources",
     titleKey: "help.latex.resources_title",
     links: [
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Principiante", labelKey: "help.latex.res_wiki_beginner_label",     descKey: "help.latex.res_wiki_beginner_desc",     lang: "TS" },
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Intermedio",   labelKey: "help.latex.res_wiki_intermediate_label", descKey: "help.latex.res_wiki_intermediate_desc", lang: "TS" },
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Avanzado",     labelKey: "help.latex.res_wiki_advanced_label",     descKey: "help.latex.res_wiki_advanced_desc",     lang: "TS" },
+      { url: "https://gonzaloanddev.github.io/TeXisStudio/latex/basic/",        labelKey: "help.latex.res_wiki_beginner_label",     descKey: "help.latex.res_wiki_beginner_desc",     lang: "TS" },
+      { url: "https://gonzaloanddev.github.io/TeXisStudio/latex/intermediate/", labelKey: "help.latex.res_wiki_intermediate_label", descKey: "help.latex.res_wiki_intermediate_desc", lang: "TS" },
+      { url: "https://gonzaloanddev.github.io/TeXisStudio/latex/advanced/",     labelKey: "help.latex.res_wiki_advanced_label",     descKey: "help.latex.res_wiki_advanced_desc",     lang: "TS" },
       { url: "https://www.overleaf.com/learn",      label: "Overleaf Learn",                   descKey: "help.latex.res_overleaf_desc",    lang: "EN" },
       { url: "https://ctan.org/pkg/lshort-english", label: "lshort — Not So Short Intro",      descKey: "help.latex.res_lshort_en_desc",   lang: "EN" },
       { url: "https://en.wikibooks.org/wiki/LaTeX", label: "LaTeX Wikibook",                   descKey: "help.latex.res_wikibook_en_desc", lang: "EN" },

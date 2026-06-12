@@ -25,9 +25,9 @@
 **Causa:** la codificación de caracteres o la fuente no es compatible con el engine seleccionado.
 
 **Solución:**
-- Usa **XeLaTeX** o **LuaLaTeX** para documentos con caracteres no ASCII (tildes, ñ, árabe, chino).
-- En Ajustes → Compilación, cambia el backend a `xelatex` o `lualatex`.
-- Asegúrate de que el perfil del proyecto incluye el paquete `fontspec` (requerido por XeLaTeX/LuaLaTeX).
+- Instala una suite completa y selecciónala como backend principal en **Configuración → Motor LaTeX**.
+- Verifica que el perfil configure un motor y una fuente compatibles con el idioma del documento.
+- Para XeLaTeX o LuaLaTeX, el perfil debe incluir `fontspec`; la elección concreta del motor forma parte de la configuración generada, no de una preferencia global independiente.
 
 ---
 

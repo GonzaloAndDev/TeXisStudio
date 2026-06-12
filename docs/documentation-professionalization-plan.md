@@ -43,8 +43,8 @@ La wiki existente es un primer borrador, no documentación publicable todavía:
 
 ## Arquitectura del sitio
 
-El sitio vivirá inicialmente en `docs-site/`, con su propio `package.json`, y se
-publicará mediante un workflow dedicado de GitHub Pages.
+El sitio vive en `docs-site/`, con su propio `package.json`, y se publica
+mediante un workflow dedicado de GitHub Pages.
 
 ```text
 docs-site/
@@ -122,7 +122,7 @@ mantendrán árboles de archivos escritos de memoria.
 2. Retirar de la navegación principal las páginas con instrucciones falsas.
 3. Conservar una portada con enlaces al README y al futuro sitio.
 
-### Fase 1 — Plataforma
+### Fase 1 — Plataforma (implementada)
 
 1. Crear `docs-site/` con Starlight, locales `es` y `en` y búsqueda Pagefind.
 2. Añadir despliegue a GitHub Pages, un artefacto de preview para cada pull
@@ -138,7 +138,7 @@ mantendrán árboles de archivos escritos de memoria.
 3. Convertir `docs/user-guide/` en contenido bilingüe o migrarlo al sitio sin
    mantener dos fuentes canónicas.
 
-### Fase 3 — Contenido de usuario
+### Fase 3 — Contenido de usuario (base publicada)
 
 1. Publicar primero App básico y LaTeX básico en español e inglés.
 2. Añadir niveles intermedios con capturas de Windows, macOS y Linux sólo donde

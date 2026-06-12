@@ -61,10 +61,13 @@ Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and m
 
 ### User documentation
 
-Canonical user-facing docs live in [`docs/user-guide/`](docs/user-guide/). These are the source of truth for the built-in Help Center and any future web documentation.
+The bilingual web documentation lives in [`docs-site/`](docs-site/) and is
+published with Astro Starlight on GitHub Pages. The compact files in
+[`docs/user-guide/`](docs/user-guide/) remain the source for the built-in Help
+Center.
 
-The migration from the draft GitHub Wiki to a bilingual documentation site is
-defined in the [documentation professionalization plan](docs/documentation-professionalization-plan.md).
+The migration from the draft GitHub Wiki is tracked in the
+[documentation professionalization plan](docs/documentation-professionalization-plan.md).
 
 | File | Help Center section |
 |---|---|
@@ -297,10 +300,13 @@ Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows
 
 ### Documentación de usuario
 
-Los documentos canónicos para usuarios finales están en [`docs/user-guide/`](docs/user-guide/). Son la fuente de verdad del Centro de ayuda integrado y cualquier documentación web futura.
+La documentación web bilingüe vive en [`docs-site/`](docs-site/) y se publica
+con Astro Starlight en GitHub Pages. Los archivos compactos de
+[`docs/user-guide/`](docs/user-guide/) siguen siendo la fuente del Centro de
+ayuda integrado.
 
-La migración desde el borrador de GitHub Wiki hacia un sitio bilingüe está
-definida en el [plan de profesionalización de la documentación](docs/documentation-professionalization-plan.md).
+La migración desde el borrador de GitHub Wiki se controla en el
+[plan de profesionalización de la documentación](docs/documentation-professionalization-plan.md).
 
 | Archivo | Sección en el Centro de ayuda |
 |---|---|

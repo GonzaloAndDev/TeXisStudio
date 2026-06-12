@@ -22,6 +22,9 @@ Thumbs.db
 texis-app/node_modules/
 texis-app/dist/
 texis-app/src-tauri/target/
+docs-site/node_modules/
+docs-site/dist/
+docs-site/.astro/
 
 # Tauri — schemas generados automáticamente en cada build
 texis-app/src-tauri/gen/

@@ -6,7 +6,9 @@ Solo necesitas saber esto para escribir ecuaciones en TeXisStudio. Si no escribe
 
 ## Modo matemático
 
-LaTeX diferencia entre texto normal y modo matemático. Usa `$…$` para fórmulas en línea y `$$…$$` (o el bloque de ecuación de TeXisStudio) para fórmulas centradas.
+LaTeX diferencia entre texto normal y modo matemático. Usa `$…$` para fórmulas en línea y `\[…\]` (o el bloque de ecuación de TeXisStudio) para fórmulas centradas.
+
+Evita `$$…$$`: es sintaxis heredada de TeX y puede producir espaciado inconsistente en documentos LaTeX.
 
 En el bloque **Ecuación** de TeXisStudio, escribes directamente en modo matemático — no necesitas los `$`.
 

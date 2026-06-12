@@ -6,6 +6,13 @@ Historial de versiones del proyecto. Sigue [Keep a Changelog](https://keepachang
 
 ## [Unreleased]
 
+### Sitio oficial de documentación
+
+- Nuevo `docs-site/` con Astro Starlight, búsqueda Pagefind y despliegue gratuito en GitHub Pages.
+- Documentación paralela en español e inglés para uso de la app, LaTeX y contribución, cada módulo en nivel básico, intermedio y avanzado.
+- Workflow `docs.yml`: valida, construye, genera artefacto de preview para pull requests y publica `main` en Pages.
+- Corregidas instrucciones obsoletas en las guías internas: compilación sin atajo inexistente, backends Tectonic/latexmk y matemáticas en bloque con `\\[…\\]`.
+
 ### Editor visual de química (`ChemistryEditor`)
 
 - `ChemistryEditor.tsx`: editor de fórmulas (texto, carga, estado físico) y reacciones (reactivos + productos múltiples, tipo de flecha `->` / `<->` / `<=>`, condiciones encima/debajo) usando mhchem.

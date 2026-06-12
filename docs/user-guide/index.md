@@ -1,6 +1,6 @@
 # Guía de usuario — TeXisStudio
 
-Documentación oficial para usuarios finales. Esta carpeta es la fuente canónica: el **Centro de ayuda** integrado en la app y la documentación web futura se generan desde estos archivos.
+Documentación compacta para el **Centro de ayuda** integrado. El sitio bilingüe completo vive en [`../../docs-site/`](../../docs-site/).
 
 ---
 
@@ -17,8 +17,7 @@ Documentación oficial para usuarios finales. Esta carpeta es la fuente canónic
 
 ## Convenciones
 
-- Los archivos están en español (idioma principal del proyecto).
-- Para contenido específico de un idioma, usar sufijos: `getting-started.en.md`, etc. (no implementado todavía).
+- Los archivos están en español y deben mantenerse alineados con las claves i18n del Centro de ayuda.
 - Los encabezados H2 corresponden a secciones que el Centro de ayuda puede enlazar directamente con `HelpLink`.
 - Los fragmentos de código LaTeX van en bloques de código con ` ```latex `.
 - Las tablas de comandos usan tres columnas: **LaTeX** | **Resultado** | **Nota**.
@@ -47,4 +46,4 @@ El Centro de ayuda (`src/components/help/HelpCenter.tsx`) tiene 5 secciones:
 | `errors` | `errors.md` |
 | `faq` | — (generado inline desde i18n) |
 
-La implementación actual renderiza las secciones directamente desde i18n (sin parsear estos archivos). La integración completa (leer los MD en runtime) es deuda técnica para una versión futura.
+La implementación actual renderiza las secciones directamente desde i18n (sin parsear estos archivos). El contenido web más amplio y bilingüe se mantiene en `docs-site/`.
