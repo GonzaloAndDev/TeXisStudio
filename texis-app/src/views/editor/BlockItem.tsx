@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { IconDrag, IconTrash } from "../../components/Icons";
 import { HelpLink } from "../../components/help/HelpLink";
-import type { ContentBlock, HeadingLevel } from "../../types";
+import type { ContentBlock, HeadingLevel, PluginFigureBlock } from "../../types";
 import {
   ParagraphEditor, HeadingEditor, KaTeXPreview, EquationEditor, ListEditor,
   FigureEditor, TableEditor, CitationEditor, GlossaryEntryEditor,
@@ -11,6 +12,105 @@ import {
 } from "./BlockEditors";
 import { VisualBlockEditor } from "./VisualBlockEditor";
 
+// ── Plugin figure inline PDF preview ──────────────────────────────
+
+function PluginFigurePdfPreview({
+  block, projectPath, onEdit,
+}: {
+  block: PluginFigureBlock;
+  projectPath: string;
+  onEdit?: () => void;
+}) {
+  const { t } = useTranslation();
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPdfUrl(null);
+
+    const path = `${projectPath}/texisstudio-assets/figures/${block.figureId}/preview.pdf`;
+    const url = convertFileSrc(path);
+
+    // Poll briefly so a just-triggered background compile can finish
+    let attempt = 0;
+    const check = () => {
+      if (cancelled) return;
+      fetch(url, { method: "HEAD", cache: "no-store" })
+        .then((r) => { if (!cancelled && r.ok) setPdfUrl(url + `?t=${Date.now()}`); })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled && !pdfUrl && attempt < 10) {
+            attempt++;
+            setTimeout(check, 800);
+          }
+        });
+    };
+    check();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectPath, block.figureId, block.sourceJson]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* PDF render — shown when preview.pdf exists */}
+      {pdfUrl ? (
+        <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden", background: "#fff", position: "relative" }}>
+          <iframe
+            src={pdfUrl}
+            style={{ width: "100%", height: 220, border: "none", display: "block", pointerEvents: "none" }}
+            title={block.caption}
+          />
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "4px 0" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--accent-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+            📊
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>
+              {block.caption || block.pluginId}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--fg-faint)", fontStyle: "italic" }}>
+              {t("block_item.preview_pending")}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Meta row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {pdfUrl && (
+            <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 1 }}>
+              {block.caption || block.pluginId}
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+            {block.label} · <span style={{ color: "var(--fg-faint)" }}>{block.figureId}</span>
+          </div>
+          {block.requiredPackages.length > 0 && (
+            <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>
+              {t("block_item.packages")}: {block.requiredPackages.join(", ")}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+          title={t("block_item.edit_figure_title")}
+          style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
+        >
+          {t("block_item.edit_figure")}
+        </button>
+      </div>
+      {block.warnings.length > 0 && (
+        <div style={{ fontSize: 10, color: "var(--build-warn)" }}>⚠ {block.warnings[0]}</div>
+      )}
+    </div>
+  );
+}
+
 // ── BlockItem: combina preview + edición ──────────────────────────
 
 export function BlockItem({
@@ -18,7 +118,7 @@ export function BlockItem({
   dragging, dragOver, highlighted,
   availableCiteKeys, availableLabels, availableAssets,
   onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
-  onEditPluginFigure,
+  onEditPluginFigure, projectPath,
 }: {
   block: ContentBlock;
   isEditing: boolean;
@@ -39,6 +139,8 @@ export function BlockItem({
   onDrop?: () => void;
   /** Abre el modal de edición para un PluginFigureBlock. */
   onEditPluginFigure?: () => void;
+  /** Ruta raíz del proyecto activo — usada para cargar preview.pdf inline. */
+  projectPath?: string;
 }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
@@ -448,8 +550,10 @@ export function BlockItem({
           </div>
         );
       }
-      case "plugin_figure": {
-        return (
+      case "plugin_figure":
+        return projectPath ? (
+          <PluginFigurePdfPreview block={block} projectPath={projectPath} onEdit={onEditPluginFigure} />
+        ) : (
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 0" }}>
             <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--accent-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
               📊
@@ -467,12 +571,11 @@ export function BlockItem({
                 </div>
               )}
               {block.warnings.length > 0 && (
-                <div style={{ fontSize: 10, color: "var(--build-warn)" }}>
-                  ⚠ {block.warnings[0]}
-                </div>
+                <div style={{ fontSize: 10, color: "var(--build-warn)" }}>⚠ {block.warnings[0]}</div>
               )}
             </div>
             <button
+              type="button"
               className="btn btn-ghost btn-sm"
               onClick={(e) => { e.stopPropagation(); onEditPluginFigure?.(); }}
               title={t("block_item.edit_figure_title")}
@@ -482,7 +585,6 @@ export function BlockItem({
             </button>
           </div>
         );
-      }
       default:
         return <div style={{ color: "var(--fg-faint)" }}>{t("block_item.unknown_block")}</div>;
     }

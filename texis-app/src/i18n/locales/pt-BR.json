@@ -1408,7 +1408,8 @@
     "unconfirmed_latex_hint": "Não confirmado — este bloco não será incluído no PDF até que você o confirme.",
     "packages": "Pacotes",
     "edit_figure_title": "Edite o título ou rótulo ou gere novamente a figura",
-    "edit_figure": "Editar figura"
+    "edit_figure": "Editar figura",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
   },
   "compile": {
     "ensure_latex_installed_path": "Verifique se um compilador LaTeX está instalado e disponível em PATH.",

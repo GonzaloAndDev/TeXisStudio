@@ -108,6 +108,9 @@ export async function createPluginFigure(
     warnings: result.warnings,
   });
 
+  // Fire-and-forget: generate preview.pdf for inline block rendering
+  invoke("compile_snippet_preview", { projectPath, figureId: fid }).catch(() => {});
+
   return {
     type: "plugin_figure",
     id: crypto.randomUUID(),
@@ -223,6 +226,9 @@ export async function editPluginFigureWithSource(
     warnings: result.warnings,
   });
 
+  // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh
+  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId }).catch(() => {});
+
   return {
     ...block,
     latexBlock: result.latexBlock,
@@ -279,6 +285,9 @@ export async function editPluginFigure(
     label: finalLabel,
     warnings: result.warnings,
   });
+
+  // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh
+  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId }).catch(() => {});
 
   return {
     ...block,

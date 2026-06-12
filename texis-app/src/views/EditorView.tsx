@@ -1032,6 +1032,7 @@ export default function EditorView() {
                         onStartEdit={() => setEditingId(block.id)}
                         onUpdate={(updates) => updateBlock(block.id, updates as Record<string, unknown>)}
                         onEditPluginFigure={block.type === "plugin_figure" ? () => setFigureEditBlock(block) : undefined}
+                        projectPath={activeProjectPath ?? undefined}
                         onDelete={() => deleteBlock(block.id)}
                         dragging={dragId === block.id}
                         dragOver={dropId === block.id}

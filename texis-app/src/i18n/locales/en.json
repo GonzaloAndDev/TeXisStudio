@@ -1153,6 +1153,7 @@
     "packages": "Packages",
     "edit_figure_title": "Edit the title or label, or regenerate the figure",
     "edit_figure": "Edit figure",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here.",
     "visual_compile_hint": "Click to edit • generated when compiling",
     "unknown_block": "[unknown block]",
     "delete_block": "Delete block",

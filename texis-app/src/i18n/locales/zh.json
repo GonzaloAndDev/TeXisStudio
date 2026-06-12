@@ -1122,7 +1122,8 @@
     "unconfirmed_latex_hint": "未确认 - 在您确认之前，该区块不会包含在 PDF 中。",
     "packages": "套餐",
     "edit_figure_title": "编辑标题或标签，或重新生成图形",
-    "edit_figure": "编辑图"
+    "edit_figure": "编辑图",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
   },
   "compile": {
     "ensure_latex_installed_path": "检查 LaTeX 编译器是否已安装并且在 PATH 中可用。",

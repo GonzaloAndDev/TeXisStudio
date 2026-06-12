@@ -1153,6 +1153,7 @@
     "packages": "Paquetes",
     "edit_figure_title": "Editar el título o la etiqueta, o regenerar la figura",
     "edit_figure": "Editar figura",
+    "preview_pending": "Compila una vista previa desde la pestaña «Vista previa» para ver la figura aquí.",
     "visual_compile_hint": "Clic para editar • se genera al compilar",
     "unknown_block": "[bloque desconocido]",
     "delete_block": "Eliminar bloque",

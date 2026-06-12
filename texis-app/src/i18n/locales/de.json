@@ -1122,7 +1122,8 @@
     "unconfirmed_latex_hint": "Nicht bestätigt – dieser Block wird erst in den PDF aufgenommen, wenn Sie ihn bestätigen.",
     "packages": "Pakete",
     "edit_figure_title": "Bearbeiten Sie den Titel oder die Beschriftung oder generieren Sie die Abbildung neu",
-    "edit_figure": "Figur bearbeiten"
+    "edit_figure": "Figur bearbeiten",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
   },
   "compile": {
     "ensure_latex_installed_path": "Überprüfen Sie, ob ein LaTeX-Compiler installiert und in PATH verfügbar ist.",

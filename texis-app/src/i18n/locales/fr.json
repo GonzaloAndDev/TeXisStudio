@@ -1122,7 +1122,8 @@
     "unconfirmed_latex_hint": "Non confirmé — ce bloc ne sera pas inclus dans le PDF tant que vous ne l'aurez pas confirmé.",
     "packages": "Forfaits",
     "edit_figure_title": "Modifiez le titre ou l'étiquette, ou régénérez la figure",
-    "edit_figure": "Modifier le chiffre"
+    "edit_figure": "Modifier le chiffre",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
   },
   "compile": {
     "ensure_latex_installed_path": "Vérifiez qu'un compilateur LaTeX est installé et disponible dans le PATH.",

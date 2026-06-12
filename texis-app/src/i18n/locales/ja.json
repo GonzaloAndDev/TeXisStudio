@@ -1122,7 +1122,8 @@
     "unconfirmed_latex_hint": "未確認 — このブロックは確認するまで PDF に含まれません。",
     "packages": "パッケージ",
     "edit_figure_title": "タイトルまたはラベルを編集するか、図を再生成します",
-    "edit_figure": "図の編集"
+    "edit_figure": "図の編集",
+    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
   },
   "compile": {
     "ensure_latex_installed_path": "LaTeX コンパイラーがインストールされており、PATH で使用できることを確認してください。",
