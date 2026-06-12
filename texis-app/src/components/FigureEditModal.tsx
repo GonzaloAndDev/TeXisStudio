@@ -127,7 +127,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     if (previewBusy) return;
     setPreviewBusy(true); setPreviewError(null); setPreviewPdfPath(null);
     try {
-      const path = await api.compileSnippetPreview(projectPath, block.figureId);
+      const path = await api.compileSnippetPreview(projectPath, block.figureId, latexPrimaryBackend);
       if (!path) {
         setPreviewError(t("figure_edit.preview_no_tectonic"));
       } else {

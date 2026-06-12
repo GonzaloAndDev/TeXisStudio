@@ -325,9 +325,9 @@ export const api = {
     call("create_profile_lock", { projectPath, profileId }),
 
   /** Compila una vista previa standalone del output.tex de una figura y devuelve la ruta al PDF. */
-  compileSnippetPreview: (projectPath: string, figureId: string): Promise<string | null> => {
+  compileSnippetPreview: (projectPath: string, figureId: string, backend: string): Promise<string | null> => {
     if (!isTauri()) return Promise.resolve(null);
-    return call("compile_snippet_preview", { projectPath, figureId });
+    return call("compile_snippet_preview", { projectPath, figureId, backend });
   },
 
   /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */

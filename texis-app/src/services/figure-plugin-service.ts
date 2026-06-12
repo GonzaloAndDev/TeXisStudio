@@ -3,6 +3,7 @@ import { PLUGIN_REGISTRY, buildLatexInputBlock, setPluginLocale } from "@texisst
 import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory, UserLevel, EditorType } from "@texisstudio/plugins";
 import type { PluginFigureBlock } from "../types";
 import i18n from "../i18n";
+import { useSettingsStore } from "../stores/settings";
 
 // ── Plugin catalog (lazy-instantiated) ────────────────────────────
 
@@ -109,7 +110,7 @@ export async function createPluginFigure(
   });
 
   // Fire-and-forget: generate preview.pdf for inline block rendering
-  invoke("compile_snippet_preview", { projectPath, figureId: fid }).catch(() => {});
+  invoke("compile_snippet_preview", { projectPath, figureId: fid, backend: useSettingsStore.getState().latexPrimaryBackend }).catch(() => {});
 
   return {
     type: "plugin_figure",
@@ -227,7 +228,7 @@ export async function editPluginFigureWithSource(
   });
 
   // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh
-  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId }).catch(() => {});
+  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId, backend: useSettingsStore.getState().latexPrimaryBackend }).catch(() => {});
 
   return {
     ...block,
@@ -287,7 +288,7 @@ export async function editPluginFigure(
   });
 
   // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh
-  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId }).catch(() => {});
+  invoke("compile_snippet_preview", { projectPath, figureId: block.figureId, backend: useSettingsStore.getState().latexPrimaryBackend }).catch(() => {});
 
   return {
     ...block,

@@ -12,6 +12,7 @@ import {
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { api } from "../lib/tauri";
+import { getBestAvailableBackend } from "../lib/latexBackendPreference";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import type { RecentProject } from "../types";
@@ -266,7 +267,16 @@ export default function HomeView() {
   useEffect(() => {
     // Siempre refrescar LaTeX en background; si ya hay datos en caché no mostramos spinner
     api.detectLatex()
-      .then(setLatexInfo)
+      .then((info) => {
+        setLatexInfo(info);
+        // Auto-select most powerful backend if user never made an explicit choice
+        const { latexBackendUserExplicit, latexPrimaryBackend, setLatexPrimaryBackend } =
+          useSettingsStore.getState();
+        if (!latexBackendUserExplicit) {
+          const best = getBestAvailableBackend(info);
+          if (best !== latexPrimaryBackend) setLatexPrimaryBackend(best);
+        }
+      })
       .catch(() => {})
       .finally(() => setLatexLoading(false));
 

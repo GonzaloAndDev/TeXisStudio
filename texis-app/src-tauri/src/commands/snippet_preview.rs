@@ -18,16 +18,14 @@ fn figure_dir(project_path: &str, figure_id: &str) -> PathBuf {
         .join(figure_id)
 }
 
-/// Compiles a standalone preview for a single plugin figure.
-///
-/// Reads `output.tex` and `manifest.json` from the figure directory,
-/// wraps the content in a minimal `standalone` document with the figure's
-/// required packages, and runs Tectonic.  Returns the absolute path to
-/// the generated `preview.pdf`.
+/// Compiles a standalone preview for a single plugin figure using the
+/// specified backend ("tectonic" or "latexmk"). Returns the absolute path
+/// to the generated `preview.pdf`.
 #[tauri::command]
 pub async fn compile_snippet_preview(
     project_path: String,
     figure_id: String,
+    backend: String,
 ) -> Result<String, String> {
     if !safe_figure_id(&figure_id) {
         return Err(format!("figureId inválido: '{figure_id}'"));
@@ -76,16 +74,30 @@ pub async fn compile_snippet_preview(
     let tex_clone = preview_tex.clone();
 
     tokio::task::spawn_blocking(move || {
-        let output = std::process::Command::new("tectonic")
-            .arg("--outdir")
-            .arg(&dir_clone)
-            .arg(&tex_clone)
-            .output()
-            .map_err(|e| format!("No se pudo ejecutar Tectonic: {e}"))?;
+        let output = if backend == "latexmk" {
+            std::process::Command::new("latexmk")
+                .arg("-pdf")
+                .arg("-interaction=nonstopmode")
+                .arg("-halt-on-error")
+                .arg(format!("-outdir={}", dir_clone.display()))
+                .arg(&tex_clone)
+                .current_dir(&dir_clone)
+                .output()
+                .map_err(|e| format!("No se pudo ejecutar latexmk: {e}"))?
+        } else {
+            std::process::Command::new("tectonic")
+                .arg("--outdir")
+                .arg(&dir_clone)
+                .arg(&tex_clone)
+                .output()
+                .map_err(|e| format!("No se pudo ejecutar Tectonic: {e}"))?
+        };
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("Tectonic falló:\n{stderr}"));
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let detail = if stderr.trim().is_empty() { stdout } else { stderr };
+            return Err(format!("{} falló:\n{detail}", if backend == "latexmk" { "latexmk" } else { "Tectonic" }));
         }
         Ok(())
     })
