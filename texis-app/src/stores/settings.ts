@@ -19,6 +19,8 @@ interface SettingsState {
   projectDir: string;
   latexPrimaryBackend: LatexBackend;
   latexAllowFallback: boolean;
+  /** false = auto-upgrade allowed; true = user explicitly chose a backend */
+  latexBackendUserExplicit: boolean;
 
   setLang: (lang: string) => void;
   setUserMode: (mode: "basic" | "advanced") => void;
@@ -36,6 +38,7 @@ interface SettingsState {
   setProjectDir: (v: string) => void;
   setLatexPrimaryBackend: (backend: LatexBackend) => void;
   setLatexAllowFallback: (enabled: boolean) => void;
+  setLatexBackendUserExplicit: (v: boolean) => void;
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -67,6 +70,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   projectDir: load("tx-project-dir", ""),
   latexPrimaryBackend: load("tx-latex-primary-backend", "tectonic"),
   latexAllowFallback: load("tx-latex-allow-fallback", true),
+  latexBackendUserExplicit: load("tx-latex-backend-explicit", false),
 
   setLang: (lang) => {
     set({ lang: persistUiLanguage(lang) });
@@ -124,5 +128,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setLatexAllowFallback: (latexAllowFallback) => {
     save("tx-latex-allow-fallback", latexAllowFallback);
     set({ latexAllowFallback });
+  },
+  setLatexBackendUserExplicit: (v) => {
+    save("tx-latex-backend-explicit", v);
+    set({ latexBackendUserExplicit: v });
   },
 }));

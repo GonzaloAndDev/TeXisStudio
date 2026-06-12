@@ -2,6 +2,12 @@ import type { LatexInfo } from "../types";
 
 export type LatexBackend = "tectonic" | "latexmk";
 
+/** Returns the most capable backend available on this system. */
+export function getBestAvailableBackend(info: LatexInfo | null): LatexBackend {
+  if (!info) return "tectonic";
+  return info.latexmk_usable ? "latexmk" : "tectonic";
+}
+
 export function resolvePreferredLatexBackend(
   primary: LatexBackend,
   allowFallback: boolean,

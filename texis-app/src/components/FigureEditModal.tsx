@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { useSettingsStore } from "../stores/settings";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
 import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
@@ -58,6 +59,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
 
   const captionRef = useRef<HTMLInputElement>(null);
 
+  const latexPrimaryBackend = useSettingsStore((s) => s.latexPrimaryBackend);
   const info = getPluginInfo(block.pluginId);
   const quality = QUALITY_BADGE[info?.qualityLevel ?? ""] ?? { label: info?.qualityLevel ?? "", color: "var(--fg-faint)" };
   const difficulty = DIFFICULTY_BADGE[info?.userLevel ?? "intermediate"] ?? DIFFICULTY_BADGE.intermediate;
@@ -307,6 +309,11 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           {/* ── Preview tab ── */}
           {activeTab === "preview" && (
             <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {latexPrimaryBackend === "tectonic" && (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", padding: "6px 10px", background: "var(--bg-panel)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-xs)", lineHeight: 1.5 }}>
+                  ⚙ {t("figure_edit.preview_tectonic_note")}
+                </div>
+              )}
               {visualDirty && (
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", padding: "6px 10px", background: "var(--build-warn-tint, #ffcc0015)", borderRadius: "var(--r-xs)" }}>
                   {t("figure_edit.preview_apply_first")}

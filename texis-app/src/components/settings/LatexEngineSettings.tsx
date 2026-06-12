@@ -3,46 +3,122 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../lib/tauri";
 import type { LatexBackend } from "../../lib/latexBackendPreference";
+import { getBestAvailableBackend } from "../../lib/latexBackendPreference";
 import { useProjectStore } from "../../stores/project";
 import { useSettingsStore } from "../../stores/settings";
 import { Card, SectionHeading, Toggle } from "../../views/settings/SettingsWidgets";
+
+type Platform = "macos" | "windows" | "linux" | string;
+
+function getSuiteName(platform: Platform): string {
+  if (platform === "macos")   return "MacTeX";
+  if (platform === "windows") return "MiKTeX";
+  return "TeX Live";
+}
 
 export function LatexEngineSettings() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { latexInfo, setLatexInfo } = useProjectStore();
-  const { latexPrimaryBackend, latexAllowFallback, setLatexPrimaryBackend, setLatexAllowFallback } = useSettingsStore();
+  const {
+    latexPrimaryBackend, latexAllowFallback, latexBackendUserExplicit,
+    setLatexPrimaryBackend, setLatexAllowFallback, setLatexBackendUserExplicit,
+  } = useSettingsStore();
+
   const [checking, setChecking] = useState(latexInfo === null);
+  const [platform, setPlatform] = useState<Platform>("linux");
+
+  useEffect(() => {
+    api.getPlatform().then(setPlatform).catch(() => {});
+  }, []);
 
   function refresh() {
     setChecking(true);
-    api.detectLatex().then(setLatexInfo).finally(() => setChecking(false));
+    api.detectLatex()
+      .then((info) => {
+        setLatexInfo(info);
+        // Auto-select the most powerful engine if the user never explicitly chose
+        if (!latexBackendUserExplicit) {
+          const best = getBestAvailableBackend(info);
+          if (best !== latexPrimaryBackend) {
+            setLatexPrimaryBackend(best);
+          }
+        }
+      })
+      .finally(() => setChecking(false));
+  }
+
+  function handleSelectBackend(id: LatexBackend) {
+    setLatexBackendUserExplicit(true);
+    setLatexPrimaryBackend(id);
   }
 
   useEffect(() => {
     if (!latexInfo) refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const options: Array<{ id: LatexBackend; title: string; description: string; available: boolean; version?: string }> = [
+  const suiteName = getSuiteName(platform);
+
+  // Upgrade suggestion: user explicitly chose Tectonic but latexmk is now available
+  const showUpgradeBanner =
+    latexBackendUserExplicit &&
+    latexPrimaryBackend === "tectonic" &&
+    (latexInfo?.latexmk_usable ?? false);
+
+  const options: Array<{
+    id: LatexBackend;
+    title: string;
+    description: string;
+    available: boolean;
+    version?: string;
+    isBest: boolean;
+  }> = [
     {
       id: "tectonic",
       title: t("settings.latex_tectonic_title"),
       description: t("settings.latex_tectonic_description"),
       available: latexInfo?.has_tectonic ?? false,
       version: latexInfo?.tectonic_version,
+      isBest: !(latexInfo?.latexmk_usable ?? false),
     },
     {
       id: "latexmk",
-      title: t("settings.latex_suite_title"),
-      description: t("settings.latex_suite_description"),
+      title: t("settings.latex_suite_title_os", { suiteName }),
+      description: t("settings.latex_suite_description", { suiteName }),
       available: latexInfo?.latexmk_usable ?? false,
       version: latexInfo?.latexmk_version,
+      isBest: latexInfo?.latexmk_usable ?? false,
     },
   ];
 
   return (
     <div>
       <SectionHeading>{t("settings.section_latex")}</SectionHeading>
+
+      {/* Upgrade banner */}
+      {showUpgradeBanner && (
+        <div style={{
+          padding: "12px 16px", borderRadius: "var(--r-md)", marginBottom: 16,
+          background: "color-mix(in srgb, var(--build-ok) 10%, var(--bg-panel))",
+          border: "1px solid var(--build-ok)",
+          display: "flex", gap: 12, alignItems: "center",
+        }}>
+          <span style={{ fontSize: 16 }}>⬆</span>
+          <div style={{ flex: 1, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.5 }}>
+            {t("settings.latex_upgrade_banner", { suiteName })}
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-accent"
+            onClick={() => handleSelectBackend("latexmk")}
+            style={{ flexShrink: 0 }}
+          >
+            {t("settings.latex_upgrade_btn", { suiteName })}
+          </button>
+        </div>
+      )}
+
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: "var(--fs-base)", fontWeight: 600, color: "var(--fg-strong)" }}>
           {t("settings.latex_primary_title")}
@@ -59,7 +135,7 @@ export function LatexEngineSettings() {
                 key={option.id}
                 type="button"
                 className="tx-unstyled-button"
-                onClick={() => setLatexPrimaryBackend(option.id)}
+                onClick={() => handleSelectBackend(option.id)}
                 aria-pressed={selected}
                 style={{
                   textAlign: "left", padding: 16, borderRadius: "var(--r-lg)",
@@ -67,18 +143,30 @@ export function LatexEngineSettings() {
                   background: selected ? "var(--accent-tint)" : "var(--bg-surface)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-                  <strong style={{ color: "var(--fg-strong)" }}>{option.title}</strong>
-                  <span style={{ fontSize: "var(--fs-xs)", color: option.available ? "var(--build-ok)" : "var(--fg-faint)" }}>
-                    {option.available ? t("settings.latex_available") : t("settings.latex_not_available")}
-                  </span>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
+                  <strong style={{ color: "var(--fg-strong)", fontSize: "var(--fs-sm)" }}>{option.title}</strong>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end", flexShrink: 0 }}>
+                    {option.isBest && option.available && (
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: "var(--r-xs)", background: "var(--build-ok)", color: "#fff" }}>
+                        {t("settings.latex_recommended_badge")}
+                      </span>
+                    )}
+                    <span style={{ fontSize: "var(--fs-xs)", color: option.available ? "var(--build-ok)" : "var(--fg-faint)" }}>
+                      {option.available ? t("settings.latex_available") : t("settings.latex_not_available")}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginTop: 8, lineHeight: 1.5 }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
                   {option.description}
                 </div>
                 {option.version && (
                   <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8 }}>
                     {t("settings.latex_detected_version", { version: option.version })}
+                  </div>
+                )}
+                {!option.available && option.id === "latexmk" && (
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8, fontStyle: "italic" }}>
+                    {t("settings.latex_suite_install_hint", { suiteName })}
                   </div>
                 )}
               </button>
