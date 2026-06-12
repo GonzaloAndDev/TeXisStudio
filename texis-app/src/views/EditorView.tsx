@@ -848,7 +848,7 @@ export default function EditorView() {
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
-          <div className="editor-toolbar scroll" style={{ height: 58, flexShrink: 0, borderBottom: "1px solid var(--border-firm)", padding: "0 10px 7px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }}>
+          <div className="editor-toolbar scroll" style={{ height: 60, flexShrink: 0, borderBottom: "1px solid var(--border-firm)", padding: "4px 10px 6px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }}>
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
@@ -866,20 +866,20 @@ export default function EditorView() {
 
             {/* Picker de citas */}
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setCitPickerOpen(true)}
               title={t("editor.insert_citation_title")}
-              style={{ flexDirection: "column", gap: 2, padding: "4px 8px", height: 46, fontSize: 9, flexShrink: 0 }}
+              style={{}}
             >
               <IconMore size={12} /><span>{t("editor.block_citation")}</span>
             </button>
 
             {/* Picker de figuras de plugin */}
             <button
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm editor-tool-button"
               onClick={() => setPluginPickerOpen(true)}
               title={t("editor.insert_plugin_figure_title")}
-              style={{ flexDirection: "column", gap: 2, padding: "4px 8px", height: 46, fontSize: 9, flexShrink: 0 }}
+              style={{}}
             >
               <IconImage size={12} /><span>{t("editor.block_plugin_figure")}</span>
             </button>
