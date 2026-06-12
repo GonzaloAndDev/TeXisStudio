@@ -175,7 +175,7 @@ Manual snapshots with labels and timestamps. One-click restore. Delivery export 
 
 #### Settings and accessibility
 
-UI scale: normal, large, x-large. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail). LaTeX engine preferences can prioritize Tectonic or a complete TeX suite and optionally use the other backend as a fallback.
+UI scale: normal, large, x-large. Startup window behavior: laptop default (1280 × 760), remember the last size, or maximize. The editor keeps both side panels usable at common 1280 × 720 laptop viewports, with independently scrollable tool and status bars. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail). LaTeX engine preferences can prioritize Tectonic or a complete TeX suite and optionally use the other backend as a fallback.
 
 ---
 
@@ -390,7 +390,7 @@ Vista de progreso sección por sección con estado editorial, conteo de palabras
 
 #### Configuración y accesibilidad
 
-Escala de UI: normal, grande, extra grande. 7 idiomas de interfaz: ES, EN, FR, DE, PT-BR, ZH, JA. Ortografía para ES y EN incluida; FR y DE como paquetes descargables. Revisión gramatical. Diccionario personalizado. Las preferencias del motor LaTeX permiten priorizar Tectonic o una suite TeX completa y usar el otro backend como respaldo opcional.
+Escala de UI: normal, grande, extra grande. Comportamiento de ventana al iniciar: tamaño para laptop (1280 × 760), recordar el último tamaño o maximizar. El editor conserva ambos paneles laterales en resoluciones habituales de laptop de 1280 × 720, con barras de herramientas y estado claramente separadas. 7 idiomas de interfaz: ES, EN, FR, DE, PT-BR, ZH, JA. Ortografía para ES y EN incluida; FR y DE como paquetes descargables. Revisión gramatical. Diccionario personalizado. Las preferencias del motor LaTeX permiten priorizar Tectonic o una suite TeX completa y usar el otro backend como respaldo opcional.
 
 ---
 

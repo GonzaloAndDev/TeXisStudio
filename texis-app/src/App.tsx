@@ -13,6 +13,8 @@ import { ToastProvider } from "./components/ui/ToastProvider";
 import i18n from "./i18n";
 
 import { WELCOME_SHOWN_KEY } from "./constants/welcome";
+import { useSettingsStore } from "./stores/settings";
+import { applyWindowMode, watchRememberedWindowSize } from "./services/windowPreferences";
 
 const AboutView = lazy(() => import("./views/AboutView"));
 const CompileView = lazy(() => import("./views/CompileView"));
@@ -248,10 +250,33 @@ const router = createBrowserRouter(
   },
 );
 
+function WindowPreferenceController() {
+  const windowMode = useSettingsStore((state) => state.windowMode);
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let disposed = false;
+    applyWindowMode(windowMode).then(() => {
+      if (disposed || windowMode !== "remember") return;
+      watchRememberedWindowSize((nextCleanup) => {
+        if (disposed) nextCleanup();
+        else cleanup = nextCleanup;
+      });
+    }).catch(() => {});
+    return () => {
+      disposed = true;
+      cleanup?.();
+    };
+  }, [windowMode]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
+        <WindowPreferenceController />
         <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflowX: "auto", overflowY: "hidden" }}>
           <AppErrorBoundary>
             <Suspense

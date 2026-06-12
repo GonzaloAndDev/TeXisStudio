@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { persistUiLanguage, readStoredUiLanguage } from "../i18n/languageState";
 import type { LatexBackend } from "../lib/latexBackendPreference";
+import type { WindowMode } from "../services/windowPreferences";
 
 interface SettingsState {
   lang: string;
   userMode: "basic" | "advanced";
   uiScale: "normal" | "large" | "xlarge";
+  windowMode: WindowMode;
   spellLang: string | null;
   autocorrectEnabled: boolean;
   grammarAutoCheck: boolean;
@@ -21,6 +23,7 @@ interface SettingsState {
   setLang: (lang: string) => void;
   setUserMode: (mode: "basic" | "advanced") => void;
   setUiScale: (scale: "normal" | "large" | "xlarge") => void;
+  setWindowMode: (mode: WindowMode) => void;
   setSpellLang: (lang: string | null) => void;
   setAutocorrect: (v: boolean) => void;
   setGrammarAutoCheck: (v: boolean) => void;
@@ -52,6 +55,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   lang: readStoredUiLanguage(),
   userMode: load("tx-user-mode", "basic"),
   uiScale: load("tx-ui-scale", "normal"),
+  windowMode: load("tx-window-mode", "default"),
   spellLang: load("tx-spell-lang", "es"),
   autocorrectEnabled: load("tx-autocorrect", true),
   grammarAutoCheck: load("tx-grammar-auto", false),
@@ -75,6 +79,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     save("tx-ui-scale", uiScale);
     document.documentElement.dataset.uiScale = uiScale;
     set({ uiScale });
+  },
+  setWindowMode: (windowMode) => {
+    save("tx-window-mode", windowMode);
+    set({ windowMode });
   },
   setSpellLang: (spellLang) => {
     save("tx-spell-lang", spellLang);

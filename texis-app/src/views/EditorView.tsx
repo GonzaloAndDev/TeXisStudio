@@ -848,16 +848,16 @@ export default function EditorView() {
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
           {/* Toolbar */}
-          <div className="editor-toolbar" style={{ height: 38, flexShrink: 0, borderBottom: "1px solid var(--border-subtle)", padding: "0 14px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)" }}>
+          <div className="editor-toolbar scroll" style={{ height: 58, flexShrink: 0, borderBottom: "1px solid var(--border-firm)", padding: "0 10px 7px", display: "flex", alignItems: "center", gap: 2, background: "var(--bg-panel)", fontSize: "var(--fs-sm)", overflowX: "auto", overflowY: "hidden" }}>
             {toolbarItems.map(([type, icon, label, tooltip]) => (
               <button
                 key={type}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm editor-tool-button"
                 onClick={() => addBlock(type)}
                 title={label + (tooltip ? ` — ${tooltip}` : "")}
-                style={{ padding: "4px 7px", fontSize: "var(--fs-xs)", gap: 4 }}
+                style={{}}
               >
-                {icon}
+                {icon}<span>{label}</span>
               </button>
             ))}
 
@@ -869,7 +869,7 @@ export default function EditorView() {
               className="btn btn-ghost btn-sm"
               onClick={() => setCitPickerOpen(true)}
               title={t("editor.insert_citation_title")}
-              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+              style={{ flexDirection: "column", gap: 2, padding: "4px 8px", height: 46, fontSize: 9, flexShrink: 0 }}
             >
               <IconMore size={12} /><span>{t("editor.block_citation")}</span>
             </button>
@@ -879,12 +879,12 @@ export default function EditorView() {
               className="btn btn-ghost btn-sm"
               onClick={() => setPluginPickerOpen(true)}
               title={t("editor.insert_plugin_figure_title")}
-              style={{ flexDirection: "column", gap: 1, padding: "5px 8px", height: "auto", fontSize: 9 }}
+              style={{ flexDirection: "column", gap: 2, padding: "4px 8px", height: 46, fontSize: 9, flexShrink: 0 }}
             >
               <IconImage size={12} /><span>{t("editor.block_plugin_figure")}</span>
             </button>
 
-            <div style={{ flex: 1 }} />
+            <div style={{ flex: "1 0 12px" }} />
 
             {/* Botones de revisión */}
             <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 4px", flexShrink: 0 }} />

@@ -60,10 +60,10 @@ export default function SettingsView() {
   const { section: sectionParam } = useParams<{ section?: string }>();
   const { t } = useTranslation();
   const {
-    lang, userMode, uiScale, spellLang,
+    lang, userMode, uiScale, windowMode, spellLang,
     autocorrectEnabled, grammarAutoCheck, grammarEnabled,
     customDictionary, userName, userInstitution, userEmail, projectDir,
-    setLang, setUserMode, setUiScale, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
+    setLang, setUserMode, setUiScale, setWindowMode, setSpellLang, setAutocorrect, setGrammarAutoCheck, setGrammarEnabled,
     addToCustomDictionary, removeFromCustomDictionary,
     setUserName, setUserInstitution, setUserEmail, setProjectDir,
   } = useSettingsStore();
@@ -757,6 +757,30 @@ export default function SettingsView() {
                 </div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
                   {t("settings.ui_scale_hint")}
+                </div>
+              </Card>
+
+              <Card style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, marginBottom: 12, color: "var(--fg-strong)" }}>
+                  {t("settings.window_mode_title")}
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+                  {([
+                    ["default", t("settings.window_mode_default")],
+                    ["remember", t("settings.window_mode_remember")],
+                    ["maximized", t("settings.window_mode_maximized")],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      className={`btn ${windowMode === value ? "btn-accent" : "btn-ghost"}`}
+                      onClick={() => setWindowMode(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+                  {t("settings.window_mode_hint")}
                 </div>
               </Card>
 

@@ -54,25 +54,26 @@ export function TxAppbar({
 }) {
   return (
     <div
+      className="tx-appbar"
       style={{
         height: "var(--chrome-h)",
         flexShrink: 0,
         background: "var(--bg-chrome)",
         borderBottom: "1px solid var(--border-soft)",
         display: "grid",
-        gridTemplateColumns: "1fr auto 1fr",
+        gridTemplateColumns: "minmax(0, 1fr) auto max-content",
         alignItems: "center",
         padding: "0 12px",
         gap: 12,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+      <div className="tx-appbar-left" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, overflow: "hidden" }}>
         {left}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
         {center}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+      <div className="tx-appbar-right" style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end", whiteSpace: "nowrap" }}>
         {right}
       </div>
     </div>
@@ -83,7 +84,7 @@ export function TxAppbar({
 
 export function TxBreadcrumb({ parts }: { parts: string[] }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "var(--fs-base)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "var(--fs-base)", minWidth: 0, overflow: "hidden", whiteSpace: "nowrap" }}>
       {parts.map((p, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span style={{ color: "var(--fg-faint)" }}>/</span>}
@@ -91,6 +92,10 @@ export function TxBreadcrumb({ parts }: { parts: string[] }) {
             style={{
               color: i === parts.length - 1 ? "var(--fg-strong)" : "var(--fg-muted)",
               fontWeight: i === parts.length - 1 ? 500 : 400,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flexShrink: i === parts.length - 1 ? 0 : 1,
             }}
           >
             {p}
@@ -113,14 +118,15 @@ interface StatusItem {
 export function TxStatusbar({ items }: { items: StatusItem[] }) {
   return (
     <div
+      className="tx-statusbar"
       style={{
         height: "var(--statusbar-h)",
         flexShrink: 0,
         background: "var(--bg-chrome)",
-        borderTop: "1px solid var(--border-subtle)",
+        borderTop: "1px solid var(--border-firm)",
         display: "flex",
         alignItems: "center",
-        gap: 16,
+        gap: 0,
         padding: "0 12px",
         fontSize: "var(--fs-xs)",
         color: "var(--fg-muted)",
@@ -129,6 +135,7 @@ export function TxStatusbar({ items }: { items: StatusItem[] }) {
     >
       {items.map((it, i) => (
         <span
+          className="tx-statusbar-item"
           key={i}
           style={{
             display: "inline-flex",
