@@ -353,7 +353,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
               )}
               {previewPdfPath && (
                 <iframe
-                  src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}`}
+                  src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
                   style={{ width: "100%", height: 380, border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}
                   title={t("figure_edit.tab_preview")}
                 />

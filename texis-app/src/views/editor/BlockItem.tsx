@@ -36,7 +36,8 @@ function PluginFigurePdfPreview({
     const check = () => {
       if (cancelled) return;
       fetch(url, { method: "HEAD", cache: "no-store" })
-        .then((r) => { if (!cancelled && r.ok) setPdfUrl(url + `?t=${Date.now()}`); })
+        // #toolbar=0… hides the WebView's native PDF viewer chrome (zoom, download…)
+        .then((r) => { if (!cancelled && r.ok) setPdfUrl(url + `?t=${Date.now()}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`); })
         .catch(() => {})
         .finally(() => {
           if (!cancelled && !pdfUrl && attempt < 10) {
@@ -52,61 +53,56 @@ function PluginFigurePdfPreview({
   }, [projectPath, block.figureId, block.sourceJson]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {/* PDF render — shown when preview.pdf exists */}
+    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* PDF render to the side — shown when preview.pdf exists */}
       {pdfUrl ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden", background: "#fff", position: "relative" }}>
+        <div style={{ width: 280, maxWidth: "100%", flexShrink: 0, border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden", background: "#fff", position: "relative" }}>
           <iframe
             src={pdfUrl}
-            style={{ width: "100%", height: 220, border: "none", display: "block", pointerEvents: "none" }}
+            style={{ width: "100%", height: 200, border: "none", display: "block", pointerEvents: "none" }}
             title={block.caption}
           />
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "4px 0" }}>
+        <div style={{ width: 280, maxWidth: "100%", flexShrink: 0, display: "flex", gap: 12, alignItems: "center", padding: "12px", border: "1px dashed var(--border-soft)", borderRadius: "var(--r-sm)" }}>
           <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--accent-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
             📊
           </div>
+          <div style={{ fontSize: 10, color: "var(--fg-faint)", fontStyle: "italic" }}>
+            {t("block_item.preview_pending")}
+          </div>
+        </div>
+      )}
+      {/* Meta column — fills the remaining space beside the figure */}
+      <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 2 }}>
               {block.caption || block.pluginId}
             </div>
-            <div style={{ fontSize: 10, color: "var(--fg-faint)", fontStyle: "italic" }}>
-              {t("block_item.preview_pending")}
+            <div style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
+              {block.label} · <span style={{ color: "var(--fg-faint)" }}>{block.figureId}</span>
             </div>
+            {block.requiredPackages.length > 0 && (
+              <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 2 }}>
+                {t("block_item.packages")}: {block.requiredPackages.join(", ")}
+              </div>
+            )}
           </div>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+            title={t("block_item.edit_figure_title")}
+            style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
+          >
+            {t("block_item.edit_figure")}
+          </button>
         </div>
-      )}
-      {/* Meta row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {pdfUrl && (
-            <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--fg-strong)", marginBottom: 1 }}>
-              {block.caption || block.pluginId}
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}>
-            {block.label} · <span style={{ color: "var(--fg-faint)" }}>{block.figureId}</span>
-          </div>
-          {block.requiredPackages.length > 0 && (
-            <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>
-              {t("block_item.packages")}: {block.requiredPackages.join(", ")}
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
-          title={t("block_item.edit_figure_title")}
-          style={{ fontSize: 10, padding: "3px 8px", flexShrink: 0 }}
-        >
-          {t("block_item.edit_figure")}
-        </button>
+        {block.warnings.length > 0 && (
+          <div style={{ fontSize: 10, color: "var(--build-warn)" }}>⚠ {block.warnings[0]}</div>
+        )}
       </div>
-      {block.warnings.length > 0 && (
-        <div style={{ fontSize: 10, color: "var(--build-warn)" }}>⚠ {block.warnings[0]}</div>
-      )}
     </div>
   );
 }
