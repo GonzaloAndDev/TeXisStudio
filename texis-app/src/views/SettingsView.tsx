@@ -17,6 +17,7 @@ import { LatexEngineSettings } from "../components/settings/LatexEngineSettings"
 import { SectionHeading, Card, Toggle, FieldRow } from "./settings/SettingsWidgets";
 import { checkForUpdate, UPDATER_ENABLED } from "../services/updater";
 import { LatexMinimalGuide } from "../components/help/LatexMinimalGuide";
+import { api } from "../lib/tauri";
 // ── Layout constants ──────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -61,6 +62,9 @@ function LatexGuideCard() {
   return (
     <Card style={{ marginBottom: 16 }}>
       <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="settings-latex-guide"
         onClick={() => setOpen((v) => !v)}
         style={{
           width: "100%", background: "none", border: "none", cursor: "pointer",
@@ -72,7 +76,7 @@ function LatexGuideCard() {
         <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s", fontSize: 10, color: "var(--fg-muted)" }}>▼</span>
       </button>
       {open && (
-        <div style={{ marginTop: 14 }}>
+        <div id="settings-latex-guide" style={{ marginTop: 14 }}>
           <LatexMinimalGuide />
         </div>
       )}
@@ -876,20 +880,20 @@ export default function SettingsView() {
 
               <Card>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <a
-                    href="https://github.com/GonzaloAndDev/TeXisStudio/wiki"
-                    style={{ color: "var(--link)", fontSize: "var(--fs-sm)", textDecoration: "none" }}
-                    target="_blank" rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => void api.openInSystem("https://github.com/GonzaloAndDev/TeXisStudio/wiki")}
+                    style={{ padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--link)", fontSize: "var(--fs-sm)", textDecoration: "none", textAlign: "left" }}
                   >
                     {t("settings.help_docs")} →
-                  </a>
-                  <a
-                    href="https://github.com/GonzaloAndDev/TeXisStudio/issues/new"
-                    style={{ color: "var(--link)", fontSize: "var(--fs-sm)", textDecoration: "none" }}
-                    target="_blank" rel="noreferrer"
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void api.openInSystem("https://github.com/GonzaloAndDev/TeXisStudio/issues/new")}
+                    style={{ padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--link)", fontSize: "var(--fs-sm)", textDecoration: "none", textAlign: "left" }}
                   >
                     {t("settings.help_report")} →
-                  </a>
+                  </button>
                 </div>
               </Card>
             </div>

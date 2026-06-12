@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "../../lib/tauri";
 
 interface ResourceLink {
   url: string;
-  label: string;
+  label?: string;
+  labelKey?: string;
   descKey: string;
   lang: string;
 }
@@ -23,9 +25,9 @@ const SECTIONS: Section[] = [
       { exampleLatex: "$x^2 + 1 = 0$",                          outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_inline" },
       { exampleLatex: "\\( x^2 + 1 = 0 \\)",                   outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_inline_alt" },
       { exampleLatex: "\\[ x^2 + 1 = 0 \\]",                   outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_display" },
-      { exampleLatex: "$$x^2 + 1 = 0$$",                        outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_display_alt" },
+      { exampleLatex: "\\begin{equation*}…\\end{equation*}", outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_display_alt" },
       { exampleLatex: "\\begin{equation}…\\end{equation}",       outputHint: "(1)",         noteKey: "help.latex.hint_equation" },
-      { exampleLatex: "\\begin{align}…\\end{align}",             outputHint: "multi",       noteKey: "help.latex.hint_align" },
+      { exampleLatex: "\\begin{align}…\\end{align}",             outputHint: "↕",           noteKey: "help.latex.hint_align" },
     ],
   },
   {
@@ -115,9 +117,9 @@ const SECTIONS: Section[] = [
     id: "resources",
     titleKey: "help.latex.resources_title",
     links: [
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Principiante", label: "TeXisStudio Wiki — LaTeX · Principiante / Beginner",    descKey: "help.latex.res_wiki_beginner_desc",     lang: "TS" },
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Intermedio",   label: "TeXisStudio Wiki — LaTeX · Intermedio / Intermediate",  descKey: "help.latex.res_wiki_intermediate_desc", lang: "TS" },
-      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Avanzado",     label: "TeXisStudio Wiki — LaTeX · Avanzado / Advanced",        descKey: "help.latex.res_wiki_advanced_desc",     lang: "TS" },
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Principiante", labelKey: "help.latex.res_wiki_beginner_label",     descKey: "help.latex.res_wiki_beginner_desc",     lang: "TS" },
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Intermedio",   labelKey: "help.latex.res_wiki_intermediate_label", descKey: "help.latex.res_wiki_intermediate_desc", lang: "TS" },
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Avanzado",     labelKey: "help.latex.res_wiki_advanced_label",     descKey: "help.latex.res_wiki_advanced_desc",     lang: "TS" },
       { url: "https://www.overleaf.com/learn",      label: "Overleaf Learn",                   descKey: "help.latex.res_overleaf_desc",    lang: "EN" },
       { url: "https://ctan.org/pkg/lshort-english", label: "lshort — Not So Short Intro",      descKey: "help.latex.res_lshort_en_desc",   lang: "EN" },
       { url: "https://en.wikibooks.org/wiki/LaTeX", label: "LaTeX Wikibook",                   descKey: "help.latex.res_wikibook_en_desc", lang: "EN" },
@@ -143,6 +145,9 @@ export function LatexMinimalGuide() {
         return (
           <div key={sec.id} style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
             <button
+              type="button"
+              aria-expanded={isOpen}
+              aria-controls={`latex-guide-${sec.id}`}
               onClick={() => setOpenSection(isOpen ? null : sec.id)}
               style={{ width: "100%", padding: "7px 12px", background: isOpen ? "var(--bg-hover)" : "var(--bg-app)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-xs)", color: "var(--fg-default)", textAlign: "left", fontWeight: isOpen ? 600 : 400 }}
             >
@@ -150,7 +155,7 @@ export function LatexMinimalGuide() {
               {t(sec.titleKey)}
             </button>
             {isOpen && sec.items && (
-              <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 5 }}>
+              <div id={`latex-guide-${sec.id}`} style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 5 }}>
                 {sec.items.map((item, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                     <code style={{ flex: "0 0 auto", minWidth: 180, padding: "3px 7px", background: "var(--ink-900, #14110f)", color: "#aef", borderRadius: "var(--r-xs)", fontSize: 11, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
@@ -164,21 +169,20 @@ export function LatexMinimalGuide() {
               </div>
             )}
             {isOpen && sec.links && (
-              <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div id={`latex-guide-${sec.id}`} style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {sec.links.map((link, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ flex: "0 0 26px", fontSize: 10, fontWeight: 700, paddingTop: 3, fontFamily: "var(--font-mono)", letterSpacing: "0.03em", color: link.lang === "TS" ? "var(--fg-accent, #7c6af7)" : "var(--fg-muted)" }}>
                       {link.lang}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: "var(--fs-xs)", color: "var(--fg-link, #4a9eff)", textDecoration: "none", fontWeight: 500 }}
+                      <button
+                        type="button"
+                        onClick={() => void api.openInSystem(link.url)}
+                        style={{ padding: 0, background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-xs)", color: "var(--fg-link, #4a9eff)", textDecoration: "none", fontWeight: 500, textAlign: "left" }}
                       >
-                        {link.label} ↗
-                      </a>
+                        {link.labelKey ? t(link.labelKey) : link.label} ↗
+                      </button>
                       <div style={{ fontSize: 10, color: "var(--fg-muted)", marginTop: 1, lineHeight: 1.4 }}>
                         {t(link.descKey)}
                       </div>

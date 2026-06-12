@@ -63,6 +63,9 @@ Pushing a `v*` tag runs `.github/workflows/release.yml` on Windows, Linux, and m
 
 Canonical user-facing docs live in [`docs/user-guide/`](docs/user-guide/). These are the source of truth for the built-in Help Center and any future web documentation.
 
+The migration from the draft GitHub Wiki to a bilingual documentation site is
+defined in the [documentation professionalization plan](docs/documentation-professionalization-plan.md).
+
 | File | Help Center section |
 |---|---|
 | [getting-started.md](docs/user-guide/getting-started.md) | Getting started |
@@ -295,6 +298,9 @@ Al subir un tag `v*`, `.github/workflows/release.yml` compila en runners Windows
 ### Documentación de usuario
 
 Los documentos canónicos para usuarios finales están en [`docs/user-guide/`](docs/user-guide/). Son la fuente de verdad del Centro de ayuda integrado y cualquier documentación web futura.
+
+La migración desde el borrador de GitHub Wiki hacia un sitio bilingüe está
+definida en el [plan de profesionalización de la documentación](docs/documentation-professionalization-plan.md).
 
 | Archivo | Sección en el Centro de ayuda |
 |---|---|
