@@ -882,7 +882,7 @@ export default function SettingsView() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <button
                     type="button"
-                    onClick={() => void api.openInSystem("https://gonzaloanddev.github.io/TeXisStudio/")}
+                    onClick={() => void api.openInSystem("https://github.com/GonzaloAndDev/TeXisStudio/wiki")}
                     style={{ padding: 0, background: "none", border: "none", cursor: "pointer", color: "var(--link)", fontSize: "var(--fs-sm)", textDecoration: "none", textAlign: "left" }}
                   >
                     {t("settings.help_docs")} →
