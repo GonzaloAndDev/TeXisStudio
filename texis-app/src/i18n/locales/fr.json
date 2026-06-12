@@ -281,7 +281,162 @@
     "recommend_reason_verified": "dispose d'une vérification institutionnelle",
     "recommend_reason_reviewed": "révisé par l'équipe",
     "error_vocab_install": "Impossible d'activer \"{{name}}\". Verifie ta connexion ou deselectionnez-le. Detail: {{error}}",
-    "google_drive_desktop": "Google Drive pour ordinateur"
+    "google_drive_desktop": "Google Drive pour ordinateur",
+    "disciplines": {
+      "matematicas": {
+        "native": [
+          "Numbered equations \\\\eqref{}",
+          "Theorems and proofs",
+          "Matrices and vectors",
+          "Commutative diagrams (tikz-cd)",
+          "Proof trees (bussproofs)"
+        ],
+        "external": [],
+        "tip": "LaTeX is the canonical tool for formal mathematics."
+      },
+      "logica": {
+        "native": [
+          "Deduction trees (bussproofs)",
+          "Truth tables",
+          "Formal semantics",
+          "Hasse diagrams"
+        ],
+        "external": []
+      },
+      "fisica": {
+        "native": [
+          "Physical units \\\\SI{} (siunitx)",
+          "Partial derivatives \\\\pdv{}",
+          "Feynman diagrams (tikz-feynman)",
+          "Plots (pgfplots)"
+        ],
+        "external": [
+          "Numerical simulations (export as PDF/PNG)"
+        ],
+        "tip": "Use siunitx for all units — never write 'km/h' directly."
+      },
+      "quimica": {
+        "native": [
+          "Chemical reactions \\\\ce{} (mhchem)",
+          "Molecular structures (chemfig)",
+          "Units \\\\SI{} (siunitx)"
+        ],
+        "external": [
+          "Complex 3D structures (export from ChemDraw as PDF)"
+        ],
+        "tip": "For simple structures use chemfig. For crystallography or proteins, import as PDF."
+      },
+      "ingenieria": {
+        "native": [
+          "Units \\\\SI{} (siunitx)",
+          "Circuits (circuitikz)",
+          "Data plots (pgfplots)",
+          "Algorithms (algpseudocode)"
+        ],
+        "external": [
+          "Technical drawings (AutoCAD → PDF)",
+          "PCB diagrams (KiCad → PDF)"
+        ],
+        "tip": "circuitikz covers most signal and power circuits."
+      },
+      "computacion": {
+        "native": [
+          "Source code (lstlisting)",
+          "Algorithms with pseudocode",
+          "Performance plots (pgfplots)",
+          "Decision trees (tikz)"
+        ],
+        "external": [
+          "Complex architecture diagrams (draw.io → PDF/PNG)"
+        ]
+      },
+      "humanidades": {
+        "native": [
+          "Extensive footnotes",
+          "Critical apparatus and text citations",
+          "Analytical indexes (makeindex)",
+          "Linguistic examples (gb4e)"
+        ],
+        "external": [
+          "Artwork images (high resolution as PNG/PDF)"
+        ]
+      },
+      "ciencias_sociales": {
+        "native": [
+          "Statistical tables (booktabs)",
+          "Plots (pgfplots)",
+          "Bibliographic citations in APA/Chicago style"
+        ],
+        "external": [
+          "Complex data visualizations (R/Python → PDF/PNG)"
+        ],
+        "tip": "For simple plots use pgfplots. For elaborate visualizations, export from R or Python."
+      },
+      "medicina": {
+        "native": [
+          "Clinical tables (booktabs)",
+          "Medical units \\\\SI{}",
+          "Figures with caption and label"
+        ],
+        "external": [
+          "DICOM images / histology (export as high-resolution PNG/TIFF)",
+          "Clinical flowcharts (draw.io → PDF)"
+        ],
+        "tip": "Diagnostic medical images must be imported as external files, not reproduced in LaTeX."
+      },
+      "musica": {
+        "native": [],
+        "external": [
+          "Complete scores (MuseScore/Sibelius → PDF)",
+          "Audio fragments (external link)"
+        ],
+        "tip": "For complex musical notation, use a score editor and attach as PDF."
+      },
+      "arte": {
+        "native": [
+          "Tabulated technical sheets (booktabs)"
+        ],
+        "external": [
+          "Plates and artworks (high resolution as PNG/TIFF)",
+          "Visual portfolio (external PDF)",
+          "Plans (DWG → PDF)"
+        ],
+        "tip": "For portfolios, include high-quality PDF or PNG. LaTeX manages layout and descriptive text."
+      },
+      "arquitectura": {
+        "native": [
+          "Budget and materials tables",
+          "Schedules",
+          "Descriptive texts"
+        ],
+        "external": [
+          "Floor plans (AutoCAD/ArchiCAD → PDF)",
+          "Renders (export as PNG/PDF)",
+          "Models (photo as PNG)"
+        ]
+      },
+      "biologia": {
+        "native": [
+          "Data tables (booktabs)",
+          "Units \\\\SI{}",
+          "Phylogenetic trees (tikz)"
+        ],
+        "external": [
+          "Complex anatomical diagrams (Inkscape → PDF/SVG)",
+          "Microscopy (high-resolution PNG)"
+        ]
+      },
+      "economia": {
+        "native": [
+          "Statistical tables (booktabs)",
+          "Plots (pgfplots)",
+          "Econometric equations"
+        ],
+        "external": [
+          "Interactive dashboards and visualizations (export as PNG/PDF)"
+        ]
+      }
+    }
   },
   "editor": {
     "placement_front": "Pages liminaires",

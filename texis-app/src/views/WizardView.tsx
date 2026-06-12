@@ -74,108 +74,41 @@ function normalize(value: string): string {
 
 // ── Matriz disciplinaria ──────────────────────────────────────────────────────
 
-type DisciplineSupport = {
-  native: string[];    // qué produce TeXisStudio directamente
-  external: string[];  // qué conviene integrar como asset externo
-  tip?: string;
-};
+// Maps normalized Spanish aliases → i18n key used in wizard.disciplines.*
+const DISCIPLINE_KEY_MAP: Array<[string, string]> = [
+  ["matematicas", "matematicas"],
+  ["logica",      "logica"],
+  ["fisica",      "fisica"],
+  ["quimica",     "quimica"],
+  ["ingenieria",  "ingenieria"],
+  ["computacion", "computacion"],
+  ["humanidades", "humanidades"],
+  ["ciencias sociales", "ciencias_sociales"],
+  ["medicina",    "medicina"],
+  ["musica",      "musica"],
+  ["arte",        "arte"],
+  ["arquitectura","arquitectura"],
+  ["biologia",    "biologia"],
+  ["economia",    "economia"],
+].map(([alias, key]) => [normalize(alias), key]);
 
-const DISCIPLINE_MATRIX: Record<string, DisciplineSupport> = {
-  // Matemáticas / Lógica
-  matematicas: {
-    native: ["Ecuaciones numeradas \\eqref{}", "Teoremas y demostraciones", "Matrices y vectores", "Diagramas conmutativos (tikz-cd)", "Árboles de prueba (bussproofs)"],
-    external: [],
-    tip: "LaTeX es la herramienta canónica para matemáticas formales.",
-  },
-  logica: {
-    native: ["Árboles de deducción (bussproofs)", "Tablas de verdad", "Semántica formal", "Diagramas de Hasse"],
-    external: [],
-  },
-  // Física
-  fisica: {
-    native: ["Unidades físicas \\SI{} (siunitx)", "Derivadas parciales \\pdv{}", "Diagramas de Feynman (tikz-feynman)", "Gráficas (pgfplots)"],
-    external: ["Simulaciones numéricas (exportar como PDF/PNG)"],
-    tip: "Usa siunitx para todas las unidades — nunca escribir 'km/h' directo.",
-  },
-  // Química
-  quimica: {
-    native: ["Reacciones químicas \\ce{} (mhchem)", "Estructuras moleculares (chemfig)", "Unidades \\SI{} (siunitx)"],
-    external: ["Estructuras 3D complejas (exportar desde ChemDraw como PDF)"],
-    tip: "Para estructuras sencillas usa chemfig. Para cristalografía o proteínas, importa como PDF.",
-  },
-  // Ingeniería
-  ingenieria: {
-    native: ["Unidades \\SI{} (siunitx)", "Circuitos (circuitikz)", "Gráficas de datos (pgfplots)", "Algoritmos (algpseudocode)"],
-    external: ["Planos técnicos (AutoCAD → PDF)", "Esquemas PCB (KiCad → PDF)"],
-    tip: "circuitikz cubre la mayoría de los circuitos de señal y potencia.",
-  },
-  computacion: {
-    native: ["Código fuente (lstlisting)", "Algoritmos con pseudocódigo", "Gráficas de rendimiento (pgfplots)", "Árboles de decisión (tikz)"],
-    external: ["Diagramas de arquitectura complejos (draw.io → PDF/PNG)"],
-  },
-  // Humanidades / Ciencias Sociales
-  humanidades: {
-    native: ["Notas al pie extensas", "Aparato crítico y citas textuales", "Índices analíticos (makeindex)", "Ejemplos lingüísticos (gb4e)"],
-    external: ["Imágenes de obras de arte (alta resolución como PNG/PDF)"],
-  },
-  "ciencias sociales": {
-    native: ["Tablas estadísticas (booktabs)", "Gráficas (pgfplots)", "Citas bibliográficas estilo APA/Chicago"],
-    external: ["Visualizaciones de datos complejas (R/Python → PDF/PNG)"],
-    tip: "Para gráficas simples usa pgfplots. Para visualizaciones elaboradas, exporta desde R o Python.",
-  },
-  // Medicina / Salud
-  medicina: {
-    native: ["Tablas clínicas (booktabs)", "Unidades médicas \\SI{}", "Figuras con caption y label"],
-    external: ["Imágenes DICOM / histología (exportar como PNG/TIFF de alta resolución)", "Organigramas clínicos (draw.io → PDF)"],
-    tip: "Las imágenes médicas de diagnóstico deben importarse como archivo externo, no reproducidas en LaTeX.",
-  },
-  // Artes / Música / Diseño
-  musica: {
-    native: [],
-    external: ["Partituras completas (MuseScore/Sibelius → PDF)", "Fragmentos de audio (enlace externo)"],
-    tip: "La notación musical compleja conviene producirla en un editor de partituras y adjuntarla como PDF.",
-  },
-  arte: {
-    native: ["Fichas técnicas tabuladas (booktabs)"],
-    external: ["Láminas y obras (alta resolución como PNG/TIFF)", "Portfolio visual (PDF externo)", "Planos (DWG → PDF)"],
-    tip: "Para portfolios, incluye el PDF o PNG de alta calidad. LaTeX gestiona layout y texto descriptivo.",
-  },
-  arquitectura: {
-    native: ["Tablas de presupuesto y materiales", "Cronogramas", "Textos descriptivos"],
-    external: ["Planos (AutoCAD/ArchiCAD → PDF)", "Renders (exportar como PNG/PDF)", "Maquetas (fotografía como PNG)"],
-  },
-  biologia: {
-    native: ["Tablas de datos (booktabs)", "Unidades \\SI{}", "Árboles filogenéticos (tikz)"],
-    external: ["Esquemas anatómicos complejos (Inkscape → PDF/SVG)", "Microscopia (PNG de alta resolución)"],
-  },
-  economia: {
-    native: ["Tablas estadísticas (booktabs)", "Gráficas (pgfplots)", "Ecuaciones econométricas"],
-    external: ["Dashboards y visualizaciones interactivas (exportar como PNG/PDF)"],
-  },
-};
-
-// Pre-normalized keys — se computan una sola vez al cargar el módulo.
-const DISCIPLINE_MATRIX_NORMALIZED: Array<[string, DisciplineSupport]> =
-  Object.entries(DISCIPLINE_MATRIX).map(([k, v]) => [normalize(k), v]);
-
-function getDisciplineSupport(discipline: string): DisciplineSupport | null {
+function getDisciplineKey(discipline: string): string | null {
   const norm = normalize(discipline);
-  // Requiere al menos 3 caracteres para evitar falsos positivos con "a", "co", etc.
   if (norm.length < 3) return null;
-  for (const [normKey, value] of DISCIPLINE_MATRIX_NORMALIZED) {
-    // Solo la dirección: la clave contiene el input del usuario (coincidencia por prefijo/substring).
-    // La dirección inversa (norm.includes(key)) daría false-positive con keys cortas.
-    if (normKey.includes(norm) || norm.includes(normKey)) {
-      return value;
-    }
+  for (const [normAlias, key] of DISCIPLINE_KEY_MAP) {
+    if (normAlias.includes(norm) || norm.includes(normAlias)) return key;
   }
   return null;
 }
 
 function DisciplineHintPanel({ discipline }: { discipline: string }) {
   const { t } = useTranslation();
-  const support = getDisciplineSupport(discipline);
-  if (!discipline.trim() || !support) return null;
+  const key = getDisciplineKey(discipline);
+  if (!discipline.trim() || !key) return null;
+
+  const native  = t(`wizard.disciplines.${key}.native`,   { returnObjects: true, defaultValue: [] }) as string[];
+  const external = t(`wizard.disciplines.${key}.external`, { returnObjects: true, defaultValue: [] }) as string[];
+  const tip     = t(`wizard.disciplines.${key}.tip`,      { defaultValue: "" });
 
   return (
     <div style={{
@@ -189,31 +122,31 @@ function DisciplineHintPanel({ discipline }: { discipline: string }) {
       <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
         {t("wizard.discipline_hint_title")}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: support.external.length > 0 ? "1fr 1fr" : "1fr", gap: 12 }}>
-        {support.native.length > 0 && (
+      <div style={{ display: "grid", gridTemplateColumns: external.length > 0 ? "1fr 1fr" : "1fr", gap: 12 }}>
+        {native.length > 0 && (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--build-ok)", marginBottom: 4 }}>
               {t("wizard.discipline_produces")}
             </div>
-            {support.native.map((item) => (
+            {native.map((item) => (
               <div key={item} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7 }}>· {item}</div>
             ))}
           </div>
         )}
-        {support.external.length > 0 && (
+        {external.length > 0 && (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--accent-deep)", marginBottom: 4 }}>
               {t("wizard.discipline_integrates")}
             </div>
-            {support.external.map((item) => (
+            {external.map((item) => (
               <div key={item} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.7 }}>· {item}</div>
             ))}
           </div>
         )}
       </div>
-      {support.tip && (
+      {tip && (
         <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--accent-deep)", fontStyle: "italic" }}>
-          {support.tip}
+          {tip}
         </div>
       )}
     </div>
