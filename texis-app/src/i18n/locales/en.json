@@ -2612,7 +2612,25 @@
       "hint_dollar": "$ literal dollar sign",
       "hint_amp": "& literal ampersand",
       "hint_under": "_ literal underscore",
-      "hint_braces": "\\{ \\}  literal curly braces"
+      "hint_braces": "\\{ \\}  literal curly braces",
+      "math_title": "Math — inline & display",
+      "hint_inline": "Use $…$ inside a sentence — math stays in the text flow",
+      "hint_inline_alt": "Alternative: \\(…\\) — both syntaxes are equivalent",
+      "hint_display": "Use \\[…\\] for a centred equation on its own line",
+      "hint_display_alt": "Alternative: $$…$$ — same result as \\[…\\]",
+      "hint_equation": "Numbered equation — cross-reference with \\ref{label}",
+      "hint_align": "Multiple aligned equations — use & to mark the alignment point",
+      "resources_title": "Free LaTeX learning resources",
+      "res_wiki_beginner_desc": "TeXisStudio's own wiki — document structure, text, lists, basic math",
+      "res_wiki_intermediate_desc": "TeXisStudio's own wiki — equations, tables, figures, bibliography",
+      "res_wiki_advanced_desc": "TeXisStudio's own wiki — macros, pgfplots, TikZ, theorems, XeLaTeX",
+      "res_overleaf_desc": "Interactive guide and full command reference, continuously updated",
+      "res_lshort_en_desc": "Classic 170-page PDF from CTAN — covers everything from scratch",
+      "res_wikibook_en_desc": "Free collaborative reference, beginner-friendly",
+      "res_lshort_es_desc": "Spanish edition of the classic lshort guide — CTAN",
+      "res_wikibook_es_desc": "Free collaborative reference in Spanish",
+      "res_lshort_zh_desc": "Comprehensive Chinese guide, maintained by the CTeX community — CTAN",
+      "res_lshort_fr_desc": "French edition of the classic lshort guide — CTAN"
     }
   },
   "circuit": {

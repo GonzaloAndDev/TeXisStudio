@@ -1,20 +1,33 @@
-/**
- * Guía "LaTeX mínimo" integrada en la app.
- * Cubre exactamente lo que necesita un usuario de TeXisStudio: llaves,
- * comandos, subíndices, fracciones, símbolos, expresiones para gráficas,
- * caracteres especiales y lectura básica de errores.
- * Sin conexión — todo el contenido está aquí.
- */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
+interface ResourceLink {
+  url: string;
+  label: string;
+  descKey: string;
+  lang: string;
+}
 
 interface Section {
   id: string;
   titleKey: string;
-  items: { exampleLatex: string; outputHint: string; noteKey?: string }[];
+  items?: { exampleLatex: string; outputHint: string; noteKey?: string }[];
+  links?: ResourceLink[];
 }
 
 const SECTIONS: Section[] = [
+  {
+    id: "math-modes",
+    titleKey: "help.latex.math_title",
+    items: [
+      { exampleLatex: "$x^2 + 1 = 0$",                          outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_inline" },
+      { exampleLatex: "\\( x^2 + 1 = 0 \\)",                   outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_inline_alt" },
+      { exampleLatex: "\\[ x^2 + 1 = 0 \\]",                   outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_display" },
+      { exampleLatex: "$$x^2 + 1 = 0$$",                        outputHint: "x² + 1 = 0", noteKey: "help.latex.hint_display_alt" },
+      { exampleLatex: "\\begin{equation}…\\end{equation}",       outputHint: "(1)",         noteKey: "help.latex.hint_equation" },
+      { exampleLatex: "\\begin{align}…\\end{align}",             outputHint: "multi",       noteKey: "help.latex.hint_align" },
+    ],
+  },
   {
     id: "braces",
     titleKey: "help.latex.braces_title",
@@ -98,11 +111,27 @@ const SECTIONS: Section[] = [
       { exampleLatex: "! Extra }, or forgotten $", outputHint: "}", noteKey: "help.latex.err_extra" },
     ],
   },
+  {
+    id: "resources",
+    titleKey: "help.latex.resources_title",
+    links: [
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Principiante", label: "TeXisStudio Wiki — LaTeX · Principiante / Beginner",    descKey: "help.latex.res_wiki_beginner_desc",     lang: "TS" },
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Intermedio",   label: "TeXisStudio Wiki — LaTeX · Intermedio / Intermediate",  descKey: "help.latex.res_wiki_intermediate_desc", lang: "TS" },
+      { url: "https://github.com/GonzaloAndDev/TeXisStudio/wiki/LaTeX-Avanzado",     label: "TeXisStudio Wiki — LaTeX · Avanzado / Advanced",        descKey: "help.latex.res_wiki_advanced_desc",     lang: "TS" },
+      { url: "https://www.overleaf.com/learn",      label: "Overleaf Learn",                   descKey: "help.latex.res_overleaf_desc",    lang: "EN" },
+      { url: "https://ctan.org/pkg/lshort-english", label: "lshort — Not So Short Intro",      descKey: "help.latex.res_lshort_en_desc",   lang: "EN" },
+      { url: "https://en.wikibooks.org/wiki/LaTeX", label: "LaTeX Wikibook",                   descKey: "help.latex.res_wikibook_en_desc", lang: "EN" },
+      { url: "https://ctan.org/pkg/lshort-spanish", label: "lshort — Introducción en español", descKey: "help.latex.res_lshort_es_desc",   lang: "ES" },
+      { url: "https://es.wikibooks.org/wiki/LaTeX", label: "Wikibooks LaTeX en español",       descKey: "help.latex.res_wikibook_es_desc", lang: "ES" },
+      { url: "https://ctan.org/pkg/lshort-zh-cn",   label: "lshort-zh-cn（一份简短的介绍）",  descKey: "help.latex.res_lshort_zh_desc",   lang: "ZH" },
+      { url: "https://ctan.org/pkg/lshort-french",  label: "lshort — Intro en français",      descKey: "help.latex.res_lshort_fr_desc",   lang: "FR" },
+    ],
+  },
 ];
 
 export function LatexMinimalGuide() {
   const { t } = useTranslation();
-  const [openSection, setOpenSection] = useState<string | null>("braces");
+  const [openSection, setOpenSection] = useState<string | null>("math-modes");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -120,7 +149,7 @@ export function LatexMinimalGuide() {
               <span style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block", fontSize: 9 }}>▶</span>
               {t(sec.titleKey)}
             </button>
-            {isOpen && (
+            {isOpen && sec.items && (
               <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 5 }}>
                 {sec.items.map((item, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -129,6 +158,30 @@ export function LatexMinimalGuide() {
                     </code>
                     <div style={{ flex: 1, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", paddingTop: 3 }}>
                       → {item.noteKey ? t(item.noteKey, item.outputHint) : item.outputHint}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isOpen && sec.links && (
+              <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {sec.links.map((link, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ flex: "0 0 26px", fontSize: 10, fontWeight: 700, paddingTop: 3, fontFamily: "var(--font-mono)", letterSpacing: "0.03em", color: link.lang === "TS" ? "var(--fg-accent, #7c6af7)" : "var(--fg-muted)" }}>
+                      {link.lang}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: "var(--fs-xs)", color: "var(--fg-link, #4a9eff)", textDecoration: "none", fontWeight: 500 }}
+                      >
+                        {link.label} ↗
+                      </a>
+                      <div style={{ fontSize: 10, color: "var(--fg-muted)", marginTop: 1, lineHeight: 1.4 }}>
+                        {t(link.descKey)}
+                      </div>
                     </div>
                   </div>
                 ))}
