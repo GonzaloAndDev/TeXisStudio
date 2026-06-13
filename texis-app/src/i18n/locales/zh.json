@@ -380,7 +380,7 @@
         ],
         "external": [
           "DICOM 图像/组织学（导出为高分辨率 PNG/TIFF）",
-          "临床流程图（绘制.io → PDF）"
+          "临床流程图（draw.io → PDF）"
         ],
         "tip": "诊断医学图像必须作为外部文件导入，不能在 LaTeX 中复制。"
       },
@@ -483,7 +483,7 @@
     "meta_city": "城市",
     "meta_year": "年份",
     "meta_keywords": "关键词",
-    "meta_orcid": "奥西德",
+    "meta_orcid": "ORCID",
     "meta_funding": "资助",
     "meta_committee": "答辩委员会",
     "meta_add_committee": "添加成员",
@@ -2009,7 +2009,7 @@
     "bib_style_label": "参考文献样式",
     "bib_apa": "APA第7版",
     "bib_ieee": "IEEE",
-    "bib_vancouver": "温哥华（健康科学）",
+    "bib_vancouver": "Vancouver（健康科学）",
     "bib_chicago": "芝加哥第17版",
     "bib_mla": "MLA",
     "bib_numeric": "通用数字",
@@ -2286,7 +2286,7 @@
               "note": "包括一切。如果空间有限，请使用 texlive-xetex 而不是 texlive-full。"
             },
             {
-              "title": "Fedora / RHEL / CentOS 流",
+              "title": "Fedora / RHEL / CentOS Stream",
               "note": "安装完整的 TeX Live 方案。"
             },
             {

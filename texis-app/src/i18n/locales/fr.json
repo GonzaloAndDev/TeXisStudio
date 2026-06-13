@@ -2282,11 +2282,11 @@
           ],
           "steps": [
             {
-              "title": "Ubuntu/Debian/Linux Mint",
+              "title": "Ubuntu / Debian / Linux Mint",
               "note": "Inclut tout. Si l'espace est limité, utilisez texlive-xetex au lieu de texlive-full."
             },
             {
-              "title": "Flux Fedora/RHEL/CentOS",
+              "title": "Fedora / RHEL / CentOS Stream",
               "note": "Installe le schéma TeX Live complet."
             },
             {

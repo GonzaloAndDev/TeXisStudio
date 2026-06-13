@@ -489,7 +489,7 @@
     "meta_city": "都市",
     "meta_year": "年",
     "meta_keywords": "キーワード",
-    "meta_orcid": "オーシド",
+    "meta_orcid": "ORCID",
     "meta_funding": "資金提供",
     "meta_committee": "審査委員会",
     "meta_add_committee": "メンバーを追加",
@@ -1075,7 +1075,7 @@
     "notes_title": "内部メモ",
     "notes_subtitle": "セクションごとの著者のメモ。エディタ内でのみ表示され、PDF には含まれません。",
     "report_title": "レビューレポート",
-    "report_subtitle": "アドバイザーと共有するマークダウン ドキュメント。セクションのステータスと検証の問題が含まれます。",
+    "report_subtitle": "アドバイザーと共有するMarkdown ドキュメント。セクションのステータスと検証の問題が含まれます。",
     "regenerate": "再生",
     "download_md": ".md をダウンロード",
     "report_empty_hint": "「レポートの生成」をクリックしてレビュー文書を作成します。",
@@ -1985,7 +1985,7 @@
     "bib_style_label": "参考文献スタイル",
     "bib_apa": "APA第7版",
     "bib_ieee": "IEEE",
-    "bib_vancouver": "バンクーバー（医療科学）",
+    "bib_vancouver": "Vancouver（医療科学）",
     "bib_chicago": "シカゴ第17版",
     "bib_mla": "MLA",
     "bib_numeric": "汎用数字",
@@ -2322,7 +2322,7 @@
       "macos": {
         "mactex": {
           "tagline": "推奨 — 最高品質、最も安定した完全な出力",
-          "description": "MacTeX は、macOS 用の完全な TeX ライブ ディストリビューションです。完璧なタイポグラフィー、100% 正しい APA/IEEE/Vancouver 参考文献、キリル文字、CJK、デヴァナーガリー文字、および公開されているすべての LaTeX パッケージのネイティブ サポートなど、最も正確で安定した出力が生成されます。最終論文、ジャーナル、および完璧に見える必要があるあらゆる文書に最適です。",
+          "description": "MacTeX は、macOS 用の完全な TeX Live ディストリビューションです。完璧なタイポグラフィー、100% 正しい APA/IEEE/Vancouver 参考文献、キリル文字、CJK、デヴァナーガリー文字、および公開されているすべての LaTeX パッケージのネイティブ サポートなど、最も正確で安定した出力が生成されます。最終論文、ジャーナル、および完璧に見える必要があるあらゆる文書に最適です。",
           "pros": [
             "あらゆる軽量代替よりも精緻な組版と出力",
             "100% 互換性のある参考文献（正しい biber バージョンを同梱）",
@@ -2413,7 +2413,7 @@
               "note": "すべてを含みます。容量が限られている場合は、texlive-full の代わりに texlive-xetex を使用してください。"
             },
             {
-              "title": "Fedora / RHEL / CentOS ストリーム",
+              "title": "Fedora / RHEL / CentOS Stream",
               "note": "完全な TeX Live スキームをインストールします。"
             },
             {

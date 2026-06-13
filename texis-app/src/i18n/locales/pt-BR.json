@@ -89,11 +89,11 @@
           ],
           "steps": [
             {
-              "title": "Ubuntu/Debian/Linux Mint",
+              "title": "Ubuntu / Debian / Linux Mint",
               "note": "Inclui tudo. Se o espaço for limitado, use texlive-xetex em vez de texlive-full."
             },
             {
-              "title": "Fluxo Fedora / RHEL / CentOS",
+              "title": "Fedora / RHEL / CentOS Stream",
               "note": "Instala o esquema completo do TeX Live."
             },
             {
@@ -666,7 +666,7 @@
         ],
         "external": [
           "Imagens DICOM/histologia (exportar como PNG/TIFF de alta resolução)",
-          "Fluxogramas clínicos (desenhar.io → PDF)"
+          "Fluxogramas clínicos (draw.io → PDF)"
         ],
         "tip": "As imagens médicas de diagnóstico devem ser importadas como arquivos externos, não reproduzidas em LaTeX."
       },

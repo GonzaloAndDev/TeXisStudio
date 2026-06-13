@@ -2286,7 +2286,7 @@
               "note": "Beinhaltet alles. Wenn der Platz begrenzt ist, verwenden Sie texlive-xetex anstelle von texlive-full."
             },
             {
-              "title": "Fedora / RHEL / CentOS-Stream",
+              "title": "Fedora / RHEL / CentOS Stream",
               "note": "Installiert das vollständige TeX Live-Schema."
             },
             {
