@@ -13,6 +13,8 @@ import {
 import { AiHelpButton } from "../components/AiHelpButton";
 import { api } from "../lib/tauri";
 import { useSettingsStore } from "../stores/settings";
+import { useProjectStore } from "../stores/project";
+import { getBestAvailableBackend } from "../lib/latexBackendPreference";
 import type { LatexInfo } from "../types";
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -363,17 +365,6 @@ function getOptionsForPlatform(platform: Platform): InstallOption[] {
   return OPTIONS_BY_OS[platform] ?? OPTIONS_BY_OS["linux"];
 }
 
-function getDefaultOptionId(platform: Platform, info: LatexInfo | null): string {
-  const opts = getOptionsForPlatform(platform);
-  if (!info) return opts[0].id;
-  if (info.has_tectonic) return "tectonic";
-  if (info.latexmk_usable) {
-    if (platform === "macos") return "mactex";
-    if (platform === "windows") return "miktex";
-    return "texlive";
-  }
-  return opts[0].id;
-}
 
 function getPlatformLabel(platform: Platform): string {
   if (platform === "macos") return "macOS";
@@ -594,27 +585,36 @@ export default function SetupLatexView() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const userMode = useSettingsStore((s) => s.userMode);
+  const latexPrimaryBackend = useSettingsStore((s) => s.latexPrimaryBackend);
+  const latexBackendUserExplicit = useSettingsStore((s) => s.latexBackendUserExplicit);
+  const setLatexPrimaryBackend = useSettingsStore((s) => s.setLatexPrimaryBackend);
+  const setLatexBackendUserExplicit = useSettingsStore((s) => s.setLatexBackendUserExplicit);
+  const setLatexInfo = useProjectStore((s) => s.setLatexInfo);
   const [info, setInfo]         = useState<LatexInfo | null>(null);
   const [platform, setPlatform] = useState<Platform>("linux");
   const [detecting, setDetecting] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const p = await api.getPlatform().catch(() => "linux");
       setPlatform(p);
-      handleDetect(p);
+      handleDetect();
     })();
   }, []);
 
-  async function handleDetect(p: Platform = platform) {
+  async function handleDetect() {
     setDetecting(true);
     try {
       const result = await api.detectLatex();
       setInfo(result);
-      setSelectedId(getDefaultOptionId(p, result));
+      setLatexInfo(result); // share detection with the Settings screen
+      // Auto-select the most powerful engine unless the user explicitly chose one
+      if (!latexBackendUserExplicit) {
+        const best = getBestAvailableBackend(result);
+        if (best !== latexPrimaryBackend) setLatexPrimaryBackend(best);
+      }
     } catch {
-      setSelectedId(getOptionsForPlatform(p)[0].id);
+      /* detection failed — keep the current preference */
     } finally {
       setDetecting(false);
     }
@@ -622,7 +622,15 @@ export default function SetupLatexView() {
 
   const options      = getOptionsForPlatform(platform);
   const recommendedId = options[0].id;
-  const activeId     = selectedId ?? recommendedId;
+  const suiteId      = options[0].id; // the OS suite (mactex / texlive / miktex)
+  // Selection mirrors the shared compilation backend: suite ↔ "latexmk".
+  const activeId     = latexPrimaryBackend === "tectonic" ? "tectonic" : suiteId;
+
+  // Selecting a card sets the shared engine preference, reflected in Settings too.
+  function selectEngine(optionId: string) {
+    setLatexBackendUserExplicit(true);
+    setLatexPrimaryBackend(optionId === "tectonic" ? "tectonic" : "latexmk");
+  }
   const displayOptions = options.map((option) => localizeOption(option, platform, t));
   const selectedDisplayOption = displayOptions.find((o) => o.id === activeId) ?? displayOptions[0];
 
@@ -727,7 +735,7 @@ export default function SetupLatexView() {
                 <button
                   className="btn btn-sm btn-accent"
                   style={{ marginTop: 10 }}
-                  onClick={() => setSelectedId(options[0].id)}
+                  onClick={() => selectEngine(options[0].id)}
                 >
                   {t("setup_latex.view_install_steps", { name: displayOptions[0].name })}
                 </button>
@@ -747,7 +755,7 @@ export default function SetupLatexView() {
                 selected={activeId === opt.id}
                 installed={installedIds.has(opt.id)}
                 recommended={opt.id === recommendedId}
-                onClick={() => setSelectedId(opt.id)}
+                onClick={() => selectEngine(opt.id)}
               />
             ))}
           </div>
