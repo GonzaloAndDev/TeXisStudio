@@ -66,6 +66,13 @@ export function LatexEngineSettings() {
     latexPrimaryBackend === "tectonic" &&
     (latexInfo?.latexmk_usable ?? false);
 
+  const latexmkAvailable = latexInfo?.latexmk_usable ?? false;
+
+  // Condition 1: only Tectonic is installed — gently recommend the OS suite.
+  const showTectonicOnlyNote = latexInfo !== null && !latexmkAvailable;
+
+  // Order matches the Setup screen: the full suite (recommended) comes first,
+  // Tectonic second. The suite is always the recommended engine.
   const options: Array<{
     id: LatexBackend;
     title: string;
@@ -75,20 +82,20 @@ export function LatexEngineSettings() {
     isBest: boolean;
   }> = [
     {
+      id: "latexmk",
+      title: t("settings.latex_suite_title_os", { suiteName }),
+      description: t("settings.latex_suite_description", { suiteName }),
+      available: latexmkAvailable,
+      version: latexInfo?.latexmk_version,
+      isBest: true,
+    },
+    {
       id: "tectonic",
       title: t("settings.latex_tectonic_title"),
       description: t("settings.latex_tectonic_description"),
       available: latexInfo?.has_tectonic ?? false,
       version: latexInfo?.tectonic_version,
-      isBest: !(latexInfo?.latexmk_usable ?? false),
-    },
-    {
-      id: "latexmk",
-      title: t("settings.latex_suite_title_os", { suiteName }),
-      description: t("settings.latex_suite_description", { suiteName }),
-      available: latexInfo?.latexmk_usable ?? false,
-      version: latexInfo?.latexmk_version,
-      isBest: latexInfo?.latexmk_usable ?? false,
+      isBest: false,
     },
   ];
 
@@ -115,6 +122,28 @@ export function LatexEngineSettings() {
             style={{ flexShrink: 0 }}
           >
             {t("settings.latex_upgrade_btn", { suiteName })}
+          </button>
+        </div>
+      )}
+
+      {/* Condition 1: only Tectonic installed — fine, but suggest the OS suite for more */}
+      {showTectonicOnlyNote && (
+        <div style={{
+          padding: "12px 16px", borderRadius: "var(--r-md)", marginBottom: 16,
+          background: "var(--bg-panel)", border: "1px solid var(--border-soft)",
+          display: "flex", gap: 12, alignItems: "center",
+        }}>
+          <span style={{ fontSize: 16 }}>💡</span>
+          <div style={{ flex: 1, fontSize: "var(--fs-sm)", color: "var(--fg-default)", lineHeight: 1.5 }}>
+            {t("settings.latex_tectonic_only_note", { suiteName })}
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => navigate("/setup-latex")}
+            style={{ flexShrink: 0 }}
+          >
+            {t("settings.latex_tectonic_only_btn", { suiteName })}
           </button>
         </div>
       )}

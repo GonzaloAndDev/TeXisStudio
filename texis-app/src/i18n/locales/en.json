@@ -848,7 +848,9 @@
     "update_available": "Version {{version}} available — restart to install",
     "update_up_to_date": "You are up to date",
     "update_disabled": "Auto-update not configured for this release",
-    "update_error": "Could not check for updates"
+    "update_error": "Could not check for updates",
+    "latex_tectonic_only_note": "You only have Tectonic — fine for everyday writing. For advanced packages, biblatex + Biber, or plugin figures, install {{suiteName}}.",
+    "latex_tectonic_only_btn": "Install {{suiteName}}"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Image '{{file}}' referenced in section '{{section}}' not found.",

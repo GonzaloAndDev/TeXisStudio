@@ -848,7 +848,9 @@
     "update_available": "Versión {{version}} disponible — reinicia para instalar",
     "update_up_to_date": "Estás al día",
     "update_disabled": "Actualización automática no configurada en esta versión",
-    "update_error": "No se pudo buscar actualizaciones"
+    "update_error": "No se pudo buscar actualizaciones",
+    "latex_tectonic_only_note": "Solo tienes Tectonic — suficiente para escritura cotidiana. Para paquetes avanzados, biblatex + Biber o figuras de plugins, instala {{suiteName}}.",
+    "latex_tectonic_only_btn": "Instalar {{suiteName}}"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Imagen '{{file}}' referenciada en la sección '{{section}}' no encontrada.",

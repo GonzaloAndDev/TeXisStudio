@@ -807,6 +807,8 @@
     "update_up_to_date": "最新バージョンです",
     "update_disabled": "このリリースでは自動更新は設定されていません",
     "update_error": "アップデートを確認できませんでした",
+    "latex_tectonic_only_note": "You only have Tectonic — fine for everyday writing. For advanced packages, biblatex + Biber, or plugin figures, install {{suiteName}}.",
+    "latex_tectonic_only_btn": "Install {{suiteName}}",
     "refresh_catalog": "カタログを更新する",
     "package_status_stable": "安定した",
     "package_status_beta": "ベータ版",

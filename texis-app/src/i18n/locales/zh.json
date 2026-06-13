@@ -807,6 +807,8 @@
     "update_up_to_date": "已是最新版本",
     "update_disabled": "此版本未配置自动更新",
     "update_error": "无法检查更新",
+    "latex_tectonic_only_note": "You only have Tectonic — fine for everyday writing. For advanced packages, biblatex + Biber, or plugin figures, install {{suiteName}}.",
+    "latex_tectonic_only_btn": "Install {{suiteName}}",
     "refresh_catalog": "刷新目录",
     "package_status_stable": "稳定",
     "package_status_beta": "贝塔",
