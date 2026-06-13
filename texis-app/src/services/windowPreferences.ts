@@ -28,14 +28,28 @@ export async function applyWindowMode(mode: WindowMode): Promise<void> {
   const { getCurrentWindow, LogicalSize } = await import("@tauri-apps/api/window");
   const appWindow = getCurrentWindow();
 
-  if (mode === "maximized") {
-    await appWindow.maximize();
-    return;
+  try {
+    if (mode === "maximized") {
+      await appWindow.maximize();
+    } else {
+      if (await appWindow.isMaximized()) await appWindow.unmaximize();
+      const size = mode === "remember" ? readStoredSize() : null;
+      await appWindow.setSize(new LogicalSize(size?.width ?? DEFAULT_WIDTH, size?.height ?? DEFAULT_HEIGHT));
+    }
+  } finally {
+    // The window is created hidden (visible:false) so the chosen mode is
+    // applied before it appears — otherwise the OS shows it at the configured
+    // size first and the maximize/resize visibly snaps back. Reveal it now
+    // that it is sized. Guarded so a mid-session settings change doesn't refocus.
+    try {
+      if (!(await appWindow.isVisible())) {
+        await appWindow.show();
+        await appWindow.setFocus();
+      }
+    } catch {
+      /* ignore — the Rust setup() fallback reveals the window if this fails */
+    }
   }
-
-  if (await appWindow.isMaximized()) await appWindow.unmaximize();
-  const size = mode === "remember" ? readStoredSize() : null;
-  await appWindow.setSize(new LogicalSize(size?.width ?? DEFAULT_WIDTH, size?.height ?? DEFAULT_HEIGHT));
 }
 
 export async function watchRememberedWindowSize(onCleanup: (cleanup: () => void) => void): Promise<void> {

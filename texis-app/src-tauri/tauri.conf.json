@@ -18,7 +18,8 @@
         "minHeight": 600,
         "decorations": true,
         "fullscreen": false,
-        "resizable": true
+        "resizable": true,
+        "visible": false
       }
     ],
     "security": {

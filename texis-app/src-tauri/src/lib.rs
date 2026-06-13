@@ -18,6 +18,23 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .manage(commands::compiler::CompileState::new())
+        .setup(|app| {
+            // The window is created hidden so the frontend can apply the chosen
+            // window mode (maximized / remembered size) before it appears,
+            // avoiding a visible snap-back to the configured size. This is a
+            // safety net: if the frontend never reveals it (e.g. a load error),
+            // show it anyway so the app can't get stuck invisible.
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    if !window.is_visible().unwrap_or(true) {
+                        let _ = window.show();
+                    }
+                });
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::project::create_project,
             commands::project::import_tex_project,
