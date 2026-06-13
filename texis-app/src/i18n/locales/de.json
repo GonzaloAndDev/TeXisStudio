@@ -2402,7 +2402,7 @@
           "tagline": "Leicht – kein Systempaketmanager erforderlich",
           "description": "Eine moderne LaTeX-Engine, die 80 % dieser Aufgaben ohne Gigabyte Speicherplatz abdeckt. Wenn ein ganz bestimmtes Paket fehlschlägt, können Sie TeX Live zusammen mit Tectonic installieren – sie koexistieren ohne Konflikte und die App lässt Sie auswählen, welches Sie verwenden möchten.",
           "pros": [
-            "Für die Installation ist kein Sudo erforderlich",
+            "Für die Installation ist kein sudo erforderlich",
             "Lädt nur das herunter, was Ihre Abschlussarbeit benötigt",
             "Koexistiert mit TeX Live, wenn Sie beide benötigen"
           ],
@@ -2448,8 +2448,8 @@
           ],
           "steps": [
             {
-              "title": "Installieren Sie MiKTeX mit Winget",
-              "note": "Öffnen Sie PowerShell als normaler Benutzer (kein Administrator erforderlich). Winget ist in Windows 10/11 enthalten."
+              "title": "Installieren Sie MiKTeX mit winget",
+              "note": "Öffnen Sie PowerShell als normaler Benutzer (kein Administrator erforderlich). winget ist in Windows 10/11 enthalten."
             },
             {
               "title": "Alternative: grafischer Installer",
@@ -2469,10 +2469,10 @@
           "tagline": "Leicht – ein Befehl, kein Perl",
           "description": "Ein eigenständiger LaTeX-Motor, der 80 % dieser Aufgaben abdeckt. Erfordert kein TeX Live oder Strawberry Perl. Wenn ein ganz bestimmtes Paket fehlschlägt, können Sie MiKTeX zusammen mit Tectonic installieren – sie koexistieren ohne Konflikte und die App lässt Sie auswählen, welches Sie verwenden möchten.",
           "pros": [
-            "Mit Winget in 1 Minute installiert",
+            "Mit winget in 1 Minute installiert",
             "Erfordert kein Erdbeerperl",
             "Koexistiert mit MiKTeX, wenn Sie beide benötigen",
-            "Aufrüstbar mit Winget-Upgrade"
+            "Aufrüstbar mit winget-Upgrade"
           ],
           "cons": [
             "Für die erste Kompilierung ist Internet erforderlich",
@@ -2480,7 +2480,7 @@
           ],
           "steps": [
             {
-              "title": "Mit Winget installieren",
+              "title": "Mit winget installieren",
               "note": "Öffnen Sie PowerShell als normaler Benutzer. Kein Administrator erforderlich."
             },
             {
