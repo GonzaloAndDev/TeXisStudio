@@ -14,7 +14,7 @@ import { AiHelpButton } from "../components/AiHelpButton";
 import { api } from "../lib/tauri";
 import { useSettingsStore } from "../stores/settings";
 import { useProjectStore } from "../stores/project";
-import { getBestAvailableBackend } from "../lib/latexBackendPreference";
+import { getBestAvailableBackend, backendForSetupOption } from "../lib/latexBackendPreference";
 import type { LatexInfo } from "../types";
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -626,10 +626,12 @@ export default function SetupLatexView() {
   // Selection mirrors the shared compilation backend: suite ↔ "latexmk".
   const activeId     = latexPrimaryBackend === "tectonic" ? "tectonic" : suiteId;
 
-  // Selecting a card sets the shared engine preference, reflected in Settings too.
+  // Selecting a card sets the shared engine preference, reflected in Settings
+  // and used by the compiler. Marks the choice explicit so auto-select won't
+  // override it — "prefer the fuller suite unless the user changes it".
   function selectEngine(optionId: string) {
     setLatexBackendUserExplicit(true);
-    setLatexPrimaryBackend(optionId === "tectonic" ? "tectonic" : "latexmk");
+    setLatexPrimaryBackend(backendForSetupOption(optionId));
   }
   const displayOptions = options.map((option) => localizeOption(option, platform, t));
   const selectedDisplayOption = displayOptions.find((o) => o.id === activeId) ?? displayOptions[0];

@@ -8,6 +8,16 @@ export function getBestAvailableBackend(info: LatexInfo | null): LatexBackend {
   return info.latexmk_usable ? "latexmk" : "tectonic";
 }
 
+/**
+ * Maps a Setup-screen option id to the shared compilation backend so that both
+ * the Setup and Settings screens (and the system) agree on a single value.
+ * Every OS suite option (mactex / texlive / miktex) maps to "latexmk";
+ * Tectonic maps to "tectonic".
+ */
+export function backendForSetupOption(optionId: string): LatexBackend {
+  return optionId === "tectonic" ? "tectonic" : "latexmk";
+}
+
 export function resolvePreferredLatexBackend(
   primary: LatexBackend,
   allowFallback: boolean,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePreferredLatexBackend } from "../lib/latexBackendPreference";
+import { resolvePreferredLatexBackend, getBestAvailableBackend, backendForSetupOption } from "../lib/latexBackendPreference";
 import type { LatexInfo } from "../types";
 
 function info(tectonic: boolean, latexmk: boolean): LatexInfo {
@@ -27,5 +27,19 @@ describe("LaTeX backend preference", () => {
 
   it("keeps the configured backend when fallback is disabled", () => {
     expect(resolvePreferredLatexBackend("tectonic", false, info(false, true))).toBe("tectonic");
+  });
+
+  it("prefers the fuller suite (latexmk) when available, else Tectonic", () => {
+    expect(getBestAvailableBackend(info(true, true))).toBe("latexmk");
+    expect(getBestAvailableBackend(info(false, true))).toBe("latexmk");
+    expect(getBestAvailableBackend(info(true, false))).toBe("tectonic");
+    expect(getBestAvailableBackend(null)).toBe("tectonic");
+  });
+
+  it("maps Setup-screen option ids to the shared backend (suite ↔ latexmk)", () => {
+    expect(backendForSetupOption("tectonic")).toBe("tectonic");
+    expect(backendForSetupOption("mactex")).toBe("latexmk");
+    expect(backendForSetupOption("texlive")).toBe("latexmk");
+    expect(backendForSetupOption("miktex")).toBe("latexmk");
   });
 });
