@@ -6,6 +6,7 @@ import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
 import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
 import { HelpLink } from "./help/HelpLink";
+import { PdfPagePreview } from "./PdfPagePreview";
 import { api } from "../lib/tauri";
 import type { PluginFigureBlock } from "../types";
 
@@ -133,7 +134,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
         setPreviewPdfPath(null);
       } else {
         setPreviewPdfPath(path);
-        setPreviewVersion(Date.now()); // cache-bust so the iframe reloads
+        setPreviewVersion(Date.now()); // cache-bust the rendered preview
       }
     } catch (e) {
       setPreviewError(`${t("figure_edit.preview_error_prefix")} ${e}`);
@@ -352,14 +353,12 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
                 </div>
               )}
               {previewPdfPath && (
-                // The viewport is shorter than the iframe and clips its overflow,
-                // so the WebView's floating PDF toolbar (anchored near the
-                // iframe's bottom) is cropped out instead of covering the figure.
-                <div style={{ height: 380, overflow: "hidden", border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}>
-                  <iframe
+                <div style={{ overflow: "hidden", border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}>
+                  <PdfPagePreview
                     src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}`}
-                    style={{ width: "100%", height: 480, border: "none", display: "block" }}
                     title={t("figure_edit.tab_preview")}
+                    maxHeight={420}
+                    errorLabel={t("compile_widgets.pdf_viewer_error")}
                   />
                 </div>
               )}

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { IconDrag, IconTrash } from "../../components/Icons";
 import { HelpLink } from "../../components/help/HelpLink";
+import { PdfPagePreview } from "../../components/PdfPagePreview";
 import type { ContentBlock, HeadingLevel, PluginFigureBlock } from "../../types";
 import {
   ParagraphEditor, HeadingEditor, KaTeXPreview, EquationEditor, ListEditor,
@@ -12,7 +13,7 @@ import {
 } from "./BlockEditors";
 import { VisualBlockEditor } from "./VisualBlockEditor";
 
-// ── Plugin figure inline PDF preview ──────────────────────────────
+// ── Plugin figure inline preview ──────────────────────────────────
 
 function PluginFigurePdfPreview({
   block, projectPath, onEdit,
@@ -31,16 +32,21 @@ function PluginFigurePdfPreview({
     const path = `${projectPath}/texisstudio-assets/figures/${block.figureId}/preview.pdf`;
     const url = convertFileSrc(path);
 
-    // Poll briefly so a just-triggered background compile can finish
+    // Poll briefly so a just-triggered background compile can finish.
     let attempt = 0;
     const check = () => {
       if (cancelled) return;
       fetch(url, { method: "HEAD", cache: "no-store" })
-        // #toolbar=0… hides the WebView's native PDF viewer chrome (zoom, download…)
-        .then((r) => { if (!cancelled && r.ok) setPdfUrl(url + `?t=${Date.now()}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`); })
+        .then((r) => {
+          if (!cancelled && r.ok) {
+            setPdfUrl(url + `?t=${Date.now()}`);
+            return true;
+          }
+          return false;
+        })
         .catch(() => {})
-        .finally(() => {
-          if (!cancelled && !pdfUrl && attempt < 10) {
+        .then((found) => {
+          if (!cancelled && !found && attempt < 10) {
             attempt++;
             setTimeout(check, 800);
           }
@@ -49,21 +55,18 @@ function PluginFigurePdfPreview({
     check();
 
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectPath, block.figureId, block.sourceJson]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {/* PDF render — shown when preview.pdf exists.
-          The container is shorter than the iframe and clips its overflow, so the
-          WebView's floating PDF toolbar (anchored near the iframe's bottom) is
-          cropped out of view instead of covering the figure. */}
+      {/* Render the first PDF page ourselves so WebKit never creates native PDF chrome. */}
       {pdfUrl ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden", background: "#fff", position: "relative", height: 220 }}>
-          <iframe
+        <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden", background: "#fff" }}>
+          <PdfPagePreview
             src={pdfUrl}
-            style={{ width: "100%", height: 320, border: "none", display: "block", pointerEvents: "none" }}
             title={block.caption}
+            maxHeight={240}
+            errorLabel={t("compile_widgets.pdf_viewer_error")}
           />
         </div>
       ) : (
