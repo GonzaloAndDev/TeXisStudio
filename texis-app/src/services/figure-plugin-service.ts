@@ -198,6 +198,27 @@ export async function updatePluginFigureMeta(
   return { ...block, caption, label, latexBlock: newLatexBlock };
 }
 
+/** Overwrites the figure body (output.tex) with hand-edited LaTeX, keeping
+ *  the rest of the figure metadata intact. Used by the manual-edit view.
+ *  Note: regenerating the figure from the visual editor will replace this. */
+export async function writePluginFigureTex(
+  block: PluginFigureBlock,
+  projectPath: string,
+  latexTex: string,
+): Promise<void> {
+  await invoke("save_plugin_figure", {
+    projectPath,
+    figureId: block.figureId,
+    latexTex,
+    sourceJson: block.sourceJson,
+    requiredPackages: block.requiredPackages,
+    pluginId: block.pluginId,
+    caption: block.caption,
+    label: block.label,
+    warnings: block.warnings,
+  });
+}
+
 /** Deletes all disk assets for a plugin figure. Called before removing a block. */
 export async function deletePluginFigureAssets(
   block: PluginFigureBlock,

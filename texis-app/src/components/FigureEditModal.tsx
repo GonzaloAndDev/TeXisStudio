@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { useDialogEscape } from "../hooks/useDialogEscape";
 import { useSettingsStore } from "../stores/settings";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
-import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
+import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo, writePluginFigureTex } from "../services/figure-plugin-service";
 import { VisualEditorRouter, hasVisualEditor } from "./visual-editors/VisualEditorRouter";
 import { HelpLink } from "./help/HelpLink";
 import { PdfPagePreview } from "./PdfPagePreview";
@@ -56,6 +56,14 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
   const [previewVersion, setPreviewVersion] = useState(0);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // Full figure body (the real output.tex the plugin generated)
+  const [showFullCode, setShowFullCode] = useState(false);
+  const [fullCode, setFullCode] = useState<string | null>(null);
+  const [fullCodeDraft, setFullCodeDraft] = useState("");
+  const [fullCodeEditing, setFullCodeEditing] = useState(false);
+  const [fullCodeBusy, setFullCodeBusy] = useState(false);
+  const [fullCodeError, setFullCodeError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>(() =>
     hasVisualEditor(block.sourceJson, getPluginInfo(block.pluginId)?.editorType) ? "visual" : "meta"
   );
@@ -201,6 +209,38 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
       setError(`${e}`);
     } finally {
       if (mountedRef.current) setBusy(null);
+    }
+  }
+
+  // Load the real figure body (output.tex) the first time the section opens.
+  useEffect(() => {
+    if (!showFullCode || fullCode !== null || fullCodeBusy) return;
+    let cancelled = false;
+    setFullCodeBusy(true); setFullCodeError(null);
+    const url = convertFileSrc(`${projectPath}/texisstudio-assets/figures/${block.figureId}/output.tex`);
+    fetch(`${url}?t=${Date.now()}`, { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error(); return r.text(); })
+      .then((text) => { if (!cancelled) { setFullCode(text); setFullCodeDraft(text); } })
+      .catch(() => { if (!cancelled) setFullCodeError(t("figure_edit.full_code_error")); })
+      .finally(() => { if (!cancelled) setFullCodeBusy(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFullCode, block.figureId]);
+
+  async function saveFullCode() {
+    if (fullCodeBusy || fullCodeDraft === fullCode) return;
+    setFullCodeBusy(true); setFullCodeError(null);
+    try {
+      await writePluginFigureTex(block, projectPath, fullCodeDraft);
+      setFullCode(fullCodeDraft);
+      setFullCodeEditing(false);
+      // Refresh the preview so the hand-edited body is reflected
+      setPreviewPdfPath(null); setPreviewError(null);
+      void handleCompilePreview();
+    } catch (e) {
+      setFullCodeError(`${e}`);
+    } finally {
+      setFullCodeBusy(false);
     }
   }
 
@@ -353,6 +393,90 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
                   }}>
                     {previewLatex}
                   </pre>
+                )}
+              </div>
+
+              {/* Full figure body (output.tex) — view & hand-edit */}
+              <div style={{ border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
+                <button
+                  onClick={() => setShowFullCode((v) => !v)}
+                  style={{ width: "100%", padding: "7px 12px", background: "var(--bg-app)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", textAlign: "left" }}
+                >
+                  <span style={{ transform: showFullCode ? "rotate(90deg)" : "none", transition: "transform 0.15s", display: "inline-block", fontSize: 10 }}>▶</span>
+                  {t("figure_edit.full_code_title")}
+                </button>
+                {showFullCode && (
+                  <div style={{ borderTop: "1px solid var(--border-soft)" }}>
+                    {fullCodeBusy && fullCode === null ? (
+                      <div style={{ padding: "10px 12px", fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("figure_edit.full_code_loading")}</div>
+                    ) : fullCodeError && fullCode === null ? (
+                      <div style={{ padding: "10px 12px", fontSize: "var(--fs-xs)", color: "var(--build-err, #e55)" }}>{fullCodeError}</div>
+                    ) : (
+                      <>
+                        <div style={{ padding: "8px 12px", fontSize: 10, color: "var(--fg-faint)", lineHeight: 1.5, background: "var(--bg-panel)" }}>
+                          {t("figure_edit.full_code_hint")}
+                        </div>
+                        {fullCodeEditing ? (
+                          <textarea
+                            value={fullCodeDraft}
+                            onChange={(e) => setFullCodeDraft(e.target.value)}
+                            spellCheck={false}
+                            style={{
+                              width: "100%", minHeight: 240, boxSizing: "border-box",
+                              margin: 0, padding: "10px 12px", border: "none", resize: "vertical",
+                              background: "var(--ink-900, #14110f)", color: "#C8C2B5",
+                              fontSize: 11, fontFamily: "var(--font-mono)", lineHeight: 1.55, outline: "none",
+                            }}
+                          />
+                        ) : (
+                          <pre style={{
+                            margin: 0, padding: "10px 12px",
+                            background: "var(--ink-900, #14110f)", color: "#C8C2B5",
+                            fontSize: 11, fontFamily: "var(--font-mono)", lineHeight: 1.55,
+                            overflowX: "auto", whiteSpace: "pre", maxHeight: 300, overflowY: "auto",
+                          }}>
+                            {fullCode}
+                          </pre>
+                        )}
+                        {fullCodeError && fullCode !== null && (
+                          <div style={{ padding: "6px 12px", fontSize: 10, color: "var(--build-err, #e55)", whiteSpace: "pre-wrap" }}>{fullCodeError}</div>
+                        )}
+                        <div style={{ display: "flex", gap: 8, padding: "8px 12px", borderTop: "1px solid var(--border-soft)" }}>
+                          {fullCodeEditing ? (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn-accent btn-sm"
+                                onClick={saveFullCode}
+                                disabled={fullCodeBusy || fullCodeDraft === fullCode}
+                                style={{ fontSize: "var(--fs-xs)" }}
+                              >
+                                {fullCodeBusy ? t("figure_edit.full_code_saving") : t("figure_edit.full_code_save")}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => { setFullCodeDraft(fullCode ?? ""); setFullCodeEditing(false); setFullCodeError(null); }}
+                                disabled={fullCodeBusy}
+                                style={{ fontSize: "var(--fs-xs)" }}
+                              >
+                                {t("common.cancel")}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => setFullCodeEditing(true)}
+                              style={{ fontSize: "var(--fs-xs)" }}
+                            >
+                              ✎ {t("figure_edit.full_code_edit")}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
