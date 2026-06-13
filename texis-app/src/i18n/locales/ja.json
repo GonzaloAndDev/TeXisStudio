@@ -285,155 +285,155 @@
     "disciplines": {
       "matematicas": {
         "native": [
-          "Numbered equations \\\\eqref{}",
-          "Theorems and proofs",
-          "Matrices and vectors",
-          "Commutative diagrams (tikz-cd)",
-          "Proof trees (bussproofs)"
+          "番号付き方程式 \\\\eqref{}",
+          "定理と証明",
+          "行列とベクトル",
+          "可換図 (tikz-cd)",
+          "プルーフツリー（バスプルーフ）"
         ],
         "external": [],
-        "tip": "LaTeX is the canonical tool for formal mathematics."
+        "tip": "LaTeX は、形式数学の標準ツールです。"
       },
       "logica": {
         "native": [
-          "Deduction trees (bussproofs)",
-          "Truth tables",
-          "Formal semantics",
-          "Hasse diagrams"
+          "控除ツリー (バスプルーフ)",
+          "真理値表",
+          "形式的意味論",
+          "ハッセ図"
         ],
         "external": []
       },
       "fisica": {
         "native": [
-          "Physical units \\\\SI{} (siunitx)",
-          "Partial derivatives \\\\pdv{}",
-          "Feynman diagrams (tikz-feynman)",
-          "Plots (pgfplots)"
+          "物理単位 \\\\SI{} (siunitx)",
+          "偏導関数 \\\\pdv{}",
+          "ファインマン図 (tikz-ファインマン)",
+          "プロット (pgfplots)"
         ],
         "external": [
-          "Numerical simulations (export as PDF/PNG)"
+          "数値シミュレーション (PDF/PNG としてエクスポート)"
         ],
-        "tip": "Use siunitx for all units — never write 'km/h' directly."
+        "tip": "すべての単位に siunitx を使用します。「km/h」を直接書き込まないでください。"
       },
       "quimica": {
         "native": [
-          "Chemical reactions \\\\ce{} (mhchem)",
-          "Molecular structures (chemfig)",
-          "Units \\\\SI{} (siunitx)"
+          "化学反応 \\\\ce{} (mhchem)",
+          "分子構造 (chemfig)",
+          "単位 \\\\SI{} (siunitx)"
         ],
         "external": [
-          "Complex 3D structures (export from ChemDraw as PDF)"
+          "複雑な 3D 構造 (ChemDraw から PDF としてエクスポート)"
         ],
-        "tip": "For simple structures use chemfig. For crystallography or proteins, import as PDF."
+        "tip": "単純な構造の場合は、chemfig を使用します。結晶学またはタンパク質の場合は、PDF としてインポートします。"
       },
       "ingenieria": {
         "native": [
-          "Units \\\\SI{} (siunitx)",
-          "Circuits (circuitikz)",
-          "Data plots (pgfplots)",
-          "Algorithms (algpseudocode)"
+          "単位 \\\\SI{} (siunitx)",
+          "回路 (circuitikz)",
+          "データプロット (pgfplots)",
+          "アルゴリズム (algpseudocode)"
         ],
         "external": [
-          "Technical drawings (AutoCAD → PDF)",
-          "PCB diagrams (KiCad → PDF)"
+          "技術図面 (AutoCAD → PDF)",
+          "PCB ダイアグラム (KiCad → PDF)"
         ],
-        "tip": "circuitikz covers most signal and power circuits."
+        "tip": "circuitikz は、ほとんどの信号回路と電源回路をカバーします。"
       },
       "computacion": {
         "native": [
-          "Source code (lstlisting)",
-          "Algorithms with pseudocode",
-          "Performance plots (pgfplots)",
-          "Decision trees (tikz)"
+          "ソースコード (lstlisting)",
+          "擬似コードを使用したアルゴリズム",
+          "パフォーマンスプロット (pgfplots)",
+          "ディシジョン ツリー (tikz)"
         ],
         "external": [
-          "Complex architecture diagrams (draw.io → PDF/PNG)"
+          "複雑なアーキテクチャ図 (draw.io → PDF/PNG)"
         ]
       },
       "humanidades": {
         "native": [
-          "Extensive footnotes",
-          "Critical apparatus and text citations",
-          "Analytical indexes (makeindex)",
-          "Linguistic examples (gb4e)"
+          "広範な脚注",
+          "重要な装置とテキストの引用",
+          "分析インデックス (makeindex)",
+          "言語例 (gb4e)"
         ],
         "external": [
-          "Artwork images (high resolution as PNG/PDF)"
+          "アートワーク画像 (PNG/PDF の高解像度)"
         ]
       },
       "ciencias_sociales": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Bibliographic citations in APA/Chicago style"
+          "統計表（ブックタブ）",
+          "プロット (pgfplots)",
+          "APA/Chicago スタイルの書誌引用"
         ],
         "external": [
-          "Complex data visualizations (R/Python → PDF/PNG)"
+          "複雑なデータの視覚化 (R/Python → PDF/PNG)"
         ],
-        "tip": "For simple plots use pgfplots. For elaborate visualizations, export from R or Python."
+        "tip": "単純なプロットには、pgfplots を使用します。精巧な視覚化の場合は、R または Python からエクスポートします。"
       },
       "medicina": {
         "native": [
-          "Clinical tables (booktabs)",
-          "Medical units \\\\SI{}",
-          "Figures with caption and label"
+          "診療台（ブックタブ）",
+          "医療ユニット \\\\SI{}",
+          "キャプションとラベルが付いた図"
         ],
         "external": [
-          "DICOM images / histology (export as high-resolution PNG/TIFF)",
-          "Clinical flowcharts (draw.io → PDF)"
+          "DICOM 画像/組織学 (高解像度 PNG/TIFF としてエクスポート)",
+          "臨床フローチャート (draw.io → PDF)"
         ],
-        "tip": "Diagnostic medical images must be imported as external files, not reproduced in LaTeX."
+        "tip": "診断医療画像は、LaTeX で複製するのではなく、外部ファイルとしてインポートする必要があります。"
       },
       "musica": {
         "native": [],
         "external": [
-          "Complete scores (MuseScore/Sibelius → PDF)",
-          "Audio fragments (external link)"
+          "完全なスコア (MuseScore/Sibelius → PDF)",
+          "音声フラグメント (外部リンク)"
         ],
-        "tip": "For complex musical notation, use a score editor and attach as PDF."
+        "tip": "複雑な楽譜の場合は、スコアエディタを使用して、PDF として添付します。"
       },
       "arte": {
         "native": [
-          "Tabulated technical sheets (booktabs)"
+          "表形式のテクニカルシート (ブックタブ)"
         ],
         "external": [
-          "Plates and artworks (high resolution as PNG/TIFF)",
-          "Visual portfolio (external PDF)",
-          "Plans (DWG → PDF)"
+          "プレートとアートワーク (PNG/TIFF の高解像度)",
+          "ビジュアルポートフォリオ (外部 PDF)",
+          "図面（DWG → PDF）"
         ],
-        "tip": "For portfolios, include high-quality PDF or PNG. LaTeX manages layout and descriptive text."
+        "tip": "ポートフォリオには、高品質の PDF または PNG を含めてください。 LaTeX はレイアウトと説明文を管理します。"
       },
       "arquitectura": {
         "native": [
-          "Budget and materials tables",
-          "Schedules",
-          "Descriptive texts"
+          "予算と資材の表",
+          "スケジュール",
+          "説明文"
         ],
         "external": [
-          "Floor plans (AutoCAD/ArchiCAD → PDF)",
-          "Renders (export as PNG/PDF)",
-          "Models (photo as PNG)"
+          "平面図 (AutoCAD/ArchiCAD → PDF)",
+          "レンダリング (PNG/PDF としてエクスポート)",
+          "モデル (写真は PNG)"
         ]
       },
       "biologia": {
         "native": [
-          "Data tables (booktabs)",
-          "Units \\\\SI{}",
-          "Phylogenetic trees (tikz)"
+          "データテーブル（ブックタブ）",
+          "単位 \\\\SI{}",
+          "系統樹 (tikz)"
         ],
         "external": [
-          "Complex anatomical diagrams (Inkscape → PDF/SVG)",
-          "Microscopy (high-resolution PNG)"
+          "複雑な解剖図（Inkscape → PDF/SVG）",
+          "顕微鏡検査 (高解像度 PNG)"
         ]
       },
       "economia": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Econometric equations"
+          "統計表（ブックタブ）",
+          "プロット (pgfplots)",
+          "計量経済方程式"
         ],
         "external": [
-          "Interactive dashboards and visualizations (export as PNG/PDF)"
+          "インタラクティブなダッシュボードとビジュアライゼーション (PNG/PDF としてエクスポート)"
         ]
       }
     }
@@ -489,7 +489,7 @@
     "meta_city": "都市",
     "meta_year": "年",
     "meta_keywords": "キーワード",
-    "meta_orcid": "ORCID",
+    "meta_orcid": "オーシド",
     "meta_funding": "資金提供",
     "meta_committee": "審査委員会",
     "meta_add_committee": "メンバーを追加",
@@ -827,12 +827,12 @@
     "latex_tectonic_title": "Tectonic",
     "latex_tectonic_description": "軽量でメンテナンスが簡単です。日常的な執筆や、完全な TeX ディストリビューションを必要としないプロジェクトに推奨されます。",
     "latex_suite_title": "完全な LaTeX スイート",
-    "latex_suite_description": "Full LaTeX suite ({{suiteName}}) with latexmk. Supports all CTAN packages, biblatex + Biber, shell-escape, and multi-pass compilation. The recommended choice for complete documents, institutional profiles, and plugin figures.",
+    "latex_suite_description": "latexmk を含む完全な LaTeX スイート ({{suiteName}})。すべての CTAN パッケージ、biblatex + Biber、シェルエスケープ、およびマルチパスコンパイルをサポートします。完全な文書、機関のプロフィール、プラグインの図に推奨される選択肢です。",
     "latex_suite_title_os": "{{suiteName}} + latexmk",
-    "latex_suite_install_hint": "Go to «Manage LaTeX installation» to install {{suiteName}}.",
-    "latex_recommended_badge": "Recommended",
-    "latex_upgrade_banner": "{{suiteName}} is installed — it supports all CTAN packages, Biber, and plugin figures without restrictions. Switching is recommended.",
-    "latex_upgrade_btn": "Switch to {{suiteName}}",
+    "latex_suite_install_hint": "«LaTeX インストールの管理» に移動して、{{suiteName}} をインストールします。",
+    "latex_recommended_badge": "おすすめ",
+    "latex_upgrade_banner": "{{suiteName}} がインストールされています - すべての CTAN パッケージ、Biber、およびプラグイン図を制限なくサポートします。切り替えをお勧めします。",
+    "latex_upgrade_btn": "{{suiteName}}に切り替える",
     "latex_available": "利用可能",
     "latex_not_available": "インストールされていません",
     "latex_detected_version": "検出されたバージョン: {{version}}",
@@ -841,7 +841,9 @@
     "latex_install_hint": "セットアップ アシスタントから LaTeX エンジンをインストールまたは修復し、ここで検出を更新します。",
     "latex_checking": "確認中…",
     "latex_refresh": "検出を更新",
-    "latex_manage_installation": "LaTeX インストールの管理"
+    "latex_manage_installation": "LaTeX インストールの管理",
+    "language_catalog_error": "言語カタログをロードできませんでした。接続を確認して、もう一度試してください。",
+    "language_install_error": "言語パックをインストールできませんでした。接続を確認して、もう一度試してください。"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "セクション '{{section}}' で参照されている画像 '{{file}}' が見つかりません。",
@@ -1032,7 +1034,8 @@
       "references": "参考文献",
       "appendix": "付録",
       "appendix_a": "付録A"
-    }
+    },
+    "tags_placeholder": "論文、学部、卒業生"
   },
   "progress": {
     "status_draft": "下書き",
@@ -1154,7 +1157,14 @@
     "generating_response": "応答を生成中…",
     "message_placeholder": "メッセージを書いてください… (Enter に送信します)",
     "configure_key_first": "最初に API キーを設定してください",
-    "send": "送信"
+    "send": "送信",
+    "error_not_configured": "API キーが設定されていません。プロバイダー タブにキーを追加します。",
+    "error_auth": "API キーが無効です。それが正しくアクティブであることを確認してください。",
+    "error_rate_limited": "リクエストの制限に達しました。数分後にもう一度試してください。",
+    "error_network": "ネットワークエラー。インターネット接続を確認してください。",
+    "error_safety": "リクエストは安全ポリシーによってブロックされました。",
+    "error_model_unavailable": "選択したモデルは使用できません。設定で別のものを選択してください。",
+    "error_provider": "プロバイダーエラー。もう一度やり直してください。"
   },
   "editor_meta": {
     "project_guide": "プロジェクト ガイド",
@@ -1283,7 +1293,7 @@
     "packages": "パッケージ",
     "edit_figure_title": "タイトルまたはラベルを編集するか、図を再生成します",
     "edit_figure": "図の編集",
-    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
+    "preview_pending": "ここで図を確認するには、«プレビュー» タブからプレビューをコンパイルします。"
   },
   "compile": {
     "ensure_latex_installed_path": "LaTeX コンパイラーがインストールされており、PATH で使用できることを確認してください。",
@@ -1470,7 +1480,7 @@
     "add_custom_style": "カスタム スタイルを追加",
     "id_required": "ID *",
     "biblatex_style_required": "Biblatex スタイル *",
-    "references_default_title": "References",
+    "references_default_title": "参考文献",
     "biblatex_label": "biblatex",
     "citation_label": "引用",
     "types": {
@@ -1484,25 +1494,25 @@
         "name": "APA 7",
         "full_name": "American Psychological Association 第7版",
         "disciplines": [
-          "Psychology",
-          "Education",
-          "Social sciences",
-          "Nursing",
-          "Communication"
+          "心理学",
+          "教育",
+          "社会科学",
+          "看護",
+          "コミュニケーション"
         ],
-        "description": "The most widely used style globally. Required in many psychology, education, and social science programs. Seventh edition (2020).",
+        "description": "世界中で最も広く使用されているスタイル。多くの心理学、教育、社会科学プログラムで必須です。第 7 版 (2020 年)。",
         "regions_primary": [
-          "United States",
-          "Canada",
-          "Latin America",
-          "Australia"
+          "米国",
+          "カナダ",
+          "ラテンアメリカ",
+          "オーストラリア"
         ],
         "in_text_format": "（著者, 年）",
         "bibliography_title": "参考文献"
       },
       "vancouver": {
         "name": "Vancouver",
-        "full_name": "Vancouver / ICMJE Recommendations",
+        "full_name": "Vancouver / ICMJE の推奨事項",
         "disciplines": [
           "医学",
           "看護",
@@ -1510,16 +1520,16 @@
           "歯学",
           "健康科学"
         ],
-        "description": "Required numeric style for health sciences. References are ordered by appearance. Standard in MEDLINE/PubMed journals.",
+        "description": "健康科学に必要な数値スタイル。参考文献は出現順に並べられています。 MEDLINE/PubMed ジャーナルの標準。",
         "regions_primary": [
-          "Global, medical and health sciences"
+          "グローバル、医療、健康科学"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       },
       "ieee": {
         "name": "IEEE",
-        "full_name": "IEEE Citation Style",
+        "full_name": "IEEE 引用スタイル",
         "disciplines": [
           "電気工学",
           "コンピューティング",
@@ -1527,46 +1537,46 @@
           "ロボット工学",
           "電子工学"
         ],
-        "description": "Standard numeric style for engineering, computing, and technology. Widely adopted in engineering schools.",
+        "description": "エンジニアリング、コンピューティング、テクノロジーの標準的な数値スタイル。工学系の学校で広く採用されています。",
         "regions_primary": [
-          "Global, engineering and technology"
+          "グローバル、エンジニアリング、テクノロジー"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       },
       "chicago17_notes": {
         "name": "Chicago 17（注）",
-        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "full_name": "Chicago スタイルマニュアル、第 17 版、注記 - 参考文献",
         "disciplines": [
-          "History",
-          "Literature",
-          "Arts",
-          "Philosophy",
-          "Religious studies"
+          "歴史",
+          "文学",
+          "芸術",
+          "哲学",
+          "宗教学"
         ],
-        "description": "Notes and bibliography system for the humanities. Citations appear in footnotes.",
+        "description": "人文科学向けのメモと参考文献システム。引用は脚注に記載されています。",
         "regions_primary": [
-          "United States",
-          "United Kingdom",
-          "Canada, humanities"
+          "米国",
+          "イギリス",
+          "カナダ、人文科学"
         ],
         "in_text_format": "脚注¹",
         "bibliography_title": "参考文献"
       },
       "chicago17_authordate": {
         "name": "Chicago 17（著者-年）",
-        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "full_name": "Chicago スタイルマニュアル、第 17 版、著者-日付",
         "disciplines": [
-          "Economics",
-          "Political science",
-          "Sociology",
-          "Anthropology",
-          "Geography"
+          "経済学",
+          "政治学",
+          "社会学",
+          "人類学",
+          "地理"
         ],
-        "description": "Chicago author-date variant, preferred in social sciences and economics.",
+        "description": "Chicago 著者日付のバリアント。社会科学と経済学で好まれます。",
         "regions_primary": [
-          "United States",
-          "Canada, social sciences"
+          "米国",
+          "カナダ、社会科学"
         ],
         "in_text_format": "（著者 年）",
         "bibliography_title": "参考文献"
@@ -1575,35 +1585,35 @@
         "name": "MLA 9",
         "full_name": "MLA Handbook 第9版",
         "disciplines": [
-          "Literature",
-          "Language",
-          "Linguistics",
-          "Cultural studies",
-          "Rhetoric"
+          "文学",
+          "言語",
+          "言語学",
+          "文化研究",
+          "レトリック"
         ],
-        "description": "Standard for language, literature, and cultural studies in North America. Ninth edition (2021).",
+        "description": "北米における言語、文学、文化研究の標準。第9版（2021年）。",
         "regions_primary": [
-          "United States",
-          "Canada, language and literature"
+          "米国",
+          "カナダ、言語と文学"
         ],
         "in_text_format": "（著者 ページ）",
         "bibliography_title": "引用文献"
       },
       "harvard": {
-        "name": "Harvard",
-        "full_name": "Harvard Referencing Style",
+        "name": "ハーバード大学",
+        "full_name": "ハーバード大学の参照スタイル",
         "disciplines": [
           "ビジネス",
           "経営",
           "経済学",
           "社会科学"
         ],
-        "description": "Author-date style similar to APA. Widely used in UK and Australian universities.",
+        "description": "APA に似た著者日付スタイル。イギリスとオーストラリアの大学で広く使用されています。",
         "regions_primary": [
-          "United Kingdom",
-          "Australia",
-          "Ireland",
-          "South Africa"
+          "イギリス",
+          "オーストラリア",
+          "アイルランド",
+          "南アフリカ"
         ],
         "in_text_format": "（著者 年）",
         "bibliography_title": "参考文献"
@@ -1612,16 +1622,16 @@
         "name": "MHRA",
         "full_name": "Modern Humanities Research Association Style Guide 第3版",
         "disciplines": [
-          "Humanities",
-          "History",
-          "Literature",
-          "Philosophy",
-          "Linguistics"
+          "人文科学",
+          "歴史",
+          "文学",
+          "哲学",
+          "言語学"
         ],
-        "description": "UK humanities standard similar to Chicago Notes.",
+        "description": "Chicago ノートに似た英国の人文科学標準。",
         "regions_primary": [
-          "United Kingdom",
-          "Ireland, humanities"
+          "イギリス",
+          "アイルランド、人文科学"
         ],
         "in_text_format": "脚注¹",
         "bibliography_title": "参考文献"
@@ -1630,24 +1640,24 @@
         "name": "ABNT",
         "full_name": "ABNT NBR 6023:2018",
         "disciplines": [
-          "All disciplines (Brazil)"
+          "すべての分野 (ブラジル)"
         ],
-        "description": "National standard for academic work in Brazilian universities.",
+        "description": "ブラジルの大学における学業に関する国家基準。",
         "regions_primary": [
-          "Brazil, required"
+          "ブラジル、必須"
         ],
         "in_text_format": "（著者, 年）",
         "bibliography_title": "参考文献"
       },
       "gb7714": {
         "name": "GB/T 7714",
-        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "full_name": "GB/T 7714-2015、中国国家規格",
         "disciplines": [
-          "All disciplines (China)"
+          "全分野（中国）"
         ],
-        "description": "National standard for theses in Chinese. Required in Chinese universities.",
+        "description": "中国語論文の国家標準。中国の大学では必須です。",
         "regions_primary": [
-          "China, required"
+          "中国、必須"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
@@ -1711,7 +1721,11 @@
     "optional_title": "オプションのタイトル",
     "theorem_title_placeholder": "ピタゴラスの定理",
     "math_content": "コンテンツ (数学的 LaTeX を受け入れます)",
-    "theorem_content_placeholder": "$a^2 + b^2 = c^2$ とします。$c$ は斜辺です..."
+    "theorem_content_placeholder": "$a^2 + b^2 = c^2$ とします。$c$ は斜辺です...",
+    "term_placeholder": "オントロジー",
+    "definition_placeholder": "存在を存在として研究する哲学の一分野。",
+    "acronym_placeholder": "AI",
+    "full_form_placeholder": "人工知能"
   },
   "citation": {
     "error_connect": "接続エラー。",
@@ -1906,7 +1920,15 @@
     "empty_equation": "空の方程式",
     "custom_molecule": "カスタム分子",
     "molecule_compile_hint": "コンパイル時に chemfig で生成される構造",
-    "chemical_syntax_hint": "-> (反応)、<=> (平衡)、^ (ガス)、v (沈殿) を使用します。"
+    "chemical_syntax_hint": "-> (反応)、<=> (平衡)、^ (ガス)、v (沈殿) を使用します。",
+    "label_example": "図:私の図",
+    "circuit_lower": "回路",
+    "diagram_lower": "図",
+    "default_start": "スタート",
+    "default_process": "プロセス",
+    "default_end": "終了",
+    "default_event": "イベント {{number}}",
+    "default_major_scale": "ハ長調スケール"
   },
   "vocabulary": {
     "title": "ドメインの語彙",
@@ -1936,7 +1958,10 @@
     "repo_hint_middle": "これには",
     "repo_hint_suffix": "セクション。独自の GitHub リポジトリにすることもできます。",
     "alias_placeholder": "エイリアス (e.g.my-lab-terms)",
-    "adding": "追加中…"
+    "adding": "追加中…",
+    "catalog_error": "語彙カタログをロードできませんでした。接続を確認して、もう一度試してください。",
+    "repo_sync_error": "このリポジトリを同期できませんでした。",
+    "repo_add_error": "リポジトリを追加できませんでした。アドレスを確認して、再試行してください。"
   },
   "profile_wizard": {
     "step_of": "{{total}} の {{current}} をステップ",
@@ -2185,13 +2210,13 @@
     "apply_visual_btn": "変更を適用",
     "applying": "適用中…",
     "done_msg": "図が更新されました",
-    "tab_preview": "Preview",
-    "preview_compile_btn": "Recompile preview",
-    "preview_compiling": "Compiling…",
-    "preview_apply_first": "Apply changes before previewing.",
-    "preview_tectonic_note": "Tectonic is the active engine. If the preview fails, this figure may require a full LaTeX suite (MacTeX / MiKTeX / TeX Live). You can change the engine in Settings → LaTeX engine.",
-    "preview_error_prefix": "Compilation error:",
-    "preview_no_tectonic": "Tectonic is not installed or could not be found."
+    "tab_preview": "プレビュー",
+    "preview_compile_btn": "再コンパイルプレビュー",
+    "preview_compiling": "コンパイル中…",
+    "preview_apply_first": "プレビューする前に変更を適用します。",
+    "preview_tectonic_note": "Tectonic がアクティブなエンジンです。プレビューが失敗した場合、この図には完全な LaTeX スイート (MacTeX / MiKTeX / TeX Live) が必要になる可能性があります。設定→LaTeXエンジンでエンジンを変更できます。",
+    "preview_error_prefix": "コンパイルエラー:",
+    "preview_no_tectonic": "Tectonic がインストールされていないか、見つかりませんでした。"
   },
   "elements_tab": {
     "title": "要素",
@@ -2207,7 +2232,7 @@
       "heading": {
         "name": "タイトル / 見出し",
         "description": "セクション見出し: section (H1)、subsection (H2)、subsubsection (H3)。",
-        "latex_output": "\\section{}, \\subsection{}, \\subsubsection{}"
+        "latex_output": "\\section{}、\\subsection{}、\\subsubsection{}"
       },
       "figure": {
         "name": "図",
@@ -2227,12 +2252,12 @@
       "list": {
         "name": "リスト",
         "description": "箇条書き (itemize)、番号付き (enumerate)、説明リスト (description)。",
-        "latex_output": "\\begin{itemize/enumerate/description}"
+        "latex_output": "\\begin{項目化/列挙/説明}"
       },
       "citation": {
         "name": "文献引用",
         "description": ".bib ファイルの BibTeX キーに紐づく括弧付き、本文中、または複数引用です。",
-        "latex_output": "\\parencite{}, \\textcite{}, \\cite{}"
+        "latex_output": "\\parencite{}、\\textcite{}、\\cite{}"
       },
       "raw_latex": {
         "name": "直接 LaTeX",
@@ -2388,11 +2413,11 @@
               "note": "すべてを含みます。容量が限られている場合は、texlive-full の代わりに texlive-xetex を使用してください。"
             },
             {
-              "title": "Fedora / RHEL / CentOS Stream",
+              "title": "Fedora / RHEL / CentOS ストリーム",
               "note": "完全な TeX Live スキームをインストールします。"
             },
             {
-              "title": "Arch / Manjaro",
+              "title": "アーチ / マンジャロ",
               "note": "メイングループと参考文献用の biber をインストールします。"
             },
             {
@@ -2594,7 +2619,8 @@
     "more_languages": "他の言語",
     "loading_more": "他の言語を読み込み中…",
     "catalog_error": "他の言語を読み込めませんでした。同梱の言語で続行できます。",
-    "skip": "スキップ"
+    "skip": "スキップ",
+    "install_error": "その言語をインストールできませんでした。接続を確認して、もう一度試してください。"
   },
   "toast": {
     "close_button": "通知を閉じる",
@@ -2689,13 +2715,56 @@
     "plot_errorbar": "誤差棒",
     "plot_heatmap": "ヒートマップ",
     "col_y_error": "±y誤差",
-    "col_iqr": "½ IQR",
+    "col_iqr": "1/2 IQR",
     "col_meta": "メタ（色）",
     "undo": "元に戻す",
     "redo": "やり直す",
     "restore_btn": "例を復元",
     "restore_title": "最小限の動作例に置き換える",
-    "advanced_section": "詳細オプション"
+    "advanced_section": "詳細オプション",
+    "fields": {
+      "math_label": {
+        "label": "\\label{...}",
+        "description": "相互参照のラベル (e.g. eq:quadratic)。空はラベルがないことを意味します。"
+      },
+      "chemistry_output": {
+        "label": "出力モード",
+        "description": "mhchem: インライン \\ce{...}。 chemfig: 結合角構造。"
+      },
+      "circuit_style": {
+        "label": "アメリカンスタイル",
+        "description": "オン: アメリカのコンポーネント シンボル (IEEE)。オフ: 欧州記号 (IEC)。"
+      },
+      "tikz_libraries": {
+        "label": "TikZ ライブラリ",
+        "description": "カンマ区切りの追加の TikZ ライブラリ (e.g.calc、arrows.meta、パターン)。"
+      },
+      "pgfplots_options": {
+        "label": "PGFPlots オプション",
+        "description": "\\beginZXQ0QXZ[…] に挿入された追加オプション (xbar や compat=1.18 など)。"
+      },
+      "forest_options": {
+        "label": "森林オプション",
+        "description": "フォレスト環境に渡される追加オプション (分岐エッジやエッジ ラベル スタイルなど)。"
+      }
+    },
+    "engines": {
+      "graph_node": {
+        "description": "ノード、エッジ、形状、円弧スタイルを含む有向グラフと無向グラフ。"
+      },
+      "pgfplots": {
+        "description": "PGFPlot を使用したプロット、ヒストグラム、棒グラフ、散布図、およびヒート マップ。"
+      },
+      "tree_forest": {
+        "description": "階層構文、分類木、系統樹、決定木、確率木。"
+      },
+      "table_data": {
+        "description": "booktabs、longtable、または PGFPlots データにエクスポート可能なデータ テーブル。"
+      },
+      "timeline_gantt": {
+        "description": "グループ、タスク、依存関係を含むガント チャートとタイムライン。"
+      }
+    }
   },
   "help": {
     "title": "ヘルプセンター",
@@ -2706,7 +2775,7 @@
     "section_figures": "図とプラグイン",
     "section_latex": "LaTeXの基礎",
     "section_errors": "よくあるエラー",
-    "section_faq": "FAQ",
+    "section_faq": "よくある質問",
     "start": {
       "intro": "TeXisStudioはLaTeXを知らなくても高品質な学術文書を作成できるアプリです。",
       "step1": "1. ホーム画面からプロジェクトを作成または開く。",
@@ -2814,7 +2883,7 @@
     "products": "生成物",
     "conditions_above": "矢印の上",
     "conditions_below": "矢印の下",
-    "conditions_hint": "Δ, hν, cat.",
+    "conditions_hint": "Δ、hν、猫。",
     "add_formula": "化学式",
     "add_reaction": "反応",
     "add_reactant": "反応物",
@@ -2829,7 +2898,7 @@
     "from": "接続元",
     "to": "接続先",
     "label": "ラベル",
-    "label_hint": "R1, C1...",
+    "label_hint": "R1、C1...",
     "value": "値",
     "node_label": "ラベル（任意）",
     "add_component": "部品",
@@ -2848,7 +2917,7 @@
     "type_ellipse": "楕円",
     "type_polygon": "多角形",
     "type_arc": "円弧",
-    "type_bezier": "Bézier",
+    "type_bezier": "ベジエ",
     "type_label": "ラベル",
     "type_axis": "軸",
     "type_vector": "ベクトル",

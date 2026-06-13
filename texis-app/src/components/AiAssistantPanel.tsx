@@ -10,7 +10,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
 import { useSettingsStore } from "../stores/settings";
-import { sendAiMessage, buildErrorMessage } from "../services/aiService";
+import { sendAiMessage, aiErrorKey } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
 import { AppDialog } from "./AppDialog";
 import { IconTrash, IconX, IconUpload } from "./Icons";
@@ -259,7 +259,7 @@ export function AiAssistantPanel({
       });
 
       if (!result.ok) {
-        const errMsg = result.error || buildErrorMessage(result.error_kind);
+        const errMsg = result.error || t(aiErrorKey(result.error_kind));
         store.addMessage(provider, {
           role: "assistant",
           content: `⚠️ ${errMsg}`,

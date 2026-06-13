@@ -19,7 +19,7 @@ export default function WelcomeView() {
   const { setLang, setSpellLang } = useSettingsStore();
   const { catalog, catalogLoading, catalogError, loadCatalog, install, installing } = useLangPacksStore();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [installError, setInstallError] = useState<string | null>(null);
+  const [installError, setInstallError] = useState(false);
 
   useEffect(() => { loadCatalog(); }, [loadCatalog]);
 
@@ -29,13 +29,13 @@ export default function WelcomeView() {
   );
 
   async function pick(code: string, remote?: LangPackEntry) {
-    setInstallError(null);
+    setInstallError(false);
     setActiveId(code);
     if (remote) {
       try {
         await install(remote);
-      } catch (e) {
-        setInstallError(String(e));
+      } catch {
+        setInstallError(true);
         setActiveId(null);
         return;
       }
@@ -161,7 +161,7 @@ export default function WelcomeView() {
 
       {installError && (
         <div style={{ marginTop: 12, fontSize: "var(--fs-xs)", color: "var(--build-err)", textAlign: "center", maxWidth: 360 }}>
-          {installError}
+          {t("welcome.install_error")}
         </div>
       )}
 

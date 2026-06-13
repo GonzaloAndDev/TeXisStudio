@@ -388,12 +388,12 @@ body {
 
 .editor-tool-button {
   width: calc(62px * var(--ui-density-scale));
-  height: calc(54px * var(--ui-density-scale));
+  height: calc(50px * var(--ui-density-scale));
   min-width: calc(62px * var(--ui-density-scale));
-  min-height: calc(54px * var(--ui-density-scale));
-  padding: 8px 6px 7px;
+  min-height: calc(50px * var(--ui-density-scale));
+  padding: 5px 6px 2px;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 4px;
   font-size: 9.5px;

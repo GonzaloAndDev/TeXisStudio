@@ -33,18 +33,19 @@ const VISUAL_KINDS: { kind: VisualKind; icon: string; labelKey: string; descKey:
   { kind: "music_fragment", icon: "♩",   labelKey: "visual.kind_music", descKey: "visual.kind_music_desc" },
 ];
 
-// ── Defaults por tipo ─────────────────────────────────────────────
-function defaultConfig(kind: VisualKind): VisualConfig {
+// Defaults are created with the active locale because these labels become
+// editable document content as soon as the block is inserted.
+function defaultConfig(kind: VisualKind, t: (key: string, options?: Record<string, unknown>) => string): VisualConfig {
   switch (kind) {
-    case "venn_euler":    return { kind, sets: [{ label: "Conjunto A", color: "red" }, { label: "Conjunto B", color: "blue" }, { label: "Conjunto C", color: "green" }], intersections: {} };
-    case "flow_diagram":  return { kind, nodes: [{ id: "start", label: "Inicio", shape: "rounded" }, { id: "process", label: "Proceso", shape: "rect" }, { id: "end", label: "Fin", shape: "rounded" }], edges: [], orientation: "vertical" };
-    case "timeline":      return { kind, events: [{ date: "2020", title: "Evento 1" }, { date: "2022", title: "Evento 2" }, { date: "2024", title: "Evento 3" }], orientation: "horizontal", accent_color: "blue" };
+    case "venn_euler":    return { kind, sets: [{ label: t("editor.default_set_a"), color: "red" }, { label: t("editor.default_set_b"), color: "blue" }, { label: t("editor.default_set_c"), color: "green" }], intersections: {} };
+    case "flow_diagram":  return { kind, nodes: [{ id: "start", label: t("visual.default_start"), shape: "rounded" }, { id: "process", label: t("visual.default_process"), shape: "rect" }, { id: "end", label: t("visual.default_end"), shape: "rounded" }], edges: [], orientation: "vertical" };
+    case "timeline":      return { kind, events: [1, 2, 3].map((number, index) => ({ date: String(2020 + index * 2), title: t("visual.default_event", { number }) })), orientation: "horizontal", accent_color: "blue" };
     case "chem_reaction": return { kind, equation: "H2 + O2 -> H2O", reaction_type: "forward", display_mode: true };
     case "molecule":      return { kind, preset: "benzene", scale: 1.0 };
     case "circuit":       return { kind, preset: "rc_series", component_values: { R: "1\\,k\\Omega", C: "10\\,\\mu F", V: "5\\,V" } };
     case "feynman":       return { kind, preset: "compton" };
     case "bio_pathway":   return { kind, preset: "krebs_cycle", show_cofactors: true };
-    case "music_fragment":return { kind, abc_notation: "X:1\nT:Escala Do mayor\nM:4/4\nK:C\nCDEFGABC'|", try_musixtex: true };
+    case "music_fragment":return { kind, abc_notation: `X:1\nT:${t("visual.default_major_scale")}\nM:4/4\nK:C\nCDEFGABC'|`, try_musixtex: true };
   }
 }
 
@@ -78,7 +79,7 @@ export function VisualBlockEditor({
           <label style={labelStyle}>{t("visual.label_ref")}</label>
           <input type="text" value={block.label}
             onChange={e => onChange({ label: e.target.value })}
-            placeholder="fig:mi-diagrama"
+            placeholder={t("visual.label_example")}
             style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 12 }} />
         </div>
       </div>
@@ -162,14 +163,15 @@ function KindBanner({ kind }: { kind: VisualKind }) {
 // ── Editor de configuración por tipo ─────────────────────────────
 
 function ConfigEditor({ config, onChange }: { config: VisualConfig; onChange: (c: VisualConfig) => void }) {
+  const { t } = useTranslation();
   switch (config.kind) {
     case "venn_euler":    return <VennEditor    config={config} onChange={onChange} />;
     case "flow_diagram":  return <FlowEditor    config={config} onChange={onChange} />;
     case "timeline":      return <TimelineEditor config={config} onChange={onChange} />;
     case "chem_reaction": return <ChemReactionEditor config={config} onChange={onChange} />;
     case "molecule":      return <MoleculeEditor config={config} onChange={onChange} />;
-    case "circuit":       return <PresetEditor   config={config} onChange={onChange} presets={[...PRESETS.circuit]} kindLabel="circuito" />;
-    case "feynman":       return <PresetEditor   config={config} onChange={onChange} presets={[...PRESETS.feynman]} kindLabel="diagrama" />;
+    case "circuit":       return <PresetEditor   config={config} onChange={onChange} presets={[...PRESETS.circuit]} kindLabel={t("visual.circuit_lower")} />;
+    case "feynman":       return <PresetEditor   config={config} onChange={onChange} presets={[...PRESETS.feynman]} kindLabel={t("visual.diagram_lower")} />;
     case "bio_pathway":   return <BioPathwayEditor config={config} onChange={onChange} />;
     case "music_fragment":return <MusicEditor   config={config} onChange={onChange} />;
     default:              return null;

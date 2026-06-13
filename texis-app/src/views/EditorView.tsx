@@ -1264,7 +1264,7 @@ export default function EditorView() {
               setLocalBlocks(prev => {
                 const next = prev.map(b => {
                   if (b.id === blockId && b.type === "visual") {
-                    return { ...b, config: defaultConfig(kind) };
+                    return { ...b, config: defaultConfig(kind, t) };
                   }
                   return b;
                 });

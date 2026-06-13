@@ -772,6 +772,8 @@
     "community_remove": "Remove",
     "community_contribute": "Want to contribute a dictionary or translation? Visit the repository.",
     "community_none": "No packages available yet.",
+    "language_catalog_error": "Could not load the language catalog. Check your connection and try again.",
+    "language_install_error": "Could not install the language pack. Check your connection and try again.",
     "user_defaults_hint": "These details will be used as defaults when creating new projects.",
     "refresh_catalog": "Refresh catalog",
     "package_status_stable": "Stable",
@@ -999,6 +1001,7 @@
     "version": "Version",
     "license_placeholder": "e.g. CC BY 4.0",
     "tags_comma": "Tags (comma-separated)",
+    "tags_placeholder": "thesis, undergraduate, apa",
     "technical_config": "Technical configuration",
     "bibliography_style": "Bibliographic style",
     "bib_style_chicago_notes": "Chicago 17 (Notes)",
@@ -1168,6 +1171,13 @@
     "selection_required_message": "This mode requires you to select a normal text fragment in the editor first.",
     "preview_required_reason": "TeXisStudio shows the change before applying it to avoid direct writes to the document.",
     "unexpected_error": "Unexpected error: {{error}}",
+    "error_not_configured": "API key not configured. Add your key in the provider tab.",
+    "error_auth": "Invalid API key. Check that it is correct and active.",
+    "error_rate_limited": "Request limit reached. Try again in a few minutes.",
+    "error_network": "Network error. Check your internet connection.",
+    "error_safety": "The request was blocked by the safety policy.",
+    "error_model_unavailable": "The selected model is unavailable. Choose another one in settings.",
+    "error_provider": "Provider error. Try again.",
     "change_text_edited": "Text edited: \"{{mode}}\"",
     "change_content_inserted": "Content inserted after your confirmation",
     "responsibility_prefix": "The assistant supports your work as writer, editor, reviewer, advisor, and simulated examiner.",
@@ -1718,9 +1728,13 @@
     "citation_key_with_count": "Bibliography key ({{count}} available)",
     "page": "Page",
     "term": "Term",
+    "term_placeholder": "Ontology",
     "definition": "Definition",
+    "definition_placeholder": "Branch of philosophy that studies being as being.",
     "acronym": "Acronym",
+    "acronym_placeholder": "AI",
     "full_form": "Full form",
+    "full_form_placeholder": "Artificial Intelligence",
     "additional_description_optional": "Additional description (optional)",
     "additional_description_placeholder": "Optional context or clarification…",
     "language": "Language:",
@@ -1878,6 +1892,12 @@
     "kind_music_desc": "Music fragment in ABC notation",
     "caption_placeholder": "Diagram description...",
     "label_ref": "Label (\\ref)",
+    "label_example": "fig:my-diagram",
+    "default_start": "Start",
+    "default_process": "Process",
+    "default_end": "End",
+    "default_event": "Event {{number}}",
+    "default_major_scale": "C major scale",
     "hide_advanced_latex": "▲ Hide advanced LaTeX",
     "show_advanced_latex": "▼ View / edit generated LaTeX (advanced)",
     "kind_selector_title": "Visual element type",
@@ -1925,6 +1945,8 @@
     "chemfig_hint": "chemfig syntax. Check the package documentation for complex formulas.",
     "scale": "Scale",
     "preset_type": "{{kind}} type",
+    "circuit_lower": "circuit",
+    "diagram_lower": "diagram",
     "bio_pathway_lower": "biological pathway",
     "show_cofactors": "Show cofactors (ATP, NADH, FADH₂, etc.)",
     "abc_hint": "Use ABC notation — simple and portable. Example:",
@@ -1972,7 +1994,10 @@
     "repo_hint_middle": "that has a",
     "repo_hint_suffix": "section. It can be your own GitHub repo.",
     "alias_placeholder": "Alias (e.g. my-lab-terms)",
-    "adding": "Adding…"
+    "adding": "Adding…",
+    "catalog_error": "Could not load the vocabulary catalog. Check your connection and try again.",
+    "repo_sync_error": "Could not synchronize this repository.",
+    "repo_add_error": "Could not add the repository. Check its address and try again."
   },
   "profile_wizard": {
     "step_of": "Step {{current}} of {{total}}",
@@ -2599,6 +2624,7 @@
     "more_languages": "More languages",
     "loading_more": "Loading more languages…",
     "catalog_error": "Could not load more languages. You can continue with a bundled language.",
+    "install_error": "Could not install that language. Check your connection and try again.",
     "skip": "Skip"
   },
   "toast": {
@@ -2700,7 +2726,40 @@
     "redo": "Redo",
     "restore_btn": "Restore example",
     "restore_title": "Replace with a minimal working example",
-    "advanced_section": "Advanced options"
+    "advanced_section": "Advanced options",
+    "fields": {
+      "math_label": {
+        "label": "\\label{...}",
+        "description": "Label for cross-references (e.g. eq:quadratic). Empty means no label."
+      },
+      "chemistry_output": {
+        "label": "Output mode",
+        "description": "mhchem: inline \\ce{...}. chemfig: bond-angle structures."
+      },
+      "circuit_style": {
+        "label": "American style",
+        "description": "On: American component symbols (IEEE). Off: European symbols (IEC)."
+      },
+      "tikz_libraries": {
+        "label": "TikZ libraries",
+        "description": "Comma-separated extra TikZ libraries (e.g. calc, arrows.meta, patterns)."
+      },
+      "pgfplots_options": {
+        "label": "PGFPlots options",
+        "description": "Extra options inserted into \\begin{axis}[…], such as xbar or compat=1.18."
+      },
+      "forest_options": {
+        "label": "Forest options",
+        "description": "Extra options passed to the forest environment, such as forked edges or edge label styles."
+      }
+    },
+    "engines": {
+      "graph_node": { "description": "Directed and undirected graphs with nodes, edges, shapes, and arc styles." },
+      "pgfplots": { "description": "Plots, histograms, bar charts, scatter plots, and heat maps with PGFPlots." },
+      "tree_forest": { "description": "Hierarchical syntax, taxonomic, phylogenetic, decision, and probability trees." },
+      "table_data": { "description": "Data tables exportable to booktabs, longtable, or PGFPlots data." },
+      "timeline_gantt": { "description": "Gantt charts and timelines with groups, tasks, and dependencies." }
+    }
   },
   "help": {
     "title": "Help Center",

@@ -89,15 +89,15 @@
           ],
           "steps": [
             {
-              "title": "Ubuntu / Debian / Linux Mint",
+              "title": "Ubuntu/Debian/Linux Mint",
               "note": "Inclui tudo. Se o espaço for limitado, use texlive-xetex em vez de texlive-full."
             },
             {
-              "title": "Fedora / RHEL / CentOS Stream",
+              "title": "Fluxo Fedora / RHEL / CentOS",
               "note": "Instala o esquema completo do TeX Live."
             },
             {
-              "title": "Arch / Manjaro",
+              "title": "Arco / Manjaro",
               "note": "Instala os grupos principais e o biber para bibliografia."
             },
             {
@@ -571,155 +571,155 @@
     "disciplines": {
       "matematicas": {
         "native": [
-          "Numbered equations \\\\eqref{}",
-          "Theorems and proofs",
-          "Matrices and vectors",
-          "Commutative diagrams (tikz-cd)",
-          "Proof trees (bussproofs)"
+          "Equações numeradas \\\\eqref{}",
+          "Teoremas e provas",
+          "Matrizes e vetores",
+          "Diagramas comutativos (tikz-cd)",
+          "Árvores de prova (bussproofs)"
         ],
         "external": [],
-        "tip": "LaTeX is the canonical tool for formal mathematics."
+        "tip": "LaTeX é a ferramenta canônica para matemática formal."
       },
       "logica": {
         "native": [
-          "Deduction trees (bussproofs)",
-          "Truth tables",
-          "Formal semantics",
-          "Hasse diagrams"
+          "Árvores de dedução (bussproofs)",
+          "Tabelas verdade",
+          "Semântica formal",
+          "Diagramas de Hasse"
         ],
         "external": []
       },
       "fisica": {
         "native": [
-          "Physical units \\\\SI{} (siunitx)",
-          "Partial derivatives \\\\pdv{}",
-          "Feynman diagrams (tikz-feynman)",
-          "Plots (pgfplots)"
+          "Unidades físicas \\\\SI{} (siunitx)",
+          "Derivadas parciais \\\\pdv{}",
+          "Diagramas de Feynman (tikz-feynman)",
+          "Parcelas (pgfplots)"
         ],
         "external": [
-          "Numerical simulations (export as PDF/PNG)"
+          "Simulações numéricas (exportar como PDF/PNG)"
         ],
-        "tip": "Use siunitx for all units — never write 'km/h' directly."
+        "tip": "Use siunitx para todas as unidades — nunca escreva 'km/h' diretamente."
       },
       "quimica": {
         "native": [
-          "Chemical reactions \\\\ce{} (mhchem)",
-          "Molecular structures (chemfig)",
-          "Units \\\\SI{} (siunitx)"
+          "Reações químicas \\\\ce{} (mhchem)",
+          "Estruturas moleculares (chemfig)",
+          "Unidades \\\\SI{} (siunitx)"
         ],
         "external": [
-          "Complex 3D structures (export from ChemDraw as PDF)"
+          "Estruturas 3D complexas (exportação do ChemDraw como PDF)"
         ],
-        "tip": "For simple structures use chemfig. For crystallography or proteins, import as PDF."
+        "tip": "Para estruturas simples use chemfig. Para cristalografia ou proteínas, importe como PDF."
       },
       "ingenieria": {
         "native": [
-          "Units \\\\SI{} (siunitx)",
-          "Circuits (circuitikz)",
-          "Data plots (pgfplots)",
-          "Algorithms (algpseudocode)"
+          "Unidades \\\\SI{} (siunitx)",
+          "Circuitos (circuitikz)",
+          "Gráficos de dados (pgfplots)",
+          "Algoritmos (algpseudocódigo)"
         ],
         "external": [
-          "Technical drawings (AutoCAD → PDF)",
-          "PCB diagrams (KiCad → PDF)"
+          "Desenhos técnicos (AutoCAD → PDF)",
+          "Diagramas de PCB (KiCad → PDF)"
         ],
-        "tip": "circuitikz covers most signal and power circuits."
+        "tip": "circuitikz cobre a maioria dos circuitos de sinal e potência."
       },
       "computacion": {
         "native": [
-          "Source code (lstlisting)",
-          "Algorithms with pseudocode",
-          "Performance plots (pgfplots)",
-          "Decision trees (tikz)"
+          "Código fonte (lstlisting)",
+          "Algoritmos com pseudocódigo",
+          "Gráficos de desempenho (pgfplots)",
+          "Árvores de decisão (tikz)"
         ],
         "external": [
-          "Complex architecture diagrams (draw.io → PDF/PNG)"
+          "Diagramas de arquitetura complexa (draw.io → PDF/PNG)"
         ]
       },
       "humanidades": {
         "native": [
-          "Extensive footnotes",
-          "Critical apparatus and text citations",
-          "Analytical indexes (makeindex)",
-          "Linguistic examples (gb4e)"
+          "Notas de rodapé extensas",
+          "Aparato crítico e citações de texto",
+          "Índices analíticos (makeindex)",
+          "Exemplos linguísticos (gb4e)"
         ],
         "external": [
-          "Artwork images (high resolution as PNG/PDF)"
+          "Imagens de arte (alta resolução como PNG/PDF)"
         ]
       },
       "ciencias_sociales": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Bibliographic citations in APA/Chicago style"
+          "Tabelas estatísticas (booktabs)",
+          "Parcelas (pgfplots)",
+          "Citações bibliográficas no estilo APA/Chicago"
         ],
         "external": [
-          "Complex data visualizations (R/Python → PDF/PNG)"
+          "Visualizações de dados complexos (R/Python → PDF/PNG)"
         ],
-        "tip": "For simple plots use pgfplots. For elaborate visualizations, export from R or Python."
+        "tip": "Para gráficos simples, use pgfplots. Para visualizações elaboradas, exporte de R ou Python."
       },
       "medicina": {
         "native": [
-          "Clinical tables (booktabs)",
-          "Medical units \\\\SI{}",
-          "Figures with caption and label"
+          "Tabelas clínicas (booktabs)",
+          "Unidades médicas \\\\SI{}",
+          "Figuras com legenda e etiqueta"
         ],
         "external": [
-          "DICOM images / histology (export as high-resolution PNG/TIFF)",
-          "Clinical flowcharts (draw.io → PDF)"
+          "Imagens DICOM/histologia (exportar como PNG/TIFF de alta resolução)",
+          "Fluxogramas clínicos (desenhar.io → PDF)"
         ],
-        "tip": "Diagnostic medical images must be imported as external files, not reproduced in LaTeX."
+        "tip": "As imagens médicas de diagnóstico devem ser importadas como arquivos externos, não reproduzidas em LaTeX."
       },
       "musica": {
         "native": [],
         "external": [
-          "Complete scores (MuseScore/Sibelius → PDF)",
-          "Audio fragments (external link)"
+          "Pontuações completas (MuseScore/Sibelius → PDF)",
+          "Fragmentos de áudio (link externo)"
         ],
-        "tip": "For complex musical notation, use a score editor and attach as PDF."
+        "tip": "Para notação musical complexa, use um editor de partituras e anexe como PDF."
       },
       "arte": {
         "native": [
-          "Tabulated technical sheets (booktabs)"
+          "Fichas técnicas tabuladas (booktabs)"
         ],
         "external": [
-          "Plates and artworks (high resolution as PNG/TIFF)",
-          "Visual portfolio (external PDF)",
-          "Plans (DWG → PDF)"
+          "Placas e obras de arte (alta resolução como PNG/TIFF)",
+          "Portfólio visual (PDF externo)",
+          "Planos (DWG → PDF)"
         ],
-        "tip": "For portfolios, include high-quality PDF or PNG. LaTeX manages layout and descriptive text."
+        "tip": "Para portfólios, inclua PDF ou PNG de alta qualidade. LaTeX gerencia layout e texto descritivo."
       },
       "arquitectura": {
         "native": [
-          "Budget and materials tables",
-          "Schedules",
-          "Descriptive texts"
+          "Tabelas de orçamento e materiais",
+          "Horários",
+          "Textos descritivos"
         ],
         "external": [
-          "Floor plans (AutoCAD/ArchiCAD → PDF)",
-          "Renders (export as PNG/PDF)",
-          "Models (photo as PNG)"
+          "Plantas baixas (AutoCAD/ArchiCAD → PDF)",
+          "Renderizações (exportar como PNG/PDF)",
+          "Modelos (foto como PNG)"
         ]
       },
       "biologia": {
         "native": [
-          "Data tables (booktabs)",
-          "Units \\\\SI{}",
-          "Phylogenetic trees (tikz)"
+          "Tabelas de dados (booktabs)",
+          "Unidades \\\\SI{}",
+          "Árvores filogenéticas (tikz)"
         ],
         "external": [
-          "Complex anatomical diagrams (Inkscape → PDF/SVG)",
-          "Microscopy (high-resolution PNG)"
+          "Diagramas anatômicos complexos (Inkscape → PDF/SVG)",
+          "Microscopia (PNG de alta resolução)"
         ]
       },
       "economia": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Econometric equations"
+          "Tabelas estatísticas (booktabs)",
+          "Parcelas (pgfplots)",
+          "Equações econométricas"
         ],
         "external": [
-          "Interactive dashboards and visualizations (export as PNG/PDF)"
+          "Painéis e visualizações interativos (exportar como PNG/PDF)"
         ]
       }
     }
@@ -1113,12 +1113,12 @@
     "latex_tectonic_title": "Tectonic",
     "latex_tectonic_description": "Leve e fácil de manter. Recomendado para escrita diária e projetos que não requerem uma distribuição completa do TeX.",
     "latex_suite_title": "Conjunto LaTeX completo",
-    "latex_suite_description": "Full LaTeX suite ({{suiteName}}) with latexmk. Supports all CTAN packages, biblatex + Biber, shell-escape, and multi-pass compilation. The recommended choice for complete documents, institutional profiles, and plugin figures.",
+    "latex_suite_description": "Conjunto LaTeX completo ({{suiteName}}) com latexmk. Suporta todos os pacotes CTAN, biblatex + Biber, shell-escape e compilação multipassagem. A escolha recomendada para documentos completos, perfis institucionais e figuras de plugins.",
     "latex_suite_title_os": "{{suiteName}} + latexmk",
-    "latex_suite_install_hint": "Go to «Manage LaTeX installation» to install {{suiteName}}.",
-    "latex_recommended_badge": "Recommended",
-    "latex_upgrade_banner": "{{suiteName}} is installed — it supports all CTAN packages, Biber, and plugin figures without restrictions. Switching is recommended.",
-    "latex_upgrade_btn": "Switch to {{suiteName}}",
+    "latex_suite_install_hint": "Vá para «Gerenciar instalação do LaTeX» para instalar o {{suiteName}}.",
+    "latex_recommended_badge": "Recomendado",
+    "latex_upgrade_banner": "{{suiteName}} está instalado - ele suporta todos os pacotes CTAN, Biber e figuras de plugins sem restrições. A troca é recomendada.",
+    "latex_upgrade_btn": "Mudar para {{suiteName}}",
     "latex_available": "Disponível",
     "latex_not_available": "Não instalado",
     "latex_detected_version": "Versão detectada: {{version}}",
@@ -1127,7 +1127,9 @@
     "latex_install_hint": "Instale ou repare um motor LaTeX pelo assistente de configuração e depois atualize a detecção aqui.",
     "latex_checking": "Verificando…",
     "latex_refresh": "Atualizar detecção",
-    "latex_manage_installation": "Gerenciar a instalação do LaTeX"
+    "latex_manage_installation": "Gerenciar a instalação do LaTeX",
+    "language_catalog_error": "Não foi possível carregar o catálogo de idiomas. Verifique sua conexão e tente novamente.",
+    "language_install_error": "Não foi possível instalar o pacote de idiomas. Verifique sua conexão e tente novamente."
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "Imagem '{{file}}' referenciada na seção '{{section}}' não encontrada.",
@@ -1295,7 +1297,7 @@
     "selected_chip": "selecionado",
     "installed_chip": "instalado",
     "sections_count_suffix": "seções",
-    "tab_plugins": "Plugins",
+    "tab_plugins": "Plug-ins",
     "placement": {
       "front_matter": "Pré-texto",
       "body": "Corpo",
@@ -1318,7 +1320,8 @@
       "references": "Referências",
       "appendix": "Apêndice",
       "appendix_a": "Apêndice A"
-    }
+    },
+    "tags_placeholder": "tese, graduação, apa"
   },
   "progress": {
     "status_draft": "Rascunho",
@@ -1440,7 +1443,14 @@
     "generating_response": "Gerando resposta…",
     "message_placeholder": "Escreva sua mensagem… (Entre para enviar)",
     "configure_key_first": "Configure sua chave API primeiro",
-    "send": "Enviar"
+    "send": "Enviar",
+    "error_not_configured": "Chave de API não configurada. Adicione sua chave na guia do provedor.",
+    "error_auth": "Chave de API inválida. Verifique se está correto e ativo.",
+    "error_rate_limited": "Limite de solicitações atingido. Tente novamente em alguns minutos.",
+    "error_network": "Erro de rede. Verifique sua conexão com a Internet.",
+    "error_safety": "A solicitação foi bloqueada pela política de segurança.",
+    "error_model_unavailable": "O modelo selecionado não está disponível. Escolha outro nas configurações.",
+    "error_provider": "Erro do provedor. Tente novamente."
   },
   "editor_meta": {
     "project_guide": "Guia do projeto",
@@ -1569,7 +1579,7 @@
     "packages": "Pacotes",
     "edit_figure_title": "Edite o título ou rótulo ou gere novamente a figura",
     "edit_figure": "Editar figura",
-    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
+    "preview_pending": "Compile uma prévia na guia “Visualização” para ver a figura aqui."
   },
   "compile": {
     "ensure_latex_installed_path": "Verifique se um compilador LaTeX está instalado e disponível em PATH.",
@@ -1758,17 +1768,17 @@
     "biblatex_style_required": "Estilo biblatex *",
     "references_default_title": "Referências",
     "biblatex_label": "biblatex",
-    "citation_label": "citation",
+    "citation_label": "citação",
     "types": {
       "author_date": "Autor-Data",
-      "numeric": "Numeric",
+      "numeric": "Numérico",
       "notes_bibliography": "Notas-Bibliog.",
       "author_page": "Autor-Página"
     },
     "builtins": {
       "apa7": {
-        "name": "APA 7",
-        "full_name": "American Psychological Association, 7th Edition",
+        "name": "APA7",
+        "full_name": "Associação Americana de Psicologia, 7ª Edição",
         "disciplines": [
           "Psicologia",
           "Educação",
@@ -1783,12 +1793,12 @@
           "América Latina",
           "Austrália"
         ],
-        "in_text_format": "(Author, Year)",
-        "bibliography_title": "References"
+        "in_text_format": "(Autor, Ano)",
+        "bibliography_title": "Referências"
       },
       "vancouver": {
         "name": "Vancouver",
-        "full_name": "Vancouver / ICMJE Recommendations",
+        "full_name": "Recomendações Vancouver/ICMJE",
         "disciplines": [
           "Medicina",
           "Enfermagem",
@@ -1801,11 +1811,11 @@
           "Global, medicina e ciências da saúde"
         ],
         "in_text_format": "[1]",
-        "bibliography_title": "References"
+        "bibliography_title": "Referências"
       },
       "ieee": {
         "name": "IEEE",
-        "full_name": "IEEE Citation Style",
+        "full_name": "Estilo de citação IEEE",
         "disciplines": [
           "Engenharia elétrica",
           "Computação",
@@ -1818,11 +1828,11 @@
           "Global, engenharia e tecnologia"
         ],
         "in_text_format": "[1]",
-        "bibliography_title": "References"
+        "bibliography_title": "Referências"
       },
       "chicago17_notes": {
-        "name": "Chicago 17 (Notes)",
-        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "name": "Chicago 17 (Notas)",
+        "full_name": "Manual de Estilo Chicago, 17ª Edição, Notas-Bibliografia",
         "disciplines": [
           "História",
           "Literatura",
@@ -1837,11 +1847,11 @@
           "Canadá, humanidades"
         ],
         "in_text_format": "Nota de rodapé¹",
-        "bibliography_title": "Bibliography"
+        "bibliography_title": "Bibliografia"
       },
       "chicago17_authordate": {
-        "name": "Chicago 17 (Author-Date)",
-        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "name": "Chicago 17 (Autor-Data)",
+        "full_name": "Manual de Estilo Chicago, 17ª Edição, Autor-Data",
         "disciplines": [
           "Economia",
           "Ciência política",
@@ -1854,12 +1864,12 @@
           "Estados Unidos",
           "Canadá, ciências sociais"
         ],
-        "in_text_format": "(Author Year)",
-        "bibliography_title": "References"
+        "in_text_format": "(Ano do Autor)",
+        "bibliography_title": "Referências"
       },
       "mla9": {
         "name": "MLA 9",
-        "full_name": "MLA Handbook, 9th Edition",
+        "full_name": "Manual MLA, 9ª Edição",
         "disciplines": [
           "Literatura",
           "Língua",
@@ -1872,12 +1882,12 @@
           "Estados Unidos",
           "Canadá, língua e literatura"
         ],
-        "in_text_format": "(Author Page)",
-        "bibliography_title": "Works Cited"
+        "in_text_format": "(Página do autor)",
+        "bibliography_title": "Trabalhos Citados"
       },
       "harvard": {
         "name": "Harvard",
-        "full_name": "Harvard Referencing Style",
+        "full_name": "Estilo de referência de Harvard",
         "disciplines": [
           "Negócios",
           "Gestão",
@@ -1891,12 +1901,12 @@
           "Irlanda",
           "África do Sul"
         ],
-        "in_text_format": "(Author Year)",
-        "bibliography_title": "References"
+        "in_text_format": "(Ano do Autor)",
+        "bibliography_title": "Referências"
       },
       "mhra": {
         "name": "MHRA",
-        "full_name": "Modern Humanities Research Association Style Guide, 3rd Edition",
+        "full_name": "Guia de estilo da Modern Humanities Research Association, 3ª edição",
         "disciplines": [
           "Humanidades",
           "História",
@@ -1910,7 +1920,7 @@
           "Irlanda, humanidades"
         ],
         "in_text_format": "Nota de rodapé¹",
-        "bibliography_title": "Bibliography"
+        "bibliography_title": "Bibliografia"
       },
       "abnt": {
         "name": "ABNT",
@@ -1922,12 +1932,12 @@
         "regions_primary": [
           "Brasil, obrigatório"
         ],
-        "in_text_format": "(AUTHOR, Year)",
-        "bibliography_title": "References"
+        "in_text_format": "(AUTOR, Ano)",
+        "bibliography_title": "Referências"
       },
       "gb7714": {
         "name": "GB/T 7714",
-        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "full_name": "GB/T 7714-2015, padrão nacional chinês",
         "disciplines": [
           "Todas as áreas (China)"
         ],
@@ -1936,7 +1946,7 @@
           "China, obrigatório"
         ],
         "in_text_format": "[1]",
-        "bibliography_title": "References"
+        "bibliography_title": "Referências"
       }
     },
     "reset_title": "Restaurar estilos padrão",
@@ -1997,7 +2007,11 @@
     "optional_title": "Título opcional",
     "theorem_title_placeholder": "Teorema de Pitágoras",
     "math_content": "Conteúdo (aceita LaTeX matemático)",
-    "theorem_content_placeholder": "Seja $a^2 + b^2 = c^2$ onde $c$ é a hipotenusa..."
+    "theorem_content_placeholder": "Seja $a^2 + b^2 = c^2$ onde $c$ é a hipotenusa...",
+    "term_placeholder": "Ontologia",
+    "definition_placeholder": "Ramo da filosofia que estuda o ser como ser.",
+    "acronym_placeholder": "IA",
+    "full_form_placeholder": "Inteligência Artificial"
   },
   "citation": {
     "error_connect": "Erro de conexão.",
@@ -2192,7 +2206,15 @@
     "empty_equation": "Equação vazia",
     "custom_molecule": "Molécula personalizada",
     "molecule_compile_hint": "Estrutura gerada com chemfig durante a compilação",
-    "chemical_syntax_hint": "Use -> (reação), <=> (equilíbrio), ^ (gás) e v (precipitado)"
+    "chemical_syntax_hint": "Use -> (reação), <=> (equilíbrio), ^ (gás) e v (precipitado)",
+    "label_example": "fig:meu-diagrama",
+    "circuit_lower": "circuito",
+    "diagram_lower": "diagrama",
+    "default_start": "Começar",
+    "default_process": "Processo",
+    "default_end": "Fim",
+    "default_event": "Evento {{number}}",
+    "default_major_scale": "Escala Dó maior"
   },
   "vocabulary": {
     "title": "Vocabulários de domínio",
@@ -2222,7 +2244,10 @@
     "repo_hint_middle": "que tem um",
     "repo_hint_suffix": "seção. Pode ser seu próprio repositório GitHub.",
     "alias_placeholder": "Alias (ex.: meus-termos-lab)",
-    "adding": "Adicionando…"
+    "adding": "Adicionando…",
+    "catalog_error": "Não foi possível carregar o catálogo de vocabulário. Verifique sua conexão e tente novamente.",
+    "repo_sync_error": "Não foi possível sincronizar este repositório.",
+    "repo_add_error": "Não foi possível adicionar o repositório. Verifique seu endereço e tente novamente."
   },
   "profile_wizard": {
     "step_of": "Etapa {{current}} de {{total}}",
@@ -2351,7 +2376,7 @@
       "china": "China",
       "japan": "Japão",
       "south_korea": "Coreia do Sul",
-      "singapore": "Singapore",
+      "singapore": "Singapura",
       "india": "Índia",
       "generic": "Genérico"
     },
@@ -2471,13 +2496,13 @@
     "apply_visual_btn": "Aplicar alterações",
     "applying": "Aplicando…",
     "done_msg": "Figura atualizada",
-    "tab_preview": "Preview",
-    "preview_compile_btn": "Recompile preview",
-    "preview_compiling": "Compiling…",
-    "preview_apply_first": "Apply changes before previewing.",
-    "preview_tectonic_note": "Tectonic is the active engine. If the preview fails, this figure may require a full LaTeX suite (MacTeX / MiKTeX / TeX Live). You can change the engine in Settings → LaTeX engine.",
-    "preview_error_prefix": "Compilation error:",
-    "preview_no_tectonic": "Tectonic is not installed or could not be found."
+    "tab_preview": "Visualização",
+    "preview_compile_btn": "Visualização de recompilação",
+    "preview_compiling": "Compilando…",
+    "preview_apply_first": "Aplique as alterações antes de visualizar.",
+    "preview_tectonic_note": "Tectonic é o mecanismo ativo. Se a visualização falhar, este número pode exigir um conjunto LaTeX completo (MacTeX/MiKTeX/TeX Live). Você pode alterar o mecanismo em Configurações → mecanismo LaTeX.",
+    "preview_error_prefix": "Erro de compilação:",
+    "preview_no_tectonic": "Tectonic não está instalado ou não foi encontrado."
   },
   "elements_tab": {
     "title": "Elementos",
@@ -2513,7 +2538,7 @@
       "list": {
         "name": "Lista",
         "description": "Lista com marcadores (itemize), numerada (enumerate) ou descritiva (description).",
-        "latex_output": "\\begin{itemize/enumerate/description}"
+        "latex_output": "\\begin{itemizar/enumerar/descrição}"
       },
       "citation": {
         "name": "Citação bibliográfica",
@@ -2561,31 +2586,31 @@
     "setup_language": "Escolha o idioma base",
     "setup_advisor": "Adicione pelo menos um orientador ou diretor de tese",
     "writing_sections": "Habilite pelo menos uma seção de conteúdo",
-    "writing_draft": "Write content in a main section",
+    "writing_draft": "Escreva conteúdo em uma seção principal",
     "writing_words": "Desenvolva um primeiro rascunho substancial",
     "writing_reviewed": "Marque pelo menos uma seção como revisada",
     "delivery_references": "Inclua uma seção de referências",
     "delivery_abstract": "Escreva o resumo ou abstract",
     "delivery_required": "Complete as seções obrigatórias do perfil",
-    "delivery_latex": "Confirm or remove unvalidated LaTeX blocks",
+    "delivery_latex": "Confirme ou remova blocos LaTeX não validados",
     "delivery_committee": "Complete a banca para trabalhos avançados",
     "delivery_review_main": "Revise as seções principais antes da entrega",
     "quality_citation": "Inclua pelo menos uma citação verificável no corpo",
     "quality_required_reviewed": "Marque as seções obrigatórias do corpo como revisadas",
-    "quality_raw_latex": "Migrate or manually review imported LaTeX blocks before final delivery",
+    "quality_raw_latex": "Migre ou revise manualmente os blocos LaTeX importados antes da entrega final",
     "quality_plugin_warnings": "Resolva avisos de figuras ou plugins antes da entrega final",
     "quality_profile": "Use um perfil institucional ou personalizado para entregas formais"
   },
   "plugins_tab": {
-    "title": "Plugins",
+    "title": "Plug-ins",
     "subtitle": "{{count}} plugins visuais disponíveis para inserir figuras e diagramas.",
     "search_placeholder": "Pesquise por nome, pacote ou categoria…",
     "no_results": "Nenhum plugin corresponde a essa busca.",
     "quality": {
-      "stable": "stable",
+      "stable": "estável",
       "beta": "beta",
       "experimental": "experimental",
-      "draft": "draft"
+      "draft": "rascunho"
     }
   },
   "welcome": {
@@ -2594,7 +2619,8 @@
     "more_languages": "Mais idiomas",
     "loading_more": "Carregando mais idiomas…",
     "catalog_error": "Não foi possível carregar mais idiomas. Você pode continuar com um idioma incluído.",
-    "skip": "Pular"
+    "skip": "Pular",
+    "install_error": "Não foi possível instalar esse idioma. Verifique sua conexão e tente novamente."
   },
   "toast": {
     "close_button": "Fechar notificação",
@@ -2636,13 +2662,13 @@
     "expression": "Expressão (f(x))",
     "domain_from": "De",
     "domain_to": "Até",
-    "auto_color": "Auto",
+    "auto_color": "Automático",
     "add_series": "Adicionar série",
     "plot_function2d": "Função f(x)",
     "plot_scatter": "Dispersão",
     "plot_bar": "Gráfico de barras",
     "plot_histogram": "Histograma",
-    "plot_boxplot": "Box plot",
+    "plot_boxplot": "Gráfico de caixa",
     "rows": "Linhas",
     "cols": "Colunas",
     "delimiter": "Colchetes",
@@ -2689,13 +2715,56 @@
     "plot_errorbar": "Barras de erro",
     "plot_heatmap": "Mapa de calor",
     "col_y_error": "±y erro",
-    "col_iqr": "½ IQR",
+    "col_iqr": "½ AIQ",
     "col_meta": "Meta (cor)",
     "undo": "Desfazer",
     "redo": "Refazer",
     "restore_btn": "Restaurar exemplo",
     "restore_title": "Substituir por um exemplo mínimo funcional",
-    "advanced_section": "Opções avançadas"
+    "advanced_section": "Opções avançadas",
+    "fields": {
+      "math_label": {
+        "label": "\\label{...}",
+        "description": "Rótulo para referências cruzadas (e.g. eq:quadratic). Vazio significa sem rótulo."
+      },
+      "chemistry_output": {
+        "label": "Modo de saída",
+        "description": "mhchem: \\ce embutido{...}. chemfig: estruturas de ângulo de ligação."
+      },
+      "circuit_style": {
+        "label": "Estilo americano",
+        "description": "Ligado: Símbolos de componentes americanos (IEEE). Desligado: símbolos europeus (IEC)."
+      },
+      "tikz_libraries": {
+        "label": "Bibliotecas TikZ",
+        "description": "Bibliotecas TikZ extras separadas por vírgula (e.g. calc, arrows.meta, padrões)."
+      },
+      "pgfplots_options": {
+        "label": "Opções de lotes PGFP",
+        "description": "Opções extras inseridas em \\beginZXQ0QXZ[…], como xbar ou compat=1.18."
+      },
+      "forest_options": {
+        "label": "Opções florestais",
+        "description": "Opções extras passadas para o ambiente da floresta, como arestas bifurcadas ou estilos de legenda de aresta."
+      }
+    },
+    "engines": {
+      "graph_node": {
+        "description": "Gráficos direcionados e não direcionados com nós, arestas, formas e estilos de arco."
+      },
+      "pgfplots": {
+        "description": "Gráficos, histogramas, gráficos de barras, gráficos de dispersão e mapas de calor com PGFPlots."
+      },
+      "tree_forest": {
+        "description": "Sintaxe hierárquica, árvores taxonômicas, filogenéticas, de decisão e de probabilidade."
+      },
+      "table_data": {
+        "description": "Tabelas de dados exportáveis ​​para dados booktabs, longtable ou PGFPlots."
+      },
+      "timeline_gantt": {
+        "description": "Gráficos de Gantt e cronogramas com grupos, tarefas e dependências."
+      }
+    }
   },
   "help": {
     "title": "Central de Ajuda",
@@ -2706,7 +2775,7 @@
     "section_figures": "Figuras & plugins",
     "section_latex": "Básicos de LaTeX",
     "section_errors": "Erros comuns",
-    "section_faq": "FAQ",
+    "section_faq": "Perguntas frequentes",
     "start": {
       "intro": "O TeXisStudio permite criar documentos acadêmicos profissionais sem conhecer LaTeX. Veja como começar:",
       "step1": "1. Crie ou abra um projeto na tela inicial.",
@@ -2814,7 +2883,7 @@
     "products": "Produtos",
     "conditions_above": "Acima da seta",
     "conditions_below": "Abaixo da seta",
-    "conditions_hint": "Δ, hν, cat.",
+    "conditions_hint": "Δ, hν, gato.",
     "add_formula": "Fórmula",
     "add_reaction": "Reação",
     "add_reactant": "Reagente",

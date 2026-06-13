@@ -17,7 +17,7 @@ export function VocabularyPacksPanel() {
 
   const [newRepoAlias, setNewRepoAlias] = useState("");
   const [newRepoUrl, setNewRepoUrl] = useState("");
-  const [repoError, setRepoError] = useState<string | null>(null);
+  const [repoError, setRepoError] = useState(false);
   const [showAddRepo, setShowAddRepo] = useState(false);
   const [langFilter, setLangFilter] = useState<"all" | "es" | "en">("all");
   const [kindFilter] = useState<"all" | VocabPackKind>("all");
@@ -27,14 +27,14 @@ export function VocabularyPacksPanel() {
 
   async function handleAddRepo() {
     if (!newRepoAlias.trim() || !newRepoUrl.trim()) return;
-    setRepoError(null);
+    setRepoError(false);
     try {
       await addRepo(newRepoAlias.trim(), newRepoUrl.trim());
       setNewRepoAlias("");
       setNewRepoUrl("");
       setShowAddRepo(false);
-    } catch (e) {
-      setRepoError(String(e));
+    } catch {
+      setRepoError(true);
     }
   }
 
@@ -101,7 +101,7 @@ export function VocabularyPacksPanel() {
 
       {catalogError && (
         <div style={{ color: "var(--build-err)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>
-          {catalogError}
+          {t("vocabulary.catalog_error")}
         </div>
       )}
 
@@ -228,7 +228,7 @@ export function VocabularyPacksPanel() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "var(--fg-strong)" }}>{repo.id}</div>
               <div style={{ fontSize: 10, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{repo.url}</div>
-              {repo.error && <div style={{ fontSize: 10, color: "var(--build-err)" }}>{repo.error}</div>}
+              {repo.error && <div style={{ fontSize: 10, color: "var(--build-err)" }}>{t("vocabulary.repo_sync_error")}</div>}
               {!repo.error && <div style={{ fontSize: 10, color: "var(--fg-faint)" }}>{t("vocabulary.packs_count", { count: (repo.packs ?? []).length })}</div>}
             </div>
             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => syncRepo(repo.id)} disabled={repoLoading}>↻</button>
@@ -243,7 +243,7 @@ export function VocabularyPacksPanel() {
             </div>
             <input value={newRepoAlias} onChange={(e) => setNewRepoAlias(e.target.value)} placeholder={t("vocabulary.alias_placeholder")} style={inputStyle} />
             <input value={newRepoUrl} onChange={(e) => setNewRepoUrl(e.target.value)} placeholder="https://raw.githubusercontent.com/.../catalog.json" style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-            {repoError && <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{repoError}</div>}
+            {repoError && <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)" }}>{t("vocabulary.repo_add_error")}</div>}
             <div style={{ display: "flex", gap: 6 }}>
               <button className="btn btn-accent btn-sm" style={{ flex: 1 }} onClick={handleAddRepo} disabled={repoLoading || !newRepoAlias.trim() || !newRepoUrl.trim()}>
                 {repoLoading ? t("vocabulary.adding") : t("vocabulary.add_repo")}

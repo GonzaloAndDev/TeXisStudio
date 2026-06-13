@@ -80,21 +80,21 @@ function buildContext(opts: AiSendOptions) {
   };
 }
 
-export function buildErrorMessage(errorKind?: string): string {
+export function aiErrorKey(errorKind?: string): string {
   switch (errorKind) {
     case "not_configured":
-      return "API key no configurada. Agrega tu clave en la pestaña del proveedor.";
+      return "ai.error_not_configured";
     case "auth_error":
-      return "API key inválida. Verifica que sea correcta y esté activa.";
+      return "ai.error_auth";
     case "rate_limited":
-      return "Límite de peticiones alcanzado. Intenta en unos minutos.";
+      return "ai.error_rate_limited";
     case "network_error":
-      return "Error de red. Verifica tu conexión a internet.";
+      return "ai.error_network";
     case "safety_rejection":
-      return "La solicitud fue bloqueada por política de seguridad.";
+      return "ai.error_safety";
     case "model_not_available":
-      return "El modelo seleccionado no está disponible. Elige otro en la configuración.";
+      return "ai.error_model_unavailable";
     default:
-      return "Error del proveedor. Intenta de nuevo.";
+      return "ai.error_provider";
   }
 }

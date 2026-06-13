@@ -105,10 +105,10 @@ export function VisualEditorShell({
               {technicalFields.map((field) => (
                 <div key={field.key}>
                   <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", display: "block", marginBottom: 3 }}>
-                    <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{field.label}</code>
-                    {field.description && (
+                    <code style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>{t(field.labelKey)}</code>
+                    {field.descriptionKey && (
                       <span style={{ marginLeft: 6, color: "var(--fg-faint)", fontFamily: "var(--font-sans, inherit)" }}>
-                        — {field.description}
+                        — {t(field.descriptionKey)}
                       </span>
                     )}
                   </label>

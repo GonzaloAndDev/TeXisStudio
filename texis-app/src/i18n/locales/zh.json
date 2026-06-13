@@ -285,155 +285,155 @@
     "disciplines": {
       "matematicas": {
         "native": [
-          "Numbered equations \\\\eqref{}",
-          "Theorems and proofs",
-          "Matrices and vectors",
-          "Commutative diagrams (tikz-cd)",
-          "Proof trees (bussproofs)"
+          "编号方程 \\\\eqref{}",
+          "定理和证明",
+          "矩阵和向量",
+          "交换图 (tikz-cd)",
+          "证明树（bussproofs）"
         ],
         "external": [],
-        "tip": "LaTeX is the canonical tool for formal mathematics."
+        "tip": "LaTeX 是形式数学的规范工具。"
       },
       "logica": {
         "native": [
-          "Deduction trees (bussproofs)",
-          "Truth tables",
-          "Formal semantics",
-          "Hasse diagrams"
+          "演绎树（bussproofs）",
+          "真值表",
+          "形式语义",
+          "哈斯图"
         ],
         "external": []
       },
       "fisica": {
         "native": [
-          "Physical units \\\\SI{} (siunitx)",
-          "Partial derivatives \\\\pdv{}",
-          "Feynman diagrams (tikz-feynman)",
-          "Plots (pgfplots)"
+          "物理单位 \\\\SI{} (siunitx)",
+          "偏导数 \\\\pdv{}",
+          "费曼图 (tikz-feynman)",
+          "地块 (pgfplots)"
         ],
         "external": [
-          "Numerical simulations (export as PDF/PNG)"
+          "数值模拟（导出为 PDF/PNG）"
         ],
-        "tip": "Use siunitx for all units — never write 'km/h' directly."
+        "tip": "所有单位均使用 siunitx — 切勿直接写“km/h”。"
       },
       "quimica": {
         "native": [
-          "Chemical reactions \\\\ce{} (mhchem)",
-          "Molecular structures (chemfig)",
-          "Units \\\\SI{} (siunitx)"
+          "化学反应 \\\\ce{} (mhchem)",
+          "分子结构（chemfig）",
+          "单位 \\\\SI{} (siunitx)"
         ],
         "external": [
-          "Complex 3D structures (export from ChemDraw as PDF)"
+          "复杂的 3D 结构（从 ChemDraw 导出为 PDF）"
         ],
-        "tip": "For simple structures use chemfig. For crystallography or proteins, import as PDF."
+        "tip": "对于简单结构，请使用 chemfig。对于晶体学或蛋白质，输入为 PDF。"
       },
       "ingenieria": {
         "native": [
-          "Units \\\\SI{} (siunitx)",
-          "Circuits (circuitikz)",
-          "Data plots (pgfplots)",
-          "Algorithms (algpseudocode)"
+          "单位 \\\\SI{} (siunitx)",
+          "电路（circuitikz）",
+          "数据图 (pgfplots)",
+          "算法（alg伪代码）"
         ],
         "external": [
-          "Technical drawings (AutoCAD → PDF)",
-          "PCB diagrams (KiCad → PDF)"
+          "技术图纸（AutoCAD → PDF）",
+          "PCB 图 (KiCad → PDF)"
         ],
-        "tip": "circuitikz covers most signal and power circuits."
+        "tip": "circuitikz涵盖了大部分信号和电源电路。"
       },
       "computacion": {
         "native": [
-          "Source code (lstlisting)",
-          "Algorithms with pseudocode",
-          "Performance plots (pgfplots)",
-          "Decision trees (tikz)"
+          "源代码（列表）",
+          "带有伪代码的算法",
+          "性能图 (pgfplots)",
+          "决策树 (tikz)"
         ],
         "external": [
-          "Complex architecture diagrams (draw.io → PDF/PNG)"
+          "复杂的架构图（draw.io → PDF/PNG）"
         ]
       },
       "humanidades": {
         "native": [
-          "Extensive footnotes",
-          "Critical apparatus and text citations",
-          "Analytical indexes (makeindex)",
-          "Linguistic examples (gb4e)"
+          "丰富的脚注",
+          "关键装置和文本引用",
+          "分析索引（makeindex）",
+          "语言示例 (gb4e)"
         ],
         "external": [
-          "Artwork images (high resolution as PNG/PDF)"
+          "艺术品图像（高分辨率为 PNG/PDF）"
         ]
       },
       "ciencias_sociales": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Bibliographic citations in APA/Chicago style"
+          "统计表（书签）",
+          "地块 (pgfplots)",
+          "APA/Chicago 风格的书目引文"
         ],
         "external": [
-          "Complex data visualizations (R/Python → PDF/PNG)"
+          "复杂数据可视化（R/Python → PDF/PNG）"
         ],
-        "tip": "For simple plots use pgfplots. For elaborate visualizations, export from R or Python."
+        "tip": "对于简单绘图，请使用 pgfplots。对于复杂的可视化，请从 R 或 Python 导出。"
       },
       "medicina": {
         "native": [
-          "Clinical tables (booktabs)",
-          "Medical units \\\\SI{}",
-          "Figures with caption and label"
+          "临床表（书表）",
+          "医疗单位\\\\SI{}",
+          "带标题和标签的图"
         ],
         "external": [
-          "DICOM images / histology (export as high-resolution PNG/TIFF)",
-          "Clinical flowcharts (draw.io → PDF)"
+          "DICOM 图像/组织学（导出为高分辨率 PNG/TIFF）",
+          "临床流程图（绘制.io → PDF）"
         ],
-        "tip": "Diagnostic medical images must be imported as external files, not reproduced in LaTeX."
+        "tip": "诊断医学图像必须作为外部文件导入，不能在 LaTeX 中复制。"
       },
       "musica": {
         "native": [],
         "external": [
-          "Complete scores (MuseScore/Sibelius → PDF)",
-          "Audio fragments (external link)"
+          "完整乐谱（MuseScore/Sibelius → PDF）",
+          "音频片段（外部链接）"
         ],
-        "tip": "For complex musical notation, use a score editor and attach as PDF."
+        "tip": "对于复杂的乐谱，请使用乐谱编辑器并附加为 PDF。"
       },
       "arte": {
         "native": [
-          "Tabulated technical sheets (booktabs)"
+          "列表式技术表（booktabs）"
         ],
         "external": [
-          "Plates and artworks (high resolution as PNG/TIFF)",
-          "Visual portfolio (external PDF)",
-          "Plans (DWG → PDF)"
+          "版画和艺术品（高分辨率为 PNG/TIFF）",
+          "视觉组合（外部PDF）",
+          "平面图（DWG → PDF）"
         ],
-        "tip": "For portfolios, include high-quality PDF or PNG. LaTeX manages layout and descriptive text."
+        "tip": "对于作品集，请包含高质量的 PDF 或 PNG。 LaTeX 管理布局和描述性文本。"
       },
       "arquitectura": {
         "native": [
-          "Budget and materials tables",
-          "Schedules",
-          "Descriptive texts"
+          "预算和材料表",
+          "时间表",
+          "描述性文字"
         ],
         "external": [
-          "Floor plans (AutoCAD/ArchiCAD → PDF)",
-          "Renders (export as PNG/PDF)",
-          "Models (photo as PNG)"
+          "平面图（AutoCAD/ArchiCAD → PDF）",
+          "渲染（导出为 PNG/PDF）",
+          "模型（图片为PNG）"
         ]
       },
       "biologia": {
         "native": [
-          "Data tables (booktabs)",
-          "Units \\\\SI{}",
-          "Phylogenetic trees (tikz)"
+          "数据表（书签）",
+          "单位 \\\\SI{}",
+          "系统发育树 (tikz)"
         ],
         "external": [
-          "Complex anatomical diagrams (Inkscape → PDF/SVG)",
-          "Microscopy (high-resolution PNG)"
+          "复杂的解剖图（Inkscape → PDF/SVG）",
+          "显微镜（高分辨率 PNG）"
         ]
       },
       "economia": {
         "native": [
-          "Statistical tables (booktabs)",
-          "Plots (pgfplots)",
-          "Econometric equations"
+          "统计表（书签）",
+          "地块 (pgfplots)",
+          "计量经济学方程"
         ],
         "external": [
-          "Interactive dashboards and visualizations (export as PNG/PDF)"
+          "交互式仪表板和可视化（导出为 PNG/PDF）"
         ]
       }
     }
@@ -483,7 +483,7 @@
     "meta_city": "城市",
     "meta_year": "年份",
     "meta_keywords": "关键词",
-    "meta_orcid": "ORCID",
+    "meta_orcid": "奥西德",
     "meta_funding": "资助",
     "meta_committee": "答辩委员会",
     "meta_add_committee": "添加成员",
@@ -663,7 +663,7 @@
     "continue_editing": "继续编辑",
     "unsaved_changes_message": "该节有未保存的更改。离开前您想怎么做？",
     "unsaved_changes_title": "未保存的更改",
-    "review_ai": "AI",
+    "review_ai": "人工智能",
     "visual_type_selector_title": "您想插入哪种类型的图表？",
     "default_set_a": "集合 A",
     "add_paragraph": "新段落",
@@ -827,12 +827,12 @@
     "latex_tectonic_title": "Tectonic",
     "latex_tectonic_description": "重量轻且易于维护。推荐用于日常写作和不需要完整 TeX 发行版的项目。",
     "latex_suite_title": "完整的 LaTeX 套件",
-    "latex_suite_description": "Full LaTeX suite ({{suiteName}}) with latexmk. Supports all CTAN packages, biblatex + Biber, shell-escape, and multi-pass compilation. The recommended choice for complete documents, institutional profiles, and plugin figures.",
+    "latex_suite_description": "完整的 LaTeX 套件 ({{suiteName}}) 和 latexmk。支持所有 CTAN 包、biblatex + Biber、shell 转义和多遍编译。完整文档、机构简介和插件图的推荐选择。",
     "latex_suite_title_os": "{{suiteName}} + latexmk",
-    "latex_suite_install_hint": "Go to «Manage LaTeX installation» to install {{suiteName}}.",
-    "latex_recommended_badge": "Recommended",
-    "latex_upgrade_banner": "{{suiteName}} is installed — it supports all CTAN packages, Biber, and plugin figures without restrictions. Switching is recommended.",
-    "latex_upgrade_btn": "Switch to {{suiteName}}",
+    "latex_suite_install_hint": "转到“管理LaTeX安装”来安装{{suiteName}}。",
+    "latex_recommended_badge": "推荐",
+    "latex_upgrade_banner": "{{suiteName}} 已安装 - 它支持所有 CTAN 包、Biber 和插件人物，无限制。建议切换。",
+    "latex_upgrade_btn": "切换至{{suiteName}}",
     "latex_available": "可用",
     "latex_not_available": "未安装",
     "latex_detected_version": "检测到的版本：{{version}}",
@@ -841,7 +841,9 @@
     "latex_install_hint": "从设置助手安装或修复 LaTeX 引擎，然后在此处刷新检测。",
     "latex_checking": "正在检查...",
     "latex_refresh": "刷新检测",
-    "latex_manage_installation": "管理 LaTeX 安装"
+    "latex_manage_installation": "管理 LaTeX 安装",
+    "language_catalog_error": "无法加载语言目录。检查您的连接并重试。",
+    "language_install_error": "无法安装语言包。检查您的连接并重试。"
   },
   "validation": {
     "E_MISSING_IMAGE_msg": "未找到“{{section}}”部分引用的图像“{{file}}”。",
@@ -900,7 +902,7 @@
     "hypothesis": "假设",
     "extra_preamble": "附加序言",
     "latex_warning": "该字段接受任意 LaTeX。此处的错误可能会导致文档无法编译。",
-    "latex_placeholder": "% e.g.:\n\\hypersetup{colorlinks=true, linkcolor=blue}\n\\newcommand{\\R}{\\mathbb{R}}",
+    "latex_placeholder": "％e.g：\n\\hypersetup{colorlinks=true, linkcolor=blue}\n\\newcommand{\\R}{\\mathbbZXQ0QXZ}",
     "footer": "更改将在您下次编译 PDF 时应用。",
     "advanced_hint": "启用高级模式以查看字体、运算符和额外的前导码设置。"
   },
@@ -1032,7 +1034,8 @@
       "references": "参考文献",
       "appendix": "附录",
       "appendix_a": "附录A"
-    }
+    },
+    "tags_placeholder": "论文, 本科生, apa"
   },
   "progress": {
     "status_draft": "草稿",
@@ -1154,7 +1157,14 @@
     "generating_response": "正在生成响应...",
     "message_placeholder": "写下您的消息...（Enter发送）",
     "configure_key_first": "首先配置您的 API 密钥",
-    "send": "发送"
+    "send": "发送",
+    "error_not_configured": "API 密钥未配置。在提供商选项卡中添加您的密钥。",
+    "error_auth": "API 密钥无效。检查它是否正确且有效。",
+    "error_rate_limited": "已达到请求限制。几分钟后重试。",
+    "error_network": "网络错误。检查您的互联网连接。",
+    "error_safety": "该请求被安全策略阻止。",
+    "error_model_unavailable": "所选型号不可用。在设置中选择另一项。",
+    "error_provider": "提供者错误。再试一次。"
   },
   "editor_meta": {
     "project_guide": "项目指南",
@@ -1283,7 +1293,7 @@
     "packages": "套餐",
     "edit_figure_title": "编辑标题或标签，或重新生成图形",
     "edit_figure": "编辑图",
-    "preview_pending": "Compile a preview from the «Preview» tab to see the figure here."
+    "preview_pending": "从“预览”选项卡编译预览以查看此处的图。"
   },
   "compile": {
     "ensure_latex_installed_path": "检查 LaTeX 编译器是否已安装并且在 PATH 中可用。",
@@ -1470,7 +1480,7 @@
     "add_custom_style": "添加自定义样式",
     "id_required": "ID *",
     "biblatex_style_required": "Biblatex 样式 *",
-    "references_default_title": "References",
+    "references_default_title": "参考",
     "biblatex_label": "biblatex",
     "citation_label": "引用",
     "types": {
@@ -1484,25 +1494,25 @@
         "name": "APA 7",
         "full_name": "American Psychological Association 第7版",
         "disciplines": [
-          "Psychology",
-          "Education",
-          "Social sciences",
-          "Nursing",
-          "Communication"
+          "心理学",
+          "教育",
+          "社会科学",
+          "护理",
+          "沟通"
         ],
-        "description": "The most widely used style globally. Required in many psychology, education, and social science programs. Seventh edition (2020).",
+        "description": "全球使用最广泛的样式。许多心理学、教育和社会科学项目都需要。第七版（2020 年）。",
         "regions_primary": [
-          "United States",
-          "Canada",
-          "Latin America",
-          "Australia"
+          "美国",
+          "加拿大",
+          "拉美",
+          "澳大利亚"
         ],
         "in_text_format": "（作者，年份）",
         "bibliography_title": "参考文献"
       },
       "vancouver": {
         "name": "Vancouver",
-        "full_name": "Vancouver / ICMJE Recommendations",
+        "full_name": "Vancouver / ICMJE 建议",
         "disciplines": [
           "医学",
           "护理",
@@ -1510,16 +1520,16 @@
           "牙医学",
           "健康科学"
         ],
-        "description": "Required numeric style for health sciences. References are ordered by appearance. Standard in MEDLINE/PubMed journals.",
+        "description": "健康科学所需的数字样式。参考文献按外观排序。 MEDLINE/PubMed 期刊的标准。",
         "regions_primary": [
-          "Global, medical and health sciences"
+          "全球、医学和健康科学"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       },
       "ieee": {
         "name": "IEEE",
-        "full_name": "IEEE Citation Style",
+        "full_name": "IEEE 引文样式",
         "disciplines": [
           "电气工程",
           "计算机",
@@ -1527,46 +1537,46 @@
           "机器人",
           "电子"
         ],
-        "description": "Standard numeric style for engineering, computing, and technology. Widely adopted in engineering schools.",
+        "description": "工程、计算和技术的标准数字样式。被工程学校广泛采用。",
         "regions_primary": [
-          "Global, engineering and technology"
+          "全球、工程和技术"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
       },
       "chicago17_notes": {
         "name": "Chicago 17（注释）",
-        "full_name": "Chicago Manual of Style, 17th Edition, Notes-Bibliography",
+        "full_name": "Chicago 风格手册，第17版，注释-参考书目",
         "disciplines": [
-          "History",
-          "Literature",
-          "Arts",
-          "Philosophy",
-          "Religious studies"
+          "历史",
+          "文学",
+          "艺术",
+          "哲学",
+          "宗教研究"
         ],
-        "description": "Notes and bibliography system for the humanities. Citations appear in footnotes.",
+        "description": "人文学科注释和参考书目系统。引文出现在脚注中。",
         "regions_primary": [
-          "United States",
-          "United Kingdom",
-          "Canada, humanities"
+          "美国",
+          "英国",
+          "加拿大，人文学科"
         ],
         "in_text_format": "脚注¹",
         "bibliography_title": "参考书目"
       },
       "chicago17_authordate": {
         "name": "Chicago 17（作者-年份）",
-        "full_name": "Chicago Manual of Style, 17th Edition, Author-Date",
+        "full_name": "Chicago 风格手册，第 17 版，作者日期",
         "disciplines": [
-          "Economics",
-          "Political science",
-          "Sociology",
-          "Anthropology",
-          "Geography"
+          "经济学",
+          "政治学",
+          "社会学",
+          "人类学",
+          "地理"
         ],
-        "description": "Chicago author-date variant, preferred in social sciences and economics.",
+        "description": "Chicago 作者日期变体，在社会科学和经济学中首选。",
         "regions_primary": [
-          "United States",
-          "Canada, social sciences"
+          "美国",
+          "加拿大，社会科学"
         ],
         "in_text_format": "（作者 年份）",
         "bibliography_title": "参考文献"
@@ -1575,35 +1585,35 @@
         "name": "MLA 9",
         "full_name": "MLA Handbook 第9版",
         "disciplines": [
-          "Literature",
-          "Language",
-          "Linguistics",
-          "Cultural studies",
-          "Rhetoric"
+          "文学",
+          "语言",
+          "语言学",
+          "文化研究",
+          "修辞学"
         ],
-        "description": "Standard for language, literature, and cultural studies in North America. Ninth edition (2021).",
+        "description": "北美语言、文学和文化研究标准。第九版（2021 年）。",
         "regions_primary": [
-          "United States",
-          "Canada, language and literature"
+          "美国",
+          "加拿大，语言和文学"
         ],
         "in_text_format": "（作者 页码）",
         "bibliography_title": "引用作品"
       },
       "harvard": {
-        "name": "Harvard",
-        "full_name": "Harvard Referencing Style",
+        "name": "哈佛",
+        "full_name": "哈佛参考文献风格",
         "disciplines": [
           "商业",
           "管理",
           "经济学",
           "社会科学"
         ],
-        "description": "Author-date style similar to APA. Widely used in UK and Australian universities.",
+        "description": "作者日期样式类似于 APA。广泛应用于英国和澳大利亚大学。",
         "regions_primary": [
-          "United Kingdom",
-          "Australia",
-          "Ireland",
-          "South Africa"
+          "英国",
+          "澳大利亚",
+          "爱尔兰",
+          "南非"
         ],
         "in_text_format": "（作者 年份）",
         "bibliography_title": "参考文献"
@@ -1612,16 +1622,16 @@
         "name": "MHRA",
         "full_name": "Modern Humanities Research Association Style Guide 第3版",
         "disciplines": [
-          "Humanities",
-          "History",
-          "Literature",
-          "Philosophy",
-          "Linguistics"
+          "人文学科",
+          "历史",
+          "文学",
+          "理念",
+          "语言学"
         ],
-        "description": "UK humanities standard similar to Chicago Notes.",
+        "description": "英国人文标准类似于Chicago注释。",
         "regions_primary": [
-          "United Kingdom",
-          "Ireland, humanities"
+          "英国",
+          "爱尔兰，人文学科"
         ],
         "in_text_format": "脚注¹",
         "bibliography_title": "参考书目"
@@ -1630,24 +1640,24 @@
         "name": "ABNT",
         "full_name": "ABNT NBR 6023:2018",
         "disciplines": [
-          "All disciplines (Brazil)"
+          "所有学科（巴西）"
         ],
-        "description": "National standard for academic work in Brazilian universities.",
+        "description": "巴西大学学术工作的国家标准。",
         "regions_primary": [
-          "Brazil, required"
+          "巴西，必填"
         ],
         "in_text_format": "（作者，年份）",
         "bibliography_title": "参考文献"
       },
       "gb7714": {
         "name": "GB/T 7714",
-        "full_name": "GB/T 7714-2015, Chinese National Standard",
+        "full_name": "GB/T 7714-2015，中国国家标准",
         "disciplines": [
-          "All disciplines (China)"
+          "所有学科（中国）"
         ],
-        "description": "National standard for theses in Chinese. Required in Chinese universities.",
+        "description": "中文论文国家标准.中国大学要求。",
         "regions_primary": [
-          "China, required"
+          "中国，必填"
         ],
         "in_text_format": "[1]",
         "bibliography_title": "参考文献"
@@ -1711,7 +1721,11 @@
     "optional_title": "可选标题",
     "theorem_title_placeholder": "勾股定理",
     "math_content": "内容（接受数学LaTeX）",
-    "theorem_content_placeholder": "令 $a^2 + b^2 = c^2$ 其中 $c$ 是斜边..."
+    "theorem_content_placeholder": "令 $a^2 + b^2 = c^2$ 其中 $c$ 是斜边...",
+    "term_placeholder": "本体论",
+    "definition_placeholder": "研究存在作为存在的哲学分支。",
+    "acronym_placeholder": "人工智能",
+    "full_form_placeholder": "人工智能"
   },
   "citation": {
     "error_connect": "连接错误。",
@@ -1906,7 +1920,15 @@
     "empty_equation": "空方程",
     "custom_molecule": "自定义分子",
     "molecule_compile_hint": "编译时使用chemfig生成的结构",
-    "chemical_syntax_hint": "使用 ->（反应）、<=>（平衡）、^（气体）和 v（沉淀）"
+    "chemical_syntax_hint": "使用 ->（反应）、<=>（平衡）、^（气体）和 v（沉淀）",
+    "label_example": "图：我的图",
+    "circuit_lower": "电路",
+    "diagram_lower": "图表",
+    "default_start": "开始",
+    "default_process": "工艺流程",
+    "default_end": "结束",
+    "default_event": "事件 {{number}}",
+    "default_major_scale": "C大调音阶"
   },
   "vocabulary": {
     "title": "领域词汇",
@@ -1936,7 +1958,10 @@
     "alias_placeholder": "别名（e.g.my-lab-terms）",
     "adding": "正在添加...",
     "filter_by_area": "按区域过滤",
-    "all_areas": "所有区域"
+    "all_areas": "所有区域",
+    "catalog_error": "无法加载词汇目录。检查您的连接并重试。",
+    "repo_sync_error": "无法同步此存储库。",
+    "repo_add_error": "无法添加存储库。检查其地址并重试。"
   },
   "profile_wizard": {
     "step_of": "{{total}}的步骤{{current}}",
@@ -2172,37 +2197,37 @@
           "tagline": "推荐——最好、最稳定、最完整的输出",
           "description": "MacTeX 是适用于 macOS 的完整 TeX Live 发行版。它产生最精确和稳定的输出：完美的排版、100% 正确的 APA/IEEE/Vancouver 参考书目、对西里尔文、CJK、梵文和任何已发布的 LaTeX 包的本机支持。非常适合最终论文、期刊和任何看起来无可挑剔的文档。",
           "pros": [
-            "Finest typography and output of any lightweight alternative",
-            "100% compatible bibliographies (correct biber version included)",
-            "All CTAN packages available without restriction",
-            "Native multilingual support: Cyrillic, CJK, Arabic, Devanagari",
-            "Correct multi-pass compilation: TOC, indexes, cross-references",
-            "One-command Homebrew installation"
+            "任何轻量级替代方案中最好的排版和输出",
+            "100% 兼容参考书目（包括正确的 biber 版本）",
+            "所有 CTAN 包均可用，无限制",
+            "本地多语言支持：西里尔文、中日韩文、阿拉伯文、梵文",
+            "正确的多遍编译：TOC、索引、交叉引用",
+            "一命令 Homebrew 安装"
           ],
           "cons": [
-            "Large download (~5 GB)",
-            "Installation takes 10–20 minutes"
+            "大容量下载（~5 GB）",
+            "安装需要 10-20 分钟"
           ],
           "steps": [
             {
-              "title": "Install Homebrew (if you don't have it)",
-              "note": "Homebrew is the standard macOS package manager. If you already have it, skip this step."
+              "title": "安装 Homebrew（如果没有）",
+              "note": "Homebrew 是标准的 macOS 包管理器。如果您已经拥有，请跳过此步骤。"
             },
             {
-              "title": "Install MacTeX with Homebrew",
-              "note": "Downloads ~5 GB. The process takes 10–20 minutes depending on your connection."
+              "title": "使用 Homebrew 安装 MacTeX",
+              "note": "下载量约 5 GB。该过程需要 10-20 分钟，具体取决于您的连接情况。"
             },
             {
-              "title": "Update environment variables",
-              "note": "Or simply close and reopen Terminal so it picks up the new PATH."
+              "title": "更新环境变量",
+              "note": "或者只需关闭并重新打开终端，以便它选择新的路径。"
             },
             {
-              "title": "Verify the installation",
-              "note": "All three commands should respond with a version number."
+              "title": "验证安装",
+              "note": "所有三个命令都应以版本号响应。"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app so it detects the new installation."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序，以便它检测到新安装。"
             }
           ]
         },
@@ -2210,31 +2235,31 @@
           "tagline": "轻量级 - 仅下载所需的内容",
           "description": "现代、独立的 LaTeX 引擎。无需安装 GB 即可涵盖 80% 的论文。如果某个非常特定的软件包在写入过程中失败，您可以将 MacTeX 与 Tectonic 一起安装 - 它们可以共存而不会发生冲突，并且应用程序可以让您选择使用哪一个。",
           "pros": [
-            "Installed in under 1 minute",
-            "Downloads only the packages your thesis uses",
-            "Coexists with MacTeX if you need both",
-            "Upgradeable with brew upgrade"
+            "不到 1 分钟即可安装",
+            "仅下载您论文使用的软件包",
+            "如果您同时需要，可与 MacTeX 共存",
+            "可通过brew升级进行升级"
           ],
           "cons": [
-            "First compilation requires an internet connection",
-            "Highly specialized packages (advanced physics, etc.) may require MacTeX"
+            "第一次编译需要互联网连接",
+            "高度专业化的软件包（高级物理等）可能需要 MacTeX"
           ],
           "steps": [
             {
-              "title": "Install Homebrew (if you don't have it)",
-              "note": "If you already have Homebrew, skip this step."
+              "title": "安装 Homebrew（如果没有）",
+              "note": "如果您已经有 Homebrew，请跳过此步骤。"
             },
             {
-              "title": "Install Tectonic with Homebrew",
-              "note": "Lightweight download. Ready in under 1 minute."
+              "title": "使用 Homebrew 安装 Tectonic",
+              "note": "轻量级下载。 1 分钟内准备就绪。"
             },
             {
-              "title": "Verify the installation",
-              "note": "You should see something like: tectonic 0.15.x"
+              "title": "验证安装",
+              "note": "您应该看到类似以下内容： tectonic 0.15.x"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app so it detects tectonic."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序，以便它检测到构造。"
             }
           ]
         }
@@ -2244,41 +2269,41 @@
           "tagline": "推荐——最好、最稳定、最完整的输出",
           "description": "TeX Live 是 Linux 上标准的完整 LaTeX 发行版。它比任何轻量级选项产生更精确和稳定的输出：完美的排版、100%正确的参考书目、完整的多语言支持（西里尔文、CJK、梵文）以及所有可用的 CTAN 软件包。对于必须看起来无可挑剔的文档来说，这是正确的选择。",
           "pros": [
-            "Finest typography and output over lightweight alternatives",
-            "100% correct bibliographies — compatible biber version included",
-            "All CTAN packages without restriction",
-            "Native multilingual support: Cyrillic, CJK, Arabic, Devanagari",
-            "Correct multi-pass compilation: TOC, indexes, cross-references",
-            "Installation with a single system command"
+            "优于轻量级替代方案的最佳排版和输出",
+            "100% 正确的参考书目 — 包括兼容的 biber 版本",
+            "所有 CTAN 套餐无限制",
+            "本地多语言支持：西里尔文、中日韩文、阿拉伯文、梵文",
+            "正确的多遍编译：TOC、索引、交叉引用",
+            "使用单个系统命令安装"
           ],
           "cons": [
-            "Full installation takes 3–5 GB",
-            "Repository version may be slightly older than the official release"
+            "完整安装需要 3–5 GB",
+            "存储库版本可能比官方版本稍旧"
           ],
           "steps": [
             {
               "title": "Ubuntu / Debian / Linux Mint",
-              "note": "Includes everything. If space is limited, use texlive-xetex instead of texlive-full."
+              "note": "包括一切。如果空间有限，请使用 texlive-xetex 而不是 texlive-full。"
             },
             {
-              "title": "Fedora / RHEL / CentOS Stream",
-              "note": "Installs the full TeX Live scheme."
+              "title": "Fedora / RHEL / CentOS 流",
+              "note": "安装完整的 TeX Live 方案。"
             },
             {
-              "title": "Arch / Manjaro",
-              "note": "Installs the main groups and biber for bibliography."
+              "title": "拱门 / Manjaro",
+              "note": "安装参考书目的主要组和 biber。"
             },
             {
-              "title": "openSUSE",
-              "note": "Full scheme via zypper."
+              "title": "开放SUSE",
+              "note": "完整方案来自 zypper。"
             },
             {
-              "title": "Verify the installation",
-              "note": "All three commands should respond with a version number."
+              "title": "验证安装",
+              "note": "所有三个命令都应以版本号响应。"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app so it detects the new installation."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序，以便它检测到新安装。"
             }
           ]
         },
@@ -2286,30 +2311,30 @@
           "tagline": "轻量级 - 不需要系统包管理器",
           "description": "现代 LaTeX 引擎，无需占用 GB 的磁盘空间即可覆盖 80% 的问题。如果某个非常特定的软件包失败，您可以将 TeX Live 与 Tectonic 一起安装 - 它们可以共存而不会发生冲突，并且应用程序可以让您选择使用哪一个。",
           "pros": [
-            "Does not require sudo to install",
-            "Downloads only what your thesis needs",
-            "Coexists with TeX Live if you need both"
+            "不需要 sudo 来安装",
+            "仅下载您的论文所需的内容",
+            "如果您需要两者，则可与 TeX Live 共存"
           ],
           "cons": [
-            "First compilation requires internet",
-            "Highly specialized packages (advanced physics, etc.) may require TeX Live"
+            "第一次编译需要网络",
+            "高度专业化的软件包（高级物理等）可能需要 TeX Live"
           ],
           "steps": [
             {
-              "title": "Install with the official script",
-              "note": "Downloads and installs the binary in ~/.cargo/bin or ~/bin depending on your setup."
+              "title": "使用官方脚本安装",
+              "note": "根据您的设置，下载二进制文件并将其安装在 ~/.cargo/bin 或 ~/bin 中。"
             },
             {
-              "title": "Alternative: install with Cargo",
-              "note": "Requires Rust installed. Compiles from source, takes several minutes."
+              "title": "替代方案：使用 Cargo 安装",
+              "note": "需要安装 Rust。从源代码编译，需要几分钟。"
             },
             {
-              "title": "Verify the installation",
-              "note": "You should see something like: tectonic 0.15.x"
+              "title": "验证安装",
+              "note": "您应该看到类似以下内容： tectonic 0.15.x"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序。"
             }
           ]
         }
@@ -2319,33 +2344,33 @@
           "tagline": "推荐在 Windows 上使用 — 最好的输出，无需 Perl",
           "description": "MiKTeX 是适用于 Windows 的完整 LaTeX 发行版。它产生比 Tectonic 更精确、更稳定的输出：完美的排版、100% 正确的参考书目、完整的多语言支持以及所有可用的 CTAN 软件包。仅自动下载您需要的内容 — 同时高效且完整。",
           "pros": [
-            "Finest typography and output over lightweight alternatives",
-            "100% correct bibliographies — biber included and compatible",
-            "All CTAN packages, downloaded on demand",
-            "Does not require Strawberry Perl (unlike manual latexmk)",
-            "Multilingual support: Cyrillic, CJK, Arabic, Devanagari",
-            "Easy-to-use .exe graphical installer"
+            "优于轻量级替代方案的最佳排版和输出",
+            "100% 正确的参考书目 — biber 包含且兼容",
+            "所有 CTAN 包，按需下载",
+            "不需要 Strawberry Perl（与手册 latexmk 不同）",
+            "多语言支持：西里尔文、中日韩文、阿拉伯文、梵文",
+            "易于使用的 .exe 图形安装程序"
           ],
           "cons": [
-            "The MiKTeX console can be confusing at first",
-            "Requires accepting package installation during the first compilation"
+            "MiKTeX 控制台一开始可能会令人困惑",
+            "需要在第一次编译期间接受包安装"
           ],
           "steps": [
             {
-              "title": "Install MiKTeX with winget",
-              "note": "Open PowerShell as a normal user (no administrator needed). winget is included in Windows 10/11."
+              "title": "使用winget安装MiKTeX",
+              "note": "以普通用户身份打开 PowerShell（无需管理员）。 winget 包含在 Windows 10/11 中。"
             },
             {
-              "title": "Alternative: graphical installer",
-              "note": "Go to miktex.org → Download → Windows. Download the 64-bit installer and run it. Choose Install MiKTeX only for me."
+              "title": "替代方案：图形安装程序",
+              "note": "转到 miktex.org → 下载 → Windows。下载 64 位安装程序并运行它。选择仅为我安装 MiKTeX。"
             },
             {
-              "title": "Verify the installation",
-              "note": "Should respond with a version number."
+              "title": "验证安装",
+              "note": "应使用版本号进行响应。"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app so it detects MiKTeX."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序，以便它检测到 MiKTeX。"
             }
           ]
         },
@@ -2353,27 +2378,27 @@
           "tagline": "轻量级 — 一条命令，无需 Perl",
           "description": "一个独立的 LaTeX 引擎，涵盖了其中的 80%。不需要 TeX Live 或 Strawberry Perl。如果某个非常特定的软件包失败，您可以将 MiKTeX 与 Tectonic 一起安装 - 它们可以共存而不会发生冲突，并且应用程序可以让您选择使用哪一个。",
           "pros": [
-            "Installed in 1 minute with winget",
-            "Does not require Strawberry Perl",
-            "Coexists with MiKTeX if you need both",
-            "Upgradeable with winget upgrade"
+            "使用winget 1 分钟内安装完毕",
+            "不需要草莓 Perl",
+            "如果您需要两者，则可与 MiKTeX 共存",
+            "可通过 winget 升级进行升级"
           ],
           "cons": [
-            "First compilation requires internet",
-            "Highly specialized packages (advanced physics, etc.) may require MiKTeX"
+            "第一次编译需要网络",
+            "高度专业化的软件包（高级物理等）可能需要 MiKTeX"
           ],
           "steps": [
             {
-              "title": "Install with winget",
-              "note": "Open PowerShell as a normal user. No administrator needed."
+              "title": "使用winget安装",
+              "note": "以普通用户身份打开 PowerShell。无需管理员。"
             },
             {
-              "title": "Verify the installation",
-              "note": "You should see something like: tectonic 0.15.x"
+              "title": "验证安装",
+              "note": "您应该看到类似以下内容： tectonic 0.15.x"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app so it detects tectonic."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序，以便它检测到构造。"
             }
           ]
         },
@@ -2381,37 +2406,37 @@
           "tagline": "完整——最好、最稳定的输出，没有惊喜",
           "description": "Windows 上的 TeX Live 可产生最精确和稳定的输出：完美的排版、100% 正确的参考书目、完整的多语言支持和所有 CTAN 软件包。对于看起来必须无可挑剔的论文——理论物理、高等数学、多语言文档——这是正确的选择。",
           "pros": [
-            "Finest typography and output over lightweight alternatives",
-            "All CTAN packages included, no additional downloads",
-            "100% correct bibliographies — compatible biber included",
-            "Native multilingual support: Cyrillic, CJK, Arabic, Devanagari",
-            "Compatible with any institutional profile"
+            "优于轻量级替代方案的最佳排版和输出",
+            "包含所有 CTAN 软件包，无需额外下载",
+            "100% 正确的参考书目 — 包括兼容的 biber",
+            "本地多语言支持：西里尔文、中日韩文、阿拉伯文、梵文",
+            "与任何机构概况兼容"
           ],
           "cons": [
-            "Slow installation (30–90 minutes)",
-            "Takes 4–8 GB of disk space",
-            "Requires Strawberry Perl for latexmk"
+            "安装缓慢（30-90 分钟）",
+            "需要 4–8 GB 磁盘空间",
+            "latexmk 需要 Strawberry Perl"
           ],
           "steps": [
             {
-              "title": "Download the TeX Live installer",
-              "note": "Go to tug.org/texlive → download → install-tl-windows.exe. Download the installer."
+              "title": "下载TeX Live安装程序",
+              "note": "转到 tug.org/texlive → 下载 → install-tl-windows.exe。下载安装程序。"
             },
             {
-              "title": "Run the installer",
-              "note": "Choose Simple install (big) to install everything. The process takes 30–90 minutes."
+              "title": "运行安装程序",
+              "note": "选择简单安装（大）来安装所有内容。该过程需要 30-90 分钟。"
             },
             {
-              "title": "Install Strawberry Perl (required for latexmk)",
-              "note": "Perl is required for latexmk to work on Windows."
+              "title": "安装 Strawberry Perl（latexmk 需要）",
+              "note": "latexmk 需要 Perl 才能在 Windows 上运行。"
             },
             {
-              "title": "Verify the installation",
-              "note": "All three commands should respond with a version number."
+              "title": "验证安装",
+              "note": "所有三个命令都应以版本号响应。"
             },
             {
-              "title": "Restart TeXisStudio",
-              "note": "Close and reopen the app."
+              "title": "重启TeXisStudio",
+              "note": "关闭并重新打开应用程序。"
             }
           ]
         }
@@ -2471,13 +2496,13 @@
     "apply_visual_btn": "应用更改",
     "applying": "正在应用…",
     "done_msg": "图形已更新",
-    "tab_preview": "Preview",
-    "preview_compile_btn": "Recompile preview",
-    "preview_compiling": "Compiling…",
-    "preview_apply_first": "Apply changes before previewing.",
-    "preview_tectonic_note": "Tectonic is the active engine. If the preview fails, this figure may require a full LaTeX suite (MacTeX / MiKTeX / TeX Live). You can change the engine in Settings → LaTeX engine.",
-    "preview_error_prefix": "Compilation error:",
-    "preview_no_tectonic": "Tectonic is not installed or could not be found."
+    "tab_preview": "预览",
+    "preview_compile_btn": "重新编译预览",
+    "preview_compiling": "正在编译...",
+    "preview_apply_first": "在预览之前应用更改。",
+    "preview_tectonic_note": "Tectonic 是主动发动机。如果预览失败，此图可能需要完整的 LaTeX 套件（MacTeX / MiKTeX / TeX Live）。您可以在设置 → LaTeX 引擎中更改引擎。",
+    "preview_error_prefix": "编译错误：",
+    "preview_no_tectonic": "Tectonic 未安装或找不到。"
   },
   "elements_tab": {
     "title": "元素",
@@ -2493,7 +2518,7 @@
       "heading": {
         "name": "标题 / 标题栏",
         "description": "章节标题：section (H1)、subsection (H2) 或 subsubsection (H3)。",
-        "latex_output": "\\section{}, \\subsection{}, \\subsubsection{}"
+        "latex_output": "\\section{}、\\subsection{}、\\subsubsection{}"
       },
       "figure": {
         "name": "图",
@@ -2513,12 +2538,12 @@
       "list": {
         "name": "列表",
         "description": "项目符号列表 (itemize)、编号列表 (enumerate) 或描述列表 (description)。",
-        "latex_output": "\\begin{itemize/enumerate/description}"
+        "latex_output": "\\begin{列出/枚举/描述}"
       },
       "citation": {
         "name": "文献引用",
         "description": "与 .bib 文件中的 BibTeX 键关联的括号式、叙述式或多重引用。",
-        "latex_output": "\\parencite{}, \\textcite{}, \\cite{}"
+        "latex_output": "\\parencite{}、\\textcite{}、\\cite{}"
       },
       "raw_latex": {
         "name": "原始 LaTeX",
@@ -2594,7 +2619,8 @@
     "more_languages": "更多语言",
     "loading_more": "正在加载更多语言…",
     "catalog_error": "无法加载更多语言。您可以继续使用内置语言。",
-    "skip": "跳过"
+    "skip": "跳过",
+    "install_error": "无法安装该语言。检查您的连接并重试。"
   },
   "toast": {
     "close_button": "关闭通知",
@@ -2695,7 +2721,50 @@
     "redo": "重做",
     "restore_btn": "恢复示例",
     "restore_title": "替换为最小可用示例",
-    "advanced_section": "高级选项"
+    "advanced_section": "高级选项",
+    "fields": {
+      "math_label": {
+        "label": "\\label{...}",
+        "description": "交叉引用标签（e.g.eq:quadratic）。空意味着没有标签。"
+      },
+      "chemistry_output": {
+        "label": "输出方式",
+        "description": "mhchem：内联 \\ce{...}。 chemfig：键角结构。"
+      },
+      "circuit_style": {
+        "label": "美式风格",
+        "description": "亮：美国元件符号 (IEEE)。关闭：欧洲符号 (IEC)。"
+      },
+      "tikz_libraries": {
+        "label": "TikZ 库",
+        "description": "以逗号分隔的额外 TikZ 库（e.g.calc、arrows.meta、模式）。"
+      },
+      "pgfplots_options": {
+        "label": "PGFP 绘图选项",
+        "description": "额外选项插入 \\beginZXQ0QXZ[…]，例如 xbar 或 compat=1.18。"
+      },
+      "forest_options": {
+        "label": "森林选择",
+        "description": "传递到森林环境的额外选项，例如分叉边缘或边缘标签样式。"
+      }
+    },
+    "engines": {
+      "graph_node": {
+        "description": "具有节点、边、形状和弧样式的有向和无向图。"
+      },
+      "pgfplots": {
+        "description": "使用 PGFPlots 绘制绘图、直方图、条形图、散点图和热图。"
+      },
+      "tree_forest": {
+        "description": "层次语法、分类树、系统发育树、决策树和概率树。"
+      },
+      "table_data": {
+        "description": "数据表可导出为 booktabs、longtable 或 PGFPlots 数据。"
+      },
+      "timeline_gantt": {
+        "description": "包含组、任务和依赖关系的甘特图和时间线。"
+      }
+    }
   },
   "help": {
     "title": "帮助中心",
@@ -2814,7 +2883,7 @@
     "products": "生成物",
     "conditions_above": "箭头上方",
     "conditions_below": "箭头下方",
-    "conditions_hint": "Δ, hν, cat.",
+    "conditions_hint": "Δ，hν，猫。",
     "add_formula": "化学式",
     "add_reaction": "反应",
     "add_reactant": "反应物",
@@ -2829,7 +2898,7 @@
     "from": "从",
     "to": "到",
     "label": "标签",
-    "label_hint": "R1, C1...",
+    "label_hint": "R1、C1...",
     "value": "数值",
     "node_label": "标签（可选）",
     "add_component": "元件",
@@ -2848,7 +2917,7 @@
     "type_ellipse": "椭圆",
     "type_polygon": "多边形",
     "type_arc": "圆弧",
-    "type_bezier": "Bézier",
+    "type_bezier": "贝塞尔",
     "type_label": "标签",
     "type_axis": "坐标轴",
     "type_vector": "向量",

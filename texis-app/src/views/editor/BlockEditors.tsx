@@ -649,11 +649,11 @@ export function GlossaryEntryEditor({
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.term")}</label>
-        <input autoFocus value={term} onChange={(e) => onChange({ term: e.target.value })} placeholder="Ontología" style={fieldStyle} />
+        <input autoFocus value={term} onChange={(e) => onChange({ term: e.target.value })} placeholder={t("block_editor.term_placeholder")} style={fieldStyle} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.definition")}</label>
-        <textarea value={definition} onChange={(e) => onChange({ definition: e.target.value })} placeholder="Rama de la filosofía que estudia el ser en cuanto ser." rows={3} style={{ ...fieldStyle, resize: "vertical" }} />
+        <textarea value={definition} onChange={(e) => onChange({ definition: e.target.value })} placeholder={t("block_editor.definition_placeholder")} rows={3} style={{ ...fieldStyle, resize: "vertical" }} />
       </div>
     </div>
   );
@@ -678,11 +678,11 @@ export function AcronymEntryEditor({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.acronym")}</label>
-          <input autoFocus value={acronym} onChange={(e) => onChange({ acronym: e.target.value })} placeholder="IA" style={{ ...fieldStyle, fontWeight: 600 }} />
+          <input autoFocus value={acronym} onChange={(e) => onChange({ acronym: e.target.value })} placeholder={t("block_editor.acronym_placeholder")} style={{ ...fieldStyle, fontWeight: 600 }} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <label style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("block_editor.full_form")}</label>
-          <input value={full_form} onChange={(e) => onChange({ full_form: e.target.value })} placeholder="Inteligencia Artificial" style={fieldStyle} />
+          <input value={full_form} onChange={(e) => onChange({ full_form: e.target.value })} placeholder={t("block_editor.full_form_placeholder")} style={fieldStyle} />
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>

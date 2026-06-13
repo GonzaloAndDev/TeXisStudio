@@ -122,6 +122,12 @@ const hardcodedAllow = [
   /^(?:Gonzalo Andrade Estrella|AGPL v3 \+ Commons Clause)$/,
   /^(?:1\.5 cm|4\.0 cm)$/,
   /^(?:e\.g\. \\ce\{H2O\})$/,
+  /^(?:ORCID iD|TeX Live|Heiti SC|Hiragino Mincho ProN)$/,
+  /^(?:H2SO4|H2|H2O|sin\(x\)|x|y|rank|hypothesis)$/,
+  /^(?:1k, 10µF\.\.\.|thick, fill=blue!20\.\.\.|arrows\.meta, shapes\.geometric\.\.\.)$/,
+  /^(?:imagen\.png|fig:nombre|tab:nombre|apellido2024|lst:nombre|alg:nombre|fig:mi-diagrama)$/,
+  /^(?:10\.1000\/xyz123 o https:\/\/doi\.org\/…|https:\/\/raw\.githubusercontent\.com\/\.\.\.\/catalog\.json|https:\/\/github\.com\/\.\.\.\/download\/mi_perfil\.zip)$/,
+  /^(?:\\frac\{d\}\{dx\}.*|H2 \+ O2 -> H2O.*|Fe, Δ, hν, H⁺…|400°C, 200 atm…|% ej:.*)$/s,
 ];
 
 function allowedHardcoded(value) {
@@ -141,6 +147,10 @@ for (const path of walk(join(root, "texis-app", "src")).filter((file) => file.en
   }
   for (const match of source.matchAll(/\b(?:title|aria-label)="([^"]*[A-Za-zÀ-ÿ][^"]*)"/g)) {
     if (!allowedHardcoded(match[1])) hardcoded.push(`${path.slice(root.length + 1)}: ${match[1].trim()}`);
+  }
+  for (const match of source.matchAll(/\b(?:label|title|placeholder|description|text)=(?:"([^"]*[A-Za-zÀ-ÿ][^"]*)"|\{["']([^"']*[A-Za-zÀ-ÿ][^"']*)["']\})/g)) {
+    const value = match[1] ?? match[2];
+    if (!allowedHardcoded(value)) hardcoded.push(`${path.slice(root.length + 1)}: ${value.trim()}`);
   }
 }
 

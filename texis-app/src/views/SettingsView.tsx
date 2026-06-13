@@ -151,8 +151,8 @@ export default function SettingsView() {
   async function handleInstall(entry: LangPackEntry) {
     try {
       await installPack(entry);
-    } catch (e) {
-      toast.error(String(e));
+    } catch {
+      toast.error(t("settings.language_install_error"));
     }
   }
 
@@ -535,7 +535,7 @@ export default function SettingsView() {
 
                 {catalogError && (
                   <div style={{ color: "var(--build-err)", fontSize: "var(--fs-sm)", marginBottom: 12 }}>
-                    {catalogError}
+                    {t("settings.language_catalog_error")}
                   </div>
                 )}
                 {catalogLoading && !catalog && (

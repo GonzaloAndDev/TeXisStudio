@@ -772,6 +772,8 @@
     "community_remove": "Eliminar",
     "community_contribute": "¿Quieres contribuir un diccionario o traducción? Visita el repositorio.",
     "community_none": "No hay paquetes disponibles todavía.",
+    "language_catalog_error": "No se pudo cargar el catálogo de idiomas. Revisa tu conexión e inténtalo de nuevo.",
+    "language_install_error": "No se pudo instalar el paquete de idioma. Revisa tu conexión e inténtalo de nuevo.",
     "user_defaults_hint": "Estos datos se usarán como valores predeterminados al crear nuevos proyectos.",
     "refresh_catalog": "Actualizar catálogo",
     "package_status_stable": "Estable",
@@ -999,6 +1001,7 @@
     "version": "Versión",
     "license_placeholder": "p.ej. CC BY 4.0",
     "tags_comma": "Etiquetas (separadas por coma)",
+    "tags_placeholder": "tesis, licenciatura, apa",
     "technical_config": "Configuración técnica",
     "bibliography_style": "Estilo bibliográfico",
     "bib_style_chicago_notes": "Chicago 17 (Notas)",
@@ -1168,6 +1171,13 @@
     "selection_required_message": "Este modo requiere que selecciones primero un fragmento de texto normal dentro del editor.",
     "preview_required_reason": "TeXisStudio te muestra el cambio antes de aplicarlo para evitar escrituras directas al documento.",
     "unexpected_error": "Error inesperado: {{error}}",
+    "error_not_configured": "API key no configurada. Agrega tu clave en la pestaña del proveedor.",
+    "error_auth": "API key inválida. Verifica que sea correcta y esté activa.",
+    "error_rate_limited": "Límite de peticiones alcanzado. Intenta en unos minutos.",
+    "error_network": "Error de red. Verifica tu conexión a internet.",
+    "error_safety": "La solicitud fue bloqueada por la política de seguridad.",
+    "error_model_unavailable": "El modelo seleccionado no está disponible. Elige otro en la configuración.",
+    "error_provider": "Error del proveedor. Intenta de nuevo.",
     "change_text_edited": "Texto editado: \"{{mode}}\"",
     "change_content_inserted": "Contenido insertado tras tu confirmación",
     "responsibility_prefix": "El asistente apoya tu trabajo como redactor, editor, revisor, asesor y sinodal simulado.",
@@ -1718,9 +1728,13 @@
     "citation_key_with_count": "Clave bibliográfica ({{count}} disponibles)",
     "page": "Página",
     "term": "Término",
+    "term_placeholder": "Ontología",
     "definition": "Definición",
+    "definition_placeholder": "Rama de la filosofía que estudia el ser en cuanto ser.",
     "acronym": "Acrónimo",
+    "acronym_placeholder": "IA",
     "full_form": "Forma completa",
+    "full_form_placeholder": "Inteligencia Artificial",
     "additional_description_optional": "Descripción adicional (opcional)",
     "additional_description_placeholder": "Contexto o aclaración opcional…",
     "language": "Lenguaje:",
@@ -1878,6 +1892,12 @@
     "kind_music_desc": "Fragmento musical en notación ABC",
     "caption_placeholder": "Descripción del diagrama...",
     "label_ref": "Etiqueta (\\ref)",
+    "label_example": "fig:mi-diagrama",
+    "default_start": "Inicio",
+    "default_process": "Proceso",
+    "default_end": "Fin",
+    "default_event": "Evento {{number}}",
+    "default_major_scale": "Escala de do mayor",
     "hide_advanced_latex": "▲ Ocultar LaTeX avanzado",
     "show_advanced_latex": "▼ Ver / editar LaTeX generado (avanzado)",
     "kind_selector_title": "Tipo de elemento visual",
@@ -1925,6 +1945,8 @@
     "chemfig_hint": "Sintaxis chemfig. Consulta la documentación del paquete para fórmulas complejas.",
     "scale": "Escala",
     "preset_type": "Tipo de {{kind}}",
+    "circuit_lower": "circuito",
+    "diagram_lower": "diagrama",
     "bio_pathway_lower": "vía biológica",
     "show_cofactors": "Mostrar cofactores (ATP, NADH, FADH₂, etc.)",
     "abc_hint": "Usa notación ABC — simple y portable. Ejemplo:",
@@ -1972,7 +1994,10 @@
     "repo_hint_middle": "que tenga sección",
     "repo_hint_suffix": "Puede ser tu propio repo de GitHub.",
     "alias_placeholder": "Alias (ej: mi-lab-terminos)",
-    "adding": "Añadiendo…"
+    "adding": "Añadiendo…",
+    "catalog_error": "No se pudo cargar el catálogo de vocabularios. Revisa tu conexión e inténtalo de nuevo.",
+    "repo_sync_error": "No se pudo sincronizar este repositorio.",
+    "repo_add_error": "No se pudo añadir el repositorio. Revisa su dirección e inténtalo de nuevo."
   },
   "profile_wizard": {
     "step_of": "Paso {{current}} de {{total}}",
@@ -2599,6 +2624,7 @@
     "more_languages": "Más idiomas",
     "loading_more": "Cargando más idiomas…",
     "catalog_error": "No se pudieron cargar más idiomas. Puedes continuar con un idioma incluido.",
+    "install_error": "No se pudo instalar ese idioma. Revisa tu conexión e inténtalo de nuevo.",
     "skip": "Omitir"
   },
   "toast": {
@@ -2700,7 +2726,40 @@
     "redo": "Rehacer",
     "restore_btn": "Restaurar ejemplo",
     "restore_title": "Reemplazar con un ejemplo mínimo funcional",
-    "advanced_section": "Opciones avanzadas"
+    "advanced_section": "Opciones avanzadas",
+    "fields": {
+      "math_label": {
+        "label": "\\label{...}",
+        "description": "Etiqueta para referencias cruzadas (p. ej. eq:cuadratica). Vacío significa sin etiqueta."
+      },
+      "chemistry_output": {
+        "label": "Modo de salida",
+        "description": "mhchem: \\ce{...} en línea. chemfig: estructuras con enlaces y ángulos."
+      },
+      "circuit_style": {
+        "label": "Estilo americano",
+        "description": "Activado: símbolos americanos (IEEE). Desactivado: símbolos europeos (IEC)."
+      },
+      "tikz_libraries": {
+        "label": "Bibliotecas TikZ",
+        "description": "Bibliotecas TikZ adicionales separadas por comas (p. ej. calc, arrows.meta, patterns)."
+      },
+      "pgfplots_options": {
+        "label": "Opciones de PGFPlots",
+        "description": "Opciones adicionales insertadas en \\begin{axis}[…], como xbar o compat=1.18."
+      },
+      "forest_options": {
+        "label": "Opciones de Forest",
+        "description": "Opciones adicionales del entorno forest, como ramas bifurcadas o estilos de etiquetas."
+      }
+    },
+    "engines": {
+      "graph_node": { "description": "Grafos dirigidos y no dirigidos con nodos, aristas, formas y estilos de arco." },
+      "pgfplots": { "description": "Gráficas, histogramas, barras, dispersión y mapas de calor con PGFPlots." },
+      "tree_forest": { "description": "Árboles jerárquicos sintácticos, taxonómicos, filogenéticos, de decisión y probabilidad." },
+      "table_data": { "description": "Tablas de datos exportables a booktabs, longtable o datos de PGFPlots." },
+      "timeline_gantt": { "description": "Diagramas de Gantt y cronologías con grupos, tareas y dependencias." }
+    }
   },
   "help": {
     "title": "Centro de ayuda",

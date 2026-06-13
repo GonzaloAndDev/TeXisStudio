@@ -95,7 +95,7 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
             <div><label style={labelStyle}>{t("library.version")}</label><input value={version} onChange={(e) => setVersion(e.target.value)} style={fieldStyle} /></div>
           </div>
           <div style={{ marginBottom: 10 }}><label style={labelStyle}>{t("library.license")}</label><input value={license} onChange={(e) => setLicense(e.target.value)} placeholder={t("library.license_placeholder")} style={fieldStyle} /></div>
-          <div><label style={labelStyle}>{t("library.tags_comma")}</label><input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder="tesis, licenciatura, apa" style={fieldStyle} /></div>
+          <div><label style={labelStyle}>{t("library.tags_comma")}</label><input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder={t("library.tags_placeholder")} style={fieldStyle} /></div>
         </div>
 
         <div style={{ marginBottom: 18 }}>
