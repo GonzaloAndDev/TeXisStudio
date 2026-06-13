@@ -127,7 +127,7 @@ export function LatexEngineSettings() {
           {t("settings.latex_primary_hint")}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
           {options.map((option) => {
             const selected = latexPrimaryBackend === option.id;
             return (
@@ -138,35 +138,39 @@ export function LatexEngineSettings() {
                 onClick={() => handleSelectBackend(option.id)}
                 aria-pressed={selected}
                 style={{
-                  textAlign: "left", padding: 16, borderRadius: "var(--r-lg)",
+                  display: "flex", alignItems: "flex-start", gap: 20,
+                  textAlign: "left", padding: "20px 22px", borderRadius: "var(--r-lg)",
                   border: `1px solid ${selected ? "var(--accent)" : "var(--border-soft)"}`,
                   background: selected ? "var(--accent-tint)" : "var(--bg-surface)",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", marginBottom: 8 }}>
-                  <strong style={{ color: "var(--fg-strong)", fontSize: "var(--fs-sm)", flexShrink: 1, minWidth: 0 }}>{option.title}</strong>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
+                {/* Left: name + badges */}
+                <div style={{ width: 150, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <strong style={{ color: "var(--fg-strong)", fontSize: "var(--fs-base)" }}>{option.title}</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
                     {option.isBest && option.available && (
-                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: "var(--r-xs)", background: "var(--build-ok)", color: "#fff", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: "var(--r-xs)", background: "var(--build-ok)", color: "#fff", whiteSpace: "nowrap" }}>
                         {t("settings.latex_recommended_badge")}
                       </span>
                     )}
-                    <span style={{ fontSize: "var(--fs-xs)", color: option.available ? "var(--build-ok)" : "var(--fg-faint)", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600, color: option.available ? "var(--build-ok)" : "var(--fg-faint)", whiteSpace: "nowrap" }}>
                       {option.available ? t("settings.latex_available") : t("settings.latex_not_available")}
                     </span>
                   </div>
                 </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
+                {/* Middle: description */}
+                <div style={{ flex: 1, minWidth: 0, fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.65 }}>
                   {option.description}
+                  {!option.available && option.id === "latexmk" && (
+                    <div style={{ marginTop: 8, color: "var(--fg-faint)", fontStyle: "italic" }}>
+                      {t("settings.latex_suite_install_hint", { suiteName })}
+                    </div>
+                  )}
                 </div>
+                {/* Right: detected version */}
                 {option.version && (
-                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8 }}>
+                  <div style={{ width: 130, flexShrink: 0, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", lineHeight: 1.5 }}>
                     {t("settings.latex_detected_version", { version: option.version })}
-                  </div>
-                )}
-                {!option.available && option.id === "latexmk" && (
-                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginTop: 8, fontStyle: "italic" }}>
-                    {t("settings.latex_suite_install_hint", { suiteName })}
                   </div>
                 )}
               </button>
