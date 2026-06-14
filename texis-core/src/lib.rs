@@ -5,6 +5,7 @@ pub mod commands;
 pub mod compiler;
 pub mod dependency_graph;
 pub mod diagnostics;
+pub mod document;
 pub mod element;
 pub mod error;
 pub mod events;
