@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { checkGrammar, GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
@@ -37,18 +37,40 @@ export function GrammarPanel({ text, onAccept, onClose }: Props) {
   const ltLang = LT_LANG_CODES[lang] ?? null;
   const canCheck = grammarAvailable && ltLang !== null;
 
+  // Mounted flag protects against setState after unmount (user closes the
+  // panel mid-request).
+  const mountedRef = useRef(true);
+  // Monotonic request id — only the latest request's response is applied.
+  // Prevents an older slow response from overwriting newer results when the
+  // user clicks "Check now" several times in a row, or the text changes
+  // while auto-check is racing in the background.
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   async function runCheck() {
     if (!canCheck) return;
+    if (busy) return; // already running — ignore duplicate clicks
+    const myId = ++requestIdRef.current;
     setBusy(true);
     setApiError(false);
     setDismissed(new Set());
     try {
       const result = await checkGrammar(text, ltLang!);
+      if (!mountedRef.current) return;
+      if (myId !== requestIdRef.current) return; // a newer request won
       setMatches(result.matches);
     } catch {
+      if (!mountedRef.current) return;
+      if (myId !== requestIdRef.current) return;
       setApiError(true);
     } finally {
-      setBusy(false);
+      if (mountedRef.current && myId === requestIdRef.current) {
+        setBusy(false);
+      }
     }
   }
 

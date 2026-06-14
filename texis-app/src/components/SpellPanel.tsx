@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { checkText, SpellError } from "../services/spellcheck";
 import { useSettingsStore } from "../stores/settings";
@@ -38,15 +38,24 @@ export function SpellPanel({ blocks, onReplace, onClose }: Props) {
   const [errors, setErrors] = useState<BlockSpellError[] | null>(null);
   const [loadErr, setLoadErr] = useState(false);
   const [ignored, setIgnored] = useState<Set<string>>(new Set());
-  const busy = useRef(false);
 
   // Stable key to detect block content changes without re-creating heavy objects
   const contentKey = blocks.map((b) => b.content).join("|");
 
+  // Stable key for customDictionary so adding/removing words triggers a re-check,
+  // but mutating the underlying array reference without a real change does not.
+  const customDictionaryKey = customDictionary.join("|");
+
   useEffect(() => {
-    if (!spellLang || blocks.length === 0) return;
-    if (busy.current) return;
-    busy.current = true;
+    if (!spellLang || blocks.length === 0) {
+      setErrors(null);
+      return;
+    }
+
+    // `cancelled` makes any prior in-flight check a no-op when contentKey,
+    // spellLang or the dictionary changes. Without it, a slow previous check
+    // could overwrite the result of a newer one.
+    let cancelled = false;
     setErrors(null);
     setLoadErr(false);
 
@@ -54,21 +63,25 @@ export function SpellPanel({ blocks, onReplace, onClose }: Props) {
       try {
         const all: BlockSpellError[] = [];
         for (const block of blocks) {
+          if (cancelled) return;
           if (!block.content.trim()) continue;
           const blockErrors = await checkText(block.content, spellLang, customDictionary);
+          if (cancelled) return;
           for (const e of blockErrors) {
             all.push({ ...e, blockId: block.id });
           }
         }
+        if (cancelled) return;
         setErrors(all);
       } catch {
+        if (cancelled) return;
         setLoadErr(true);
-      } finally {
-        busy.current = false;
       }
     })();
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentKey, spellLang, customDictionary]);
+  }, [contentKey, spellLang, customDictionaryKey]);
 
   const visible = errors?.filter((e) => !ignored.has(`${e.blockId}:${e.start}`)) ?? [];
 
