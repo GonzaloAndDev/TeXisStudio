@@ -299,6 +299,11 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     });
     if (!ok) return;
 
+    // Snapshot silencioso antes de eliminar (red de seguridad permanente, complementa el undo de 8s)
+    if (activeProjectPath) {
+      api.createSnapshot(activeProjectPath, `auto-delete-${s.id}`).catch(() => undefined);
+    }
+
     // If we're deleting the active section, move focus to the next available one
     const allSections = activeProject!.sections;
     const deletedIdx = allSections.findIndex((x) => x.id === s.id);

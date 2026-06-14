@@ -1585,6 +1585,84 @@ pub fn get_section_progress(project_path: String) -> Result<Vec<SectionProgress>
     Ok(progress)
 }
 
+// ── Conflictos externos en build/ ─────────────────────────────────
+
+/// Detecta si algún archivo del build (main.tex, preamble.tex) fue modificado
+/// fuera de TeXisStudio desde la última generación.
+/// Devuelve una lista de objetos { file, kind } para cada conflicto.
+#[tauri::command]
+pub fn detect_build_conflicts(project_path: String) -> Result<Value, String> {
+    use texis_core::document::ExternalChange;
+    let project_dir = PathBuf::from(&project_path);
+    let build_dir = project_dir.join("build");
+    let engine = DocumentEngine::load(&project_dir).map_err(err)?;
+    let changes = engine.detect_external_changes(&build_dir);
+    let conflicts: Vec<Value> = changes
+        .iter()
+        .map(|c| match c {
+            ExternalChange::MainTexModified => {
+                serde_json::json!({ "file": "main.tex", "kind": "main_tex_modified" })
+            }
+            ExternalChange::PreambleModified => {
+                serde_json::json!({ "file": "preamble.tex", "kind": "preamble_modified" })
+            }
+        })
+        .collect();
+    Ok(serde_json::json!(conflicts))
+}
+
+/// Fuerza la regeneración de build/ ignorando ediciones externas.
+/// Llama a `generate_with_profile` que sobreescribe todos los archivos.
+#[tauri::command]
+pub fn force_regenerate_build(project_path: String) -> Result<(), String> {
+    let project_dir = PathBuf::from(&project_path);
+    let build_dir = project_dir.join("build");
+    let model = ProjectLoader
+        .load_from_file(&project_dir.join("tesis.project.yaml"))
+        .map_err(err)?;
+    let mut engine = DocumentEngine::new().map_err(err)?;
+    engine
+        .generate(&model, &build_dir, &EventBus::new())
+        .map_err(err)?;
+    engine.save_checksums(&project_dir).map_err(err)
+}
+
+/// Guarda una copia del archivo modificado externamente con sufijo .external-edit.tex,
+/// luego regenera build/ desde el modelo del proyecto.
+/// Útil para conservar la edición externa como referencia mientras se restaura el flujo normal.
+#[tauri::command]
+pub fn save_external_copy_and_regenerate(
+    project_path: String,
+    conflicted_file: String,
+) -> Result<Value, String> {
+    if conflicted_file.contains('/') || conflicted_file.contains('\\') || conflicted_file.contains("..") {
+        return Err("Nombre de archivo inválido.".to_string());
+    }
+    let project_dir = PathBuf::from(&project_path);
+    let build_dir = project_dir.join("build");
+    let src = build_dir.join(&conflicted_file);
+    if !src.exists() {
+        return Err(format!("Archivo '{}' no encontrado en build/.", conflicted_file));
+    }
+
+    let stem = conflicted_file.strip_suffix(".tex").unwrap_or(&conflicted_file);
+    let ts = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%S").to_string();
+    let copy_name = format!("{}.{}.external-edit.tex", stem, ts);
+    let copy_path = build_dir.join(&copy_name);
+    std::fs::copy(&src, &copy_path).map_err(err)?;
+
+    let model = ProjectLoader
+        .load_from_file(&project_dir.join("tesis.project.yaml"))
+        .map_err(err)?;
+    let mut engine = DocumentEngine::new().map_err(err)?;
+    engine
+        .generate(&model, &build_dir, &EventBus::new())
+        .map_err(err)?;
+    engine.save_checksums(&project_dir).map_err(err)?;
+
+    Ok(serde_json::json!({ "copy_saved_as": copy_name }))
+}
+
 /// Lista los assets disponibles en el directorio assets/ del proyecto.
 /// Retorna rutas relativas al root del proyecto, extensión y nombre canónico.
 #[tauri::command]

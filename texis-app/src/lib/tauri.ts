@@ -46,6 +46,9 @@ const isTauri = () =>
 const BROWSER_MOCKS: Record<string, unknown> = {
   get_platform: "macos",
   list_project_assets: [],
+  detect_build_conflicts: [],
+  force_regenerate_build: null,
+  save_external_copy_and_regenerate: { copy_saved_as: "" },
   analyze_glossary: { entries: [], acronyms: [], is_empty: true, has_issues: false, undefined_references: [] },
   analyze_packages: { missing: [], declared: [], conflicts: [], requires_shell_escape: false, has_blocking_issues: false },
   detect_latex: {
@@ -280,6 +283,15 @@ export const api = {
 
   listProjectAssets: (projectPath: string): Promise<Array<{ name: string; path: string; ext: string }>> =>
     call("list_project_assets", { projectPath }),
+
+  detectBuildConflicts: (projectPath: string): Promise<Array<{ file: string; kind: string }>> =>
+    call("detect_build_conflicts", { projectPath }),
+
+  forceRegenerateBuild: (projectPath: string): Promise<void> =>
+    call("force_regenerate_build", { projectPath }),
+
+  saveExternalCopyAndRegenerate: (projectPath: string, conflictedFile: string): Promise<{ copy_saved_as: string }> =>
+    call("save_external_copy_and_regenerate", { projectPath, conflictedFile }),
 
   analyzeGlossary: (projectRoot: string): Promise<{
     entries: Array<{ key: string; name: string; description: string; status: string }>;

@@ -2,6 +2,8 @@
 import { useBlocker, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/ui/useConfirm";
+import { useToast } from "../components/ui/ToastProvider";
+import { ExternalConflictBanner } from "../components/ExternalConflictBanner";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
@@ -167,6 +169,7 @@ export default function EditorView() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const confirm = useConfirm();
+  const toast = useToast();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
   const workspaceActiveFile = useWorkspaceStore((state) => state.activeFile);
@@ -363,6 +366,7 @@ export default function EditorView() {
         await api.saveSection(activeProjectPath, sectionId, blocks);
       } catch (e) {
         console.error("Error guardando:", e);
+        toast.error(t("editor.error_save_section"));
         setSaveStatus("error");
         return;
       }
@@ -406,10 +410,11 @@ export default function EditorView() {
       await loadSnapshots();
     } catch (e) {
       console.error("Error creando snapshot:", e);
+      toast.error(t("editor.error_snapshot_create"));
     } finally {
       setSnapBusy(false);
     }
-  }, [activeProjectPath, newSnapLabel, loadSnapshots]);
+  }, [activeProjectPath, newSnapLabel, loadSnapshots, toast, t]);
 
   const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
@@ -429,10 +434,11 @@ export default function EditorView() {
       setSnapshotsOpen(false);
     } catch (e) {
       console.error("Error restaurando snapshot:", e);
+      toast.error(t("editor.error_snapshot_restore"));
     } finally {
       setSnapBusy(false);
     }
-  }, [activeProjectPath, confirm, t]);
+  }, [activeProjectPath, confirm, t, toast]);
 
   const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
@@ -449,8 +455,9 @@ export default function EditorView() {
       await loadSnapshots();
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
+      toast.error(t("editor.error_snapshot_delete"));
     }
-  }, [activeProjectPath, confirm, t, loadSnapshots]);
+  }, [activeProjectPath, confirm, t, loadSnapshots, toast]);
 
   const scheduleAutoSave = useCallback((blocks: ContentBlock[]) => {
     setSaveStatus("unsaved");
@@ -568,9 +575,9 @@ export default function EditorView() {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
       try { await api.saveProject(activeProjectPath, updated); }
-      catch (e) { console.error("Error guardando metadatos:", e); }
+      catch (e) { console.error("Error guardando metadatos:", e); toast.error(t("editor.error_save_metadata")); }
     }
-  }, [activeProject, activeProjectPath]);
+  }, [activeProject, activeProjectPath, toast, t]);
 
   // ── Estado / notas de sección ──────────────────────────────────
   const handleSectionStatusChange = useCallback(async (sectionId: string, status: SectionStatus) => {
@@ -580,9 +587,9 @@ export default function EditorView() {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
       try { await api.updateSectionMeta(activeProjectPath, sectionId, status, section?.notes); }
-      catch (e) { console.error("Error actualizando estado:", e); }
+      catch (e) { console.error("Error actualizando estado:", e); toast.error(t("editor.error_save_status")); }
     }
-  }, [activeProjectPath, activeProject]);
+  }, [activeProjectPath, activeProject, toast, t]);
 
   const handleSectionNotesChange = useCallback(async (sectionId: string, notes: string) => {
     if (!activeProjectPath) return;
@@ -592,9 +599,9 @@ export default function EditorView() {
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
       try { await api.updateSectionMeta(activeProjectPath, sectionId, status, notes || undefined); }
-      catch (e) { console.error("Error actualizando notas:", e); }
+      catch (e) { console.error("Error actualizando notas:", e); toast.error(t("editor.error_save_notes")); }
     }
-  }, [activeProjectPath, activeProject]);
+  }, [activeProjectPath, activeProject, toast, t]);
 
   // ── Tipografía y preámbulo del documento ─────────────────────────
   const handleSaveTypography = useCallback(async (opts: { typography: LatexTypography; preamble: import("../types").PreambleConfig }) => {
@@ -622,12 +629,13 @@ export default function EditorView() {
           typo.margin_cm,
         );
         await api.updatePreambleConfig(activeProjectPath, preamble)
-          .catch((e: unknown) => console.error("Error guardando preámbulo:", e));
+          .catch((e: unknown) => { console.error("Error guardando preámbulo:", e); toast.error(t("editor.error_save_preamble")); });
       } catch (e) {
         console.error("Error guardando tipografía:", e);
+        toast.error(t("editor.error_save_typography"));
       }
     }
-  }, [activeProjectPath, activeProject]);
+  }, [activeProjectPath, activeProject, toast, t]);
 
   // Cargar referencias .bib — reutilizable tras agregar entradas por DOI
   const reloadBibRefs = useCallback(() => {
@@ -818,6 +826,7 @@ export default function EditorView() {
         }
       />
       {helpOpen && <HelpCenter onClose={closeHelp} initialSection={helpSection} />}
+      <ExternalConflictBanner projectPath={activeProjectPath} />
 
       <div className="editor-shell">
       <div className="editor-grid">
