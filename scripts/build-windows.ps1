@@ -33,6 +33,43 @@ function Format-Duration {
     return "{0} s" -f [int]$Duration.TotalSeconds
 }
 
+function Invoke-TargetCleanup {
+    if ($env:TEXIS_KEEP_TARGET -eq "1") {
+        Write-Host ""
+        Write-Host "  Target cleanup skipped (TEXIS_KEEP_TARGET=1)." -ForegroundColor Yellow
+        return
+    }
+
+    $targetDir = Join-Path $root "target"
+    $bundleDir = Join-Path $targetDir "release\bundle"
+    $preserveDir = Join-Path ([System.IO.Path]::GetTempPath()) ("texis-artifacts-" + [System.Guid]::NewGuid().ToString("N"))
+    $preserveBundle = Join-Path $preserveDir "bundle"
+
+    New-Item -ItemType Directory -Force -Path $preserveBundle | Out-Null
+
+    if (Test-Path $bundleDir) {
+        Get-ChildItem -Recurse $bundleDir -Include "*.msi", "*.exe", "*.zip" |
+            Where-Object { $_.Name -ne "texis-app.exe" } |
+            Copy-Item -Destination $preserveBundle -Force
+    }
+
+    if (Test-Path $targetDir) {
+        Remove-Item -Recurse -Force $targetDir
+    }
+
+    if (Test-Path $preserveBundle) {
+        $artifacts = Get-ChildItem $preserveBundle -File
+        if ($artifacts.Count -gt 0) {
+            New-Item -ItemType Directory -Force -Path $bundleDir | Out-Null
+            $artifacts | Copy-Item -Destination $bundleDir -Force
+        }
+    }
+
+    if (Test-Path $preserveDir) {
+        Remove-Item -Recurse -Force $preserveDir
+    }
+}
+
 Write-Host ""
 Write-Host "  TeXisStudio - Build Windows v$version" -ForegroundColor Cyan
 Write-Host "  ======================================" -ForegroundColor Cyan
@@ -100,6 +137,10 @@ if (-not $SkipPortable) {
     Write-Host ""
     Write-Host "  [3/3] Portable ZIP skipped." -ForegroundColor Yellow
 }
+
+Write-Host ""
+Write-Host "  Cleaning target build cache..." -ForegroundColor Yellow
+Invoke-TargetCleanup
 
 Write-Host ""
 Write-Host "  Build completed:" -ForegroundColor Green

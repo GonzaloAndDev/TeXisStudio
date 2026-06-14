@@ -46,6 +46,11 @@ Local build outputs:
 | macOS | `scripts/build-mac.sh` | Universal DMG/app in `target/universal-apple-darwin/release/bundle/` |
 | Linux | `scripts/build-linux.sh` | `.deb`, `.rpm`, and AppImage in `target/release/bundle/` |
 
+Local installer builds clean Rust/Tauri intermediate files after a successful
+build and keep only the final artifacts in `target/**/bundle/`. To keep the
+full `target` cache for debugging or repeated release builds, run with
+`TEXIS_KEEP_TARGET=1`.
+
 Bootstrap scripts are idempotent: Node, Rust, native packages, and npm dependencies are installed only when missing or stale.
 
 To build all platform installers, push a version tag — GitHub Actions handles the rest:

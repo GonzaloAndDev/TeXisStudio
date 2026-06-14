@@ -30,6 +30,34 @@ format_duration() {
     fi
 }
 
+cleanup_target_cache() {
+    if [[ "${TEXIS_KEEP_TARGET:-}" == "1" ]]; then
+        echo ""
+        echo "  Limpieza target omitida (TEXIS_KEEP_TARGET=1)."
+        return
+    fi
+
+    local bundle_dir="$ROOT/target/release/bundle"
+    local preserve_dir
+    preserve_dir="$(mktemp -d)"
+
+    if [[ -d "$bundle_dir" ]]; then
+        mkdir -p "$preserve_dir/bundle"
+        find "$bundle_dir" -type f \
+            \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" \) \
+            -exec cp -p {} "$preserve_dir/bundle/" \;
+    fi
+
+    rm -rf "$ROOT/target"
+
+    if compgen -G "$preserve_dir/bundle/*" >/dev/null; then
+        mkdir -p "$bundle_dir"
+        cp -p "$preserve_dir/bundle/"* "$bundle_dir/"
+    fi
+
+    rm -rf "$preserve_dir"
+}
+
 echo ""
 echo "  TeXisStudio — Build Linux v$VERSION"
 echo "  ====================================="
@@ -135,6 +163,11 @@ npm ci
 echo ""
 echo "  [3/3] Compilando (deb + rpm + AppImage)..."
 npm run tauri build
+
+# ── Limpieza post-build ──────────────────────────────────────────────────────
+echo ""
+echo "  Limpiando cache de compilacion target..."
+cleanup_target_cache
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
 echo ""
