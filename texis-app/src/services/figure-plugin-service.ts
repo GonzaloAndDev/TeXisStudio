@@ -7,10 +7,19 @@ import { useSettingsStore } from "../stores/settings";
 
 // ── Plugin catalog (lazy-instantiated) ────────────────────────────
 
-let _instances: Map<string, VisualDiagramPlugin> | null = null;
+// We cache both the plugin instance AND the catalog entry (userLevel / editorType)
+// indexed by pluginId, so callers like listPlugins() and getPluginInfo() don't have
+// to re-instantiate every plugin in PLUGIN_REGISTRY just to find the entry — that
+// was O(N²) per call.
+type CachedPlugin = {
+  instance: VisualDiagramPlugin;
+  entry: typeof PLUGIN_REGISTRY[number];
+};
+
+let _instances: Map<string, CachedPlugin> | null = null;
 let _instancesLocale: string | null = null;
 
-function getInstances(): Map<string, VisualDiagramPlugin> {
+function getInstances(): Map<string, CachedPlugin> {
   const locale = i18n.resolvedLanguage || i18n.language || "es";
   if (!_instances || _instancesLocale !== locale) {
     setPluginLocale(locale);
@@ -19,13 +28,17 @@ function getInstances(): Map<string, VisualDiagramPlugin> {
     for (const entry of PLUGIN_REGISTRY) {
       try {
         const instance = new entry.plugin();
-        _instances.set(instance.pluginId, instance);
+        _instances.set(instance.pluginId, { instance, entry });
       } catch (e) {
         console.warn(`[FigurePlugins] Failed to instantiate ${entry.plugin.name}:`, e);
       }
     }
   }
   return _instances;
+}
+
+function getInstance(pluginId: string): VisualDiagramPlugin | undefined {
+  return getInstances().get(pluginId)?.instance;
 }
 
 export interface PluginInfo {
@@ -42,22 +55,17 @@ export interface PluginInfo {
 
 /** Returns metadata for all available plugins, grouped by category. */
 export function listPlugins(): PluginInfo[] {
-  return Array.from(getInstances().values()).map((p) => {
-    const entry = PLUGIN_REGISTRY.find((e) => {
-      try { return new e.plugin().pluginId === p.pluginId; } catch { return false; }
-    });
-    return {
-      pluginId: p.pluginId,
-      displayName: p.displayName,
-      description: p.description,
-      category: p.category,
-      qualityLevel: p.qualityLevel,
-      userLevel: entry?.userLevel ?? "intermediate",
-      editorType: entry?.editorType ?? "advanced",
-      requiredPackages: p.requiredPackages,
-      scopeWarning: p.scopeWarning,
-    };
-  });
+  return Array.from(getInstances().values()).map(({ instance: p, entry }) => ({
+    pluginId: p.pluginId,
+    displayName: p.displayName,
+    description: p.description,
+    category: p.category,
+    qualityLevel: p.qualityLevel,
+    userLevel: entry.userLevel,
+    editorType: entry.editorType,
+    requiredPackages: p.requiredPackages,
+    scopeWarning: p.scopeWarning,
+  }));
 }
 
 export function groupPluginsByCategory(plugins: PluginInfo[]): Map<PluginCategory, PluginInfo[]> {
@@ -72,9 +80,25 @@ export function groupPluginsByCategory(plugins: PluginInfo[]): Map<PluginCategor
 
 // ── Figure creation & editing ──────────────────────────────────────
 
+/**
+ * Generates a high-entropy figure id used as both the filesystem folder name
+ * (texisstudio-assets/figures/{figureId}/) and the LaTeX reference label.
+ *
+ * The previous implementation was `fig_${5-digit random}` which only had ~90 000
+ * possible values — by the birthday paradox a collision becomes likely after a
+ * few hundred figures across a project's lifetime, and a collision corrupts the
+ * older figure's assets on disk. We now use 12 hex chars from crypto.randomUUID
+ * (≈ 7×10¹⁴ combinations) so collisions are effectively impossible. Falls back
+ * to a timestamp-plus-random scheme on the (rare) platforms without randomUUID.
+ */
 function figureId(): string {
-  const n = Math.floor(Math.random() * 90000) + 10000;
-  return `fig_${n}`;
+  let token: string;
+  try {
+    token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  } catch {
+    token = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  return `fig_${token}`;
 }
 
 /** Calls plugin.create() in the browser (no disk access), then persists via Tauri. */
@@ -84,7 +108,7 @@ export async function createPluginFigure(
   caption?: string,
   label?: string,
 ): Promise<PluginFigureBlock> {
-  const plugin = getInstances().get(pluginId);
+  const plugin = getInstance(pluginId);
   if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
 
   const result = await plugin.create();
@@ -129,21 +153,19 @@ export async function createPluginFigure(
 
 /** Returns display metadata for a single plugin — used by the edit modal. */
 export function getPluginInfo(pluginId: string): PluginInfo | undefined {
-  const plugin = getInstances().get(pluginId);
-  if (!plugin) return undefined;
-  const entry = PLUGIN_REGISTRY.find((e) => {
-    try { return new e.plugin().pluginId === pluginId; } catch { return false; }
-  });
+  const cached = getInstances().get(pluginId);
+  if (!cached) return undefined;
+  const { instance: p, entry } = cached;
   return {
-    pluginId: plugin.pluginId,
-    displayName: plugin.displayName,
-    description: plugin.description,
-    category: plugin.category,
-    qualityLevel: plugin.qualityLevel,
-    userLevel: entry?.userLevel ?? "intermediate",
-    editorType: entry?.editorType ?? "advanced",
-    requiredPackages: plugin.requiredPackages,
-    scopeWarning: plugin.scopeWarning,
+    pluginId: p.pluginId,
+    displayName: p.displayName,
+    description: p.description,
+    category: p.category,
+    qualityLevel: p.qualityLevel,
+    userLevel: entry.userLevel,
+    editorType: entry.editorType,
+    requiredPackages: p.requiredPackages,
+    scopeWarning: p.scopeWarning,
   };
 }
 
@@ -200,7 +222,7 @@ export async function editPluginFigureWithSource(
   caption?: string,
   label?: string,
 ): Promise<PluginFigureBlock> {
-  const plugin = getInstances().get(block.pluginId);
+  const plugin = getInstance(block.pluginId);
   if (!plugin) throw new Error(`Plugin not found: ${block.pluginId}`);
 
   let result: VisualFigureResult;
@@ -252,7 +274,7 @@ export async function editPluginFigure(
   caption?: string,
   label?: string,
 ): Promise<PluginFigureBlock> {
-  const plugin = getInstances().get(block.pluginId);
+  const plugin = getInstance(block.pluginId);
   if (!plugin) throw new Error(`Plugin not found: ${block.pluginId}`);
 
   // Load source from disk (or use what's in the block if disk call fails)
