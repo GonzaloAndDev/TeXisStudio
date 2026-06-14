@@ -3,9 +3,10 @@
  * Muestra issues de paquetes, glosario y estructura sin necesidad de compilar.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/tauri";
+import { useToast } from "./ui/ToastProvider";
 
 interface PackageIssue {
   package_name: string;
@@ -54,8 +55,18 @@ export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string |
     }).finally(() => setLoading(false));
   }, [projectPath]);
 
+  const toast = useToast();
   const total = pkgMissing.length + pkgConflicts.length + glsUndefined.length;
   const hasBlocking = pkgConflicts.some((c) => c.is_blocking);
+
+  const handleExportLogs = useCallback(async () => {
+    try {
+      const dir = await api.getLogDir();
+      await api.openInSystem(dir);
+    } catch {
+      toast.error(t("editor.diag_log_error"));
+    }
+  }, [toast, t]);
 
   if (!projectPath) return null;
 
@@ -114,6 +125,16 @@ export function ProjectDiagnosticsPanel({ projectPath }: { projectPath: string |
               {t(glsUnused === 1 ? "editor.diag_gls_unused_one" : "editor.diag_gls_unused_other", { count: glsUnused })}
             </div>
           )}
+
+          <div style={{ marginTop: 6, borderTop: "1px solid var(--border-subtle)", paddingTop: 6 }}>
+            <button
+              className="btn btn-ghost btn-xs"
+              style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}
+              onClick={() => void handleExportLogs()}
+            >
+              {t("editor.diag_export_logs")}
+            </button>
+          </div>
         </div>
       )}
     </div>

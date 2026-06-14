@@ -71,6 +71,7 @@ pub fn run() {
             commands::system::update_profile,
             commands::system::delete_profile,
             commands::system::get_platform,
+            commands::system::get_log_dir,
             commands::system::open_in_system,
             commands::system::detect_latex,
             commands::system::check_toolchain,

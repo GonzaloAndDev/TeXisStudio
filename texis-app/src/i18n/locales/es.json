@@ -466,6 +466,8 @@
     "diag_gls_undefined": "sin definir",
     "diag_gls_unused_one": "{{count}} entrada de glosario definida sin usar",
     "diag_gls_unused_other": "{{count}} entradas de glosario definidas sin usar",
+    "diag_export_logs": "Abrir carpeta de logs",
+    "diag_log_error": "No se pudo abrir la carpeta de logs.",
     "placement_front": "Portada y preliminares",
     "placement_body": "Cuerpo principal",
     "placement_back": "Material final",

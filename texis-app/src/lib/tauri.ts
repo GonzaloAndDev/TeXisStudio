@@ -73,6 +73,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
   ] as BibReference[],
   check_toolchain: { issues: [] as DependencyIssue[], has_critical: false },
   update_preamble_config: undefined,
+  get_log_dir: "",
   open_in_system: undefined,
   run_system_doctor: {
     checks: [],
@@ -277,6 +278,9 @@ export const api = {
 
   getPlatform: (): Promise<"macos" | "windows" | "linux" | string> =>
     call("get_platform"),
+
+  getLogDir: (): Promise<string> =>
+    call("get_log_dir"),
 
   openInSystem: (path: string): Promise<void> =>
     call("open_in_system", { path }),

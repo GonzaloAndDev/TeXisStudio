@@ -466,6 +466,8 @@
     "diag_gls_undefined": "undefined",
     "diag_gls_unused_one": "{{count}} glossary entry defined but unused",
     "diag_gls_unused_other": "{{count}} glossary entries defined but unused",
+    "diag_export_logs": "Open logs folder",
+    "diag_log_error": "Could not open the logs folder.",
     "placement_front": "Front matter",
     "placement_body": "Body",
     "placement_back": "Back matter",

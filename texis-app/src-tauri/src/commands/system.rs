@@ -732,6 +732,18 @@ pub fn open_in_system(path: String) -> Result<(), String> {
         .map_err(|e| format!("No se pudo abrir el archivo: {e}"))
 }
 
+/// Devuelve la ruta al directorio de logs de la aplicación.
+/// El archivo activo es `texisstudio.log` dentro de ese directorio.
+#[tauri::command]
+pub fn get_log_dir(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri::Manager;
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("No se pudo obtener el directorio de logs: {e}"))?;
+    Ok(log_dir.to_string_lossy().into_owned())
+}
+
 /// Verifica las dependencias del entorno para un proyecto dado.
 /// Devuelve los issues encontrados en formato JSON para que la UI los muestre.
 ///
