@@ -1,0 +1,461 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useConfirm } from "../../components/ui/useConfirm";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconChevronD,
+  IconEye,
+  IconEyeOff,
+  IconLock,
+  IconMore,
+  IconPlus,
+  IconTrash,
+} from "../../components/Icons";
+import { useProjectStore } from "../../stores/project";
+import { api } from "../../lib/tauri";
+import type { ContentBlock, ProjectSection, SectionPlacement, SectionStatus } from "../../types";
+import { STATUS_CONFIG } from "./BlockEditors";
+
+// ── Types ─────────────────────────────────────────────────────────
+
+interface SectionTreeProps {
+  activeProjectPath: string | null;
+  localBlocks: ContentBlock[];
+  localizedTitle: (s: { id: string; element_id: string; title?: string }) => string;
+  userMode: "basic" | "advanced";
+}
+
+// ── Constants ──────────────────────────────────────────────────────
+
+const PLACEMENT_KEYS: Record<SectionPlacement, string> = {
+  front_matter: "editor.placement_front",
+  body:         "editor.placement_body",
+  back_matter:  "editor.placement_back",
+  appendix:     "editor.placement_appendix",
+};
+
+const ADD_OPTIONS: Array<{ key: string; placement: SectionPlacement }> = [
+  { key: "editor.tree_add_chapter",  placement: "body" },
+  { key: "editor.tree_add_appendix", placement: "appendix" },
+  { key: "editor.tree_add_back",     placement: "back_matter" },
+  { key: "editor.tree_add_prelim",   placement: "front_matter" },
+];
+
+function makeId(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `sec-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// ── SectionTree ────────────────────────────────────────────────────
+
+export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, userMode }: SectionTreeProps) {
+  const { t } = useTranslation();
+  const confirm = useConfirm();
+
+  const {
+    activeProject,
+    activeSectionId,
+    setActiveSectionId,
+    addSection,
+    removeSection,
+    toggleSectionEnabled,
+    moveSectionUp,
+    moveSectionDown,
+    renameSection,
+  } = useProjectStore();
+
+  const [addMenuOpen, setAddMenuOpen]   = useState(false);
+  const [openMenuId, setOpenMenuId]     = useState<string | null>(null);
+  const [renamingId, setRenamingId]     = useState<string | null>(null);
+  const [renameValue, setRenameValue]   = useState("");
+
+  const addMenuRef  = useRef<HTMLDivElement>(null);
+  const dotMenuRef  = useRef<HTMLDivElement>(null);
+  const renameRef   = useRef<HTMLInputElement>(null);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (addMenuOpen && addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false);
+      }
+      if (openMenuId && dotMenuRef.current && !dotMenuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [addMenuOpen, openMenuId]);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingId) renameRef.current?.select();
+  }, [renamingId]);
+
+  // ── Save helper ─────────────────────────────────────────────────
+  const persistProject = useCallback(async () => {
+    if (!activeProjectPath) return;
+    const isTauri = "__TAURI_INTERNALS__" in window;
+    if (!isTauri) return;
+    const project = useProjectStore.getState().activeProject;
+    if (!project) return;
+    try { await api.saveProject(activeProjectPath, project); }
+    catch (e) { console.error("SectionTree: error saving project", e); }
+  }, [activeProjectPath]);
+
+  // ── Actions ─────────────────────────────────────────────────────
+
+  const handleAdd = useCallback(async (placement: SectionPlacement) => {
+    setAddMenuOpen(false);
+    const newSection: ProjectSection = {
+      id:          makeId(),
+      element_id:  "custom_section",
+      title:       t("editor.tree_new_section_name"),
+      placement,
+      required:    false,
+      enabled:     true,
+      status:      "draft",
+      blocks:      [],
+      fields:      {},
+      children:    [],
+    };
+    addSection(newSection);
+    await persistProject();
+    setActiveSectionId(newSection.id);
+    // Start rename immediately so the user can give it a real name
+    setRenamingId(newSection.id);
+    setRenameValue(t("editor.tree_new_section_name"));
+  }, [t, addSection, persistProject, setActiveSectionId]);
+
+  const handleRenameStart = useCallback((s: ProjectSection) => {
+    setOpenMenuId(null);
+    setRenamingId(s.id);
+    setRenameValue(s.title ?? localizedTitle(s));
+  }, [localizedTitle]);
+
+  const handleRenameCommit = useCallback(async () => {
+    if (!renamingId) return;
+    renameSection(renamingId, renameValue.trim());
+    setRenamingId(null);
+    setRenameValue("");
+    await persistProject();
+  }, [renamingId, renameValue, renameSection, persistProject]);
+
+  const handleRenameKey = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter")  { e.preventDefault(); void handleRenameCommit(); }
+    if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+  }, [handleRenameCommit]);
+
+  const handleToggleEnabled = useCallback(async (s: ProjectSection) => {
+    setOpenMenuId(null);
+    toggleSectionEnabled(s.id);
+    await persistProject();
+  }, [toggleSectionEnabled, persistProject]);
+
+  const handleMoveUp = useCallback(async (id: string) => {
+    setOpenMenuId(null);
+    moveSectionUp(id);
+    await persistProject();
+  }, [moveSectionUp, persistProject]);
+
+  const handleMoveDown = useCallback(async (id: string) => {
+    setOpenMenuId(null);
+    moveSectionDown(id);
+    await persistProject();
+  }, [moveSectionDown, persistProject]);
+
+  const handleDelete = useCallback(async (s: ProjectSection) => {
+    setOpenMenuId(null);
+
+    if (s.required) {
+      await confirm({
+        title:        t("editor.tree_delete_title"),
+        message:      t("editor.tree_delete_required", { title: localizedTitle(s) }),
+        confirmLabel: t("editor.tree_hide"),
+        cancelLabel:  t("common.cancel"),
+      });
+      // "confirm" here just means "ok, I'll hide it instead"
+      toggleSectionEnabled(s.id);
+      await persistProject();
+      return;
+    }
+
+    const blockCount = s.id === activeSectionId ? localBlocks.length : s.blocks.length;
+    const message = blockCount > 0
+      ? t("editor.tree_delete_with_blocks", { title: localizedTitle(s), count: blockCount })
+      : t("editor.tree_delete_empty",       { title: localizedTitle(s) });
+
+    const ok = await confirm({
+      title:        t("editor.tree_delete_title"),
+      message,
+      confirmLabel: t("editor.tree_delete"),
+      destructive:  true,
+    });
+    if (!ok) return;
+
+    // If we're deleting the active section, move focus to the next available one
+    if (s.id === activeSectionId) {
+      const sections = activeProject!.sections;
+      const others = sections.filter((x) => x.id !== s.id && x.enabled);
+      setActiveSectionId(others[0]?.id ?? null);
+    }
+    removeSection(s.id);
+    await persistProject();
+  }, [
+    confirm, t, localizedTitle, activeSectionId, localBlocks,
+    activeProject, toggleSectionEnabled, removeSection,
+    persistProject, setActiveSectionId,
+  ]);
+
+  // ── Render ──────────────────────────────────────────────────────
+
+  if (!activeProject) return null;
+
+  const sections = activeProject.sections;
+
+  // Group by placement, preserving array order
+  const groups: Array<{ placement: SectionPlacement; label: string; items: ProjectSection[] }> = [];
+  for (const s of sections) {
+    const label = t(PLACEMENT_KEYS[s.placement] as Parameters<typeof t>[0]);
+    let group = groups.find((g) => g.placement === s.placement);
+    if (!group) { group = { placement: s.placement, label, items: [] }; groups.push(group); }
+    group.items.push(s);
+  }
+
+  const headerLabel = userMode === "basic" ? t("editor.document_path") : t("editor.sections");
+
+  return (
+    <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
+
+      {/* ── Header with + button ──────────────────────────────────── */}
+      <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        {headerLabel}
+        <div style={{ position: "relative" }} ref={addMenuRef}>
+          <button
+            className="btn btn-ghost btn-icon"
+            style={{ padding: 4 }}
+            title={t("editor.tree_add")}
+            onClick={() => setAddMenuOpen((v) => !v)}
+          >
+            <IconPlus size={12} />
+          </button>
+          {addMenuOpen && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 200,
+              background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
+              borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", minWidth: 180, padding: 4,
+            }}>
+              {ADD_OPTIONS.map(({ key, placement }) => (
+                <button
+                  key={placement}
+                  className="tx-unstyled-button"
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 12px", fontSize: "var(--fs-sm)", borderRadius: "var(--r-sm)", color: "var(--fg-default)" }}
+                  onClick={() => void handleAdd(placement)}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  {t(key as Parameters<typeof t>[0])}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Section list ─────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
+        {groups.map(({ placement, label, items }) => (
+          <div key={placement}>
+            <div style={{ margin: "6px 8px 2px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--fg-faint)", display: "flex", alignItems: "center", gap: 6 }}>
+              <IconChevronD size={10} /> {label}
+            </div>
+
+            {items.map((s) => {
+              const sStatus    = s.status ?? "draft";
+              const dotColor   = STATUS_CONFIG[sStatus as SectionStatus]?.color ?? "#888";
+              const isActive   = s.id === activeSectionId;
+              const isHidden   = !s.enabled;
+              const isRequired = s.required;
+              const blockCount = isActive ? localBlocks.length : s.blocks.length;
+              const title      = localizedTitle(s);
+
+              // Whether this section can move within its group
+              const groupItems  = items;
+              const idxInGroup  = groupItems.findIndex((x) => x.id === s.id);
+              const canMoveUp   = idxInGroup > 0;
+              const canMoveDown = idxInGroup < groupItems.length - 1;
+
+              const isMenuOpen = openMenuId === s.id;
+
+              return (
+                <div
+                  key={s.id}
+                  style={{ position: "relative" }}
+                  className="section-tree-row"
+                >
+                  {renamingId === s.id ? (
+                    /* ── Inline rename input ──────────────────── */
+                    <div style={{ padding: "3px 8px" }}>
+                      <input
+                        ref={renameRef}
+                        className="input"
+                        style={{ width: "100%", fontSize: "var(--fs-sm)", padding: "3px 6px", height: 26 }}
+                        value={renameValue}
+                        placeholder={t("editor.tree_rename_placeholder")}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={handleRenameKey}
+                        onBlur={() => void handleRenameCommit()}
+                      />
+                    </div>
+                  ) : (
+                    /* ── Section row ─────────────────────────── */
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isActive}
+                      className="tx-unstyled-button section-tree-item"
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "4px 8px", borderRadius: "var(--r-sm)",
+                        fontSize: "var(--fs-base)", width: "100%",
+                        background: isActive ? "var(--bg-selected)" : "transparent",
+                        color: isActive ? "var(--accent-deep)" : isHidden ? "var(--fg-faint)" : "var(--fg-default)",
+                        fontWeight: isActive ? 500 : 400,
+                        minHeight: 26,
+                        opacity: isHidden ? 0.6 : 1,
+                      }}
+                      onClick={() => { if (s.enabled) setActiveSectionId(s.id); }}
+                      onDoubleClick={() => handleRenameStart(s)}
+                      title={isHidden ? `${title} — ${t("editor.tree_hidden_badge")}` : title}
+                    >
+                      {/* Status dot or hidden/lock icon */}
+                      {isHidden
+                        ? <IconEyeOff size={10} style={{ flexShrink: 0, color: "var(--fg-faint)" }} />
+                        : isRequired
+                          ? <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                          : <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                      }
+
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {title}
+                      </span>
+
+                      {/* Block count badge */}
+                      {blockCount > 0 && (
+                        <span aria-hidden style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", flexShrink: 0 }}>
+                          {blockCount}
+                        </span>
+                      )}
+
+                      {/* Required lock badge */}
+                      {isRequired && (
+                        <span aria-label={t("editor.tree_required_badge")} style={{ flexShrink: 0, display: "flex" }}>
+                          <IconLock size={9} style={{ color: "var(--fg-faint)" }} />
+                        </span>
+                      )}
+
+                      {/* ··· menu trigger */}
+                      <button
+                        type="button"
+                        className="tx-unstyled-button section-tree-menu-btn"
+                        style={{
+                          flexShrink: 0, padding: "2px 3px", borderRadius: "var(--r-sm)",
+                          color: "var(--fg-faint)", opacity: 0,
+                          transition: "opacity 0.1s",
+                        }}
+                        title={t("editor.tree_section_options")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(isMenuOpen ? null : s.id);
+                        }}
+                      >
+                        <IconMore size={12} />
+                      </button>
+                    </button>
+                  )}
+
+                  {/* ── Context menu ─────────────────────────── */}
+                  {isMenuOpen && (
+                    <div
+                      ref={dotMenuRef}
+                      style={{
+                        position: "absolute", top: "100%", right: 8, zIndex: 300,
+                        background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
+                        borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)",
+                        minWidth: 170, padding: 4,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ContextMenuItem label={t("editor.tree_rename")} onClick={() => handleRenameStart(s)} />
+                      <ContextMenuItem label={t("editor.tree_move_up")}   onClick={() => void handleMoveUp(s.id)}   disabled={!canMoveUp} icon={<IconArrowUp size={12} />} />
+                      <ContextMenuItem label={t("editor.tree_move_down")} onClick={() => void handleMoveDown(s.id)} disabled={!canMoveDown} icon={<IconArrowDown size={12} />} />
+                      <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
+                      <ContextMenuItem
+                        label={s.enabled ? t("editor.tree_hide") : t("editor.tree_show")}
+                        icon={s.enabled ? <IconEyeOff size={12} /> : <IconEye size={12} />}
+                        onClick={() => void handleToggleEnabled(s)}
+                      />
+                      <ContextMenuItem
+                        label={t("editor.tree_delete")}
+                        icon={<IconTrash size={12} />}
+                        onClick={() => void handleDelete(s)}
+                        danger
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Status legend ────────────────────────────────────────── */}
+      <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px", flexShrink: 0 }} aria-label={t("editor.section_status_legend")}>
+        {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
+          <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+            <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
+            {t(cfg.labelKey)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ContextMenuItem helper ─────────────────────────────────────────
+
+interface ContextMenuItemProps {
+  label: string;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  danger?: boolean;
+}
+
+function ContextMenuItem({ label, onClick, icon, disabled, danger }: ContextMenuItemProps) {
+  return (
+    <button
+      type="button"
+      className="tx-unstyled-button"
+      disabled={disabled}
+      style={{
+        display: "flex", alignItems: "center", gap: 8,
+        width: "100%", textAlign: "left",
+        padding: "7px 12px", fontSize: "var(--fs-sm)",
+        borderRadius: "var(--r-sm)",
+        color: danger ? "var(--error)" : disabled ? "var(--fg-faint)" : "var(--fg-default)",
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? "default" : "pointer",
+      }}
+      onClick={disabled ? undefined : onClick}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+    >
+      {icon && <span style={{ width: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>}
+      {label}
+    </button>
+  );
+}

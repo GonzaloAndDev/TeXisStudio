@@ -30,6 +30,12 @@ interface ProjectStore {
   updateProject: (model: Partial<ProjectModel>) => void;
   updateSectionBlocks: (sectionId: string, blocks: ContentBlock[]) => void;
   updateSectionMeta: (sectionId: string, status: SectionStatus, notes?: string) => void;
+  addSection: (section: ProjectSection) => void;
+  removeSection: (sectionId: string) => void;
+  toggleSectionEnabled: (sectionId: string) => void;
+  moveSectionUp: (sectionId: string) => void;
+  moveSectionDown: (sectionId: string) => void;
+  renameSection: (sectionId: string, title: string) => void;
 
   // Sección activa en el editor
   activeSectionId: string | null;
@@ -82,6 +88,54 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       if (!state.activeProject) return {};
       const sections = state.activeProject.sections.map((s) =>
         s.id === sectionId ? { ...s, status, notes: notes ?? s.notes } : s
+      );
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  addSection: (section) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      return { activeProject: { ...state.activeProject, sections: [...state.activeProject.sections, section] } };
+    }),
+  removeSection: (sectionId) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      return { activeProject: { ...state.activeProject, sections: state.activeProject.sections.filter((s) => s.id !== sectionId) } };
+    }),
+  toggleSectionEnabled: (sectionId) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = state.activeProject.sections.map((s) =>
+        s.id === sectionId ? { ...s, enabled: !s.enabled } : s
+      );
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  moveSectionUp: (sectionId) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = [...state.activeProject.sections];
+      const idx = sections.findIndex((s) => s.id === sectionId);
+      if (idx <= 0) return {};
+      const prevIdx = idx - 1;
+      if (sections[prevIdx].placement !== sections[idx].placement) return {};
+      [sections[prevIdx], sections[idx]] = [sections[idx], sections[prevIdx]];
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  moveSectionDown: (sectionId) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = [...state.activeProject.sections];
+      const idx = sections.findIndex((s) => s.id === sectionId);
+      if (idx < 0 || idx >= sections.length - 1) return {};
+      const nextIdx = idx + 1;
+      if (sections[nextIdx].placement !== sections[idx].placement) return {};
+      [sections[idx], sections[nextIdx]] = [sections[nextIdx], sections[idx]];
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  renameSection: (sectionId, title) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = state.activeProject.sections.map((s) =>
+        s.id === sectionId ? { ...s, title: title || undefined } : s
       );
       return { activeProject: { ...state.activeProject, sections } };
     }),

@@ -303,6 +303,15 @@ body {
   grid-template-columns: 42px minmax(0, 1fr) 42px;
 }
 
+/* ─── Section tree ─── */
+.section-tree-row:hover .section-tree-menu-btn,
+.section-tree-row:focus-within .section-tree-menu-btn {
+  opacity: 1 !important;
+}
+.section-tree-item:hover {
+  background: var(--bg-hover) !important;
+}
+
 .editor-workspace,
 .editor-canvas {
   min-width: 0;

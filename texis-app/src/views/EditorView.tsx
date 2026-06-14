@@ -7,10 +7,11 @@ import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
 import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
 import {
-  IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconChevronD, IconCode, IconFile,
+  IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconCode, IconFile,
   IconGlossaryEntry, IconHeading, IconHome, IconImage, IconList, IconMore, IconPlus, IconRefresh,
   IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
+import { SectionTree } from "./editor/SectionTree";
 import { LanguagePicker } from "../components/LanguagePicker";
 import { SpellPanel } from "../components/SpellPanel";
 import { GrammarPanel } from "../components/GrammarPanel";
@@ -22,7 +23,7 @@ import { api } from "../lib/tauri";
 import { ensureProfileLocale, localizeProfile } from "../services/profile-i18n";
 import { useProjectStore } from "../stores/project";
 import type { BibReference, ContentBlock, LatexTypography, PluginFigureBlock, ProjectSection, SectionStatus } from "../types";
-import { SectionStatusBar, STATUS_CONFIG } from "./editor/BlockEditors";
+import { SectionStatusBar } from "./editor/BlockEditors";
 import { CitationPickerModal } from "./editor/CitationPickerModal";
 import { FigurePickerModal } from "../components/FigurePickerModal";
 import { FigureEditModal } from "../components/FigureEditModal";
@@ -88,24 +89,6 @@ import { VisualKindSelector, defaultConfig } from "./editor/VisualBlockEditor";
 import type { VisualKind } from "../types";
 // ── Utilidades ────────────────────────────────────────────────────
 
-const PLACEMENT_KEYS: Record<string, string> = {
-  front_matter: "editor.placement_front",
-  body: "editor.placement_body",
-  back_matter: "editor.placement_back",
-  appendix: "editor.placement_appendix",
-};
-
-function usePlacementGroup(sections: ProjectSection[]) {
-  const { t } = useTranslation();
-  const groups: Record<string, ProjectSection[]> = {};
-  for (const s of sections) {
-    const key = PLACEMENT_KEYS[s.placement];
-    const g = key ? t(key as Parameters<typeof t>[0]) : s.placement;
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(s);
-  }
-  return groups;
-}
 
 function newId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -662,7 +645,6 @@ export default function EditorView() {
 
   const projectRouteId = encodeURIComponent(activeProjectPath);
 
-  const groups = usePlacementGroup(activeProject.sections);
   const activeSection = activeProject.sections.find((s) => s.id === activeSectionId)
     ?? activeProject.sections.find((s) => s.placement === "body" && s.enabled)
     ?? activeProject.sections[0];
@@ -795,55 +777,12 @@ export default function EditorView() {
       <div className="editor-grid">
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
-        <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            {userMode === "basic" ? t("editor.document_path") : t("editor.sections")}
-            <button className="btn btn-ghost btn-icon" style={{ padding: 4 }}><IconPlus size={12} /></button>
-          </div>
-          <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
-            {Object.entries(groups).map(([groupLabel, secs]) => (
-              <div key={groupLabel}>
-                <div style={{ margin: "6px 8px 2px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--fg-faint)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <IconChevronD size={10} /> {groupLabel}
-                </div>
-                {secs.filter((s) => s.enabled).map((s) => {
-                  const sStatus = s.status ?? "draft";
-                  const dotColor = STATUS_CONFIG[sStatus as SectionStatus]?.color ?? "#888";
-                  const statusLabel = STATUS_CONFIG[sStatus as SectionStatus]?.labelKey ? t(STATUS_CONFIG[sStatus as SectionStatus].labelKey) : sStatus;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      role="option"
-                      aria-selected={s.id === activeSectionId}
-                      aria-label={`${localizedSectionTitle(s)} — ${statusLabel}`}
-                      className="tx-unstyled-button"
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: "var(--r-sm)", fontSize: "var(--fs-base)", width: "100%", background: s.id === activeSectionId ? "var(--bg-selected)" : "transparent", color: s.id === activeSectionId ? "var(--accent-deep)" : "var(--fg-default)", fontWeight: s.id === activeSectionId ? 500 : 400, minHeight: 26 }}
-                      onClick={() => setActiveSectionId(s.id)}
-                      title={`${localizedSectionTitle(s)} · ${statusLabel}`}
-                    >
-                      <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{localizedSectionTitle(s)}</span>
-                      <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)" }}>
-                        {(s.id === activeSectionId ? localBlocks.length : s.blocks.length) || ""}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-
-          {/* Leyenda de estados — accesible sin color */}
-          <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px" }} aria-label={t("editor.section_status_legend")}>
-            {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
-              <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
-                {t(cfg.labelKey)}
-              </span>
-            ))}
-          </div>
-        </div>
+        <SectionTree
+          activeProjectPath={activeProjectPath}
+          localBlocks={localBlocks}
+          localizedTitle={localizedSectionTitle}
+          userMode={userMode}
+        />
 
         {/* ── Canvas editor ──────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>

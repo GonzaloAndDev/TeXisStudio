@@ -245,4 +245,18 @@ export const IconQuote    = (p: IconProps) => (
   </Icon>
 );
 
-export const IconHome = (p: IconProps) => <Icon {...p} d="M3 12L12 3l9 9M5 10v10h5v-6h4v6h5V10" />;
+export const IconHome     = (p: IconProps) => <Icon {...p} d="M3 12L12 3l9 9M5 10v10h5v-6h4v6h5V10" />;
+export const IconArrowUp  = (p: IconProps) => <Icon {...p} d="M12 19V5M5 12l7-7 7 7" />;
+export const IconArrowDown= (p: IconProps) => <Icon {...p} d="M12 5v14M5 12l7 7 7-7" />;
+export const IconEyeOff   = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M17.9 17.9A10.5 10.5 0 0 1 12 20C6 20 2 12 2 12a17.6 17.6 0 0 1 4.1-5.9M9.9 4.2A10.2 10.2 0 0 1 12 4c6 0 10 8 10 8a17.8 17.8 0 0 1-2.1 3.1M3 3l18 18" />
+    <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-3.4" />
+  </Icon>
+);
+export const IconLock     = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </Icon>
+);
