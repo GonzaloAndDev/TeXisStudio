@@ -8,6 +8,22 @@ const cache: Record<string, Promise<NSpell>> = {};
 // Bundled dicts live at /dictionaries/{lang}/index.{aff,dic}
 const BUNDLED_LANGS = new Set(["en", "es", "fr", "de"]);
 
+// Dictionary fetches over a slow connection (or an offline community pack
+// host) should not hang the panel indefinitely. 20 s is generous for a
+// localhost-style bundled fetch and still bounded enough to surface real
+// network failures.
+const DICT_FETCH_TIMEOUT_MS = 20_000;
+
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function loadDictionary(lang: string): Promise<NSpell> {
   let affUrl: string;
   let dicUrl: string;
@@ -23,15 +39,29 @@ async function loadDictionary(lang: string): Promise<NSpell> {
     dicUrl = urls.dic;
   }
 
-  const [affRes, dicRes] = await Promise.all([fetch(affUrl), fetch(dicUrl)]);
-  if (!affRes.ok || !dicRes.ok) throw new Error(`Dictionary ${lang} not found`);
+  const [affRes, dicRes] = await Promise.all([
+    fetchWithTimeout(affUrl, DICT_FETCH_TIMEOUT_MS),
+    fetchWithTimeout(dicUrl, DICT_FETCH_TIMEOUT_MS),
+  ]);
+  if (!affRes.ok || !dicRes.ok) {
+    throw new Error(`Dictionary ${lang} fetch failed (${affRes.status}/${dicRes.status})`);
+  }
   const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
   return nspell({ aff, dic });
 }
 
 export function getSpeller(lang: string): Promise<NSpell> {
-  if (!cache[lang]) cache[lang] = loadDictionary(lang);
-  return cache[lang];
+  let p = cache[lang];
+  if (!p) {
+    p = loadDictionary(lang);
+    cache[lang] = p;
+    // If the load rejects, evict the failed promise so a subsequent call
+    // retries instead of permanently returning the cached rejection.
+    p.catch(() => {
+      if (cache[lang] === p) delete cache[lang];
+    });
+  }
+  return p;
 }
 
 /** Bust the cache for a language — call after installing/uninstalling a pack. */
@@ -243,11 +273,16 @@ export async function checkText(
 ): Promise<SpellError[]> {
   const speller = await getSpeller(lang);
   const tokens = isLatex ? tokenizeLatex(text) : tokenizePlain(text);
+  // Custom dictionary previously scanned linearly per token (O(N×M)) — turn it
+  // into a lowercase Set once so each lookup is O(1). Matters on long sections
+  // with long user dictionaries.
+  const customLower = new Set<string>();
+  for (const w of customWords) customLower.add(w.toLowerCase());
   const errors: SpellError[] = [];
 
   for (const { word, start, end } of tokens) {
     const lower = word.toLowerCase();
-    if (customWords.some((w) => w.toLowerCase() === lower)) continue;
+    if (customLower.has(lower)) continue;
     if (speller.correct(word) || speller.correct(lower)) continue;
     errors.push({ word, start, end, suggestions: speller.suggest(word).slice(0, 5) });
   }

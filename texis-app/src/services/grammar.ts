@@ -1,5 +1,17 @@
 const LT_API = "https://api.languagetool.org/v2/check";
 
+/**
+ * Hard cap for a single LanguageTool request. The public LT API rejects
+ * payloads above this with HTTP 413; clamping client-side gives a clearer
+ * error than a confusing 413 and avoids wasted bandwidth on huge sections.
+ * Conservatively below LT's documented 20 000 char default for anonymous
+ * users so language packs which proxy through us still have headroom.
+ */
+const LT_MAX_TEXT_LENGTH = 18_000;
+
+/** Network timeout for a single LT request. */
+const LT_TIMEOUT_MS = 30_000;
+
 export interface GrammarMatch {
   message: string;
   offset: number;
@@ -14,15 +26,42 @@ export interface GrammarMatch {
 export interface GrammarResult {
   matches: GrammarMatch[];
   language: string;
+  /** True when the input was clamped — the offsets refer to the clamped text. */
+  truncated?: boolean;
 }
 
-export async function checkGrammar(text: string, ltLang: string): Promise<GrammarResult> {
-  const body = new URLSearchParams({ text, language: ltLang, enabledOnly: "false" });
-  const res = await fetch(LT_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: body.toString(),
-  });
+export async function checkGrammar(
+  text: string,
+  ltLang: string,
+  signal?: AbortSignal,
+): Promise<GrammarResult> {
+  const truncated = text.length > LT_MAX_TEXT_LENGTH;
+  const safeText = truncated ? text.slice(0, LT_MAX_TEXT_LENGTH) : text;
+  const body = new URLSearchParams({ text: safeText, language: ltLang, enabledOnly: "false" });
+
+  // Compose caller's signal with our timeout so either can cancel the request.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LT_TIMEOUT_MS);
+  const onExternalAbort = () => controller.abort();
+  signal?.addEventListener("abort", onExternalAbort, { once: true });
+
+  let res: Response;
+  try {
+    res = await fetch(LT_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: body.toString(),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    if (controller.signal.aborted && !signal?.aborted) {
+      throw new Error(`LanguageTool timeout (${LT_TIMEOUT_MS} ms)`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", onExternalAbort);
+  }
 
   if (!res.ok) throw new Error(`LanguageTool API error: ${res.status}`);
 
@@ -30,6 +69,7 @@ export async function checkGrammar(text: string, ltLang: string): Promise<Gramma
 
   return {
     language: (data.language?.name as string) ?? ltLang,
+    truncated,
     matches: (data.matches ?? []).map((m: Record<string, unknown>) => ({
       message: m.message as string,
       offset: m.offset as number,
