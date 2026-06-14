@@ -14,6 +14,7 @@ interface WorkspaceState {
 }
 
 interface WorkspaceStore extends WorkspaceState {
+  hydrate: (state: WorkspaceState) => void;
   setOpenFiles: (files: string[]) => void;
   setActiveFile: (file: string | null) => void;
   addOpenFile: (file: string) => void;
@@ -35,6 +36,8 @@ const INITIAL_STATE: WorkspaceState = {
 
 export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   ...INITIAL_STATE,
+
+  hydrate: (state) => set({ ...state }),
 
   setOpenFiles: (files) => set({ openFiles: files }),
 

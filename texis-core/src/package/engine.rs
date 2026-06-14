@@ -6,6 +6,7 @@ use super::model::PackageAnalysis;
 use super::registry::{EntrySource, PackageRegistry};
 use crate::error::CoreResult;
 use crate::events::{EventBus, ProjectEvent};
+use std::collections::HashSet;
 use std::path::Path;
 
 pub struct PackageEngine {
@@ -42,29 +43,24 @@ impl PackageEngine {
 
         let analysis = self.detector.analyze(&tex_refs, &preamble);
 
-        let before_count = self.registry.packages.len();
+        let before: HashSet<String> = self.registry.packages.keys().cloned().collect();
         self.registry.update_from_analysis(&analysis);
-        let added = self.registry.packages.len() - before_count;
 
-        if added > 0 {
-            for name in self.registry.package_names().iter().take(added) {
-                event_bus.emit(&ProjectEvent::PackageAdded {
-                    name: name.to_string(),
-                    reason: "detected".to_string(),
-                });
+        for name in self.registry.package_names() {
+            if before.contains(name) {
+                continue;
             }
+            event_bus.emit(&ProjectEvent::PackageAdded {
+                name: name.to_string(),
+                reason: "detected".to_string(),
+            });
         }
 
         Ok(analysis)
     }
 
     /// Registra un paquete explícitamente (por el usuario) y emite el evento.
-    pub fn require_package(
-        &mut self,
-        name: &str,
-        options: Vec<String>,
-        event_bus: &EventBus,
-    ) {
+    pub fn require_package(&mut self, name: &str, options: Vec<String>, event_bus: &EventBus) {
         self.registry.register(name, options, EntrySource::User);
         event_bus.emit(&ProjectEvent::PackageAdded {
             name: name.to_string(),
@@ -127,7 +123,9 @@ fn collect_tex_sources(root: &Path) -> CoreResult<Vec<String>> {
 }
 
 fn collect_recursive(dir: &Path, out: &mut Vec<String>) {
-    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
@@ -231,16 +229,40 @@ mod tests {
         std::fs::write(
             dir.path().join("content/sections/intro.tex"),
             r"\includegraphics{fig.png}\n\toprule",
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut engine = PackageEngine::new();
         let bus = EventBus::new();
         let analysis = engine.analyze_project(dir.path(), &bus).unwrap();
 
         // El detector debe encontrar graphicx y booktabs
-        let missing_names: Vec<&str> = analysis.missing.iter()
+        let missing_names: Vec<&str> = analysis
+            .missing
+            .iter()
             .map(|r| r.package_name.as_str())
             .collect();
         assert!(missing_names.contains(&"graphicx") || missing_names.contains(&"booktabs"));
+    }
+
+    #[test]
+    fn analyze_project_emits_event_for_the_actual_added_package() {
+        let dir = make_dir();
+        std::fs::write(dir.path().join("content.tex"), r"\includegraphics{fig.png}").unwrap();
+
+        let mut engine = PackageEngine::new();
+        engine.require_package("amsmath", vec![], &EventBus::new());
+        let mut bus = EventBus::new();
+        let names = Arc::new(Mutex::new(Vec::new()));
+        let captured = names.clone();
+        bus.subscribe(move |event| {
+            if let ProjectEvent::PackageAdded { name, .. } = event {
+                captured.lock().unwrap().push(name.clone());
+            }
+        });
+
+        engine.analyze_project(dir.path(), &bus).unwrap();
+
+        assert_eq!(*names.lock().unwrap(), vec!["graphicx"]);
     }
 }

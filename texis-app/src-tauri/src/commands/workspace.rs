@@ -8,7 +8,7 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceState {
     #[serde(default)]
     pub open_files: Vec<String>,
@@ -20,6 +20,18 @@ pub struct WorkspaceState {
     pub cursor_positions: std::collections::HashMap<String, CursorPosition>,
     #[serde(default)]
     pub last_build_summary: Option<BuildSummary>,
+}
+
+impl Default for WorkspaceState {
+    fn default() -> Self {
+        Self {
+            open_files: Vec::new(),
+            active_file: None,
+            zoom_level: default_zoom(),
+            cursor_positions: std::collections::HashMap::new(),
+            last_build_summary: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,10 +59,7 @@ fn workspace_path(project_path: &str) -> PathBuf {
 
 /// Guarda el estado de workspace en `.texisstudio/workspace.json`.
 #[tauri::command]
-pub fn save_workspace_state(
-    project_path: String,
-    state: WorkspaceState,
-) -> Result<(), String> {
+pub fn save_workspace_state(project_path: String, state: WorkspaceState) -> Result<(), String> {
     let path = workspace_path(&project_path);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(err)?;
@@ -92,7 +101,10 @@ mod tests {
             zoom_level: 1.25,
             cursor_positions: {
                 let mut m = std::collections::HashMap::new();
-                m.insert("intro.tex".to_string(), CursorPosition { line: 5, column: 3 });
+                m.insert(
+                    "intro.tex".to_string(),
+                    CursorPosition { line: 5, column: 3 },
+                );
                 m
             },
             last_build_summary: Some(BuildSummary {

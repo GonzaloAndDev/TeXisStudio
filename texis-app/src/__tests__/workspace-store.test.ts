@@ -16,6 +16,22 @@ describe("workspace store", () => {
     expect(s.lastBuildSummary).toBeNull();
   });
 
+  it("hydrate replaces persisted state", () => {
+    useWorkspaceStore.getState().hydrate({
+      openFiles: ["intro.tex"],
+      activeFile: "intro.tex",
+      zoomLevel: 1.25,
+      cursorPositions: { "intro.tex": { line: 4, column: 2 } },
+      lastBuildSummary: { success: true, duration_ms: 900 },
+    });
+
+    const state = useWorkspaceStore.getState();
+    expect(state.openFiles).toEqual(["intro.tex"]);
+    expect(state.activeFile).toBe("intro.tex");
+    expect(state.zoomLevel).toBe(1.25);
+    expect(state.cursorPositions["intro.tex"]).toEqual({ line: 4, column: 2 });
+  });
+
   it("addOpenFile appends unique files", () => {
     const { addOpenFile } = useWorkspaceStore.getState();
     addOpenFile("/project/intro.tex");

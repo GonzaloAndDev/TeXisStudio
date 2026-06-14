@@ -15,6 +15,7 @@ import i18n from "./i18n";
 import { WELCOME_SHOWN_KEY } from "./constants/welcome";
 import { useSettingsStore } from "./stores/settings";
 import { applyWindowMode, watchRememberedWindowSize } from "./services/windowPreferences";
+import { useWorkspaceAutoSave } from "./hooks/useWorkspaceAutoSave";
 
 const AboutView = lazy(() => import("./views/AboutView"));
 const CompileView = lazy(() => import("./views/CompileView"));
@@ -272,11 +273,18 @@ function WindowPreferenceController() {
   return null;
 }
 
+function WorkspaceController() {
+  const activeProjectPath = useProjectStore((state) => state.activeProjectPath);
+  useWorkspaceAutoSave(activeProjectPath);
+  return null;
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
         <WindowPreferenceController />
+        <WorkspaceController />
         <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflowX: "auto", overflowY: "hidden" }}>
           <AppErrorBoundary>
             <Suspense

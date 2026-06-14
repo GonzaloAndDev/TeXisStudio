@@ -4,9 +4,10 @@ use texis_core::{
     compiler::{
         latexmk::LatexmkBackend, tectonic::TectonicBackend, CompilationBackend, CompilationOptions,
     },
+    document::DocumentEngine,
+    events::EventBus,
     profile::loader::ProfileLoader,
     project::{loader::ProjectLoader, model::LatexEngine},
-    LaTeXGenerator,
 };
 
 pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
@@ -44,9 +45,16 @@ pub fn run(project_dir: &Path, backend_name: &str, draft: bool) -> Result<()> {
 
     // Generar archivos LaTeX
     // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
-    let latex_gen = LaTeXGenerator::new()?;
+    let mut document_engine = DocumentEngine::load(project_dir)?;
     println!("Generando archivos LaTeX...");
-    latex_gen.generate_with_profile(&model, &build_dir, None, title_page_template.as_deref())?;
+    document_engine.sync_preserving_external_edits(
+        &model,
+        &build_dir,
+        None,
+        title_page_template.as_deref(),
+        &EventBus::new(),
+    )?;
+    document_engine.save_checksums(project_dir)?;
 
     // Compilar
     let bibliography_backend = match model.latex_config.bibliography_backend {

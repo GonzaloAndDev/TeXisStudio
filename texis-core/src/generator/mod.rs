@@ -81,6 +81,15 @@ impl LaTeXGenerator {
         main_tex::render_to_string(model, &self.engine, None)
     }
 
+    /// Renderiza main.tex con la configuración de idioma indicada, sin escribir a disco.
+    pub fn generate_main_tex_string_with_lang(
+        &self,
+        model: &ProjectModel,
+        lang_config: Option<&Value>,
+    ) -> CoreResult<String> {
+        main_tex::render_to_string(model, &self.engine, lang_config)
+    }
+
     /// Solo para tests: retorna una sección como String sin escribir a disco.
     pub fn generate_section_string(
         &self,

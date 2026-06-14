@@ -4,6 +4,7 @@ import { IconCheck, IconCheckCircle, IconErr, IconPlay, IconWarn, IconX } from "
 import { AI_ASSISTANT_ENABLED, useAiStore } from "../../stores/ai";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import type { DependencyIssue, PdfaCheck, PdfPostflightResult, UserError, ValidationReport, ValidationIssue } from "../../types";
+import { useWorkspaceStore } from "../../stores/workspace";
 
 export type Backend = "auto" | "latexmk" | "tectonic";
 export type PendingAction = "compile" | "export";
@@ -325,6 +326,8 @@ export function DeliveryCheckModal({ report, pendingAction, onProceed, onClose, 
 export function PdfViewer({ pdfPath }: { pdfPath: string }) {
   const { t } = useTranslation();
   const [assetUrl, setAssetUrl] = useState<string | null>(null);
+  const zoomLevel = useWorkspaceStore((state) => state.zoomLevel);
+  const setZoomLevel = useWorkspaceStore((state) => state.setZoomLevel);
 
   useEffect(() => {
     // convertFileSrc convierte una ruta nativa a una URL asset:// que el webview
@@ -345,11 +348,18 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
   }
 
   return (
-    <iframe
-      src={assetUrl}
-      title={t("compile_widgets.pdf_preview_title")}
-      style={{ flex: 1, border: "none", width: "100%", height: "100%", background: "#404040" }}
-    />
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, padding: "5px 8px", background: "var(--bg-panel)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.1))} aria-label="Zoom out">−</button>
+        <span style={{ minWidth: 48, textAlign: "center", fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{Math.round(zoomLevel * 100)}%</span>
+        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.min(2, zoomLevel + 0.1))} aria-label="Zoom in">+</button>
+      </div>
+      <iframe
+        src={`${assetUrl}#zoom=${Math.round(zoomLevel * 100)}`}
+        title={t("compile_widgets.pdf_preview_title")}
+        style={{ flex: 1, border: "none", width: "100%", height: "100%", background: "#404040" }}
+      />
+    </div>
   );
 }
 

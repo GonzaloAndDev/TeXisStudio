@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { IconCheck, IconChevronD, IconPlus, IconX } from "../../components/Icons";
 import { applyAutocorrect } from "../../services/autocorrect";
 import { useSettingsStore } from "../../stores/settings";
+import { useWorkspaceStore } from "../../stores/workspace";
 import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from "../../types";
 
 // ── Componentes de bloque: modo edición ───────────────────────────
@@ -40,10 +41,24 @@ export function ParagraphEditor({
   }
 
   useEffect(() => {
-    ref.current?.focus();
     if (ref.current) {
+      ref.current.focus();
       ref.current.style.height = "auto";
       ref.current.style.height = ref.current.scrollHeight + "px";
+      const workspace = useWorkspaceStore.getState();
+      const saved = workspace.activeFile
+        ? workspace.getCursorPosition(workspace.activeFile)
+        : undefined;
+      if (saved) {
+        const lines = ref.current.value.split("\n");
+        const targetLine = Math.min(Math.max(saved.line, 1), lines.length);
+        let offset = 0;
+        for (let index = 0; index < targetLine - 1; index += 1) {
+          offset += lines[index].length + 1;
+        }
+        offset += Math.min(saved.column, lines[targetLine - 1]?.length ?? 0);
+        ref.current.setSelectionRange(offset, offset);
+      }
     }
   }, []);
 

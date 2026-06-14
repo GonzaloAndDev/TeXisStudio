@@ -22,6 +22,7 @@ import { useSettingsStore } from "../stores/settings";
 import { api } from "../lib/tauri";
 import { ensureProfileLocale, localizeProfile } from "../services/profile-i18n";
 import { useProjectStore } from "../stores/project";
+import { useWorkspaceStore } from "../stores/workspace";
 import type { BibReference, ContentBlock, LatexTypography, PluginFigureBlock, ProjectSection, SectionStatus } from "../types";
 import { SectionStatusBar } from "./editor/BlockEditors";
 import { CitationPickerModal } from "./editor/CitationPickerModal";
@@ -168,6 +169,7 @@ export default function EditorView() {
   const confirm = useConfirm();
   const { activeProject, activeProjectPath, activeSectionId, setActiveSectionId } = useProjectStore();
   const { userMode } = useSettingsStore();
+  const workspaceActiveFile = useWorkspaceStore((state) => state.activeFile);
 
   const [localBlocks, setLocalBlocks] = useState<ContentBlock[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -217,6 +219,50 @@ export default function EditorView() {
     }
     return labels;
   }, [activeProject, t]);
+
+  useEffect(() => {
+    if (!activeProject || !activeProjectPath || !activeSectionId) return;
+    const section = activeProject.sections.find((item) => item.id === activeSectionId);
+    if (!section) return;
+    const file = sectionTexPath(section, activeProject.sections, activeProjectPath);
+    if (!file) return;
+    const workspace = useWorkspaceStore.getState();
+    workspace.addOpenFile(file);
+    workspace.setActiveFile(file);
+  }, [activeProject, activeProjectPath, activeSectionId]);
+
+  useEffect(() => {
+    if (!activeProject || !activeProjectPath || !workspaceActiveFile) return;
+    const section = activeProject.sections.find(
+      (item) => sectionTexPath(item, activeProject.sections, activeProjectPath) === workspaceActiveFile,
+    );
+    if (section && section.id !== activeSectionId) {
+      setActiveSectionId(section.id);
+    }
+  }, [activeProject, activeProjectPath, activeSectionId, setActiveSectionId, workspaceActiveFile]);
+
+  useEffect(() => {
+    if (!workspaceActiveFile) return;
+
+    const captureCursor = () => {
+      const element = document.activeElement;
+      if (!(element instanceof HTMLTextAreaElement)) return;
+      const offset = element.selectionStart ?? 0;
+      const beforeCursor = element.value.slice(0, offset);
+      const lines = beforeCursor.split("\n");
+      useWorkspaceStore.getState().setCursorPosition(workspaceActiveFile, {
+        line: lines.length,
+        column: lines[lines.length - 1]?.length ?? 0,
+      });
+    };
+
+    document.addEventListener("selectionchange", captureCursor);
+    document.addEventListener("input", captureCursor);
+    return () => {
+      document.removeEventListener("selectionchange", captureCursor);
+      document.removeEventListener("input", captureCursor);
+    };
+  }, [workspaceActiveFile]);
 
   // Paneles de revisión de texto
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);

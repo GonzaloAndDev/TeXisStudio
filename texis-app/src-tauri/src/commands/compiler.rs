@@ -9,9 +9,10 @@ use tauri::Manager;
 use texis_core::{
     build_engine::preflight::{EnvContext, Platform, PreflightChecker},
     compiler::error_translator,
+    document::DocumentEngine,
+    events::EventBus,
     profile::loader::ProfileLoader,
     project::{loader::ProjectLoader, model::BibliographyBackend},
-    LaTeXGenerator,
 };
 
 fn err(e: impl std::fmt::Display) -> String {
@@ -106,15 +107,17 @@ pub async fn compile_project(
         }
     };
 
-    let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen
-        .generate_with_profile(
+    let mut document_engine = DocumentEngine::load(&path).map_err(err)?;
+    document_engine
+        .sync_preserving_external_edits(
             &model,
             &build_dir,
             lang_config.as_ref(),
             title_page_template.as_deref(),
+            &EventBus::new(),
         )
         .map_err(err)?;
+    document_engine.save_checksums(&path).map_err(err)?;
 
     // ── Paso 2: preflight — verificar entorno antes de compilar ──
     use texis_core::project::model::ContentBlock;
@@ -446,6 +449,7 @@ fn run_compiler_streaming(
     let payload = serde_json::json!({
         "success": success,
         "pdf_path": pdf_path,
+        "duration_ms": compile_start.elapsed().as_millis() as u64,
         "user_errors": user_errors_json,
         "warnings": Vec::<String>::new(),
         "log_preview": &log[..log.len().min(8000)],

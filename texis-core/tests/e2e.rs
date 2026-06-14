@@ -11,6 +11,7 @@ use std::fs;
 use texis_core::project::model::*;
 use texis_core::validator::Validator;
 use texis_core::LaTeXGenerator;
+use texis_core::{document::DocumentEngine, events::EventBus};
 
 // ── Proyecto rico con todos los tipos de bloques ──────────────────────────────
 
@@ -405,6 +406,55 @@ fn e2e_drift_report_preserva_archivos_manuales() {
         report.generated.contains(&"main.tex".to_string()),
         "main.tex debe aparecer en generated"
     );
+}
+
+#[test]
+fn document_engine_adopts_legacy_project_without_overwriting_main_tex() {
+    let dir = tempfile::tempdir().unwrap();
+    let build_dir = dir.path().join("build");
+    std::fs::create_dir_all(&build_dir).unwrap();
+    std::fs::write(build_dir.join("main.tex"), "% manual legacy main").unwrap();
+
+    let model = fixtures::generic_thesis_model();
+    let mut engine = DocumentEngine::new().unwrap();
+    let report = engine
+        .sync_preserving_external_edits(&model, &build_dir, None, None, &EventBus::new())
+        .unwrap();
+    engine.save_checksums(dir.path()).unwrap();
+
+    assert!(report.preserved_manual.contains(&"main.tex".to_string()));
+    assert_eq!(
+        std::fs::read_to_string(build_dir.join("main.tex")).unwrap(),
+        "% manual legacy main"
+    );
+
+    let mut reloaded = DocumentEngine::load(dir.path()).unwrap();
+    let second_report = reloaded
+        .sync_preserving_external_edits(&model, &build_dir, None, None, &EventBus::new())
+        .unwrap();
+    assert!(second_report
+        .preserved_manual
+        .contains(&"main.tex".to_string()));
+}
+
+#[test]
+fn document_engine_adopts_unmodified_generated_main_as_auto() {
+    let dir = tempfile::tempdir().unwrap();
+    let build_dir = dir.path().join("build");
+    let model = fixtures::generic_thesis_model();
+    LaTeXGenerator::new()
+        .unwrap()
+        .generate(&model, &build_dir)
+        .unwrap();
+
+    let mut engine = DocumentEngine::new().unwrap();
+    let report = engine
+        .sync_preserving_external_edits(&model, &build_dir, None, None, &EventBus::new())
+        .unwrap();
+
+    assert!(report.regenerated.contains(&"main.tex".to_string()));
+    assert!(!report.preserved_manual.contains(&"main.tex".to_string()));
+    assert!(engine.last_main_tex_checksum().is_some());
 }
 
 #[test]

@@ -4,7 +4,8 @@
 use crate::error::{CoreError, CoreResult};
 use crate::events::{EventBus, ProjectEvent};
 use crate::generator::LaTeXGenerator;
-use crate::project::model::ProjectModel;
+use crate::project::model::{FileState, ProjectModel};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
@@ -87,6 +88,22 @@ impl DocumentEngine {
         Ok(())
     }
 
+    /// Genera todos los archivos usando la configuración de idioma y portada del perfil.
+    pub fn generate_with_profile(
+        &mut self,
+        model: &ProjectModel,
+        build_dir: &Path,
+        lang_config: Option<&Value>,
+        title_page_template: Option<&str>,
+        event_bus: &EventBus,
+    ) -> CoreResult<()> {
+        self.generator
+            .generate_with_profile(model, build_dir, lang_config, title_page_template)?;
+        self.record_main_tex(build_dir)?;
+        emit_main_tex_saved(build_dir, event_bus);
+        Ok(())
+    }
+
     /// Solo genera el main.tex como String, sin escribir a disco ni actualizar checksums.
     pub fn render_main_tex_string(&self, model: &ProjectModel) -> CoreResult<String> {
         self.generator.generate_main_tex_string(model)
@@ -146,20 +163,82 @@ impl DocumentEngine {
         })
     }
 
+    /// Sincroniza el build sin sobrescribir un `main.tex` modificado externamente.
+    /// También conserva `main.tex` al adoptar proyectos antiguos que aún no tienen checksum.
+    pub fn sync_preserving_external_edits(
+        &mut self,
+        model: &ProjectModel,
+        build_dir: &Path,
+        lang_config: Option<&Value>,
+        title_page_template: Option<&str>,
+        event_bus: &EventBus,
+    ) -> CoreResult<ResyncReport> {
+        let external_changes = self.detect_external_changes(build_dir);
+        let main_path = build_dir.join("main.tex");
+        let untracked_main_is_external =
+            if self.last_checksums.main_tex.is_none() && main_path.exists() {
+                let current = std::fs::read_to_string(&main_path).map_err(CoreError::Io)?;
+                let expected = self
+                    .generator
+                    .generate_main_tex_string_with_lang(model, lang_config)?;
+                current != expected
+            } else {
+                false
+            };
+        let preserve_main = untracked_main_is_external
+            || external_changes.contains(&ExternalChange::MainTexModified);
+
+        let mut effective_model = model.clone();
+        if preserve_main {
+            effective_model
+                .file_states
+                .insert("main.tex".to_string(), FileState::Manual);
+        }
+
+        let drift = self.generator.generate_respecting_manual_edits(
+            &effective_model,
+            build_dir,
+            lang_config,
+            title_page_template,
+        )?;
+        if !preserve_main {
+            self.record_main_tex(build_dir)?;
+        }
+        emit_main_tex_saved(build_dir, event_bus);
+
+        Ok(ResyncReport {
+            regenerated: drift.generated,
+            preserved_manual: drift.preserved_manual,
+            external_changes,
+        })
+    }
+
     /// Persiste los checksums actuales en `.texisstudio/checksums.json`.
     pub fn save_checksums(&self, project_root: &Path) -> CoreResult<()> {
         let path = checksums_path(project_root);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(CoreError::Io)?;
         }
-        let json = serde_json::to_string_pretty(&self.last_checksums)
-            .map_err(|e| CoreError::InvalidProject { message: e.to_string() })?;
+        let json = serde_json::to_string_pretty(&self.last_checksums).map_err(|e| {
+            CoreError::InvalidProject {
+                message: e.to_string(),
+            }
+        })?;
         std::fs::write(&path, json).map_err(CoreError::Io)?;
         Ok(())
     }
 
     pub fn last_main_tex_checksum(&self) -> Option<&str> {
         self.last_checksums.main_tex.as_deref()
+    }
+
+    fn record_main_tex(&mut self, build_dir: &Path) -> CoreResult<()> {
+        let main_tex_path = build_dir.join("main.tex");
+        if main_tex_path.exists() {
+            let content = std::fs::read_to_string(&main_tex_path).map_err(CoreError::Io)?;
+            self.last_checksums.main_tex = Some(sha256_hex(&content));
+        }
+        Ok(())
     }
 }
 
@@ -179,6 +258,12 @@ fn sha256_hex(content: &str) -> String {
 
 fn checksums_path(project_root: &Path) -> PathBuf {
     project_root.join(".texisstudio").join("checksums.json")
+}
+
+fn emit_main_tex_saved(build_dir: &Path, event_bus: &EventBus) {
+    event_bus.emit(&ProjectEvent::TexFileSaved {
+        path: build_dir.join("main.tex"),
+    });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

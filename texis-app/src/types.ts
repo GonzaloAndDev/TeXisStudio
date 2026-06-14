@@ -475,6 +475,7 @@ export interface DependencyIssue {
 export interface CompilationResult {
   success: boolean;
   pdf_path?: string;
+  duration_ms?: number;
   user_errors: UserError[];
   warnings: string[];
   log_preview: string;

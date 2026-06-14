@@ -2,15 +2,37 @@ use serde_json::Value;
 use std::path::PathBuf;
 use tauri::Manager;
 use texis_core::{
+    document::DocumentEngine,
+    events::EventBus,
     postflight::PdfChecker,
     profile::{model::Profile, ProfileRegistry},
     project::{loader::ProjectLoader, model::ProjectModel, saver::ProjectSaver},
     validator::Validator,
-    LaTeXGenerator,
 };
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
+}
+
+fn generate_new_document(
+    model: &ProjectModel,
+    project_dir: &std::path::Path,
+) -> Result<(), String> {
+    let build_dir = project_dir.join("build");
+    let mut engine = DocumentEngine::new().map_err(err)?;
+    engine
+        .generate(model, &build_dir, &EventBus::new())
+        .map_err(err)?;
+    engine.save_checksums(project_dir).map_err(err)
+}
+
+fn sync_document(model: &ProjectModel, project_dir: &std::path::Path) -> Result<(), String> {
+    let build_dir = project_dir.join("build");
+    let mut engine = DocumentEngine::load(project_dir).map_err(err)?;
+    engine
+        .sync_preserving_external_edits(model, &build_dir, None, None, &EventBus::new())
+        .map_err(err)?;
+    engine.save_checksums(project_dir).map_err(err)
 }
 
 /// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
@@ -60,10 +82,7 @@ pub fn create_project(
         .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
         .map_err(err)?;
 
-    let build_dir = project_dir.join("build");
-    // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
-    let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    generate_new_document(&model, &project_dir)?;
 
     Ok(serde_json::json!({
         "project_path": project_dir.to_string_lossy(),
@@ -183,9 +202,7 @@ pub fn import_tex_project(
         .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
         .map_err(err)?;
 
-    let build_dir = project_dir.join("build");
-    let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    generate_new_document(&model, &project_dir)?;
 
     Ok(serde_json::json!({
         "project_path": project_dir.to_string_lossy(),
@@ -271,9 +288,7 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
     saver.save_to_file(&model, &yaml_path).map_err(err)?;
 
     // Regenerar los archivos LaTeX de la sección modificada
-    let build_dir = PathBuf::from(&project_path).join("build");
-    let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    sync_document(&model, &PathBuf::from(&project_path))?;
 
     Ok(())
 }
@@ -287,9 +302,7 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
     let saver = ProjectSaver;
     saver.save_to_file(&model, &yaml_path).map_err(err)?;
     // Regenerar build/ con metadatos actualizados
-    let build_dir = PathBuf::from(&project_path).join("build");
-    let latex_gen = LaTeXGenerator::new().map_err(err)?;
-    latex_gen.generate(&model, &build_dir).map_err(err)?;
+    sync_document(&model, &PathBuf::from(&project_path))?;
     Ok(())
 }
 

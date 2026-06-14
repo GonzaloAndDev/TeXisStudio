@@ -15,6 +15,7 @@ import { useAiStore } from "../stores/ai";
 import type { CompilationResult, DependencyIssue, ExportDeliveryResult, PdfPostflightResult, ValidationReport } from "../types";
 import { useToast } from "../components/ui/ToastProvider";
 import { resolvePreferredLatexBackend } from "../lib/latexBackendPreference";
+import { useWorkspaceStore } from "../stores/workspace";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
@@ -130,6 +131,7 @@ export default function CompileView() {
 
   async function doCompile() {
     if (!activeProjectPath) return;
+    const startedAt = performance.now();
     setCompileState("compiling");
     setResult(null);
     setLiveLog([]);
@@ -144,6 +146,11 @@ export default function CompileView() {
       const langConfig = getLatexConfig(lang);
       const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
       setResult(res);
+      useWorkspaceStore.getState().setLastBuildSummary({
+        success: res.success,
+        pdf_path: res.pdf_path,
+        duration_ms: res.duration_ms ?? Math.round(performance.now() - startedAt),
+      });
       // Actualizar dependency issues desde el resultado (incluye preflight)
       if (res.dependency_issues && res.dependency_issues.length > 0) {
         setDependencyIssues(res.dependency_issues);
@@ -164,6 +171,10 @@ export default function CompileView() {
       if (errMsg.includes("cancelad")) {
         setCompileState("idle");
       } else {
+        useWorkspaceStore.getState().setLastBuildSummary({
+          success: false,
+          duration_ms: Math.round(performance.now() - startedAt),
+        });
         setResult({
           success: false,
           user_errors: [{ message: errMsg, suggestion: t("compile.ensure_latex_installed_path") }],

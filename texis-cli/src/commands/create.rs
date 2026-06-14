@@ -3,7 +3,7 @@ use chrono::Utc;
 use std::collections::HashMap;
 use std::path::Path;
 use texis_core::project::{model::*, saver::ProjectSaver};
-use texis_core::LaTeXGenerator;
+use texis_core::{document::DocumentEngine, events::EventBus};
 
 pub fn run(profile_id: &str, name: &str, output: &Path) -> Result<()> {
     let project_dir = output.join(name);
@@ -33,11 +33,13 @@ pub fn run(profile_id: &str, name: &str, output: &Path) -> Result<()> {
 
     // Generar build/ con .gitignore y README
     let build_dir = project_dir.join("build");
-    // Nota: no se nombra la variable 'gen' (reservado en edition 2024)
-    let latex_gen = LaTeXGenerator::new().context("crear generador")?;
-    latex_gen
-        .generate(&model, &build_dir)
+    let mut document_engine = DocumentEngine::new().context("crear generador")?;
+    document_engine
+        .generate(&model, &build_dir, &EventBus::new())
         .context("generar estructura build/")?;
+    document_engine
+        .save_checksums(&project_dir)
+        .context("guardar checksums del documento")?;
 
     println!("✓ Proyecto creado en: {}", project_dir.display());
     println!("✓ .gitignore generado");
