@@ -1408,7 +1408,12 @@
     "delete_block": "Eliminar bloque",
     "manual_latex_warning": "LaTeX manual — puede romper la compilación",
     "confirm_manual_latex": "Confirmo que este LaTeX manual puede afectar la compilación",
-    "unconfirmed_latex_hint": "No confirmado — este bloque no se incluirá en el PDF hasta que lo confirmes."
+    "unconfirmed_latex_hint": "No confirmado — este bloque no se incluirá en el PDF hasta que lo confirmes.",
+    "latex_err_open_brace": "{{n}} llave(s) { sin cerrar",
+    "latex_err_close_brace": "Llave } de cierre sin apertura previa",
+    "latex_err_math": "Modo matemático $ sin cerrar",
+    "latex_err_begin": "\\begin{{{env}}} sin \\end correspondiente",
+    "latex_err_end": "\\end{{{env}}} sin \\begin previo"
   },
   "compile": {
     "severity_error": "Error",

@@ -1408,7 +1408,12 @@
     "delete_block": "Delete block",
     "manual_latex_warning": "Manual LaTeX — may break compilation",
     "confirm_manual_latex": "I confirm this manual LaTeX may affect compilation",
-    "unconfirmed_latex_hint": "Not confirmed — this block will not be included in the PDF until you confirm it."
+    "unconfirmed_latex_hint": "Not confirmed — this block will not be included in the PDF until you confirm it.",
+    "latex_err_open_brace": "{{n}} open brace(s) { not closed",
+    "latex_err_close_brace": "Closing brace } without prior opening",
+    "latex_err_math": "Math mode $ not closed",
+    "latex_err_begin": "\\begin{{{env}}} without matching \\end",
+    "latex_err_end": "\\end{{{env}}} without prior \\begin"
   },
   "compile": {
     "severity_error": "Error",

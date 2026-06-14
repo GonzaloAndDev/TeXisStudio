@@ -118,6 +118,44 @@ function PluginFigurePdfPreview({
   );
 }
 
+// ── Raw-LaTeX syntax heuristics ───────────────────────────────────
+
+type LatexErrorKey =
+  | { key: "latex_err_open_brace"; n: number }
+  | { key: "latex_err_close_brace" }
+  | { key: "latex_err_math" }
+  | { key: "latex_err_begin"; env: string }
+  | { key: "latex_err_end"; env: string };
+
+function validateRawLatex(content: string): LatexErrorKey[] {
+  const errs: LatexErrorKey[] = [];
+  if (!content.trim()) return errs;
+
+  let depth = 0;
+  let extraClose = false;
+  for (const ch of content) {
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth < 0) { extraClose = true; break; } }
+  }
+  if (extraClose) errs.push({ key: "latex_err_close_brace" });
+  else if (depth > 0) errs.push({ key: "latex_err_open_brace", n: depth });
+
+  const dollars = (content.match(/(?<!\\)\$/g) ?? []).length;
+  if (dollars % 2 !== 0) errs.push({ key: "latex_err_math" });
+
+  const begins = [...content.matchAll(/\\begin\{([^}]+)\}/g)].map((m) => m[1]);
+  const ends   = [...content.matchAll(/\\end\{([^}]+)\}/g)].map((m) => m[1]);
+  const remaining = [...ends];
+  for (const env of begins) {
+    const idx = remaining.indexOf(env);
+    if (idx === -1) errs.push({ key: "latex_err_begin", env });
+    else remaining.splice(idx, 1);
+  }
+  for (const env of remaining) errs.push({ key: "latex_err_end", env });
+
+  return errs;
+}
+
 // ── BlockItem: combina preview + edición ──────────────────────────
 
 export function BlockItem({
@@ -229,7 +267,8 @@ export function BlockItem({
             onChange={(u) => onUpdate(u as Partial<ContentBlock>)}
           />
         );
-      case "raw_latex":
+      case "raw_latex": {
+        const latexErrs = validateRawLatex(block.content ?? "");
         return (
           <div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -245,8 +284,22 @@ export function BlockItem({
                 fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
                 background: "var(--ink-900)", border: "none", outline: "none",
                 padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
+                borderBottom: latexErrs.length > 0 ? "2px solid var(--build-err)" : "none",
               }}
             />
+            {latexErrs.length > 0 && (
+              <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+                {latexErrs.map((e, i) => (
+                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", display: "flex", alignItems: "center", gap: 4 }}>
+                    ✕ {e.key === "latex_err_open_brace" ? t("block_item.latex_err_open_brace", { n: e.n })
+                      : e.key === "latex_err_close_brace" ? t("block_item.latex_err_close_brace")
+                      : e.key === "latex_err_math" ? t("block_item.latex_err_math")
+                      : e.key === "latex_err_begin" ? t("block_item.latex_err_begin", { env: e.env })
+                      : t("block_item.latex_err_end", { env: e.env })}
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
               <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--fs-xs)", color: block.user_confirmed ? "var(--build-ok)" : "var(--fg-faint)" }}>
                 <input
@@ -265,6 +318,7 @@ export function BlockItem({
             )}
           </div>
         );
+      }
       // ── Posgrado ──────────────────────────────────────────────────
       case "glossary_entry":
         return (
