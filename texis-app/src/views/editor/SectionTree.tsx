@@ -5,6 +5,7 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconChevronD,
+  IconEdit,
   IconEye,
   IconEyeOff,
   IconLock,
@@ -16,6 +17,7 @@ import { useProjectStore } from "../../stores/project";
 import { api } from "../../lib/tauri";
 import type { ContentBlock, ProjectSection, SectionPlacement, SectionStatus } from "../../types";
 import { STATUS_CONFIG } from "./BlockEditors";
+import { SectionEditor } from "./SectionEditor";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -64,12 +66,14 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     moveSectionUp,
     moveSectionDown,
     renameSection,
+    patchSection,
   } = useProjectStore();
 
-  const [addMenuOpen, setAddMenuOpen]   = useState(false);
-  const [openMenuId, setOpenMenuId]     = useState<string | null>(null);
-  const [renamingId, setRenamingId]     = useState<string | null>(null);
-  const [renameValue, setRenameValue]   = useState("");
+  const [addMenuOpen, setAddMenuOpen]     = useState(false);
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
+  const [renamingId, setRenamingId]       = useState<string | null>(null);
+  const [renameValue, setRenameValue]     = useState("");
+  const [editingSection, setEditingSection] = useState<ProjectSection | null>(null);
 
   const addMenuRef  = useRef<HTMLDivElement>(null);
   const dotMenuRef  = useRef<HTMLDivElement>(null);
@@ -128,6 +132,17 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     setRenamingId(newSection.id);
     setRenameValue(t("editor.tree_new_section_name"));
   }, [t, addSection, persistProject, setActiveSectionId]);
+
+  const handleEditDetails = useCallback((s: ProjectSection) => {
+    setOpenMenuId(null);
+    setEditingSection(s);
+  }, []);
+
+  const handleEditorSave = useCallback(async (patch: Partial<ProjectSection>) => {
+    if (!editingSection) return;
+    patchSection(editingSection.id, patch);
+    await persistProject();
+  }, [editingSection, patchSection, persistProject]);
 
   const handleRenameStart = useCallback((s: ProjectSection) => {
     setOpenMenuId(null);
@@ -386,6 +401,8 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <ContextMenuItem label={t("editor.tree_edit_details")} onClick={() => handleEditDetails(s)} icon={<IconEdit size={12} />} />
+                      <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
                       <ContextMenuItem label={t("editor.tree_rename")} onClick={() => handleRenameStart(s)} />
                       <ContextMenuItem label={t("editor.tree_move_up")}   onClick={() => void handleMoveUp(s.id)}   disabled={!canMoveUp} icon={<IconArrowUp size={12} />} />
                       <ContextMenuItem label={t("editor.tree_move_down")} onClick={() => void handleMoveDown(s.id)} disabled={!canMoveDown} icon={<IconArrowDown size={12} />} />
@@ -415,10 +432,21 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
         {(Object.entries(STATUS_CONFIG) as [SectionStatus, typeof STATUS_CONFIG[SectionStatus]][]).map(([s, cfg]) => (
           <span key={s} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--fg-faint)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
             <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0, display: "inline-block" }} />
-            {t(cfg.labelKey)}
+            {t(cfg.labelKey as Parameters<typeof t>[0])}
           </span>
         ))}
       </div>
+
+      {/* ── Section editor modal ─────────────────────────────────── */}
+      {editingSection && (
+        <SectionEditor
+          section={editingSection}
+          localizedTitle={localizedTitle}
+          userMode={userMode}
+          onSave={(patch) => void handleEditorSave(patch)}
+          onClose={() => setEditingSection(null)}
+        />
+      )}
     </div>
   );
 }

@@ -704,7 +704,18 @@
     "tree_delete_required": "«{{title}}» is required by the profile and cannot be deleted. You can hide it instead.",
     "tree_required_badge": "Required",
     "tree_hidden_badge": "Hidden",
-    "tree_new_section_name": "New section"
+    "tree_new_section_name": "New section",
+    "tree_edit_details": "Edit details",
+    "tree_edit_field_title": "Display title",
+    "tree_edit_field_status": "Editorial status",
+    "tree_edit_field_notes": "Internal notes",
+    "tree_edit_field_notes_hint": "not included in the PDF",
+    "tree_edit_notes_ph": "Notes for the writing process…",
+    "tree_edit_field_placement": "Position in document",
+    "tree_edit_field_visible": "Visible in document",
+    "tree_edit_save": "Save changes",
+    "tree_edit_advanced_section": "Advanced options",
+    "tree_edit_required_info": "This section is required by the profile and cannot be deleted"
   },
   "spell": {
     "panel_title": "Spell check",

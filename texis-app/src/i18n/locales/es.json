@@ -704,7 +704,18 @@
     "tree_delete_required": "«{{title}}» es requerida por el perfil y no puede eliminarse. Puedes ocultarla.",
     "tree_required_badge": "Requerida",
     "tree_hidden_badge": "Oculta",
-    "tree_new_section_name": "Nueva sección"
+    "tree_new_section_name": "Nueva sección",
+    "tree_edit_details": "Editar detalles",
+    "tree_edit_field_title": "Título visible",
+    "tree_edit_field_status": "Estado editorial",
+    "tree_edit_field_notes": "Notas internas",
+    "tree_edit_field_notes_hint": "no aparecen en el PDF",
+    "tree_edit_notes_ph": "Apuntes para el proceso de escritura…",
+    "tree_edit_field_placement": "Posición en el documento",
+    "tree_edit_field_visible": "Visible en el documento",
+    "tree_edit_save": "Guardar cambios",
+    "tree_edit_advanced_section": "Opciones avanzadas",
+    "tree_edit_required_info": "Esta sección es requerida por el perfil y no puede eliminarse"
   },
   "spell": {
     "panel_title": "Revisión ortográfica",
