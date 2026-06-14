@@ -166,8 +166,9 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       if (fromIdx < 0 || toIdx < 0) return {};
       if (sections[fromIdx].placement !== sections[toIdx].placement) return {};
       const [moved] = sections.splice(fromIdx, 1);
-      const newToIdx = sections.findIndex((s) => s.id === targetId);
-      sections.splice(position === "before" ? newToIdx : newToIdx + 1, 0, moved);
+      // After removing fromIdx, if fromIdx < toIdx the target shifts down by 1
+      const adjustedTo = fromIdx < toIdx ? toIdx - 1 : toIdx;
+      sections.splice(position === "before" ? adjustedTo : adjustedTo + 1, 0, moved);
       return { activeProject: { ...state.activeProject, sections } };
     }),
 

@@ -190,7 +190,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent, s: ProjectSection) => {
-    if (s.placement !== dragPlacement.current) {
+    if (!dragPlacement.current || s.placement !== dragPlacement.current) {
       e.dataTransfer.dropEffect = "none";
       return;
     }

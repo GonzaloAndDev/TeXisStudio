@@ -21,6 +21,7 @@ const PLACEMENT_OPTIONS: Array<{ value: SectionPlacement; key: string }> = [
 
 export function SectionEditor({ section, localizedTitle, userMode, onSave, onClose }: Props) {
   const { t } = useTranslation();
+  const safeT = (key: string) => t(key as Parameters<typeof t>[0]);
 
   const [title,     setTitle]     = useState(section.title ?? "");
   const [status,    setStatus]    = useState<SectionStatus>(section.status ?? "draft");
@@ -42,7 +43,7 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
   return (
     <AppDialog
       title={t("editor.tree_edit_details")}
-      subtitle={localizedTitle(section)}
+      subtitle={localizedTitle(section) || section.element_id}
       onClose={onClose}
       width={480}
       footer={
@@ -88,7 +89,7 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
                     background: cfg.color, display: "inline-block", marginRight: 5,
                   }}
                 />
-                {t(cfg.labelKey as Parameters<typeof t>[0])}
+                {safeT(cfg.labelKey)}
               </button>
             ))}
           </div>
@@ -135,7 +136,7 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
                     style={{ padding: "4px 12px", fontSize: "var(--fs-xs)" }}
                     onClick={() => setPlacement(value)}
                   >
-                    {t(key as Parameters<typeof t>[0])}
+                    {safeT(key)}
                   </button>
                 ))}
               </div>
