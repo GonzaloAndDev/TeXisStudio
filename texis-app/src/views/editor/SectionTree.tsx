@@ -67,17 +67,23 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     moveSectionDown,
     renameSection,
     patchSection,
+    reorderSection,
   } = useProjectStore();
 
-  const [addMenuOpen, setAddMenuOpen]     = useState(false);
-  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
-  const [renamingId, setRenamingId]       = useState<string | null>(null);
-  const [renameValue, setRenameValue]     = useState("");
+  const [addMenuOpen, setAddMenuOpen]       = useState(false);
+  const [openMenuId, setOpenMenuId]         = useState<string | null>(null);
+  const [renamingId, setRenamingId]         = useState<string | null>(null);
+  const [renameValue, setRenameValue]       = useState("");
   const [editingSection, setEditingSection] = useState<ProjectSection | null>(null);
+  const [dragId, setDragId]                 = useState<string | null>(null);
+  const [dragOverId, setDragOverId]         = useState<string | null>(null);
+  const [dragPos, setDragPos]               = useState<"before" | "after">("after");
 
-  const addMenuRef  = useRef<HTMLDivElement>(null);
-  const dotMenuRef  = useRef<HTMLDivElement>(null);
-  const renameRef   = useRef<HTMLInputElement>(null);
+  const addMenuRef    = useRef<HTMLDivElement>(null);
+  const dotMenuRef    = useRef<HTMLDivElement>(null);
+  const renameRef     = useRef<HTMLInputElement>(null);
+  const dragPlacement = useRef<string | null>(null);
+  const didDrag       = useRef(false);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -143,6 +149,52 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     patchSection(editingSection.id, patch);
     await persistProject();
   }, [editingSection, patchSection, persistProject]);
+
+  // ── Drag-and-drop ───────────────────────────────────────────────
+
+  const handleDragStart = useCallback((e: React.DragEvent, s: ProjectSection) => {
+    e.dataTransfer.effectAllowed = "move";
+    dragPlacement.current = s.placement;
+    didDrag.current = true;
+    setDragId(s.id);
+    setOpenMenuId(null);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, s: ProjectSection) => {
+    if (s.placement !== dragPlacement.current) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setDragOverId(s.id);
+    setDragPos(e.clientY < rect.top + rect.height / 2 ? "before" : "after");
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      setDragOverId(null);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const from = dragId;
+    setDragId(null);
+    setDragOverId(null);
+    if (!from || from === targetId) return;
+    reorderSection(from, targetId, dragPos);
+    await persistProject();
+  }, [dragId, dragPos, reorderSection, persistProject]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragId(null);
+    setDragOverId(null);
+    dragPlacement.current = null;
+    // Reset didDrag after the click event that follows dragend has fired
+    setTimeout(() => { didDrag.current = false; }, 0);
+  }, []);
 
   const handleRenameStart = useCallback((s: ProjectSection) => {
     setOpenMenuId(null);
@@ -302,14 +354,25 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
               const canMoveUp   = idxInGroup > 0;
               const canMoveDown = idxInGroup < groupItems.length - 1;
 
-              const isMenuOpen = openMenuId === s.id;
+              const isMenuOpen  = openMenuId === s.id;
+              const isDragging  = dragId === s.id;
+              const isDropBefore = dragOverId === s.id && dragPos === "before";
+              const isDropAfter  = dragOverId === s.id && dragPos === "after";
 
               return (
                 <div
                   key={s.id}
                   style={{ position: "relative" }}
                   className="section-tree-row"
+                  onDragOver={(e) => handleDragOver(e, s)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => void handleDrop(e, s.id)}
                 >
+                  {/* Drop indicator — before */}
+                  {isDropBefore && (
+                    <div style={{ height: 2, background: "var(--accent-deep)", borderRadius: 1, margin: "0 8px", pointerEvents: "none" }} />
+                  )}
+
                   {renamingId === s.id ? (
                     /* ── Inline rename input ──────────────────── */
                     <div style={{ padding: "3px 8px" }}>
@@ -330,6 +393,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                       type="button"
                       role="option"
                       aria-selected={isActive}
+                      draggable
                       className="tx-unstyled-button section-tree-item"
                       style={{
                         display: "flex", alignItems: "center", gap: 6,
@@ -339,10 +403,14 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                         color: isActive ? "var(--accent-deep)" : isHidden ? "var(--fg-faint)" : "var(--fg-default)",
                         fontWeight: isActive ? 500 : 400,
                         minHeight: 26,
-                        opacity: isHidden ? 0.6 : 1,
+                        opacity: isDragging ? 0.35 : isHidden ? 0.6 : 1,
+                        cursor: dragId ? "grabbing" : "grab",
+                        transition: "opacity 0.15s",
                       }}
-                      onClick={() => { if (s.enabled) setActiveSectionId(s.id); }}
-                      onDoubleClick={() => handleRenameStart(s)}
+                      onClick={() => { if (didDrag.current || !s.enabled) return; setActiveSectionId(s.id); }}
+                      onDoubleClick={() => { if (!didDrag.current) handleRenameStart(s); }}
+                      onDragStart={(e) => handleDragStart(e, s)}
+                      onDragEnd={handleDragEnd}
                       title={isHidden ? `${title} — ${t("editor.tree_hidden_badge")}` : title}
                     >
                       {/* Status dot or hidden icon */}
@@ -387,6 +455,11 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                         <IconMore size={12} />
                       </button>
                     </button>
+                  )}
+
+                  {/* Drop indicator — after */}
+                  {isDropAfter && (
+                    <div style={{ height: 2, background: "var(--accent-deep)", borderRadius: 1, margin: "0 8px", pointerEvents: "none" }} />
                   )}
 
                   {/* ── Context menu ─────────────────────────── */}

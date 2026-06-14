@@ -37,6 +37,7 @@ interface ProjectStore {
   moveSectionDown: (sectionId: string) => void;
   renameSection: (sectionId: string, title: string) => void;
   patchSection: (sectionId: string, patch: Partial<ProjectSection>) => void;
+  reorderSection: (sectionId: string, targetId: string, position: "before" | "after") => void;
 
   // Sección activa en el editor
   activeSectionId: string | null;
@@ -146,6 +147,19 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       const sections = state.activeProject.sections.map((s) =>
         s.id === sectionId ? { ...s, ...patch } : s
       );
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  reorderSection: (sectionId, targetId, position) =>
+    set((state) => {
+      if (!state.activeProject || sectionId === targetId) return {};
+      const sections = [...state.activeProject.sections];
+      const fromIdx = sections.findIndex((s) => s.id === sectionId);
+      const toIdx   = sections.findIndex((s) => s.id === targetId);
+      if (fromIdx < 0 || toIdx < 0) return {};
+      if (sections[fromIdx].placement !== sections[toIdx].placement) return {};
+      const [moved] = sections.splice(fromIdx, 1);
+      const newToIdx = sections.findIndex((s) => s.id === targetId);
+      sections.splice(position === "before" ? newToIdx : newToIdx + 1, 0, moved);
       return { activeProject: { ...state.activeProject, sections } };
     }),
 
