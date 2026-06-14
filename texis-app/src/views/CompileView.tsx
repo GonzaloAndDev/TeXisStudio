@@ -19,21 +19,12 @@ import { useWorkspaceStore } from "../stores/workspace";
 
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
+import { isCancellationError } from "../lib/compileErrors";
 
 // ── Constantes ────────────────────────────────────────────────────
 
 /** Cap the live log buffer so a runaway LaTeX run can't OOM the UI. */
 const MAX_LOG_LINES = 2000;
-
-/**
- * Detects whether a thrown value represents a user-initiated cancellation.
- * Avoids locale-sensitive string matching (the backend may emit Spanish or
- * English depending on the active locale) by checking multiple stems.
- */
-function isCancellationError(e: unknown): boolean {
-  const s = String(e).toLowerCase();
-  return s.includes("cancel") || s.includes("aborted") || s.includes("abort");
-}
 
 // ── Vista principal ───────────────────────────────────────────────
 
