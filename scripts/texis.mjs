@@ -60,16 +60,21 @@ function dirSizeBytes(path) {
  * Performs the cleanup associated with a given operation. Called ONLY on
  * success — wrapped errors stop the script before this runs.
  *
- * @param {"dev"|"build"|"frontend-build"|"check-all"} label
+ * @param {"dev-compile"|"build"|"frontend-build"|"check-all"} label
  */
 async function cleanupAfterSuccess(label) {
   const targets = [];
   switch (label) {
     case "build":
-      // Installer/release succeeded → debug artifacts are dead weight.
+      // Installer/release succeeded → debug artifacts are dead weight, and
+      // release intermediate caches are no longer needed (the installer
+      // already packaged the final binary). Keep the final binary itself
+      // in case the developer wants to run it from target/release/.
       targets.push(
         join(targetDir, "debug"),
         join(tauriTargetDir, "debug"),
+        join(targetDir, "release", "incremental"),
+        join(tauriTargetDir, "release", "incremental"),
         join(appDir, "dist"),
         join(appDir, "node_modules", ".vite"),
       );
@@ -79,17 +84,32 @@ async function cleanupAfterSuccess(label) {
       targets.push(join(appDir, "node_modules", ".vite"));
       break;
     case "check-all":
-      // After all gates passed: same as installer; preserves prod sanity.
+      // After all gates passed: drop both debug and release incremental
+      // caches plus front-build intermediates.
       targets.push(
         join(targetDir, "debug", "incremental"),
         join(tauriTargetDir, "debug", "incremental"),
+        join(targetDir, "release", "incremental"),
+        join(tauriTargetDir, "release", "incremental"),
         join(appDir, "dist"),
         join(appDir, "node_modules", ".vite"),
       );
       break;
-    case "dev":
+    case "dev-compile":
+      // Debug compile of Tauri dev mode just finished — the binary is now
+      // running and Rust deps are statically linked into it, so we can drop
+      // the intermediate incremental cache safely without crashing the
+      // running app. Trade-off (requested explicitly by the user): the
+      // next code change forces a full recompile instead of an incremental
+      // one. We deliberately keep `deps/` so future dev sessions don't
+      // re-download and re-build every transitive dependency from scratch.
+      targets.push(
+        join(targetDir, "debug", "incremental"),
+        join(tauriTargetDir, "debug", "incremental"),
+        join(appDir, "node_modules", ".vite"),
+      );
+      break;
     default:
-      // Dev iterations leave caches alone — incremental compile speed > disk.
       return;
   }
 
@@ -161,10 +181,27 @@ async function dev() {
   startDevTimer();
   printDevContext();
   await ensureNodeModules();
+  // We only clean once per session — even though `cargo` may print "Finished
+  // dev profile" again after a hot-rebuild during the session, the first
+  // emission means the initial compile is done and the dev binary is up.
+  // Subsequent rebuilds during the session may be aborted by the user; we
+  // don't want to keep aggressively cleaning while they're working.
+  let devCompileCleanFired = false;
   await runNpm(["run", "tauri", "dev"], appDir, {
     onOutputLine: (line) => {
       if (activeTimer?.label === "dev" && /Finished `dev` profile .* target\(s\) in /.test(line)) {
         finishDevReadyTimer();
+        if (!devCompileCleanFired) {
+          devCompileCleanFired = true;
+          // Fire-and-forget: cleanup runs in parallel with the dev process.
+          // The Tauri webview binary is already loaded into memory at this
+          // point, so removing `target/debug/incremental/` and `.vite/` is
+          // safe — the running app doesn't touch them again, and any rebuild
+          // triggered by editing Rust later will simply repopulate them.
+          cleanupAfterSuccess("dev-compile").catch((e) =>
+            console.warn(`  Aviso: limpieza post-compile falló: ${e.message}`),
+          );
+        }
       }
     },
   });
@@ -309,9 +346,15 @@ Aliases:
   clean:     cleanup, purge
 
 Cleanup policy:
-  After a SUCCESSFUL build/check-all/frontend-build the script removes
-  intermediate caches that are not useful past success (target/debug/,
-  Vite HMR cache, etc). On error nothing is removed so you can diagnose.
+  After ANY successful compilation the script removes intermediate caches
+  that are not useful past success. On error nothing is removed so you
+  can diagnose.
+
+    dev/run            target/debug/incremental, .vite/  (binary keeps
+                       running; next code change forces full recompile)
+    installer/build    target/debug/, target/release/incremental, dist/, .vite/
+    frontend-build     .vite/ (dist/ is the success artifact)
+    check-all          debug+release incremental, dist/, .vite/
 
 Build targets:
   Windows -> scripts/build-windows.ps1
