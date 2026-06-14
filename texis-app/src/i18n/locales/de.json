@@ -1240,6 +1240,7 @@
     "message_placeholder": "Schreiben Sie Ihre Nachricht… (Enter zum Senden)",
     "configure_key_first": "Konfigurieren Sie zuerst Ihren API-Schlüssel",
     "send": "Senden",
+    "cancel_request": "Cancel the in-flight request",
     "error_not_configured": "API-Schlüssel nicht konfiguriert. Fügen Sie Ihren Schlüssel auf der Registerkarte „Anbieter“ hinzu.",
     "error_auth": "Ungültiger API-Schlüssel. Überprüfen Sie, ob es korrekt und aktiv ist.",
     "error_rate_limited": "Anforderungslimit erreicht. Versuchen Sie es in ein paar Minuten noch einmal.",

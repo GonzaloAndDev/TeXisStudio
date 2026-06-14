@@ -1282,7 +1282,8 @@
     "generating_response": "Generando respuesta…",
     "message_placeholder": "Escribe tu mensaje… (Enter para enviar)",
     "configure_key_first": "Configura tu API key primero",
-    "send": "Enviar"
+    "send": "Enviar",
+    "cancel_request": "Cancelar la solicitud en curso"
   },
   "editor_meta": {
     "project_guide": "Guía del proyecto",

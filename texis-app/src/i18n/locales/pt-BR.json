@@ -1526,6 +1526,7 @@
     "message_placeholder": "Escreva sua mensagem… (Entre para enviar)",
     "configure_key_first": "Configure sua chave API primeiro",
     "send": "Enviar",
+    "cancel_request": "Cancel the in-flight request",
     "error_not_configured": "Chave de API não configurada. Adicione sua chave na guia do provedor.",
     "error_auth": "Chave de API inválida. Verifique se está correto e ativo.",
     "error_rate_limited": "Limite de solicitações atingido. Tente novamente em alguns minutos.",

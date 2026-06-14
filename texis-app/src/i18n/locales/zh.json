@@ -1240,6 +1240,7 @@
     "message_placeholder": "写下您的消息...（Enter发送）",
     "configure_key_first": "首先配置您的 API 密钥",
     "send": "发送",
+    "cancel_request": "Cancel the in-flight request",
     "error_not_configured": "API 密钥未配置。在提供商选项卡中添加您的密钥。",
     "error_auth": "API 密钥无效。检查它是否正确且有效。",
     "error_rate_limited": "已达到请求限制。几分钟后重试。",

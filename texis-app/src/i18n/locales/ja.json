@@ -1240,6 +1240,7 @@
     "message_placeholder": "メッセージを書いてください… (Enter に送信します)",
     "configure_key_first": "最初に API キーを設定してください",
     "send": "送信",
+    "cancel_request": "Cancel the in-flight request",
     "error_not_configured": "API キーが設定されていません。プロバイダー タブにキーを追加します。",
     "error_auth": "API キーが無効です。それが正しくアクティブであることを確認してください。",
     "error_rate_limited": "リクエストの制限に達しました。数分後にもう一度試してください。",

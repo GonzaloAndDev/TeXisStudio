@@ -10,7 +10,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useAiStore, type AiActionMode, type AiContextScope, type AiProvider } from "../stores/ai";
 import { useSettingsStore } from "../stores/settings";
-import { sendAiMessage, aiErrorKey } from "../services/aiService";
+import { sendAiMessage, aiErrorKey, cancelAiMessage } from "../services/aiService";
 import type { AiPendingAction } from "../stores/ai";
 import { AppDialog } from "./AppDialog";
 import { IconTrash, IconX, IconUpload } from "./Icons";
@@ -307,6 +307,21 @@ export function AiAssistantPanel({
       setTimeout(() => {
         messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: "smooth" });
       }, 50);
+    }
+  }
+
+  // Debounce ref against rapid double-clicks of Cancel. The backend command
+  // is idempotent (no-op if no request is in flight) but firing two IPC calls
+  // in a row wastes round-trips and adds spurious log noise.
+  const cancelInFlightRef = useRef(false);
+  async function handleCancel() {
+    if (cancelInFlightRef.current) return;
+    if (!store.isLoading) return;
+    cancelInFlightRef.current = true;
+    try {
+      await cancelAiMessage();
+    } finally {
+      cancelInFlightRef.current = false;
     }
   }
 
@@ -653,15 +668,30 @@ export function AiAssistantPanel({
           }}
           rows={2}
         />
-        <button
-          className="btn btn-accent"
-          onClick={handleSend}
-          disabled={!isConfigured || !input.trim() || store.isLoading}
-          aria-label={t("ai.send")}
-          style={{ padding: "8px 10px", flexShrink: 0 }}
-        >
-          <IconUpload size={14} />
-        </button>
+        {store.isLoading ? (
+          <button
+            className="btn"
+            onClick={() => void handleCancel()}
+            aria-label={t("common.cancel")}
+            title={t("ai.cancel_request")}
+            style={{
+              padding: "8px 10px", flexShrink: 0,
+              borderColor: "var(--build-err)", color: "var(--build-err)",
+            }}
+          >
+            <IconX size={14} />
+          </button>
+        ) : (
+          <button
+            className="btn btn-accent"
+            onClick={handleSend}
+            disabled={!isConfigured || !input.trim()}
+            aria-label={t("ai.send")}
+            style={{ padding: "8px 10px", flexShrink: 0 }}
+          >
+            <IconUpload size={14} />
+          </button>
+        )}
       </div>
     </div>
   );
