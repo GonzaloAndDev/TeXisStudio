@@ -357,7 +357,7 @@ export default function EditorView() {
     });
   }, [activeSectionId, activeProject]);
 
-  const doSave = useCallback(async (blocks: ContentBlock[], sectionId: string) => {
+  const doSave = useCallback(async (blocks: ContentBlock[], sectionId: string): Promise<boolean> => {
     setSaveStatus("saving");
     useProjectStore.getState().updateSectionBlocks(sectionId, blocks);
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
@@ -368,11 +368,30 @@ export default function EditorView() {
         console.error("Error guardando:", e);
         toast.error(t("editor.error_save_section"));
         setSaveStatus("error");
-        return;
+        return false;
       }
     }
     setSaveStatus("saved");
+    return true;
   }, [activeProjectPath]);
+
+  /**
+   * Flushes any pending autosave debounce immediately, then navigates to the
+   * compile view with autostart. If the flush fails we stay in the editor so
+   * the user can react to the error instead of compiling a stale .tex on disk.
+   */
+  const goToCompile = useCallback(async () => {
+    if (!activeProjectPath) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (activeSectionId && (saveStatus === "unsaved" || saveStatus === "error")) {
+      const ok = await doSave(localBlocks, activeSectionId);
+      if (!ok) return; // stay in editor; toast already shown
+    }
+    navigate(`/project/${encodeURIComponent(activeProjectPath)}/compile?auto=1`);
+  }, [activeProjectPath, activeSectionId, doSave, localBlocks, navigate, saveStatus]);
 
   // Prevenir cierre de ventana/app con cambios sin guardar
   useEffect(() => {
@@ -795,7 +814,7 @@ export default function EditorView() {
             <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/progress`)} title={t("editor.progress_title")}>
               {t("progress.tab_progress")}
             </button>
-            <button className="btn btn-accent btn-sm" onClick={() => navigate(`/project/${projectRouteId}/compile?auto=1`)}>
+            <button className="btn btn-accent btn-sm" onClick={() => void goToCompile()}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>
             {userMode === "advanced" && (
@@ -1070,7 +1089,7 @@ export default function EditorView() {
           activeSection={activeSection ? { ...activeSection, title: localizedSectionTitle(activeSection) } : undefined}
           userMode={userMode}
           onSave={saveMetadata}
-          onCompile={() => navigate(`/project/${projectRouteId}/compile?auto=1`)}
+          onCompile={() => void goToCompile()}
           diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
         />
       </div>
