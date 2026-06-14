@@ -170,13 +170,13 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     setOpenMenuId(null);
 
     if (s.required) {
-      await confirm({
+      const hide = await confirm({
         title:        t("editor.tree_delete_title"),
         message:      t("editor.tree_delete_required", { title: localizedTitle(s) }),
         confirmLabel: t("editor.tree_hide"),
         cancelLabel:  t("common.cancel"),
       });
-      // "confirm" here just means "ok, I'll hide it instead"
+      if (!hide) return;
       toggleSectionEnabled(s.id);
       await persistProject();
       return;
@@ -330,12 +330,10 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                       onDoubleClick={() => handleRenameStart(s)}
                       title={isHidden ? `${title} — ${t("editor.tree_hidden_badge")}` : title}
                     >
-                      {/* Status dot or hidden/lock icon */}
+                      {/* Status dot or hidden icon */}
                       {isHidden
                         ? <IconEyeOff size={10} style={{ flexShrink: 0, color: "var(--fg-faint)" }} />
-                        : isRequired
-                          ? <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                          : <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                        : <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
                       }
 
                       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
