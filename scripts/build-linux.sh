@@ -42,6 +42,14 @@ require_command() {
     fi
 }
 
+linux_deps_ready() {
+    command -v gcc &>/dev/null &&
+        command -v pkg-config &>/dev/null &&
+        pkg-config --exists webkit2gtk-4.1 gtk+-3.0 librsvg-2.0 &&
+        command -v patchelf &>/dev/null &&
+        command -v rpm &>/dev/null
+}
+
 version_major() {
     "$1" --version 2>/dev/null | grep -Eo '[0-9]+' | head -1
 }
@@ -76,7 +84,10 @@ fi
 echo ""
 echo "  [1/3] Dependencias del sistema..."
 
-if command -v apt-get &>/dev/null; then
+if linux_deps_ready; then
+    echo "  OK dependencias del sistema"
+
+elif command -v apt-get &>/dev/null; then
     echo "  → Detectado: Debian / Ubuntu"
     sudo apt-get update -q
     sudo apt-get install -y \
