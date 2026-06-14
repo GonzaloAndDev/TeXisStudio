@@ -17,6 +17,27 @@ function normalizeProject(model: ProjectModel): ProjectModel {
   };
 }
 
+const PLACEMENT_ORDER = ["front_matter", "body", "back_matter", "appendix"] as const;
+
+function moveSectionToPlacement(
+  sections: ProjectSection[],
+  sectionId: string,
+  placement: ProjectSection["placement"],
+): ProjectSection[] {
+  const currentIndex = sections.findIndex((section) => section.id === sectionId);
+  if (currentIndex < 0) return sections;
+
+  const next = [...sections];
+  const [section] = next.splice(currentIndex, 1);
+  const moved = { ...section, placement };
+  const targetRank = PLACEMENT_ORDER.indexOf(placement);
+  const insertAt = next.findIndex(
+    (candidate) => PLACEMENT_ORDER.indexOf(candidate.placement) > targetRank,
+  );
+  next.splice(insertAt < 0 ? next.length : insertAt, 0, moved);
+  return next;
+}
+
 interface ProjectStore {
   // Proyectos recientes
   recentProjects: RecentProject[];
@@ -145,8 +166,14 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   patchSection: (sectionId, patch) =>
     set((state) => {
       if (!state.activeProject) return {};
-      const sections = state.activeProject.sections.map((s) =>
-        s.id === sectionId ? { ...s, ...patch } : s
+      const current = state.activeProject.sections.find((section) => section.id === sectionId);
+      if (!current) return {};
+      const placementChanged = patch.placement !== undefined && patch.placement !== current.placement;
+      const baseSections = placementChanged
+        ? moveSectionToPlacement(state.activeProject.sections, sectionId, patch.placement!)
+        : state.activeProject.sections;
+      const sections = baseSections.map((section) =>
+        section.id === sectionId ? { ...section, ...patch } : section
       );
       return { activeProject: { ...state.activeProject, sections } };
     }),

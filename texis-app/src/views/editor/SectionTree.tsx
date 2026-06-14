@@ -246,9 +246,28 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
 
   const handleToggleEnabled = useCallback(async (s: ProjectSection) => {
     setOpenMenuId(null);
+    if (s.required && s.enabled) {
+      const hide = await confirm({
+        title:        t("editor.tree_delete_title"),
+        message:      t("editor.tree_delete_required", { title: localizedTitle(s) }),
+        confirmLabel: t("editor.tree_hide"),
+        cancelLabel:  t("common.cancel"),
+      });
+      if (!hide) return;
+    }
     toggleSectionEnabled(s.id);
     await persistProject();
-  }, [toggleSectionEnabled, persistProject]);
+  }, [confirm, localizedTitle, persistProject, t, toggleSectionEnabled]);
+
+  const confirmRequiredVisibilityChange = useCallback(async (enabled: boolean) => {
+    if (enabled || !editingSection?.required || !editingSection.enabled) return true;
+    return confirm({
+      title:        t("editor.tree_delete_title"),
+      message:      t("editor.tree_delete_required", { title: localizedTitle(editingSection) }),
+      confirmLabel: t("editor.tree_hide"),
+      cancelLabel:  t("common.cancel"),
+    });
+  }, [confirm, editingSection, localizedTitle, t]);
 
   const handleMoveUp = useCallback(async (id: string) => {
     setOpenMenuId(null);
@@ -265,18 +284,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
   const handleDelete = useCallback(async (s: ProjectSection) => {
     setOpenMenuId(null);
 
-    if (s.required) {
-      const hide = await confirm({
-        title:        t("editor.tree_delete_title"),
-        message:      t("editor.tree_delete_required", { title: localizedTitle(s) }),
-        confirmLabel: t("editor.tree_hide"),
-        cancelLabel:  t("common.cancel"),
-      });
-      if (!hide) return;
-      toggleSectionEnabled(s.id);
-      await persistProject();
-      return;
-    }
+    if (s.required) return;
 
     const blockCount = s.id === activeSectionId ? localBlocks.length : s.blocks.length;
     const message = blockCount > 0
@@ -468,9 +476,9 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                     </div>
                   ) : (
                     /* ── Section row ─────────────────────────── */
-                    <button
-                      type="button"
+                    <div
                       role="option"
+                      tabIndex={0}
                       aria-selected={isActive}
                       draggable
                       className="tx-unstyled-button section-tree-item"
@@ -487,6 +495,12 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                         transition: "opacity 0.15s",
                       }}
                       onClick={() => { if (didDrag.current || !s.enabled) return; setActiveSectionId(s.id); }}
+                      onKeyDown={(e) => {
+                        if ((e.key === "Enter" || e.key === " ") && s.enabled) {
+                          e.preventDefault();
+                          setActiveSectionId(s.id);
+                        }
+                      }}
                       onDoubleClick={() => { if (!didDrag.current) handleRenameStart(s); }}
                       onDragStart={(e) => handleDragStart(e, s)}
                       onDragEnd={handleDragEnd}
@@ -533,7 +547,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                       >
                         <IconMore size={12} />
                       </button>
-                    </button>
+                    </div>
                   )}
 
                   {/* Drop indicator — after */}
@@ -568,7 +582,8 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
                         label={t("editor.tree_delete")}
                         icon={<IconTrash size={12} />}
                         onClick={() => void handleDelete(s)}
-                        danger
+                        disabled={s.required}
+                        danger={!s.required}
                       />
                     </div>
                   )}
@@ -620,6 +635,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
           userMode={userMode}
           onSave={(patch) => void handleEditorSave(patch)}
           onClose={() => setEditingSection(null)}
+          onRequiredVisibilityChange={confirmRequiredVisibilityChange}
         />
       )}
     </div>

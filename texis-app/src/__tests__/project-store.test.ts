@@ -397,6 +397,41 @@ describe("project store — patchSection", () => {
     useProjectStore.getState().patchSection("ch1", { placement: "appendix" });
     expect(useProjectStore.getState().activeProject!.sections[0].placement).toBe("appendix");
   });
+
+  it("relocates a section into canonical placement order", () => {
+    const sections = [
+      makeSection("front", "front_matter"),
+      makeSection("body1", "body"),
+      makeSection("body2", "body"),
+      makeSection("back", "back_matter"),
+    ];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+
+    useProjectStore.getState().patchSection("body2", { placement: "front_matter" });
+
+    const updated = useProjectStore.getState().activeProject!.sections;
+    expect(updated.map((section) => section.id)).toEqual(["front", "body2", "body1", "back"]);
+    expect(updated.map((section) => section.placement)).toEqual([
+      "front_matter",
+      "front_matter",
+      "body",
+      "back_matter",
+    ]);
+  });
+
+  it("inserts into the correct canonical group when that placement is absent", () => {
+    const sections = [
+      makeSection("front", "front_matter"),
+      makeSection("appendix", "appendix"),
+    ];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+
+    useProjectStore.getState().patchSection("appendix", { placement: "body" });
+
+    const updated = useProjectStore.getState().activeProject!.sections;
+    expect(updated.map((section) => section.id)).toEqual(["front", "appendix"]);
+    expect(updated[1].placement).toBe("body");
+  });
 });
 
 describe("project store — reorderSection", () => {

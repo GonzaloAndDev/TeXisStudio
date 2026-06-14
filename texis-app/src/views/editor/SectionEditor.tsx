@@ -10,6 +10,7 @@ interface Props {
   userMode: "basic" | "advanced";
   onSave: (patch: Partial<ProjectSection>) => void;
   onClose: () => void;
+  onRequiredVisibilityChange: (enabled: boolean) => Promise<boolean>;
 }
 
 const PLACEMENT_OPTIONS: Array<{ value: SectionPlacement; key: string }> = [
@@ -19,7 +20,7 @@ const PLACEMENT_OPTIONS: Array<{ value: SectionPlacement; key: string }> = [
   { value: "appendix",     key: "editor.placement_appendix" },
 ];
 
-export function SectionEditor({ section, localizedTitle, userMode, onSave, onClose }: Props) {
+export function SectionEditor({ section, localizedTitle, userMode, onSave, onClose, onRequiredVisibilityChange }: Props) {
   const { t } = useTranslation();
   const safeT = (key: string) => t(key as Parameters<typeof t>[0]);
 
@@ -29,7 +30,11 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
   const [placement, setPlacement] = useState<SectionPlacement>(section.placement);
   const [enabled,   setEnabled]   = useState(section.enabled);
 
-  function handleSave() {
+  async function handleSave() {
+    if (section.required && section.enabled && !enabled) {
+      const confirmed = await onRequiredVisibilityChange(enabled);
+      if (!confirmed) return;
+    }
     onSave({
       title:     title.trim() || undefined,
       status,
@@ -51,7 +56,7 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
           <button className="btn btn-ghost btn-sm" onClick={onClose}>
             {t("common.cancel")}
           </button>
-          <button className="btn btn-sm" onClick={handleSave}>
+          <button className="btn btn-sm" onClick={() => void handleSave()}>
             {t("editor.tree_edit_save")}
           </button>
         </>
@@ -65,7 +70,7 @@ export function SectionEditor({ section, localizedTitle, userMode, onSave, onClo
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSave(); } }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleSave(); } }}
             placeholder={localizedTitle(section)}
             style={{ width: "100%", fontSize: "var(--fs-sm)" }}
           />
