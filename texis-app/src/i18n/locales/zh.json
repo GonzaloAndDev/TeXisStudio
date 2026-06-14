@@ -93,6 +93,7 @@
     "error_title": "操作无法完成",
     "error_subtitle": "TeXisStudio 没有修改您的项目。检查详细信息并重试。",
     "error_dismiss": "知道了",
+    "error_open_after_restore": "The snapshot was restored, but the project still can't be read: {{error}}. Try another snapshot or open the folder manually.",
     "import_title": "导入TeX文件",
     "import_subtitle": "创建一个保留原始 LaTeX 内容的 TeXisStudio 项目，以便您可以将其逐渐迁移到可视化编辑器。",
     "import_tex_label": ".tex 文件",

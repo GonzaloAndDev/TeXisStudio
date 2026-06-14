@@ -270,9 +270,14 @@ export default function HomeView() {
   } | null>(null);
 
   useEffect(() => {
+    // Track unmount so an in-flight detection or project refresh doesn't try
+    // to setState after the user has already navigated to another route.
+    let cancelled = false;
+
     // Siempre refrescar LaTeX en background; si ya hay datos en caché no mostramos spinner
     api.detectLatex()
       .then((info) => {
+        if (cancelled) return;
         setLatexInfo(info);
         // Auto-select most powerful backend if user never made an explicit choice
         const { latexBackendUserExplicit, latexPrimaryBackend, setLatexPrimaryBackend } =
@@ -282,20 +287,28 @@ export default function HomeView() {
           if (best !== latexPrimaryBackend) setLatexPrimaryBackend(best);
         }
       })
-      .catch(() => {})
-      .finally(() => setLatexLoading(false));
+      .catch((e) => {
+        if (cancelled) return;
+        console.warn("[home] latex detection failed:", e);
+      })
+      .finally(() => { if (!cancelled) setLatexLoading(false); });
 
     const isTauriEnv = "__TAURI_INTERNALS__" in window;
     if (isTauriEnv) {
       documentDir().then((dir) =>
         api.listRecentProjects(dir).then((p) => {
+          if (cancelled) return;
           setProjects(p);
           setRecentProjects(p);
-        }).catch(() => {
+        }).catch((e) => {
+          if (cancelled) return;
+          console.warn("[home] listRecentProjects failed:", e);
           // Si falla el refresh, conservar caché; solo vaciar si era la primera carga
           if (cachedProjects.length === 0) setProjects([]);
-        }).finally(() => setProjectsLoading(false))
-      ).catch(() => {
+        }).finally(() => { if (!cancelled) setProjectsLoading(false); })
+      ).catch((e) => {
+        if (cancelled) return;
+        console.warn("[home] documentDir failed:", e);
         if (cachedProjects.length === 0) setProjects([]);
         setProjectsLoading(false);
       });
@@ -304,6 +317,8 @@ export default function HomeView() {
       setRecentProjects(MOCK_PROJECTS);
       setProjectsLoading(false);
     }
+
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setLatexInfo, setRecentProjects]); // cachedProjects.length excluido: incluirlo causaría re-fetch al recibir datos
 
@@ -325,11 +340,20 @@ export default function HomeView() {
   }
 
   async function handleRestoreAndOpen(projectPath: string) {
-    const model = await api.getProject(projectPath);
-    useProjectStore.getState().openProject(model, projectPath);
-    setCorruptProject(null);
-    const encodedPath = encodeURIComponent(projectPath);
-    navigate(`/project/${encodedPath}`);
+    // After a snapshot restore the modal calls this to re-load the project.
+    // If the just-restored file is still unreadable, surface the error to the
+    // user instead of crashing the route — the corrupt-project modal will
+    // remain open so they can try a different snapshot.
+    try {
+      const model = await api.getProject(projectPath);
+      useProjectStore.getState().openProject(model, projectPath);
+      setCorruptProject(null);
+      const encodedPath = encodeURIComponent(projectPath);
+      navigate(`/project/${encodedPath}`);
+    } catch (e) {
+      console.error("[home] restore-and-open failed:", e);
+      setHomeError(t("home.error_open_after_restore", { error: String(e) }));
+    }
   }
 
   async function handleOpenFolder() {

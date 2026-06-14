@@ -93,6 +93,7 @@
     "error_title": "L'action n'a pas pu être terminée",
     "error_subtitle": "TeXisStudio n'a pas modifié votre projet. Vérifiez les détails et réessayez.",
     "error_dismiss": "Compris",
+    "error_open_after_restore": "The snapshot was restored, but the project still can't be read: {{error}}. Try another snapshot or open the folder manually.",
     "import_title": "Importer le fichier TeX",
     "import_subtitle": "Crée un projet TeXisStudio en conservant le contenu original du LaTeX afin que vous puissiez le migrer progressivement vers l'éditeur visuel.",
     "import_tex_label": "Fichier .tex",

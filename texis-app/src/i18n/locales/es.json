@@ -91,6 +91,7 @@
     "error_title": "No se pudo completar la acción",
     "error_subtitle": "TeXisStudio no modificó tu proyecto. Revisa el detalle y vuelve a intentarlo.",
     "error_dismiss": "Entendido",
+    "error_open_after_restore": "La instantánea se restauró pero el proyecto sigue sin poder leerse: {{error}}. Prueba con otra instantánea o abre la carpeta manualmente.",
     "corrupt_title": "Proyecto con datos dañados",
     "corrupt_subtitle": "TeXisStudio no pudo leer el proyecto «{{project}}». Restaura desde una instantánea anterior o abre otro proyecto.",
     "corrupt_no_snapshots": "No hay instantáneas disponibles. El proyecto no puede recuperarse automáticamente.",

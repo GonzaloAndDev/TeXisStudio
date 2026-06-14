@@ -372,6 +372,7 @@
     "error_title": "Não foi possível concluir a ação",
     "error_subtitle": "TeXisStudio não modificou seu projeto. Verifique os detalhes e tente novamente.",
     "error_dismiss": "Entendi",
+    "error_open_after_restore": "The snapshot was restored, but the project still can't be read: {{error}}. Try another snapshot or open the folder manually.",
     "import_title": "Importar arquivo TeX",
     "import_subtitle": "Cria um projeto TeXisStudio mantendo o conteúdo original do LaTeX para que você possa migrá-lo gradativamente para o editor visual.",
     "import_tex_label": "Arquivo .tex",

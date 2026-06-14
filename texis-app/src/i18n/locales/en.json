@@ -91,6 +91,7 @@
     "error_title": "Action could not be completed",
     "error_subtitle": "TeXisStudio did not modify your project. Check the detail and try again.",
     "error_dismiss": "Got it",
+    "error_open_after_restore": "The snapshot was restored, but the project still can't be read: {{error}}. Try another snapshot or open the folder manually.",
     "corrupt_title": "Project data is damaged",
     "corrupt_subtitle": "TeXisStudio could not read the project «{{project}}». Restore from a previous snapshot or open another project.",
     "corrupt_no_snapshots": "No snapshots are available. The project cannot be recovered automatically.",

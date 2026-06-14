@@ -86,6 +86,7 @@
     "error_title": "アクションを完了できませんでした",
     "error_subtitle": "TeXisStudio はプロジェクトを変更しませんでした。詳細を確認して、再試行してください。",
     "error_dismiss": "わかりました",
+    "error_open_after_restore": "The snapshot was restored, but the project still can't be read: {{error}}. Try another snapshot or open the folder manually.",
     "import_title": "TeX ファイルをインポート",
     "import_subtitle": "元の LaTeX コンテンツを保持した TeXisStudio プロジェクトを作成して、ビジュアル エディターに段階的に移行できるようにします。",
     "import_tex_label": ".tex ファイル",
