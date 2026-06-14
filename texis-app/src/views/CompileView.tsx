@@ -100,22 +100,30 @@ export default function CompileView() {
     api.getPlatform().then(p => setPlatform(p)).catch(() => {});
   }, []);
 
-  // Verificar dependencias del entorno al cargar o cambiar backend
+  // Verificar dependencias del entorno al cargar o cambiar backend.
+  // The `cancelled` flag prevents stale responses from overwriting state when
+  // the user switches project or backend before the previous fetch resolves.
   useEffect(() => {
     if (!activeProjectPath) return;
+    let cancelled = false;
     api.checkToolchain(activeProjectPath, backend).then(report => {
+      if (cancelled) return;
       setDependencyIssues(report.issues);
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [activeProjectPath, backend]);
 
   // Analizar paquetes y glosario del proyecto al cargar
   useEffect(() => {
     if (!activeProjectPath) return;
+    let cancelled = false;
     api.analyzePackages(activeProjectPath).then((analysis) => {
+      if (cancelled) return;
       setPkgConflicts(analysis.conflicts);
       setPkgMissing(analysis.missing.filter((m) => m.priority === "required" && !m.already_declared));
     }).catch(() => {});
     api.analyzeGlossary(activeProjectPath).then((g) => {
+      if (cancelled) return;
       if (g.has_issues) {
         const unusedCount = [...g.entries, ...g.acronyms].filter((e: { status: string }) => e.status === "defined_unused").length;
         setGlossaryIssues({ undefined_references: g.undefined_references, unused_count: unusedCount });
@@ -128,16 +136,24 @@ export default function CompileView() {
         setGlossarySummary(null);
       }
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [activeProjectPath]);
 
   useEffect(() => {
     setShowTechnicalLog(userMode === "advanced");
   }, [userMode]);
 
-  // Auto-scroll del log
+  // Auto-scroll del log — respect user-initiated scroll. If the user scrolled
+  // up to inspect older lines we don't yank them back to the bottom on every
+  // new line; we resume auto-scroll once they're within a few pixels of the
+  // bottom again.
   useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
+    const el = logRef.current;
+    if (!el) return;
+    const STICK_THRESHOLD = 24;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom <= STICK_THRESHOLD) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [liveLog]);
 
@@ -277,40 +293,47 @@ export default function CompileView() {
 
   async function doExportDelivery() {
     if (!activeProjectPath) return;
+    if (exportBusy) return; // guard double-click
     const folder = await api.pickFolder();
     if (!folder) return;
+    if (!mountedRef.current) return;
     setExportBusy(true);
     setExportError(null);
     setExportResult(null);
     setExportedZip(null);
     try {
       const res = await api.exportDelivery(activeProjectPath, folder, exportMode);
+      if (!mountedRef.current) return;
       setExportResult(res);
       setExportedZip(res.zip_path);
       toast.success(t("compile.export_success"));
     } catch (e) {
+      if (!mountedRef.current) return;
       const msg = t("compile.export_error", { error: String(e) });
       setExportError(msg);
       toast.error(msg);
     } finally {
-      setExportBusy(false);
+      if (mountedRef.current) setExportBusy(false);
     }
   }
 
   async function doPostflightCheck() {
     if (!activeProjectPath) return;
+    if (postflightBusy) return; // guard double-click
     setPostflightBusy(true);
     setPostflightError(null);
     setPostflightResult(null);
     try {
       const res = await api.checkPdfPostflight(activeProjectPath);
+      if (!mountedRef.current) return;
       setPostflightResult(res);
     } catch (e) {
+      if (!mountedRef.current) return;
       const msg = t("compile.postflight_error", { error: String(e) });
       setPostflightError(msg);
       toast.error(msg);
     } finally {
-      setPostflightBusy(false);
+      if (mountedRef.current) setPostflightBusy(false);
     }
   }
 
@@ -332,11 +355,18 @@ export default function CompileView() {
     navigate(`/project/${projectRouteId}?section=${sectionId}`);
   }
 
+  // Guard against multiple cancel taps while the backend is still processing.
+  const cancelInFlightRef = useRef(false);
   async function handleCancel() {
+    if (cancelInFlightRef.current) return;
+    if (compileState !== "compiling") return;
+    cancelInFlightRef.current = true;
     try {
       await api.cancelCompile();
-    } catch {
-      // ignorar
+    } catch (e) {
+      console.warn("cancel_compile failed:", e);
+    } finally {
+      cancelInFlightRef.current = false;
     }
   }
 
