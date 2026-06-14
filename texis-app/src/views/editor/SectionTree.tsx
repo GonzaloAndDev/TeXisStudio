@@ -425,6 +425,19 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
 
       {/* ── Section list ─────────────────────────────────────────── */}
       <div style={{ flex: 1, overflow: "auto", padding: "0 6px 12px" }} className="scroll">
+        {sections.filter((s) => s.placement === "body").length === 0 && (
+          <div style={{ padding: "40px 16px", textAlign: "center" }}>
+            <div style={{ color: "var(--fg-faint)", fontSize: "var(--fs-sm)", marginBottom: 10, lineHeight: 1.5 }}>
+              {t("editor.tree_no_body_sections")}
+            </div>
+            <button
+              className="btn btn-accent btn-sm"
+              onClick={() => void handleAdd("body")}
+            >
+              {t("editor.add_first_chapter")}
+            </button>
+          </div>
+        )}
         {groups.map(({ placement, label, items }) => (
           <div key={placement}>
             <div style={{ margin: "6px 8px 2px", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--fg-faint)", display: "flex", alignItems: "center", gap: 6 }}>

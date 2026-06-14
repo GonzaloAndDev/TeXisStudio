@@ -36,6 +36,7 @@ export function CitationPickerModal({
   const [query, setQuery] = useState("");
   const [citationType, setCitationType] = useState<"parenthetical" | "narrative" | "footnote">("parenthetical");
   const inputRef = useRef<HTMLInputElement>(null);
+  const doiInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   // Panel importación: modo "single" | "batch" | "zotero"
@@ -281,6 +282,7 @@ export function CitationPickerModal({
             <div style={{ padding: "10px 16px" }}>
               <div style={{ display: "flex", gap: 6 }}>
                 <input
+                  ref={doiInputRef}
                   value={doiInput}
                   onChange={(e) => { setDoiInput(e.target.value); setDoiResult(null); setDoiError(null); setDoiSaved(false); }}
                   onKeyDown={(e) => { if (e.key === "Enter") handleDoiLookup(); }}
@@ -491,9 +493,15 @@ export function CitationPickerModal({
           {refs.length === 0 && (
             <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--fg-faint)" }}>
               <div style={{ fontSize: "var(--fs-sm)", marginBottom: 6 }}>{t("citation.bib_not_found")}</div>
-              <div style={{ fontSize: "var(--fs-xs)" }}>
+              <div style={{ fontSize: "var(--fs-xs)", marginBottom: 14 }}>
                 {t("citation.create_bib_prefix")} <span style={{ fontFamily: "var(--font-mono)" }}>content/bibliography/references.bib</span> {t("citation.create_bib_suffix")}
               </div>
+              <button
+                className="btn btn-accent btn-sm"
+                onClick={() => { setDoiMode("single"); setTimeout(() => doiInputRef.current?.focus(), 50); }}
+              >
+                {t("citation.add_via_doi")}
+              </button>
             </div>
           )}
           {refs.length > 0 && filtered.length === 0 && (

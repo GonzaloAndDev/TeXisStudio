@@ -759,7 +759,9 @@
     "tmpl_development": "Desarrollo",
     "tmpl_litreview": "Revisión de literatura",
     "tree_deleted_msg": "«{{title}}» eliminada",
-    "tree_undo": "Deshacer"
+    "tree_undo": "Deshacer",
+    "tree_no_body_sections": "Aún no hay capítulos en el cuerpo del documento.",
+    "add_first_chapter": "+ Agregar primer capítulo"
   },
   "spell": {
     "panel_title": "Revisión ortográfica",
@@ -1864,7 +1866,8 @@
     "create_bib_prefix": "Crea",
     "create_bib_suffix": "en tu proyecto.",
     "no_results": "Sin resultados para «{{query}}»",
-    "no_title": "Sin título"
+    "no_title": "Sin título",
+    "add_via_doi": "Agregar primera referencia por DOI"
   },
   "doc_options": {
     "title": "Opciones del documento",

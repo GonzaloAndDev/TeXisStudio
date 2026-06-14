@@ -759,7 +759,9 @@
     "tmpl_development": "Development",
     "tmpl_litreview": "Literature review",
     "tree_deleted_msg": "«{{title}}» deleted",
-    "tree_undo": "Undo"
+    "tree_undo": "Undo",
+    "tree_no_body_sections": "No chapters in the document body yet.",
+    "add_first_chapter": "+ Add first chapter"
   },
   "spell": {
     "panel_title": "Spell check",
@@ -1864,7 +1866,8 @@
     "create_bib_prefix": "Create",
     "create_bib_suffix": "in your project.",
     "no_results": "No results for “{{query}}”",
-    "no_title": "Untitled"
+    "no_title": "Untitled",
+    "add_via_doi": "Add first reference by DOI"
   },
   "doc_options": {
     "title": "Document options",
