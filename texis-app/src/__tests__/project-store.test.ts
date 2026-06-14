@@ -212,3 +212,225 @@ describe("project store — latexInfo", () => {
     expect(useProjectStore.getState().latexInfo!.is_usable).toBe(true);
   });
 });
+
+// ── Section tree actions ───────────────────────────────────────────────────────
+
+describe("project store — addSection", () => {
+  beforeEach(resetStore);
+
+  it("appends the new section to the end", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().addSection(makeSection("ch2"));
+    const { sections } = useProjectStore.getState().activeProject!;
+    expect(sections).toHaveLength(2);
+    expect(sections[1].id).toBe("ch2");
+  });
+
+  it("is a no-op when no project is open", () => {
+    expect(() => useProjectStore.getState().addSection(makeSection("ch1"))).not.toThrow();
+    expect(useProjectStore.getState().activeProject).toBeNull();
+  });
+});
+
+describe("project store — removeSection", () => {
+  beforeEach(resetStore);
+
+  it("removes only the target section", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().removeSection("ch2");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch3"]);
+  });
+
+  it("is a no-op for an unknown id", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().removeSection("nonexistent");
+    expect(useProjectStore.getState().activeProject!.sections).toHaveLength(1);
+  });
+});
+
+describe("project store — insertSectionAt", () => {
+  beforeEach(resetStore);
+
+  it("inserts at the specified index", () => {
+    const sections = [makeSection("ch1"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().insertSectionAt(makeSection("ch2"), 1);
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2", "ch3"]);
+  });
+
+  it("appends when index exceeds length", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().insertSectionAt(makeSection("ch2"), 99);
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2"]);
+  });
+
+  it("inserts at position 0 correctly", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch2")]), "/tmp/p");
+    useProjectStore.getState().insertSectionAt(makeSection("ch1"), 0);
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2"]);
+  });
+});
+
+describe("project store — toggleSectionEnabled", () => {
+  beforeEach(resetStore);
+
+  it("disables an enabled section", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1", "body", true)]), "/tmp/p");
+    useProjectStore.getState().toggleSectionEnabled("ch1");
+    expect(useProjectStore.getState().activeProject!.sections[0].enabled).toBe(false);
+  });
+
+  it("enables a disabled section", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1", "body", false)]), "/tmp/p");
+    useProjectStore.getState().toggleSectionEnabled("ch1");
+    expect(useProjectStore.getState().activeProject!.sections[0].enabled).toBe(true);
+  });
+
+  it("does not affect other sections", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().toggleSectionEnabled("ch1");
+    expect(useProjectStore.getState().activeProject!.sections[1].enabled).toBe(true);
+  });
+});
+
+describe("project store — moveSectionUp / moveSectionDown", () => {
+  beforeEach(resetStore);
+
+  it("moveSectionUp swaps with the previous section in the same group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionUp("ch2");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch2", "ch1", "ch3"]);
+  });
+
+  it("moveSectionDown swaps with the next section in the same group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionDown("ch2");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch3", "ch2"]);
+  });
+
+  it("moveSectionUp is a no-op for the first section in its group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionUp("ch1");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2"]);
+  });
+
+  it("moveSectionDown is a no-op for the last section in its group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionDown("ch2");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2"]);
+  });
+
+  it("moveSectionUp does not cross placement boundaries", () => {
+    const sections = [
+      makeSection("front1", "front_matter"),
+      makeSection("body1", "body"),
+    ];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionUp("body1");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["front1", "body1"]);
+  });
+
+  it("moveSectionDown does not cross placement boundaries", () => {
+    const sections = [
+      makeSection("body1", "body"),
+      makeSection("back1", "back_matter"),
+    ];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().moveSectionDown("body1");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["body1", "back1"]);
+  });
+});
+
+describe("project store — renameSection", () => {
+  beforeEach(resetStore);
+
+  it("sets the title", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().renameSection("ch1", "My Chapter");
+    expect(useProjectStore.getState().activeProject!.sections[0].title).toBe("My Chapter");
+  });
+
+  it("sets title to undefined when empty string passed", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().renameSection("ch1", "");
+    expect(useProjectStore.getState().activeProject!.sections[0].title).toBeUndefined();
+  });
+});
+
+describe("project store — patchSection", () => {
+  beforeEach(resetStore);
+
+  it("merges a partial patch into the section", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1")]), "/tmp/p");
+    useProjectStore.getState().patchSection("ch1", { status: "approved", notes: "Done" });
+    const s = useProjectStore.getState().activeProject!.sections[0];
+    expect(s.status).toBe("approved");
+    expect(s.notes).toBe("Done");
+  });
+
+  it("does not affect other sections", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().patchSection("ch1", { status: "in_review" });
+    const ch2 = useProjectStore.getState().activeProject!.sections[1];
+    expect(ch2.status).toBe("draft");
+  });
+
+  it("can change placement", () => {
+    useProjectStore.getState().openProject(makeProject([makeSection("ch1", "body")]), "/tmp/p");
+    useProjectStore.getState().patchSection("ch1", { placement: "appendix" });
+    expect(useProjectStore.getState().activeProject!.sections[0].placement).toBe("appendix");
+  });
+});
+
+describe("project store — reorderSection", () => {
+  beforeEach(resetStore);
+
+  it("moves a section before the target in the same group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().reorderSection("ch3", "ch1", "before");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch3", "ch1", "ch2"]);
+  });
+
+  it("moves a section after the target in the same group", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2"), makeSection("ch3")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().reorderSection("ch1", "ch3", "after");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch2", "ch3", "ch1"]);
+  });
+
+  it("is a no-op when source and target are the same", () => {
+    const sections = [makeSection("ch1"), makeSection("ch2")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().reorderSection("ch1", "ch1", "before");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["ch1", "ch2"]);
+  });
+
+  it("is a no-op when sections are in different placement groups", () => {
+    const sections = [makeSection("body1", "body"), makeSection("back1", "back_matter")];
+    useProjectStore.getState().openProject(makeProject(sections), "/tmp/p");
+    useProjectStore.getState().reorderSection("body1", "back1", "before");
+    const ids = useProjectStore.getState().activeProject!.sections.map((s) => s.id);
+    expect(ids).toEqual(["body1", "back1"]);
+  });
+});
