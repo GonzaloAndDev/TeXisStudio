@@ -20,13 +20,28 @@ import { useWorkspaceStore } from "../stores/workspace";
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
 
+// ── Constantes ────────────────────────────────────────────────────
+
+/** Cap the live log buffer so a runaway LaTeX run can't OOM the UI. */
+const MAX_LOG_LINES = 2000;
+
+/**
+ * Detects whether a thrown value represents a user-initiated cancellation.
+ * Avoids locale-sensitive string matching (the backend may emit Spanish or
+ * English depending on the active locale) by checking multiple stems.
+ */
+function isCancellationError(e: unknown): boolean {
+  const s = String(e).toLowerCase();
+  return s.includes("cancel") || s.includes("aborted") || s.includes("abort");
+}
+
 // ── Vista principal ───────────────────────────────────────────────
 
 export default function CompileView() {
   const { t } = useTranslation();
   const { id: encodedPath } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const autostart = searchParams.get("auto") === "1";
   const { activeProject, activeProjectPath, latexInfo } = useProjectStore();
   const { lang, userMode, latexPrimaryBackend, latexAllowFallback } = useSettingsStore();
@@ -60,6 +75,16 @@ export default function CompileView() {
   const logRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
   const autostartFiredRef = useRef(false);
+  // Tracks whether the component is still mounted — used to avoid setState
+  // after unmount when the user navigates away mid-compile.
+  const mountedRef = useRef(true);
+  // Tracks whether a compile is already in flight (debounce double-click).
+  const compilingRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
   const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
@@ -120,57 +145,86 @@ export default function CompileView() {
   const tectonicOk = latexInfo?.has_tectonic ?? null;
   const nothingInstalled = latexInfo && !latexInfo.is_usable;
 
-  // Disparar compilación automáticamente cuando se navega con ?auto=1
+  // Trigger automatic compilation when arriving with ?auto=1.
+  // We deliberately wait until `latexInfo` is loaded (non-null) before
+  // deciding whether to fire — otherwise we risked starting a compile against
+  // an unknown environment because `nothingInstalled` was `false` (not yet
+  // determined) instead of being a real "yes".
   useEffect(() => {
     if (!autostart || autostartFiredRef.current) return;
-    if (!activeProjectPath || nothingInstalled) return;
+    if (!activeProjectPath) return;
+    if (latexInfo === null) return; // detection still in flight
+    if (!latexInfo.is_usable) return; // user must install LaTeX first
     autostartFiredRef.current = true;
+    // Strip ?auto=1 from the URL so a manual F5 doesn't re-trigger a build.
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("auto");
+      return next;
+    }, { replace: true });
     doCompile();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autostart, activeProjectPath, nothingInstalled]);
+  }, [autostart, activeProjectPath, latexInfo]);
 
   async function doCompile() {
     if (!activeProjectPath) return;
+    // Debounce double invocation (autostart + user click, or two rapid clicks).
+    if (compilingRef.current) return;
+    compilingRef.current = true;
+
     const startedAt = performance.now();
     setCompileState("compiling");
     setResult(null);
     setLiveLog([]);
     setShowPdf(false);
 
-    // Escuchar eventos de log en tiempo real
-    const unlistenLog = await listen<string>("compile://log", (event) => {
-      setLiveLog((prev) => [...prev, event.payload]);
-    });
+    // Subscribe to live log events. Wrapped in try/catch because `listen`
+    // can fail when running outside Tauri (e.g., dev browser, tests).
+    let unlistenLog: (() => void) | null = null;
+    try {
+      unlistenLog = await listen<string>("compile://log", (event) => {
+        if (!mountedRef.current) return;
+        setLiveLog((prev) => {
+          // Bound the buffer so a runaway build can't OOM the renderer.
+          // Drop the oldest line when we'd exceed the cap.
+          if (prev.length >= MAX_LOG_LINES) {
+            return [...prev.slice(prev.length - MAX_LOG_LINES + 1), event.payload];
+          }
+          return [...prev, event.payload];
+        });
+      });
+    } catch {
+      // Live log unavailable; the final log_preview from the result still works.
+    }
 
     try {
       const langConfig = getLatexConfig(lang);
       const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
+      if (!mountedRef.current) return;
       setResult(res);
       useWorkspaceStore.getState().setLastBuildSummary({
         success: res.success,
         pdf_path: res.pdf_path,
         duration_ms: res.duration_ms ?? Math.round(performance.now() - startedAt),
       });
-      // Actualizar dependency issues desde el resultado (incluye preflight)
       if (res.dependency_issues && res.dependency_issues.length > 0) {
         setDependencyIssues(res.dependency_issues);
       }
       setCompileState(res.success ? "success" : "error");
-      // Actualizar contexto de UI para el asistente de IA
       useAiStore.getState().setUiContext({
         activePanel: "compile",
         hasErrors: !res.success,
         lastErrorMessage: res.user_errors?.[0]?.message,
       });
-      // Abrir automáticamente el PDF si la compilación fue exitosa
       if (res.success && res.pdf_path) {
         setShowPdf(true);
       }
     } catch (e) {
-      const errMsg = String(e);
-      if (errMsg.includes("cancelad")) {
+      if (!mountedRef.current) return;
+      if (isCancellationError(e)) {
         setCompileState("idle");
       } else {
+        const errMsg = String(e);
         useWorkspaceStore.getState().setLastBuildSummary({
           success: false,
           duration_ms: Math.round(performance.now() - startedAt),
@@ -184,7 +238,10 @@ export default function CompileView() {
         setCompileState("error");
       }
     } finally {
-      unlistenLog();
+      compilingRef.current = false;
+      if (unlistenLog) {
+        try { unlistenLog(); } catch { /* listener already gone */ }
+      }
     }
   }
 
@@ -312,6 +369,18 @@ export default function CompileView() {
       : nothingInstalled
       ? t("compile.next_install_latex")
       : t("compile.next_compile_when_ready");
+
+  // Guard: if we landed here without a loaded project (e.g., deep-link, store
+  // reset, or external launch), show a friendly empty state instead of an
+  // inert "Compile" button that silently does nothing.
+  if (!activeProject || !activeProjectPath) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, color: "var(--fg-muted)", background: "var(--bg-app)" }}>
+        <p>{t("editor.project_not_loaded")}</p>
+        <button className="btn" onClick={() => navigate("/")}>← {t("library.back_home").replace("← ", "")}</button>
+      </div>
+    );
+  }
 
   return (
     <>
