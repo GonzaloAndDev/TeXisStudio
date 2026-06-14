@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { useDialogEscape } from "../hooks/useDialogEscape";
 import { useSettingsStore } from "../stores/settings";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
 import { editPluginFigure, editPluginFigureWithSource, updatePluginFigureMeta, getPluginInfo } from "../services/figure-plugin-service";
@@ -91,11 +92,9 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     if (activeTab === "meta") captionRef.current?.focus();
   }, [activeTab]);
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onClose(); };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [busy, onClose]);
+  // Dialog-stack-aware Esc handling. Disabled while `busy` is true so a
+  // half-finished save isn't aborted by an accidental keypress.
+  useDialogEscape(!busy, onClose);
 
   const handleSourceChange = useCallback((json: string) => {
     setEditedSourceJson(json);

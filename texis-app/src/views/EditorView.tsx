@@ -37,6 +37,8 @@ import { CommandPalette } from "./editor/CommandPalette";
 import { DocumentOptionsPanel } from "./editor/DocumentOptionsPanel";
 import { HelpCenter } from "../components/help/HelpCenter";
 import { useHelpStore } from "../stores/help";
+import { useDialogEscape } from "../hooks/useDialogEscape";
+import { isAnyDialogOpen } from "../lib/dialogStack";
 
 const SECTION_KEY_ALIASES: Record<string, string[]> = {
   abstract: ["resumen", "abstract_ingles", "abstract_en", "summary"],
@@ -730,16 +732,32 @@ export default function EditorView() {
         }
         return;
       }
-      // Esc → cerrar modales o salir del modo edición
+      // Esc → cerrar modales o salir del modo edición.
+      // Si hay un modal activo (palette, snapshots, visual selector, etc.) su
+      // propio handler atiende el Esc via useDialogEscape; aquí solo nos
+      // ocupamos del fallback "no hay modal" — salir de modo edición inline.
       if (e.key === "Escape") {
-        if (paletteOpen)    { setPaletteOpen(false); return; }
-        if (citPickerOpen)  { setCitPickerOpen(false); return; }
+        if (isAnyDialogOpen()) return;
         setEditingId(null);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeSectionId, localBlocks, doSave, paletteOpen, citPickerOpen]);
+  }, [activeSectionId, localBlocks, doSave]);
+
+  // Wire Esc + dialog-stack participation to the inline modals (visual block
+  // type selector, snapshots panel, unsaved-changes blocker). These bypass
+  // AppDialog and used to have no Esc handling at all — the user could only
+  // close them with the mouse on the backdrop or the close button.
+  const closeVisualSelector = useCallback(() => setVisualSelectorOpen(null), []);
+  useDialogEscape(visualSelectorOpen !== null, closeVisualSelector);
+  const closeSnapshots = useCallback(() => setSnapshotsOpen(false), []);
+  useDialogEscape(snapshotsOpen, closeSnapshots);
+  const cancelBlocker = useCallback(() => {
+    // Esc on the unsaved-changes blocker is equivalent to "Keep editing".
+    blocker.reset?.();
+  }, [blocker]);
+  useDialogEscape(blocker.state === "blocked", cancelBlocker);
 
   if (!activeProject || !activeProjectPath) {
     return (

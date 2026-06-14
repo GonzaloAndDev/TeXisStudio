@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LatexMinimalGuide } from "./LatexMinimalGuide";
+import { useDialogEscape } from "../../hooks/useDialogEscape";
 
 type HelpSection = "start" | "figures" | "latex" | "errors" | "faq";
 
@@ -33,11 +34,9 @@ export function HelpCenter({ onClose, initialSection = "start" }: Props) {
     setActive(initialSection);
   }, [initialSection]);
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
+  // Dialog-stack-aware Esc handling: when the help center opens on top of
+  // another modal it only closes itself, leaving the underlying modal intact.
+  useDialogEscape(true, onClose);
 
   return (
     <div

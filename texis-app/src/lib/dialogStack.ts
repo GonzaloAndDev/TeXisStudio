@@ -38,6 +38,15 @@ export function isTopmostDialog(id: string): boolean {
   return stack.length > 0 && stack[stack.length - 1] === id;
 }
 
+/**
+ * True if any dialog is currently mounted. Useful for view-level keyboard
+ * handlers that want to defer to modal Esc handling: when a modal is open,
+ * the view's own Esc fallbacks (like "clear inline editing") should not fire.
+ */
+export function isAnyDialogOpen(): boolean {
+  return stack.length > 0;
+}
+
 /** Test-only hook to reset the stack between tests. */
 export function _resetDialogStackForTests(): void {
   stack.length = 0;

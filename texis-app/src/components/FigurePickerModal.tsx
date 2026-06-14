@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDialogEscape } from "../hooks/useDialogEscape";
 import { useTranslation } from "react-i18next";
 import { listPlugins, groupPluginsByCategory, createPluginFigure } from "../services/figure-plugin-service";
 import type { PluginInfo } from "../services/figure-plugin-service";
@@ -143,11 +144,9 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
     }
   }
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
+  // Dialog-stack-aware Esc handling: when this picker opens on top of
+  // another modal, only the topmost (this one) responds to Esc.
+  useDialogEscape(true, onClose);
 
   return (
     <div
