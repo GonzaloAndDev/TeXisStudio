@@ -1,13 +1,112 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const root = resolve(scriptDir, "..");
 const appDir = join(root, "texis-app");
+const targetDir = join(root, "target");
+const tauriTargetDir = join(appDir, "src-tauri", "target");
+
+// ── Cleanup helpers ───────────────────────────────────────────────
+// Política: limpiar artefactos solo después de un caso de éxito. En error el
+// catch del script termina sin ejecutar la limpieza, preservando los logs y
+// caches intermedias para que el usuario pueda diagnosticar.
+//
+// Lo que se considera "inútil tras éxito":
+//   - `target/debug/incremental/`  — caché de recompilación incremental de
+//     Rust. Vale la pena tras un release: el siguiente dev tarda más, pero
+//     liberamos los ~10 GB que crecen sin techo.
+//   - `target/debug/`              — tras un installer/release, debug no
+//     aporta nada al artefacto final.
+//   - `texis-app/dist/`            — output de Vite tras una build de
+//     installer (ya empacado dentro del binario nativo).
+//   - `node_modules/.vite/`        — caché HMR de Vite, recreable al instante.
+//   - `texis-app/src-tauri/target/`— mirror cuando Tauri compila en su propio
+//     target (varía por config); se trata igual que el target root.
+
+async function removeIfExists(path) {
+  try {
+    await rm(path, { recursive: true, force: true });
+  } catch (e) {
+    console.warn(`  Aviso: no pude limpiar ${path}: ${e.message}`);
+  }
+}
+
+function bytesToHuman(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+function dirSizeBytes(path) {
+  // Lightweight estimate via `du` on Unix, fall back to walking on Windows.
+  // We don't want this to hang on huge trees, so cap walk depth and tolerate errors.
+  try {
+    if (!existsSync(path)) return 0;
+    const stat = statSync(path);
+    if (!stat.isDirectory()) return stat.size;
+  } catch { return 0; }
+  // Best-effort: skip on Windows (slow), report just whether it exists.
+  return -1; // sentinel for "exists but size not measured"
+}
+
+/**
+ * Performs the cleanup associated with a given operation. Called ONLY on
+ * success — wrapped errors stop the script before this runs.
+ *
+ * @param {"dev"|"build"|"frontend-build"|"check-all"} label
+ */
+async function cleanupAfterSuccess(label) {
+  const targets = [];
+  switch (label) {
+    case "build":
+      // Installer/release succeeded → debug artifacts are dead weight.
+      targets.push(
+        join(targetDir, "debug"),
+        join(tauriTargetDir, "debug"),
+        join(appDir, "dist"),
+        join(appDir, "node_modules", ".vite"),
+      );
+      break;
+    case "frontend-build":
+      // Frontend build succeeded → Vite HMR cache is stale, dist stays.
+      targets.push(join(appDir, "node_modules", ".vite"));
+      break;
+    case "check-all":
+      // After all gates passed: same as installer; preserves prod sanity.
+      targets.push(
+        join(targetDir, "debug", "incremental"),
+        join(tauriTargetDir, "debug", "incremental"),
+        join(appDir, "dist"),
+        join(appDir, "node_modules", ".vite"),
+      );
+      break;
+    case "dev":
+    default:
+      // Dev iterations leave caches alone — incremental compile speed > disk.
+      return;
+  }
+
+  const existing = targets.filter(existsSync);
+  if (existing.length === 0) return;
+
+  console.log("");
+  console.log("  Limpiando artefactos intermedios (solo se mantienen en error):");
+  for (const path of existing) {
+    const sizeHint = dirSizeBytes(path);
+    const label = sizeHint === -1 ? "(directorio)" : bytesToHuman(sizeHint);
+    process.stdout.write(`  - ${path} ${label}…`);
+    // eslint-disable-next-line no-await-in-loop
+    await removeIfExists(path);
+    console.log(" listo");
+  }
+}
 
 const command = process.argv[2] ?? "help";
 const args = process.argv.slice(3);
@@ -24,6 +123,10 @@ const normalizedCommand = {
   verify: "check-all",
   validate: "check-all",
   complete: "check-all",
+  // `clean` y `clean --hard` para liberar espacio (artefactos de Rust/Vite).
+  // Alias informales: `cleanup`, `purge`.
+  cleanup: "clean",
+  purge: "clean",
 }[command] ?? command;
 
 let activeTimer = null;
@@ -90,6 +193,7 @@ async function build() {
     default:
       throw new Error(`Sistema operativo no soportado para build local: ${process.platform}`);
   }
+  await cleanupAfterSuccess("build");
   finishTimer("build");
 }
 
@@ -98,6 +202,7 @@ async function frontendBuild() {
   printFrontendContext();
   await ensureNodeModules();
   await runNpm(["run", "build"], appDir);
+  await cleanupAfterSuccess("frontend-build");
   finishTimer("frontend-build");
 }
 
@@ -118,7 +223,49 @@ async function checkAll() {
   await run("git", ["diff", "--exit-code", "--", "schemas"]);
   await run("git", ["diff", "--check"]);
 
+  await cleanupAfterSuccess("check-all");
   finishTimer("check-all");
+}
+
+/**
+ * Limpieza explícita iniciada por el usuario. Sin éxito previo que esperar,
+ * sin reglas finas — el usuario sabe lo que pide. Acepta `--hard` para
+ * incluir `target/release/`, `node_modules/` (forzando un reinstalado en el
+ * próximo run) y EBWebView cache.
+ */
+async function clean() {
+  const hard = args.includes("--hard");
+  console.log("");
+  console.log("========================================");
+  console.log(`  TeXisStudio clean${hard ? " --hard" : ""}`);
+  console.log("========================================");
+
+  const targets = [
+    join(targetDir, "debug"),
+    join(tauriTargetDir, "debug"),
+    join(appDir, "dist"),
+    join(appDir, "node_modules", ".vite"),
+  ];
+  if (hard) {
+    targets.push(
+      join(targetDir, "release"),
+      join(tauriTargetDir, "release"),
+      join(appDir, "node_modules"),
+    );
+  }
+
+  const existing = targets.filter(existsSync);
+  if (existing.length === 0) {
+    console.log("  Nada que limpiar.");
+    return;
+  }
+  for (const path of existing) {
+    process.stdout.write(`  - ${path}…`);
+    // eslint-disable-next-line no-await-in-loop
+    await removeIfExists(path);
+    console.log(" listo");
+  }
+  console.log("");
 }
 
 async function ensureNodeModules() {
@@ -151,12 +298,20 @@ Usage:
   node scripts/texis.mjs build           Detect OS and run the native build
   node scripts/texis.mjs frontend-build  Type-check and build the React frontend
   node scripts/texis.mjs check-all       Run every local quality gate
+  node scripts/texis.mjs clean           Free disk space (debug builds, Vite cache, dist/)
+  node scripts/texis.mjs clean --hard    Also wipe release builds and node_modules
 
 Aliases:
   run:       dev, start, app
   installer: build, compiler, package, dist
   frontend:  check, frontend
   check-all: verify, validate, complete
+  clean:     cleanup, purge
+
+Cleanup policy:
+  After a SUCCESSFUL build/check-all/frontend-build the script removes
+  intermediate caches that are not useful past success (target/debug/,
+  Vite HMR cache, etc). On error nothing is removed so you can diagnose.
 
 Build targets:
   Windows -> scripts/build-windows.ps1
@@ -304,11 +459,15 @@ try {
     await frontendBuild();
   } else if (normalizedCommand === "check-all") {
     await checkAll();
+  } else if (normalizedCommand === "clean") {
+    await clean();
   } else {
     help();
     process.exit(command === "help" || command === "--help" || command === "-h" ? 0 : 1);
   }
 } catch (error) {
+  // El catch deliberadamente NO ejecuta cleanupAfterSuccess: los artefactos y
+  // logs intermedios son justo lo que se necesita para diagnosticar el fallo.
   console.error(`\nError: ${error.message}`);
   if (activeTimer) {
     finishTimer(`${activeTimer.label} fallido`);
