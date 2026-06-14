@@ -737,7 +737,7 @@ export default function SettingsView() {
             </div>
           )}
 
-          {/* ── Text correction ── */}
+          {/* ── Interface & writing ── */}
           {activeSection === "text" && (
             <div>
               <SectionHeading>{t("settings.section_text")}</SectionHeading>

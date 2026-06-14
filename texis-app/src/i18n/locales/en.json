@@ -730,7 +730,7 @@
     "section_user": "User profile",
     "section_projects": "Projects",
     "section_latex": "LaTeX engine",
-    "section_text": "Text correction",
+    "section_text": "Interface & writing",
     "latex_primary_title": "Primary compilation engine",
     "latex_primary_hint": "TeXisStudio automatically uses the most capable engine available. You can override it here.",
     "latex_tectonic_title": "Tectonic",

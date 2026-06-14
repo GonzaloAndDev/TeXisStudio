@@ -730,7 +730,7 @@
     "section_user": "Datos del usuario",
     "section_projects": "Proyectos",
     "section_latex": "Motor LaTeX",
-    "section_text": "Corrección de texto",
+    "section_text": "Interfaz y escritura",
     "latex_primary_title": "Motor principal de compilación",
     "latex_primary_hint": "TeXisStudio selecciona automáticamente el motor más potente disponible. Puedes cambiarlo aquí.",
     "latex_tectonic_title": "Tectonic",
