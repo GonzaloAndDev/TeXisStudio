@@ -89,6 +89,17 @@ export const DEFAULT_MODELS: Record<AiProvider, string> = {
   gemini: "gemini-2.0-flash",
 };
 
+/**
+ * Upper bound for the per-provider chat history kept in memory. Unbounded
+ * growth was an issue on long sessions — each message is a string of arbitrary
+ * length, and the history is also serialized as context for every subsequent
+ * AI call. When the cap is exceeded we drop the oldest half rather than just
+ * the single oldest message, so the trim only runs once every ~100 messages
+ * instead of on every append.
+ */
+const HISTORY_CAP = 200;
+const HISTORY_KEEP_AFTER_TRIM = 150;
+
 interface ProviderState {
   history: AiMessage[];
   model: string;
@@ -224,15 +235,21 @@ export const useAiStore = create<AiStore>((set, get) => ({
     set({ changeNotification: n ? { description: n.description, timestamp: Date.now() } : null }),
 
   addMessage: (provider, message) =>
-    set((s) => ({
-      providers: {
-        ...s.providers,
-        [provider]: {
-          ...s.providers[provider],
-          history: [...s.providers[provider].history, message],
+    set((s) => {
+      const prev = s.providers[provider].history;
+      const appended = [...prev, message];
+      // Amortized trim: drop oldest entries down to HISTORY_KEEP_AFTER_TRIM
+      // once we exceed HISTORY_CAP, so this only does work once per ~50 messages.
+      const next = appended.length > HISTORY_CAP
+        ? appended.slice(appended.length - HISTORY_KEEP_AFTER_TRIM)
+        : appended;
+      return {
+        providers: {
+          ...s.providers,
+          [provider]: { ...s.providers[provider], history: next },
         },
-      },
-    })),
+      };
+    }),
 
   clearHistory: (provider) =>
     set((s) => ({
