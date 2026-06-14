@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
+import { CorruptProjectModal } from "../components/CorruptProjectModal";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook,
@@ -263,6 +264,10 @@ export default function HomeView() {
   const [importProjectName, setImportProjectName] = useState("");
   const [importBusy, setImportBusy] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
+  const [corruptProject, setCorruptProject] = useState<{
+    path: string;
+    snapshots: { filename: string; timestamp: string; label: string }[];
+  } | null>(null);
 
   useEffect(() => {
     // Siempre refrescar LaTeX en background; si ya hay datos en caché no mostramos spinner
@@ -311,12 +316,20 @@ export default function HomeView() {
       useProjectStore.getState().openProject(model, projectPath);
       const encodedPath = encodeURIComponent(projectPath);
       navigate(destination === "compile" ? `/project/${encodedPath}/compile` : `/project/${encodedPath}`);
-    } catch (e) {
-      console.error("Error abriendo proyecto:", e);
-      setHomeError(t("home.error_opening_project"));
+    } catch {
+      const snapshots = await api.listSnapshots(projectPath).catch(() => []);
+      setCorruptProject({ path: projectPath, snapshots });
     } finally {
       setOpening(null);
     }
+  }
+
+  async function handleRestoreAndOpen(projectPath: string) {
+    const model = await api.getProject(projectPath);
+    useProjectStore.getState().openProject(model, projectPath);
+    setCorruptProject(null);
+    const encodedPath = encodeURIComponent(projectPath);
+    navigate(`/project/${encodedPath}`);
   }
 
   async function handleOpenFolder() {
@@ -440,6 +453,14 @@ export default function HomeView() {
             {homeError}
           </div>
         </AppDialog>
+      )}
+      {corruptProject && (
+        <CorruptProjectModal
+          projectPath={corruptProject.path}
+          snapshots={corruptProject.snapshots}
+          onClose={() => setCorruptProject(null)}
+          onRestored={handleRestoreAndOpen}
+        />
       )}
       {importDialogOpen && (
         <AppDialog
