@@ -120,15 +120,46 @@ const BROWSER_MOCKS: Record<string, unknown> = {
   get_section_progress: [] as SectionProgress[],
 };
 
+/**
+ * Wraps a raw Tauri invoke error so consumers always see a useful message.
+ *
+ * The Tauri runtime rejects with either a string, an Error, or an arbitrary
+ * structured object depending on which backend handler failed. Callers using
+ * `String(e)` ended up with `"[object Object]"` for structured errors and lost
+ * the command name. We normalize to an Error with a stable shape and attach
+ * the command + structured payload for diagnostics.
+ */
+export class TauriCommandError extends Error {
+  readonly command: string;
+  readonly cause: unknown;
+  constructor(command: string, cause: unknown) {
+    const detail =
+      typeof cause === "string" ? cause :
+      cause instanceof Error    ? cause.message :
+      (() => { try { return JSON.stringify(cause); } catch { return String(cause); } })();
+    super(`[${command}] ${detail}`);
+    this.name = "TauriCommandError";
+    this.command = command;
+    this.cause = cause;
+  }
+}
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
-    return invoke<T>(cmd, args);
+    try {
+      return await invoke<T>(cmd, args);
+    } catch (e) {
+      // Re-throw a normalized error that always includes the command name and
+      // a serializable detail string — the originals were sometimes plain
+      // objects which stringified to "[object Object]" at the call site.
+      throw new TauriCommandError(cmd, e);
+    }
   }
   if (cmd in BROWSER_MOCKS) {
     return BROWSER_MOCKS[cmd] as T;
   }
   // Fallback para desarrollo en browser sin Tauri
-  throw new Error(`Tauri no disponible. Comando: ${cmd}`);
+  throw new TauriCommandError(cmd, "Tauri runtime is not available in this context");
 }
 
 export const api = {
@@ -354,7 +385,13 @@ export const api = {
     return call("compile_snippet_preview", { projectPath, figureId, backend });
   },
 
-  /** Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario cancela. */
+  /**
+   * Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario
+   * cancela o si el dialog plugin no está disponible (e.g. plugin no registrado).
+   * Antes los errores se tragaban en silencio y el usuario veía un click "muerto"
+   * sin manera de diagnosticar; ahora los errores se reportan a la consola con
+   * un prefijo identificable.
+   */
   pickFolder: async (): Promise<string | null> => {
     if (!isTauri()) return null;
     try {
@@ -362,12 +399,13 @@ export const api = {
       const result = await open({ directory: true, multiple: false });
       if (Array.isArray(result)) return result[0] ?? null;
       return result ?? null;
-    } catch {
+    } catch (e) {
+      console.warn("[tauri] pickFolder failed:", e);
       return null;
     }
   },
 
-  /** Abre el dialogo nativo de seleccion de archivo. Retorna null si el usuario cancela. */
+  /** Abre el dialogo nativo de seleccion de archivo. Misma semantica que pickFolder. */
   pickFile: async (filters?: DialogFilter[]): Promise<string | null> => {
     if (!isTauri()) return null;
     try {
@@ -375,7 +413,8 @@ export const api = {
       const result = await open({ multiple: false, filters });
       if (Array.isArray(result)) return result[0] ?? null;
       return result ?? null;
-    } catch {
+    } catch (e) {
+      console.warn("[tauri] pickFile failed:", e);
       return null;
     }
   },
