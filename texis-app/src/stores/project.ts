@@ -38,6 +38,7 @@ interface ProjectStore {
   renameSection: (sectionId: string, title: string) => void;
   patchSection: (sectionId: string, patch: Partial<ProjectSection>) => void;
   reorderSection: (sectionId: string, targetId: string, position: "before" | "after") => void;
+  insertSectionAt: (section: ProjectSection, index: number) => void;
 
   // Sección activa en el editor
   activeSectionId: string | null;
@@ -147,6 +148,13 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       const sections = state.activeProject.sections.map((s) =>
         s.id === sectionId ? { ...s, ...patch } : s
       );
+      return { activeProject: { ...state.activeProject, sections } };
+    }),
+  insertSectionAt: (section, index) =>
+    set((state) => {
+      if (!state.activeProject) return {};
+      const sections = [...state.activeProject.sections];
+      sections.splice(Math.min(index, sections.length), 0, section);
       return { activeProject: { ...state.activeProject, sections } };
     }),
   reorderSection: (sectionId, targetId, position) =>

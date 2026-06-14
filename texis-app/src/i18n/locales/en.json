@@ -732,7 +732,9 @@
     "tmpl_conclusions": "Conclusions",
     "tmpl_references": "References",
     "tmpl_development": "Development",
-    "tmpl_litreview": "Literature review"
+    "tmpl_litreview": "Literature review",
+    "tree_deleted_msg": "«{{title}}» deleted",
+    "tree_undo": "Undo"
   },
   "spell": {
     "panel_title": "Spell check",

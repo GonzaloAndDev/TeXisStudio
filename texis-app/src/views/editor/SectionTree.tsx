@@ -64,6 +64,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     setActiveSectionId,
     addSection,
     removeSection,
+    insertSectionAt,
     toggleSectionEnabled,
     moveSectionUp,
     moveSectionDown,
@@ -81,11 +82,17 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
   const [dragOverId, setDragOverId]         = useState<string | null>(null);
   const [dragPos, setDragPos]               = useState<"before" | "after">("after");
 
+  const [undoState, setUndoState] = useState<{ section: ProjectSection; index: number } | null>(null);
+
   const addMenuRef    = useRef<HTMLDivElement>(null);
   const dotMenuRef    = useRef<HTMLDivElement>(null);
   const renameRef     = useRef<HTMLInputElement>(null);
   const dragPlacement = useRef<string | null>(null);
   const didDrag       = useRef(false);
+  const undoTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear undo timer on unmount
+  useEffect(() => () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current); }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -285,18 +292,37 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     if (!ok) return;
 
     // If we're deleting the active section, move focus to the next available one
+    const allSections = activeProject!.sections;
+    const deletedIdx = allSections.findIndex((x) => x.id === s.id);
     if (s.id === activeSectionId) {
-      const sections = activeProject!.sections;
-      const others = sections.filter((x) => x.id !== s.id && x.enabled);
+      const others = allSections.filter((x) => x.id !== s.id && x.enabled);
       setActiveSectionId(others[0]?.id ?? null);
     }
     removeSection(s.id);
     await persistProject();
+
+    // Arm undo — replaces any previous pending undo
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoState({ section: s, index: deletedIdx });
+    undoTimerRef.current = setTimeout(() => {
+      setUndoState(null);
+      undoTimerRef.current = null;
+    }, 8000);
   }, [
     confirm, t, localizedTitle, activeSectionId, localBlocks,
     activeProject, toggleSectionEnabled, removeSection,
     persistProject, setActiveSectionId,
   ]);
+
+  const handleUndo = useCallback(async () => {
+    if (!undoState) return;
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null; }
+    const { section, index } = undoState;
+    setUndoState(null);
+    insertSectionAt(section, index);
+    setActiveSectionId(section.id);
+    await persistProject();
+  }, [undoState, insertSectionAt, setActiveSectionId, persistProject]);
 
   // ── Render ──────────────────────────────────────────────────────
 
@@ -552,6 +578,29 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
           </div>
         ))}
       </div>
+
+      {/* ── Undo bar ─────────────────────────────────────────────── */}
+      {undoState && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "6px 10px", gap: 8, flexShrink: 0,
+          borderTop: "1px solid var(--border-subtle)",
+          background: "var(--bg-hover)",
+          fontSize: "var(--fs-xs)", color: "var(--fg-muted)",
+        }}>
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {t("editor.tree_deleted_msg", { title: localizedTitle(undoState.section) })}
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ padding: "2px 8px", fontSize: "var(--fs-xs)", flexShrink: 0 }}
+            onClick={() => void handleUndo()}
+          >
+            {t("editor.tree_undo")}
+          </button>
+        </div>
+      )}
 
       {/* ── Status legend ────────────────────────────────────────── */}
       <div style={{ padding: "8px 10px", borderTop: "1px solid var(--border-subtle)", display: "flex", flexWrap: "wrap", gap: "4px 10px", flexShrink: 0 }} aria-label={t("editor.section_status_legend")}>
