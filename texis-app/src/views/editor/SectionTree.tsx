@@ -18,6 +18,8 @@ import { api } from "../../lib/tauri";
 import type { ContentBlock, ProjectSection, SectionPlacement, SectionStatus } from "../../types";
 import { STATUS_CONFIG } from "./BlockEditors";
 import { SectionEditor } from "./SectionEditor";
+import { getSuggestions, KIND_KEY } from "./sectionTemplates";
+import type { SectionTemplate } from "./sectionTemplates";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -134,9 +136,29 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
     addSection(newSection);
     await persistProject();
     setActiveSectionId(newSection.id);
-    // Start rename immediately so the user can give it a real name
     setRenamingId(newSection.id);
     setRenameValue(t("editor.tree_new_section_name"));
+  }, [t, addSection, persistProject, setActiveSectionId]);
+
+  const handleAddFromTemplate = useCallback(async (tmpl: SectionTemplate) => {
+    setAddMenuOpen(false);
+    const title = t(tmpl.titleKey as Parameters<typeof t>[0]);
+    const newSection: ProjectSection = {
+      id:         makeId(),
+      element_id: tmpl.element_id,
+      title,
+      placement:  tmpl.placement,
+      required:   false,
+      enabled:    true,
+      status:     "draft",
+      blocks:     [],
+      fields:     {},
+      children:   [],
+    };
+    addSection(newSection);
+    await persistProject();
+    setActiveSectionId(newSection.id);
+    // Template sections already have a good name — no rename prompt
   }, [t, addSection, persistProject, setActiveSectionId]);
 
   const handleEditDetails = useCallback((s: ProjectSection) => {
@@ -293,6 +315,12 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
 
   const headerLabel = userMode === "basic" ? t("editor.document_path") : t("editor.sections");
 
+  // Smart suggestions based on document kind
+  const docKind = activeProject.metadata.document_kind;
+  const existingElementIds = new Set(sections.map((s) => s.element_id));
+  const suggestions = getSuggestions(docKind, existingElementIds);
+  const kindLabel = t(KIND_KEY[docKind] as Parameters<typeof t>[0]);
+
   return (
     <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
 
@@ -312,13 +340,38 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
             <div style={{
               position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 200,
               background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
-              borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", minWidth: 180, padding: 4,
+              borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", minWidth: 200, padding: 4,
+              maxHeight: 320, overflowY: "auto",
             }}>
+              {/* Smart suggestions */}
+              {suggestions.length > 0 && (
+                <>
+                  <div style={{ padding: "5px 12px 3px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
+                    {t("editor.tmpl_suggestions", { kind: kindLabel })}
+                  </div>
+                  {suggestions.map((tmpl) => (
+                    <button
+                      key={tmpl.element_id}
+                      className="tx-unstyled-button"
+                      style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 12px", fontSize: "var(--fs-sm)", borderRadius: "var(--r-sm)", color: "var(--fg-default)" }}
+                      onClick={() => void handleAddFromTemplate(tmpl)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                    >
+                      {t(tmpl.titleKey as Parameters<typeof t>[0])}
+                    </button>
+                  ))}
+                  <div style={{ borderTop: "1px solid var(--border-subtle)", margin: "4px 0" }} />
+                  <div style={{ padding: "5px 12px 3px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)" }}>
+                    {t("editor.tmpl_custom")}
+                  </div>
+                </>
+              )}
               {ADD_OPTIONS.map(({ key, placement }) => (
                 <button
                   key={placement}
                   className="tx-unstyled-button"
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 12px", fontSize: "var(--fs-sm)", borderRadius: "var(--r-sm)", color: "var(--fg-default)" }}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 12px", fontSize: "var(--fs-sm)", borderRadius: "var(--r-sm)", color: "var(--fg-default)" }}
                   onClick={() => void handleAdd(placement)}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
