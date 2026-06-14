@@ -799,7 +799,7 @@
     "spell_lang_hint_2": "das Rechtschreibprüfung enthält.",
     "basic_mode_title": "Basismodus aktiv",
     "basic_mode_body": "Es werden nur die wesentlichen Funktionen zum Schreiben und Einreichen ohne Komplexität angezeigt. Sie können aktivieren",
-    "basic_mode_suffix": "im Textbereich.",
+    "basic_mode_suffix": "unter Oberfläche & Schreiben.",
     "basic_top_body": "Diese Einstellungen sind für nützliche Entscheidungen ohne LaTeX-Technikdetails konzipiert. Wechseln zu",
     "update_check_btn": "Nach Updates suchen",
     "update_checking": "Suche…",

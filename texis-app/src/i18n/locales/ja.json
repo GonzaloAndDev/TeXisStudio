@@ -799,7 +799,7 @@
     "spell_lang_hint_2": "セクションからインストールしてください。",
     "basic_mode_title": "基本モードが有効",
     "basic_mode_body": "複雑な操作なしに執筆と提出に必要なものだけを表示しています。有効にできます",
-    "basic_mode_suffix": "テキストセクションで。",
+    "basic_mode_suffix": "「画面と執筆」のセクションで。",
     "basic_top_body": "これらの設定は、LaTeXの技術的な詳細に入らずに役立つ決定ができるように設計されています。切り替えは",
     "update_check_btn": "アップデートを確認",
     "update_checking": "確認中…",
