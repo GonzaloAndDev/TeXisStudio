@@ -326,19 +326,30 @@ fn run_compiler_streaming(
     // Compartir child para que el watchdog pueda matarlo
     let child_shared: Arc<Mutex<Option<std::process::Child>>> = Arc::new(Mutex::new(Some(child)));
     let timed_out = Arc::new(AtomicBool::new(false));
+    // Señal para que el watchdog salga cuando el compile termina con éxito.
+    // Sin esto, una compilacion exitosa de 2 segundos dejaba un hilo polleando
+    // cada 500 ms durante 5 minutos hasta que el deadline expiraba. Múltiples
+    // compilaciones encadenadas acumulaban watchdogs zombies — leak pequeño
+    // pero acumulativo a lo largo de una sesión de trabajo.
+    let done = Arc::new(AtomicBool::new(false));
 
     // ── Watchdog thread ─────────────────────────────────────────────
     // Monitorea cada 500 ms. Si se supera el timeout o se solicita cancelación,
     // mata el proceso hijo directamente. Esto funciona incluso si LaTeX se
-    // cuelga sin emitir ninguna línea de output.
+    // cuelga sin emitir ninguna línea de output. Sale inmediatamente cuando
+    // `done` se activa (compile normal completado).
     {
         let child_w = child_shared.clone();
         let cancel_w = cancel.clone();
         let timeout_w = timed_out.clone();
+        let done_w = done.clone();
         std::thread::spawn(move || {
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(300);
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(500));
+                if done_w.load(Ordering::Relaxed) {
+                    return; // compile finalizó normalmente; nada que matar.
+                }
                 let elapsed = std::time::Instant::now() >= deadline;
                 let cancelled = cancel_w.load(Ordering::Relaxed);
                 if elapsed || cancelled {
@@ -350,7 +361,7 @@ fn run_compiler_streaming(
                             let _ = c.kill();
                         }
                     }
-                    break;
+                    return;
                 }
             }
         });
@@ -406,6 +417,10 @@ fn run_compiler_streaming(
             .wait()
             .map_err(err)
     };
+
+    // Señalar al watchdog que ya no es necesario. Sin esto el hilo seguiria
+    // polleando hasta el deadline de 5 minutos aunque la compilacion ya termino.
+    done.store(true, Ordering::SeqCst);
 
     // Reportar timeout y cancelación antes de revisar el exit status
     if timed_out.load(Ordering::Relaxed) {

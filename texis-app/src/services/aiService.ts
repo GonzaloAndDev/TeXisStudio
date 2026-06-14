@@ -69,6 +69,25 @@ export async function sendAiMessage(opts: AiSendOptions): Promise<AiCommandRespo
   });
 }
 
+/**
+ * Aborta la llamada actual a `ai_send_message` en el backend. El backend usa
+ * un `tokio::select!` que pollea un flag compartido cada 100 ms; tras llamar
+ * a esta función la respuesta llega como `error_kind = "provider_error"` con
+ * mensaje "cancelada", lo que la UI usa para volver al estado idle.
+ *
+ * Idempotente: llamarla sin solicitud en vuelo es no-op.
+ * No-op en modo browser/dev (no hay backend Tauri).
+ */
+export async function cancelAiMessage(): Promise<void> {
+  const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+  if (!isTauri) return;
+  try {
+    await invoke("cancel_ai_message");
+  } catch (e) {
+    console.warn("[ai] cancel_ai_message failed:", e);
+  }
+}
+
 function buildContext(opts: AiSendOptions) {
   return {
     scope: opts.contextScope,

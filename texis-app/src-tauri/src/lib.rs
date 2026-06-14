@@ -19,6 +19,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .manage(commands::compiler::CompileState::new())
+        .manage(commands::ai::AiState::new())
         .setup(|app| {
             // The window is created hidden so the frontend can apply the chosen
             // window mode (maximized / remembered size) before it appears,
@@ -113,6 +114,7 @@ pub fn run() {
             commands::template::create_project_from_template,
             // AI assistant
             commands::ai::ai_send_message,
+            commands::ai::cancel_ai_message,
             commands::ai::ai_get_action_modes,
             // Plugin figures
             commands::figure_plugin::save_plugin_figure,

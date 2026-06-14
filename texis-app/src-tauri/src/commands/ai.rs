@@ -10,6 +10,33 @@ use crate::ai::engine::AiEngine;
 use crate::ai::request::AiProviderId;
 use crate::ai::response::{AiProviderError, AiResponse};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+
+// ── Estado compartido para cancelación ────────────────────────────────────────
+
+/// Bandera global de cancelación para llamadas a la IA. El frontend la activa
+/// vía `cancel_ai_message`; el `tokio::select!` dentro de `ai_send_message`
+/// la observa y aborta el future de envío (lo que cierra la conexión HTTP
+/// vía el cancel-safety de reqwest, evitando "fantasma" de respuesta tardía).
+pub struct AiState {
+    pub cancel_flag: Arc<AtomicBool>,
+}
+
+impl AiState {
+    pub fn new() -> Self {
+        Self {
+            cancel_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+
+impl Default for AiState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 // ── Tipos del frontend ────────────────────────────────────────────────────────
 
@@ -163,14 +190,27 @@ fn parse_history(history: Vec<AiFrontendMessage>) -> Vec<AiMessage> {
 /// Envía un mensaje al proveedor de IA.
 /// Nunca aplica cambios al documento.
 /// El frontend muestra el preview y pide confirmación antes de cualquier cambio.
+///
+/// Es cancelable vía `cancel_ai_message`: el flag compartido es observado por
+/// un watcher de tokio que corre en paralelo al envío real. Cuando se activa,
+/// el `tokio::select!` aborta el future de send_message; reqwest es cancel-safe
+/// y cierra la conexión HTTP al ser dropeado, evitando que el bill del
+/// proveedor cuente la respuesta que el usuario ya no quiere ver.
 #[tauri::command]
-pub async fn ai_send_message(request: AiSendRequest) -> AiCommandResponse {
+pub async fn ai_send_message(
+    state: tauri::State<'_, AiState>,
+    request: AiSendRequest,
+) -> Result<AiCommandResponse, String> {
+    // Reset del flag al inicio para que una cancelación previa no afecte la
+    // llamada actual. SeqCst para ordenar el reset frente al setup del watcher.
+    state.cancel_flag.store(false, Ordering::SeqCst);
+    let cancel = state.cancel_flag.clone();
+
     let provider = match parse_provider(&request.provider) {
         Some(p) => p,
         None => {
-            return AiCommandResponse::error(AiProviderError::ProviderError(format!(
-                "Proveedor desconocido: '{}'",
-                request.provider
+            return Ok(AiCommandResponse::error(AiProviderError::ProviderError(
+                format!("Proveedor desconocido: '{}'", request.provider),
             )))
         }
     };
@@ -178,24 +218,23 @@ pub async fn ai_send_message(request: AiSendRequest) -> AiCommandResponse {
     let action_mode = match parse_action_mode(&request.action_mode) {
         Some(m) => m,
         None => {
-            return AiCommandResponse::error(AiProviderError::ProviderError(format!(
-                "Modo de acción desconocido: '{}'",
-                request.action_mode
+            return Ok(AiCommandResponse::error(AiProviderError::ProviderError(
+                format!("Modo de acción desconocido: '{}'", request.action_mode),
             )))
         }
     };
 
     // Validar que el mensaje no está vacío
     if request.user_message.trim().is_empty() {
-        return AiCommandResponse::error(AiProviderError::ProviderError(
+        return Ok(AiCommandResponse::error(AiProviderError::ProviderError(
             "El mensaje no puede estar vacío.".to_string(),
-        ));
+        )));
     }
 
     let context = parse_context(request.context);
     let history = parse_history(request.history);
 
-    match AiEngine::send_message(
+    let send_fut = AiEngine::send_message(
         provider,
         request.model_id,
         request.api_key,
@@ -203,12 +242,38 @@ pub async fn ai_send_message(request: AiSendRequest) -> AiCommandResponse {
         request.user_message,
         context,
         history,
-    )
-    .await
-    {
-        Ok(response) => AiCommandResponse::success(response),
-        Err(err) => AiCommandResponse::error(err),
+    );
+
+    // Watcher: completa cuando el flag de cancelación se activa.
+    // Pollea cada 100ms — overhead despreciable, latencia de cancel < 100ms.
+    let cancel_watcher = async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            if cancel.load(Ordering::Relaxed) {
+                return;
+            }
+        }
+    };
+
+    tokio::select! {
+        result = send_fut => Ok(match result {
+            Ok(response) => AiCommandResponse::success(response),
+            Err(err) => AiCommandResponse::error(err),
+        }),
+        _ = cancel_watcher => {
+            // El send_fut se dropea aquí; reqwest cierra la conexión.
+            Ok(AiCommandResponse::error(AiProviderError::ProviderError(
+                "Solicitud cancelada por el usuario.".to_string(),
+            )))
+        }
     }
+}
+
+/// Cancela la llamada actual a `ai_send_message`, si hay alguna en vuelo.
+/// Idempotente: llamarlo sin solicitud activa es no-op.
+#[tauri::command]
+pub fn cancel_ai_message(state: tauri::State<'_, AiState>) {
+    state.cancel_flag.store(true, Ordering::SeqCst);
 }
 
 /// Retorna los modos de acción disponibles con sus metadatos.
