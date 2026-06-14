@@ -1881,6 +1881,8 @@
   },
   "compile_widgets": {
     "backend_not_installed": "{{label}} no está instalado",
+    "zoom_out": "Alejar",
+    "zoom_in": "Acercar",
     "ai_help_title": "¿Quieres ayuda para entender este fallo?",
     "ai_help_body": "TeXisStudio puede abrir el asistente en el editor para explicar el error principal y sugerir qué revisar, sin tocar tu documento.",
     "ai_help_button": "Explicar este error en el editor",

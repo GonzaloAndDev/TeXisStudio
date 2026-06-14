@@ -487,28 +487,35 @@ fn e2e_drift_report_sin_manuales_genera_todo() {
 
 fn model_with_plugin_figure(packages: Vec<String>) -> ProjectModel {
     let mut m = fixtures::generic_thesis_model();
-    let intro = m.sections.iter_mut().find(|s| s.id == "introduction").unwrap();
+    let intro = m
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "introduction")
+        .unwrap();
 
-    intro.blocks.push(ContentBlock::PluginFigure(PluginFigureBlock {
-        id: "pf-test-01".to_string(),
-        figure_id: "fig_0042".to_string(),
-        plugin_id: "bar-charts".to_string(),
-        latex_block: concat!(
-            "% texisstudio-figure-id: fig_0042\n",
-            "\\begin{figure}[htbp]\n",
-            "    \\centering\n",
-            "    \\input{texisstudio-assets/figures/fig_0042/output.tex}\n",
-            "    \\caption{Distribución de resultados.}\n",
-            "    \\label{fig:bar-results}\n",
-            "\\end{figure}\n",
-            "% /texisstudio-figure-id",
-        ).to_string(),
-        caption: "Distribución de resultados.".to_string(),
-        label: "fig:bar-results".to_string(),
-        required_packages: packages,
-        source_json: r#"{"engineId":"pgfplots-engine","version":"1.0.0"}"#.to_string(),
-        warnings: vec![],
-    }));
+    intro
+        .blocks
+        .push(ContentBlock::PluginFigure(PluginFigureBlock {
+            id: "pf-test-01".to_string(),
+            figure_id: "fig_0042".to_string(),
+            plugin_id: "bar-charts".to_string(),
+            latex_block: concat!(
+                "% texisstudio-figure-id: fig_0042\n",
+                "\\begin{figure}[htbp]\n",
+                "    \\centering\n",
+                "    \\input{texisstudio-assets/figures/fig_0042/output.tex}\n",
+                "    \\caption{Distribución de resultados.}\n",
+                "    \\label{fig:bar-results}\n",
+                "\\end{figure}\n",
+                "% /texisstudio-figure-id",
+            )
+            .to_string(),
+            caption: "Distribución de resultados.".to_string(),
+            label: "fig:bar-results".to_string(),
+            required_packages: packages,
+            source_json: r#"{"engineId":"pgfplots-engine","version":"1.0.0"}"#.to_string(),
+            warnings: vec![],
+        }));
     m
 }
 
@@ -569,7 +576,10 @@ fn plugin_figure_sin_paquetes_no_rompe_generacion() {
     gen.generate(&model, dir.path()).unwrap();
 
     let chapter = fs::read_to_string(dir.path().join("capitulos/01_introduction.tex")).unwrap();
-    assert!(chapter.contains("fig_0042"), "el bloque debe aparecer aunque no haya paquetes");
+    assert!(
+        chapter.contains("fig_0042"),
+        "el bloque debe aparecer aunque no haya paquetes"
+    );
 }
 
 #[test]
@@ -592,10 +602,14 @@ fn plugin_figure_serde_round_trip() {
 
     // YAML round-trip (formato de persistencia del proyecto)
     let yaml = serde_yaml::to_string(&block).expect("serialización YAML debe funcionar");
-    assert!(yaml.contains("plugin_figure"), "type tag debe ser plugin_figure");
+    assert!(
+        yaml.contains("plugin_figure"),
+        "type tag debe ser plugin_figure"
+    );
     assert!(yaml.contains("fig_0099"), "figureId debe preservarse");
 
-    let recovered: ContentBlock = serde_yaml::from_str(&yaml).expect("deserialización YAML debe funcionar");
+    let recovered: ContentBlock =
+        serde_yaml::from_str(&yaml).expect("deserialización YAML debe funcionar");
 
     if let ContentBlock::PluginFigure(pf) = recovered {
         assert_eq!(pf.figure_id, original.figure_id);

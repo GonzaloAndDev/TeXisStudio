@@ -9,7 +9,8 @@
 param(
     [switch]$Run,
     [switch]$Installer,
-    [switch]$FrontendBuild
+    [switch]$FrontendBuild,
+    [switch]$CheckAll
 )
 
 $ErrorActionPreference = "Stop"
@@ -98,6 +99,11 @@ if ($Installer) {
 
 if ($FrontendBuild) {
     & node scripts\texis.mjs frontend-build
+    exit $LASTEXITCODE
+}
+
+if ($CheckAll) {
+    & node scripts\texis.mjs check-all
     exit $LASTEXITCODE
 }
 

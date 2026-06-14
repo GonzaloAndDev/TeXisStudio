@@ -52,7 +52,7 @@ export default defineConfig(async () => ({
       process.env.TAURI_ENV_PLATFORM === "windows"
         ? "chrome105"
         : "safari13",
-    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
+    minify: !process.env.TAURI_ENV_DEBUG ? "oxc" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
     // Tauri loads from local disk — 500 kB limit is calibrated for HTTP.
     // The main index chunk is large because all 7 bundled UI locales (~826 kB raw)
@@ -60,13 +60,13 @@ export default defineConfig(async () => ({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Vendor libs that change rarely — isolate for better WebView cache reuse.
-          "vendor-react": ["react", "react-dom"],
-          "vendor-router": ["react-router-dom"],
-          "vendor-i18n": ["i18next", "react-i18next"],
-          "vendor-state": ["zustand"],
-          "vendor-katex": ["katex"],
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "vendor-react";
+          if (/node_modules\/(react-router|react-router-dom)\//.test(id)) return "vendor-router";
+          if (/node_modules\/(i18next|react-i18next)\//.test(id)) return "vendor-i18n";
+          if (/node_modules\/zustand\//.test(id)) return "vendor-state";
+          if (/node_modules\/katex\//.test(id)) return "vendor-katex";
         },
       },
     },

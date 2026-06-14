@@ -21,6 +21,9 @@ const normalizedCommand = {
   dist: "build",
   check: "frontend-build",
   frontend: "frontend-build",
+  verify: "check-all",
+  validate: "check-all",
+  complete: "check-all",
 }[command] ?? command;
 
 let activeTimer = null;
@@ -98,6 +101,26 @@ async function frontendBuild() {
   finishTimer("frontend-build");
 }
 
+async function checkAll() {
+  startTimer("check-all");
+  printFrontendContext();
+  await ensureNodeModules();
+
+  await run(process.execPath, [join(root, "scripts", "check-versions.mjs")]);
+  await runNpm(["run", "check:i18n"], appDir);
+  await runNpm(["audit", "--audit-level=moderate"], appDir);
+  await run("cargo", ["fmt", "--all", "--", "--check"]);
+  await run("cargo", ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]);
+  await run("cargo", ["test", "--workspace"]);
+  await runNpm(["test", "--", "--run"], appDir);
+  await runNpm(["run", "build"], appDir);
+  await run("cargo", ["run", "--package", "texis-core", "--bin", "generate_schema"]);
+  await run("git", ["diff", "--exit-code", "--", "schemas"]);
+  await run("git", ["diff", "--check"]);
+
+  finishTimer("check-all");
+}
+
 async function ensureNodeModules() {
   if (existsSync(join(appDir, "node_modules"))) {
     return;
@@ -127,11 +150,13 @@ Usage:
   node scripts/texis.mjs installer       Build installer/package for this OS
   node scripts/texis.mjs build           Detect OS and run the native build
   node scripts/texis.mjs frontend-build  Type-check and build the React frontend
+  node scripts/texis.mjs check-all       Run every local quality gate
 
 Aliases:
   run:       dev, start, app
   installer: build, compiler, package, dist
   frontend:  check, frontend
+  check-all: verify, validate, complete
 
 Build targets:
   Windows -> scripts/build-windows.ps1
@@ -277,6 +302,8 @@ try {
     await build();
   } else if (normalizedCommand === "frontend-build") {
     await frontendBuild();
+  } else if (normalizedCommand === "check-all") {
+    await checkAll();
   } else {
     help();
     process.exit(command === "help" || command === "--help" || command === "-h" ? 0 : 1);

@@ -350,9 +350,9 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, padding: "5px 8px", background: "var(--bg-panel)", borderBottom: "1px solid var(--border-subtle)" }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.1))} aria-label="Zoom out">−</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.1))} aria-label={t("compile_widgets.zoom_out")}>−</button>
         <span style={{ minWidth: 48, textAlign: "center", fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>{Math.round(zoomLevel * 100)}%</span>
-        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.min(2, zoomLevel + 0.1))} aria-label="Zoom in">+</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setZoomLevel(Math.min(2, zoomLevel + 0.1))} aria-label={t("compile_widgets.zoom_in")}>+</button>
       </div>
       <iframe
         src={`${assetUrl}#zoom=${Math.round(zoomLevel * 100)}`}

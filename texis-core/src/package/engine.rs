@@ -173,8 +173,8 @@ mod tests {
     #[test]
     fn require_package_adds_to_registry() {
         let mut engine = PackageEngine::new();
-        let mut bus = EventBus::new();
-        engine.require_package("tikz", vec![], &mut bus);
+        let bus = EventBus::new();
+        engine.require_package("tikz", vec![], &bus);
         assert!(engine.registry.packages.contains_key("tikz"));
     }
 

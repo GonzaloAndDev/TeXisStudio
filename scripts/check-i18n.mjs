@@ -5,11 +5,16 @@ import { dirname, join, resolve } from "node:path";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const bundledDir = join(root, "texis-app", "src", "i18n", "locales");
+const disabledExternalDir = join(root, ".external-i18n-disabled");
 const languagesRepo = process.env.TEXIS_LANGUAGES_REPO
   ? resolve(process.env.TEXIS_LANGUAGES_REPO)
-  : resolve(root, "..", "TeXisStudio-Languages");
-const pluginsDir = resolve(root, "..", "TeXisStudio-Plugins", "visual-plugins", "i18n");
-const profilesDir = resolve(root, "..", "TeXisStudio-Profiles", "i18n");
+  : join(disabledExternalDir, "languages");
+const pluginsDir = process.env.TEXIS_PLUGINS_I18N_DIR
+  ? resolve(process.env.TEXIS_PLUGINS_I18N_DIR)
+  : join(disabledExternalDir, "plugins");
+const profilesDir = process.env.TEXIS_PROFILES_I18N_DIR
+  ? resolve(process.env.TEXIS_PROFILES_I18N_DIR)
+  : join(disabledExternalDir, "profiles");
 
 function readJson(path) {
   const text = readFileSync(path, "utf8");
@@ -98,11 +103,13 @@ addCatalogChecks(pluginsDir, "plugins");
 addCatalogChecks(profilesDir, "profiles");
 
 function localeIds(dir) {
+  if (!existsSync(dir)) return null;
   return new Set(readdirSync(dir).filter((name) => name.endsWith(".json")).map((name) => name.replace(/\.json$/, "")));
 }
 
 const idErrors = [];
 for (const [label, ids] of [["plugins", localeIds(pluginsDir)], ["profiles", localeIds(profilesDir)]]) {
+  if (!ids) continue;
   const missing = [...languageIds].filter((id) => !ids.has(id));
   const extra = [...ids].filter((id) => !languageIds.has(id));
   if (missing.length || extra.length) idErrors.push(`${label} (missing: ${missing.join(", ") || "none"}; extra: ${extra.join(", ") || "none"})`);
@@ -154,11 +161,13 @@ for (const path of walk(join(root, "texis-app", "src")).filter((file) => file.en
   }
 }
 
-const availableStaticKeys = new Set([
-  ...canonicalKeys,
-  ...flatten(readJson(join(pluginsDir, "en.json"))),
-  ...flatten(readJson(join(profilesDir, "en.json"))),
-]);
+const availableStaticKeys = new Set(canonicalKeys);
+for (const dir of [pluginsDir, profilesDir]) {
+  const enPath = join(dir, "en.json");
+  if (existsSync(enPath)) {
+    for (const key of flatten(readJson(enPath))) availableStaticKeys.add(key);
+  }
+}
 const missingStaticKeys = [...staticKeys].filter((key) =>
   !availableStaticKeys.has(key)
   && !(availableStaticKeys.has(`${key}_one`) && availableStaticKeys.has(`${key}_other`)),

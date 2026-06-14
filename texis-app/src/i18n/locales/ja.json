@@ -1845,6 +1845,8 @@
   },
   "compile_widgets": {
     "backend_not_installed": "{{label}} はインストールされていません",
+    "zoom_out": "縮小",
+    "zoom_in": "拡大",
     "ai_help_title": "この失敗を理解するために助けが必要ですか?",
     "ai_help_body": "TeXisStudio は、ドキュメントに触れることなく、エディターでアシスタントを開いて主なエラーを説明し、確認すべき内容を提案できます。",
     "ai_help_button": "エディタでこのエラーを説明してください",

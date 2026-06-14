@@ -129,7 +129,6 @@ fn sanitize_key(id: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::project::model::{AcronymEntryBlock, GlossaryEntryBlock};
 
     fn make_model_with_glossary() -> ProjectModel {
         use crate::project::model::*;
@@ -245,7 +244,6 @@ mod tests {
 
     #[test]
     fn sin_entradas_genera_comentario() {
-        use crate::project::model::*;
         let mut model = make_model_with_glossary();
         model.sections[0].blocks.clear();
         let out = render_to_string(&model);

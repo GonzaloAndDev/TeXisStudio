@@ -243,9 +243,13 @@ run_action() {
             cd "$ROOT"
             node scripts/texis.mjs frontend-build
             ;;
+        check-all|verify|validate|complete)
+            cd "$ROOT"
+            node scripts/texis.mjs check-all
+            ;;
         *)
             echo "  ERROR: accion no reconocida: $ACTION"
-            echo "  Usa: run, installer o frontend-build"
+            echo "  Usa: run, installer, frontend-build o check-all"
             exit 1
             ;;
     esac

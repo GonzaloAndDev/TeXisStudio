@@ -52,7 +52,10 @@ fn validate_remote_url(url: &str) -> Result<reqwest::Url, String> {
             | "releases.githubusercontent.com"
     );
     if !allowed {
-        return Err(format!("El host '{}' no está permitido para perfiles remotos.", host));
+        return Err(format!(
+            "El host '{}' no está permitido para perfiles remotos.",
+            host
+        ));
     }
     if parsed.path().contains("..") {
         return Err("La URL contiene una ruta inválida.".to_string());

@@ -83,10 +83,7 @@ pub fn save_plugin_figure(
 /// Loads the source.json for a previously-saved plugin figure so the
 /// frontend can reconstruct the engine document for re-editing.
 #[tauri::command]
-pub fn load_figure_source(
-    project_path: String,
-    figure_id: String,
-) -> Result<Value, String> {
+pub fn load_figure_source(project_path: String, figure_id: String) -> Result<Value, String> {
     if !safe_figure_id(&figure_id) {
         return Err(format!("figureId inválido: '{figure_id}'"));
     }
@@ -98,12 +95,17 @@ pub fn load_figure_source(
     let manifest_path = dir.join("manifest.json");
 
     if !source_path.exists() {
-        return Err(format!("source.json no encontrado para la figura '{figure_id}'"));
+        return Err(format!(
+            "source.json no encontrado para la figura '{figure_id}'"
+        ));
     }
 
     let source_json = std::fs::read_to_string(&source_path).map_err(err)?;
     let manifest: Option<Value> = if manifest_path.exists() {
-        Some(serde_json::from_str(&std::fs::read_to_string(&manifest_path).map_err(err)?).map_err(err)?)
+        Some(
+            serde_json::from_str(&std::fs::read_to_string(&manifest_path).map_err(err)?)
+                .map_err(err)?,
+        )
     } else {
         None
     };
@@ -117,10 +119,7 @@ pub fn load_figure_source(
 /// Removes all assets for a plugin figure from disk.
 /// Called when the user deletes a PluginFigureBlock from the editor.
 #[tauri::command]
-pub fn delete_plugin_figure(
-    project_path: String,
-    figure_id: String,
-) -> Result<(), String> {
+pub fn delete_plugin_figure(project_path: String, figure_id: String) -> Result<(), String> {
     if !safe_figure_id(&figure_id) {
         return Err(format!("figureId inválido: '{figure_id}'"));
     }
@@ -138,9 +137,7 @@ pub fn delete_plugin_figure(
 #[tauri::command]
 pub fn list_plugin_figures(project_path: String) -> Result<Value, String> {
     let root = project_root(&project_path)?;
-    let figures_dir = root
-        .join("texisstudio-assets")
-        .join("figures");
+    let figures_dir = root.join("texisstudio-assets").join("figures");
 
     if !figures_dir.exists() {
         return Ok(serde_json::json!([]));

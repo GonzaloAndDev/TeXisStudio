@@ -283,11 +283,6 @@ mod tests {
         std::fs::write(&project_json, r#"{"id": "test", "root_file": "main.tex"}"#).unwrap();
 
         let runner = MigrationRunner::new();
-        let old_schema = SchemaVersion {
-            major: 0,
-            minor: 9,
-            patch: 0,
-        };
         // Migración debería ejecutarse aunque el proyecto sea 0.9 → 1.0
         // En este test simplificado solo verificamos que no falla
         let result = runner.migrate_if_needed(dir.path(), &SchemaVersion::CURRENT);

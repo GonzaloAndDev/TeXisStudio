@@ -198,7 +198,7 @@ mod tests {
         );
         // biber no está en el toolchain
 
-        let mut config = BuildConfig::default(); // usa Biber
+        let config = BuildConfig::default(); // usa Biber
         let missing = toolchain.validate_for_config(&config);
         assert!(!missing.is_empty());
         assert!(missing[0].contains("biber"));

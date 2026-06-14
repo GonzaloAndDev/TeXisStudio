@@ -21,6 +21,11 @@ First time on a machine, or after missing dependency errors:
 | Linux/macOS | `./run` | `./build` | `./check` |
 | Windows | `.\run.ps1` | `.\build.ps1` | `.\check.ps1` |
 
+Run the complete local quality gate before merging or releasing with
+`./check-all` on Linux/macOS or `.\check-all.ps1` on Windows. It verifies
+versions, translations, Rust formatting and Clippy, all Rust/frontend tests,
+the frontend build, generated schema drift, and diff whitespace.
+
 After the machine is prepared:
 
 | Need | Command | Result |

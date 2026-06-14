@@ -311,7 +311,6 @@ mod tests {
     use super::*;
     use crate::template_engine::builtin::find_builtin;
     use crate::texis_project::model::ProjectAuthor;
-    use tempfile::TempDir;
 
     fn test_metadata() -> ProjectMetadata {
         ProjectMetadata {
@@ -332,7 +331,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let template = find_builtin("thesis_es").unwrap();
         let metadata = test_metadata();
-        let project = TemplateEngine::instantiate(&template, dir.path(), &metadata).unwrap();
+        TemplateEngine::instantiate(&template, dir.path(), &metadata).unwrap();
 
         assert!(dir.path().join("main.tex").exists());
         assert!(dir.path().join("preamble.tex").exists());
@@ -391,7 +390,7 @@ mod tests {
             let has_main = t
                 .required_files
                 .iter()
-                .any(|f| f.relative_path == PathBuf::from("main.tex"));
+                .any(|f| f.relative_path == Path::new("main.tex"));
             assert!(has_main, "Plantilla '{}' no tiene main.tex", t.id);
         }
     }

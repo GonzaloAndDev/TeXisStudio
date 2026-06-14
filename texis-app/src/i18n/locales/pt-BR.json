@@ -2131,6 +2131,8 @@
   },
   "compile_widgets": {
     "backend_not_installed": "{{label}} não está instalado",
+    "zoom_out": "Diminuir zoom",
+    "zoom_in": "Aumentar zoom",
     "ai_help_title": "Quer ajuda para entender essa falha?",
     "ai_help_body": "TeXisStudio pode abrir o assistente no editor para explicar o erro principal e sugerir o que revisar, sem mexer no seu documento.",
     "ai_help_button": "Explique este erro no editor",

@@ -310,7 +310,6 @@ fn entry_type_to_record_type(entry_type: &str) -> RecordType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bibliography::model::provider;
 
     fn make_record(cite_key: &str, doi: Option<&str>) -> BibliographicRecord {
         let mut r = BibliographicRecord::new(cite_key, RecordType::Article);

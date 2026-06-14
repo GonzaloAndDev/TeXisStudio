@@ -226,7 +226,7 @@ impl PluginRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::model::{PluginCapability, PluginPermissions, TexisPlugin};
+    use crate::plugin::model::{PluginCapability, TexisPlugin};
 
     struct FakePlugin {
         id: String,

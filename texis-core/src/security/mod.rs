@@ -102,11 +102,11 @@ mod tests {
 
     #[test]
     fn shell_escape_default_is_false() {
-        assert!(!policy::SHELL_ESCAPE_DEFAULT);
+        const { assert!(!policy::SHELL_ESCAPE_DEFAULT) };
     }
 
     #[test]
     fn telemetry_default_is_false() {
-        assert!(!policy::TELEMETRY_DEFAULT);
+        const { assert!(!policy::TELEMETRY_DEFAULT) };
     }
 }

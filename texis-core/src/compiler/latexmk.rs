@@ -236,6 +236,7 @@ fn has_blocking_compile_issue(
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::{bibliography_pending_in_log, has_blocking_compile_issue, pass_succeeded};
     use crate::compiler::UserError;
@@ -263,7 +264,11 @@ mod tests {
             raw_log_line: None,
         };
         // Con error de usuario → siempre bloqueante
-        assert!(has_blocking_compile_issue(ok_log, &[err.clone()], false));
+        assert!(has_blocking_compile_issue(
+            ok_log,
+            std::slice::from_ref(&err),
+            false
+        ));
         assert!(has_blocking_compile_issue(ok_log, &[err], true));
     }
 

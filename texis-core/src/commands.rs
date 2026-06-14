@@ -350,7 +350,7 @@ mod tests {
         let cmd = Box::new(IncrementCmd { value: 0 });
         dispatcher.execute(cmd, &mut ctx).unwrap();
         assert!(dispatcher.can_undo());
-        dispatcher.undo(&mut ctx).unwrap();
+        dispatcher.undo(&mut ctx).unwrap().unwrap();
         assert!(!dispatcher.can_undo());
     }
 
@@ -372,9 +372,9 @@ mod tests {
         let mut dispatcher = CommandDispatcher::new(10);
         let mut ctx = CommandContext::new(std::env::temp_dir());
         dispatcher.execute(Box::new(NoopCmd), &mut ctx).unwrap();
-        dispatcher.undo(&mut ctx).unwrap();
+        dispatcher.undo(&mut ctx).unwrap().unwrap();
         assert!(dispatcher.can_redo());
-        dispatcher.redo(&mut ctx).unwrap();
+        dispatcher.redo(&mut ctx).unwrap().unwrap();
         assert!(!dispatcher.can_redo());
     }
 

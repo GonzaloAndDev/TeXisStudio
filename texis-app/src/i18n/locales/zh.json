@@ -1845,6 +1845,8 @@
   },
   "compile_widgets": {
     "backend_not_installed": "{{label}}未安装",
+    "zoom_out": "缩小",
+    "zoom_in": "放大",
     "ai_help_title": "需要帮助了解此故障吗？",
     "ai_help_body": "TeXisStudio 可以在编辑器中打开助手来解释主要错误并建议检查内容，而无需触摸您的文档。",
     "ai_help_button": "在编辑器中解释此错误",

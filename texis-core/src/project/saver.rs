@@ -1,5 +1,6 @@
 // ÚNICO módulo en texis-core que escribe project YAML a disco.
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use crate::project::loader::ProjectLoader;

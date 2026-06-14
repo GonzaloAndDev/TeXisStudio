@@ -8,7 +8,9 @@ fn err(e: impl std::fmt::Display) -> String {
 fn safe_figure_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 64
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 fn figure_dir(project_path: &str, figure_id: &str) -> PathBuf {
@@ -36,8 +38,8 @@ pub async fn compile_snippet_preview(
     let tex_content = std::fs::read_to_string(dir.join("output.tex"))
         .map_err(|e| format!("No se pudo leer output.tex: {e}"))?;
 
-    let manifest_raw = std::fs::read_to_string(dir.join("manifest.json"))
-        .unwrap_or_else(|_| "{}".to_string());
+    let manifest_raw =
+        std::fs::read_to_string(dir.join("manifest.json")).unwrap_or_else(|_| "{}".to_string());
     let manifest: Value =
         serde_json::from_str(&manifest_raw).unwrap_or(Value::Object(Default::default()));
     let packages: Vec<String> = manifest["requiredPackages"]
@@ -96,8 +98,19 @@ pub async fn compile_snippet_preview(
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            let detail = if stderr.trim().is_empty() { stdout } else { stderr };
-            return Err(format!("{} falló:\n{detail}", if backend == "latexmk" { "latexmk" } else { "Tectonic" }));
+            let detail = if stderr.trim().is_empty() {
+                stdout
+            } else {
+                stderr
+            };
+            return Err(format!(
+                "{} falló:\n{detail}",
+                if backend == "latexmk" {
+                    "latexmk"
+                } else {
+                    "Tectonic"
+                }
+            ));
         }
         Ok(())
     })
