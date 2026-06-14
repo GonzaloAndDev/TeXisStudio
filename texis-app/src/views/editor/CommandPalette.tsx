@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { lockScroll } from "../../lib/scrollLock";
+import { isTopmostDialog, popDialog, pushDialog } from "../../lib/dialogStack";
 import { IconSearch } from "../../components/Icons";
 import type { ContentBlock, ProjectSection } from "../../types";
 
@@ -134,8 +135,10 @@ export function CommandPalette({
     triggerRef.current = document.activeElement;
     inputRef.current?.focus();
     const unlockScroll = lockScroll();
+    const stackId = pushDialog();
 
     function onKeyDown(e: KeyboardEvent) {
+      if (!isTopmostDialog(stackId)) return;
       if (e.key === "Escape") { e.preventDefault(); onClose(); }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -143,37 +146,72 @@ export function CommandPalette({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       unlockScroll();
-      if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
-        (triggerRef.current as HTMLElement).focus();
+      popDialog(stackId);
+      const trigger = triggerRef.current as HTMLElement | null;
+      if (trigger && typeof trigger.focus === "function" && trigger.isConnected) {
+        trigger.focus();
       }
     };
   }, [onClose]);
 
   const q = query.toLowerCase().trim();
-  const allowedBlockTypes = userMode === "basic"
-    ? new Set<ContentBlock["type"]>(["paragraph", "heading", "list", "citation", "figure", "table", "equation"])
-    : null;
+  const allowedBlockTypes = useMemo<Set<ContentBlock["type"]> | null>(
+    () => userMode === "basic"
+      ? new Set<ContentBlock["type"]>(["paragraph", "heading", "list", "citation", "figure", "table", "equation"])
+      : null,
+    [userMode],
+  );
 
-  const blockItems = PALETTE_BLOCK_ITEMS.filter(
-    (b) => !q || t(b.labelKey).toLowerCase().includes(q) || t(b.hintKey).toLowerCase().includes(q)
-  ).filter((b) => !allowedBlockTypes || allowedBlockTypes.has(b.type));
-
-  const sectionItems = sections
-    .filter((s) => s.enabled && (!q || (s.title ?? s.id).toLowerCase().includes(q)))
-    .map((s) => ({ id: s.id, label: s.title ?? s.id, placement: s.placement }));
-
-  const contentMatches: ContentMatch[] = q.length >= 2 ? searchBlockContent(sections, q) : [];
+  // searchBlockContent walks all sections × all blocks; memoize on the inputs
+  // so a re-render triggered by cursor movement doesn't re-scan the whole
+  // project. Without this, every arrow-key press re-walked O(blocks×Q.length).
+  const contentMatches: ContentMatch[] = useMemo(
+    () => (q.length >= 2 ? searchBlockContent(sections, q) : []),
+    [sections, q],
+  );
 
   type AnyItem =
     | { kind: "block"; type: ContentBlock["type"]; labelKey: string; icon: string; hintKey: string }
     | { kind: "section"; id: string; label: string; placement: string }
     | ContentMatch;
 
-  const allItems: AnyItem[] = [
-    ...(contentMatches.length > 0 || q.length >= 2 ? [] : blockItems.map(b => ({ kind: "block" as const, ...b }))),
-    ...sectionItems.map(s => ({ kind: "section" as const, ...s })),
-    ...contentMatches,
-  ];
+  // Build the flat item list once per (query, sections, userMode). The previous
+  // code rebuilt it on every render and the row mapping below used
+  // `allItems.indexOf(item)` per row, making the render O(N²) for large lists.
+  // Now we precompute the global indices alongside the items.
+  const allItems: AnyItem[] = useMemo(() => {
+    const items: AnyItem[] = [];
+    // Block insertion suggestions: only when the user isn't actively searching
+    // for existing content (otherwise the palette is more useful for jump-to).
+    if (!(contentMatches.length > 0 || q.length >= 2)) {
+      for (const b of PALETTE_BLOCK_ITEMS) {
+        if (allowedBlockTypes && !allowedBlockTypes.has(b.type)) continue;
+        if (q && !t(b.labelKey).toLowerCase().includes(q) && !t(b.hintKey).toLowerCase().includes(q)) continue;
+        items.push({ kind: "block", ...b });
+      }
+    }
+    for (const s of sections) {
+      if (!s.enabled) continue;
+      const label = s.title ?? s.id;
+      if (q && !label.toLowerCase().includes(q)) continue;
+      items.push({ kind: "section", id: s.id, label, placement: s.placement });
+    }
+    for (const m of contentMatches) items.push(m);
+    return items;
+  }, [allowedBlockTypes, contentMatches, q, sections, t]);
+
+  // Maps each AnyItem reference to its position in the flat list, so the
+  // render below uses O(1) lookups instead of allItems.indexOf().
+  const itemIndex = useMemo(() => {
+    const map = new Map<AnyItem, number>();
+    for (let i = 0; i < allItems.length; i++) map.set(allItems[i], i);
+    return map;
+  }, [allItems]);
+
+  const sectionItems = useMemo(
+    () => allItems.filter((i) => i.kind === "section") as Array<{ kind: "section"; id: string; label: string; placement: string }>,
+    [allItems],
+  );
 
   const total = allItems.length;
 
@@ -248,7 +286,7 @@ export function CommandPalette({
               <SectionHeader label={userMode === "basic" ? t("command_palette.add_content") : t("command_palette.insert_block")} hasBorder={false} />
               {allItems.filter(i => i.kind === "block").map((item) => {
                 const b = item as { kind: "block"; type: ContentBlock["type"]; icon: string; labelKey: string; hintKey: string };
-                const globalIdx = allItems.indexOf(item);
+                const globalIdx = itemIndex.get(item) ?? 0;
                 return (
                   <PaletteRow
                     key={b.type + globalIdx}
@@ -268,9 +306,9 @@ export function CommandPalette({
           {sectionItems.length > 0 && (
             <>
               <SectionHeader label={t("command_palette.go_to_section")} hasBorder={allItems.some(i => i.kind === "block")} />
-              {allItems.filter(i => i.kind === "section").map((item) => {
-                const s = item as { kind: "section"; id: string; label: string; placement: string };
-                const globalIdx = allItems.indexOf(item);
+              {sectionItems.map((item) => {
+                const s = item;
+                const globalIdx = itemIndex.get(item) ?? 0;
                 const placementLabel = {
                   front_matter: t("command_palette.placement_front"),
                   body: t("command_palette.placement_body"),
@@ -302,7 +340,7 @@ export function CommandPalette({
                 hasBorder={sectionItems.length > 0 || allItems.some(i => i.kind === "block")}
               />
               {contentMatches.map((match) => {
-                const globalIdx = allItems.indexOf(match);
+                const globalIdx = itemIndex.get(match) ?? 0;
                 return (
                   <button
                     key={`${match.sectionId}-${match.blockId}`}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { lockScroll } from "../lib/scrollLock";
+import { isTopmostDialog, popDialog, pushDialog } from "../lib/dialogStack";
 import { IconX } from "./Icons";
 
 const FOCUSABLE = [
@@ -48,6 +49,10 @@ export function AppDialog({
 
   useEffect(() => {
     triggerRef.current = document.activeElement;
+    // Register with the dialog stack so Escape / focus only act on the
+    // topmost modal. Without this, opening a ConfirmDialog inside an
+    // AppDialog and pressing Esc closed BOTH because each listener fired.
+    const stackId = pushDialog();
 
     // Move focus into dialog
     const container = containerRef.current;
@@ -57,6 +62,8 @@ export function AppDialog({
     }
 
     function onKeyDown(e: KeyboardEvent) {
+      // Topmost-only: a deeper dialog above us owns the keyboard until it closes.
+      if (!isTopmostDialog(stackId)) return;
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
       if (containerRef.current) trapFocus(containerRef.current, e);
     }
@@ -67,9 +74,13 @@ export function AppDialog({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       unlockScroll();
-      // Restore focus to trigger
-      if (triggerRef.current && (triggerRef.current as HTMLElement).focus) {
-        (triggerRef.current as HTMLElement).focus();
+      popDialog(stackId);
+      // Restore focus to trigger — guard against the trigger having been
+      // unmounted while we were open (calling .focus() on a detached node
+      // is a silent no-op that leaves the page focus on <body>).
+      const trigger = triggerRef.current as HTMLElement | null;
+      if (trigger && typeof trigger.focus === "function" && trigger.isConnected) {
+        trigger.focus();
       }
     };
   }, [onClose]);
