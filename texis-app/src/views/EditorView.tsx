@@ -192,9 +192,16 @@ export default function EditorView() {
   const [newSnapLabel, setNewSnapLabel] = useState("");
   const [snapBusy, setSnapBusy] = useState(false);
 
-  // Navigation guard — bloquear si hay cambios sin guardar
+  // Navigation guard — bloquear si hay cambios sin guardar.
+  // The ref form is used so the blocker reads a synchronous, up-to-date value
+  // at navigation time. With the boolean form, an `await doSave()` followed by
+  // a synchronous navigate() would see a stale `isUnsaved` (React hasn't
+  // re-rendered yet), incorrectly blocking the user even after a successful
+  // flush — this matters especially for `goToCompile`.
   const isUnsaved = saveStatus === "unsaved" || saveStatus === "error";
-  const blocker = useBlocker(isUnsaved);
+  const isUnsavedRef = useRef(isUnsaved);
+  useEffect(() => { isUnsavedRef.current = isUnsaved; }, [isUnsaved]);
+  const blocker = useBlocker(() => isUnsavedRef.current);
 
   // Toolbar académico
   const [paletteOpen, setPaletteOpen]     = useState(false);
@@ -368,10 +375,15 @@ export default function EditorView() {
         console.error("Error guardando:", e);
         toast.error(t("editor.error_save_section"));
         setSaveStatus("error");
+        // Sync ref so a navigate() right after this still sees "unsaved" state.
+        isUnsavedRef.current = true;
         return false;
       }
     }
     setSaveStatus("saved");
+    // Sync ref so `goToCompile` can navigate immediately without the blocker
+    // firing on a stale state snapshot.
+    isUnsavedRef.current = false;
     return true;
   }, [activeProjectPath]);
 
@@ -420,8 +432,15 @@ export default function EditorView() {
     if (snapshotsOpen) loadSnapshots();
   }, [snapshotsOpen, loadSnapshots]);
 
+  // Single in-flight guard for all snapshot mutations. UI disables buttons via
+  // `snapBusy` state, but that's React state and async — defensive ref guard
+  // prevents fast double-taps from triggering two writes back-to-back.
+  const snapshotInFlightRef = useRef(false);
+
   const handleCreateSnapshot = useCallback(async () => {
     if (!activeProjectPath || !newSnapLabel.trim()) return;
+    if (snapshotInFlightRef.current) return;
+    snapshotInFlightRef.current = true;
     setSnapBusy(true);
     try {
       await api.createSnapshot(activeProjectPath, newSnapLabel.trim());
@@ -431,12 +450,14 @@ export default function EditorView() {
       console.error("Error creando snapshot:", e);
       toast.error(t("editor.error_snapshot_create"));
     } finally {
+      snapshotInFlightRef.current = false;
       setSnapBusy(false);
     }
   }, [activeProjectPath, newSnapLabel, loadSnapshots, toast, t]);
 
   const handleRestoreSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
+    if (snapshotInFlightRef.current) return;
     const ok = await confirm({
       title: t("editor.snapshot_restore_title"),
       message: t("editor.snapshot_restore_confirm"),
@@ -445,22 +466,29 @@ export default function EditorView() {
       destructive: false,
     });
     if (!ok) return;
+    snapshotInFlightRef.current = true;
     setSnapBusy(true);
     try {
       await api.restoreSnapshot(activeProjectPath, filename);
       const model = await api.getProject(activeProjectPath);
       useProjectStore.getState().openProject(model, activeProjectPath);
+      // The restore replaced disk state — local editor blocks are stale.
+      // Clear `unsaved` since the disk is now the source of truth.
+      isUnsavedRef.current = false;
+      setSaveStatus("saved");
       setSnapshotsOpen(false);
     } catch (e) {
       console.error("Error restaurando snapshot:", e);
       toast.error(t("editor.error_snapshot_restore"));
     } finally {
+      snapshotInFlightRef.current = false;
       setSnapBusy(false);
     }
   }, [activeProjectPath, confirm, t, toast]);
 
   const handleDeleteSnapshot = useCallback(async (filename: string) => {
     if (!activeProjectPath) return;
+    if (snapshotInFlightRef.current) return;
     const ok = await confirm({
       title: t("editor.snapshot_delete_title"),
       message: t("editor.snapshot_delete_confirm"),
@@ -469,17 +497,23 @@ export default function EditorView() {
       destructive: true,
     });
     if (!ok) return;
+    snapshotInFlightRef.current = true;
     try {
       await api.deleteSnapshot(activeProjectPath, filename);
       await loadSnapshots();
     } catch (e) {
       console.error("Error eliminando snapshot:", e);
       toast.error(t("editor.error_snapshot_delete"));
+    } finally {
+      snapshotInFlightRef.current = false;
     }
   }, [activeProjectPath, confirm, t, loadSnapshots, toast]);
 
   const scheduleAutoSave = useCallback((blocks: ContentBlock[]) => {
     setSaveStatus("unsaved");
+    // Keep ref in sync with the unsaved transition so the blocker fires
+    // immediately on a subsequent navigation, without waiting for re-render.
+    isUnsavedRef.current = true;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     if (!activeSectionId) return;
     saveTimer.current = setTimeout(() => doSave(blocks, activeSectionId), 1500);
