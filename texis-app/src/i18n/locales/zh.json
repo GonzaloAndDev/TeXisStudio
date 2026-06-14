@@ -109,7 +109,15 @@
     "error_opening_project": "无法将该文件夹作为 TeXisStudio 项目打开。请确保其中包含 tesis.project.yaml。",
     "search_library_hint": "搜索资源库",
     "detecting_latex": "正在检测 LaTeX…",
-    "error_importing_tex": "无法导入 .tex 文件：{{error}}"
+    "error_importing_tex": "无法导入 .tex 文件：{{error}}",
+    "corrupt_dismiss": "Open another project",
+    "corrupt_no_snapshots": "No snapshots are available. The project cannot be recovered automatically.",
+    "corrupt_restore": "Restore",
+    "corrupt_restore_error": "Could not restore the snapshot. Check file permissions or choose another.",
+    "corrupt_restored": "Snapshot restored. Opening project...",
+    "corrupt_restoring": "Restoring...",
+    "corrupt_subtitle": "TeXisStudio could not read the project «{{project}}». Restore from a previous snapshot or open another project.",
+    "corrupt_title": "Project data is damaged"
   },
   "wizard": {
     "title": "新建项目",
@@ -729,7 +737,28 @@
     "tmpl_development": "Development",
     "tmpl_litreview": "Literature review",
     "tree_deleted_msg": "«{{title}}» deleted",
-    "tree_undo": "Undo"
+    "tree_undo": "Undo",
+    "add_first_chapter": "+ Add first chapter",
+    "conflict_body": "{{file}} was modified outside TeXisStudio. What would you like to do?",
+    "conflict_copy_saved": "Copy saved as {{name}}",
+    "conflict_error": "Could not resolve the conflict. Please try again.",
+    "conflict_keep": "Keep external edit",
+    "conflict_regenerate": "Regenerate from project",
+    "conflict_regenerated": "Files regenerated from the project.",
+    "conflict_save_copy": "Save copy and regenerate",
+    "conflict_title": "External edit detected",
+    "diag_export_logs": "Open logs folder",
+    "diag_log_error": "Could not open the logs folder.",
+    "error_save_metadata": "Could not save project metadata.",
+    "error_save_notes": "Could not save section notes.",
+    "error_save_preamble": "Could not save custom preamble.",
+    "error_save_section": "Could not save section. Changes are kept in memory.",
+    "error_save_status": "Could not update section status.",
+    "error_save_typography": "Could not save document typography.",
+    "error_snapshot_create": "Could not create version. Please try again.",
+    "error_snapshot_delete": "Could not delete version.",
+    "error_snapshot_restore": "Could not restore version. The project was not modified.",
+    "tree_no_body_sections": "No chapters in the document body yet."
   },
   "spell": {
     "panel_title": "拼写检查",
@@ -1345,7 +1374,12 @@
     "packages": "套餐",
     "edit_figure_title": "编辑标题或标签，或重新生成图形",
     "edit_figure": "编辑图",
-    "preview_pending": "从“预览”选项卡编译预览以查看此处的图。"
+    "preview_pending": "从“预览”选项卡编译预览以查看此处的图。",
+    "latex_err_begin": "\\begin{{{env}}} without matching \\end",
+    "latex_err_close_brace": "Closing brace } without prior opening",
+    "latex_err_end": "\\end{{{env}}} without prior \\begin",
+    "latex_err_math": "Math mode $ not closed",
+    "latex_err_open_brace": "{{n}} open brace(s) { not closed"
   },
   "compile": {
     "ensure_latex_installed_path": "检查 LaTeX 编译器是否已安装并且在 PATH 中可用。",
@@ -1803,7 +1837,8 @@
     "create_bib_prefix": "创建",
     "create_bib_suffix": "在您的项目中。",
     "no_results": "没有“{{query}}”的结果",
-    "no_title": "无标题"
+    "no_title": "无标题",
+    "add_via_doi": "Add first reference by DOI"
   },
   "doc_options": {
     "title": "文档选项",

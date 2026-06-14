@@ -1639,17 +1639,25 @@ pub fn save_external_copy_and_regenerate(
     project_path: String,
     conflicted_file: String,
 ) -> Result<Value, String> {
-    if conflicted_file.contains('/') || conflicted_file.contains('\\') || conflicted_file.contains("..") {
+    if conflicted_file.contains('/')
+        || conflicted_file.contains('\\')
+        || conflicted_file.contains("..")
+    {
         return Err("Nombre de archivo inválido.".to_string());
     }
     let project_dir = PathBuf::from(&project_path);
     let build_dir = project_dir.join("build");
     let src = build_dir.join(&conflicted_file);
     if !src.exists() {
-        return Err(format!("Archivo '{}' no encontrado en build/.", conflicted_file));
+        return Err(format!(
+            "Archivo '{}' no encontrado en build/.",
+            conflicted_file
+        ));
     }
 
-    let stem = conflicted_file.strip_suffix(".tex").unwrap_or(&conflicted_file);
+    let stem = conflicted_file
+        .strip_suffix(".tex")
+        .unwrap_or(&conflicted_file);
     let ts = chrono::Utc::now().format("%Y-%m-%dT%H-%M-%S").to_string();
     let copy_name = format!("{}.{}.external-edit.tex", stem, ts);
     let copy_path = build_dir.join(&copy_name);

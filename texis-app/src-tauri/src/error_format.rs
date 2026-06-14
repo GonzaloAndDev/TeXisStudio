@@ -15,13 +15,16 @@ fn friendly_io(e: &std::io::Error) -> String {
     use std::io::ErrorKind::*;
     match e.kind() {
         PermissionDenied => {
-            "Sin permiso de escritura. Verifica los permisos del directorio o elige otra ubicación.".to_string()
+            "Sin permiso de escritura. Verifica los permisos del directorio o elige otra ubicación."
+                .to_string()
         }
         #[allow(unreachable_patterns)]
         StorageFull => {
             "Disco sin espacio suficiente. Libera espacio e intenta de nuevo.".to_string()
         }
-        NotFound => "Archivo o directorio no encontrado. Puede haber sido movido o eliminado.".to_string(),
+        NotFound => {
+            "Archivo o directorio no encontrado. Puede haber sido movido o eliminado.".to_string()
+        }
         AlreadyExists => "El archivo ya existe. Usa un nombre diferente.".to_string(),
         TimedOut => "La operación tardó demasiado. Comprueba el sistema de archivos.".to_string(),
         ReadOnlyFilesystem => {

@@ -395,7 +395,15 @@
     "error_opening_project": "Não foi possível abrir essa pasta como projeto TeXisStudio. Verifique se ela contém tesis.project.yaml.",
     "search_library_hint": "Pesquisar na biblioteca",
     "detecting_latex": "Detectando LaTeX…",
-    "error_importing_tex": "Não foi possível importar o arquivo .tex: {{error}}"
+    "error_importing_tex": "Não foi possível importar o arquivo .tex: {{error}}",
+    "corrupt_dismiss": "Open another project",
+    "corrupt_no_snapshots": "No snapshots are available. The project cannot be recovered automatically.",
+    "corrupt_restore": "Restore",
+    "corrupt_restore_error": "Could not restore the snapshot. Check file permissions or choose another.",
+    "corrupt_restored": "Snapshot restored. Opening project...",
+    "corrupt_restoring": "Restoring...",
+    "corrupt_subtitle": "TeXisStudio could not read the project «{{project}}». Restore from a previous snapshot or open another project.",
+    "corrupt_title": "Project data is damaged"
   },
   "wizard": {
     "title": "Novo projeto",
@@ -1015,7 +1023,28 @@
     "tmpl_development": "Development",
     "tmpl_litreview": "Literature review",
     "tree_deleted_msg": "«{{title}}» deleted",
-    "tree_undo": "Undo"
+    "tree_undo": "Undo",
+    "add_first_chapter": "+ Add first chapter",
+    "conflict_body": "{{file}} was modified outside TeXisStudio. What would you like to do?",
+    "conflict_copy_saved": "Copy saved as {{name}}",
+    "conflict_error": "Could not resolve the conflict. Please try again.",
+    "conflict_keep": "Keep external edit",
+    "conflict_regenerate": "Regenerate from project",
+    "conflict_regenerated": "Files regenerated from the project.",
+    "conflict_save_copy": "Save copy and regenerate",
+    "conflict_title": "External edit detected",
+    "diag_export_logs": "Open logs folder",
+    "diag_log_error": "Could not open the logs folder.",
+    "error_save_metadata": "Could not save project metadata.",
+    "error_save_notes": "Could not save section notes.",
+    "error_save_preamble": "Could not save custom preamble.",
+    "error_save_section": "Could not save section. Changes are kept in memory.",
+    "error_save_status": "Could not update section status.",
+    "error_save_typography": "Could not save document typography.",
+    "error_snapshot_create": "Could not create version. Please try again.",
+    "error_snapshot_delete": "Could not delete version.",
+    "error_snapshot_restore": "Could not restore version. The project was not modified.",
+    "tree_no_body_sections": "No chapters in the document body yet."
   },
   "spell": {
     "panel_title": "Verificação ortográfica",
@@ -1631,7 +1660,12 @@
     "packages": "Pacotes",
     "edit_figure_title": "Edite o título ou rótulo ou gere novamente a figura",
     "edit_figure": "Editar figura",
-    "preview_pending": "Compile uma prévia na guia “Visualização” para ver a figura aqui."
+    "preview_pending": "Compile uma prévia na guia “Visualização” para ver a figura aqui.",
+    "latex_err_begin": "\\begin{{{env}}} without matching \\end",
+    "latex_err_close_brace": "Closing brace } without prior opening",
+    "latex_err_end": "\\end{{{env}}} without prior \\begin",
+    "latex_err_math": "Math mode $ not closed",
+    "latex_err_open_brace": "{{n}} open brace(s) { not closed"
   },
   "compile": {
     "ensure_latex_installed_path": "Verifique se um compilador LaTeX está instalado e disponível em PATH.",
@@ -2089,7 +2123,8 @@
     "create_bib_prefix": "Criar",
     "create_bib_suffix": "em seu projeto.",
     "no_results": "Nenhum resultado para “{{query}}”",
-    "no_title": "Sem título"
+    "no_title": "Sem título",
+    "add_via_doi": "Add first reference by DOI"
   },
   "doc_options": {
     "title": "Opções de documento",
