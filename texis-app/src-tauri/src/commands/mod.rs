@@ -17,4 +17,5 @@ pub mod semantic_scholar;
 pub mod system;
 pub mod snippet_preview;
 pub mod template;
+pub mod workspace;
 pub mod zotero;

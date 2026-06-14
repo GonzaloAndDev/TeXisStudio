@@ -77,6 +77,14 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     has_critical_missing: false,
   } satisfies DoctorReport,
   check_profile_lock: { locked: false, lock: null } satisfies ProfileLockStatus,
+  save_workspace_state: undefined,
+  load_workspace_state: {
+    open_files: [],
+    active_file: null,
+    zoom_level: 1,
+    cursor_positions: {},
+    last_build_summary: null,
+  },
   get_profiles: [
     {
       id: "generic.thesis",
@@ -355,4 +363,41 @@ export const api = {
       return null;
     }
   },
+
+  saveWorkspaceState: (
+    projectPath: string,
+    state: {
+      openFiles: string[];
+      activeFile: string | null;
+      zoomLevel: number;
+      cursorPositions: Record<string, { line: number; column: number }>;
+      lastBuildSummary: { success: boolean; pdf_path?: string; duration_ms?: number } | null;
+    }
+  ): Promise<void> =>
+    call("save_workspace_state", {
+      projectPath,
+      state: {
+        open_files: state.openFiles,
+        active_file: state.activeFile,
+        zoom_level: state.zoomLevel,
+        cursor_positions: state.cursorPositions,
+        last_build_summary: state.lastBuildSummary
+          ? {
+              success: state.lastBuildSummary.success,
+              pdf_path: state.lastBuildSummary.pdf_path ?? null,
+              duration_ms: state.lastBuildSummary.duration_ms ?? null,
+            }
+          : null,
+      },
+    }),
+
+  loadWorkspaceState: (
+    projectPath: string
+  ): Promise<{
+    open_files: string[];
+    active_file: string | null;
+    zoom_level: number;
+    cursor_positions: Record<string, { line: number; column: number }>;
+    last_build_summary: { success: boolean; pdf_path?: string; duration_ms?: number } | null;
+  }> => call("load_workspace_state", { projectPath }),
 };
