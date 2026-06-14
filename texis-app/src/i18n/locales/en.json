@@ -84,7 +84,7 @@
     "step_write_hint_project": "Return to your most recent project.",
     "step_write_hint_empty": "Open a project to start writing.",
     "step_review": "Review",
-    "step_review_hint": "Adjust language, spelling and writing aids.",
+    "step_review_hint": "Check spelling and grammar in your project.",
     "step_deliver": "Submit",
     "step_deliver_hint_project": "Compile, verify the PDF and export your submission.",
     "step_deliver_hint_empty": "Compile your project when you have content.",

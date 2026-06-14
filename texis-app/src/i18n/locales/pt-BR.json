@@ -365,7 +365,7 @@
     "step_write_hint_project": "Volte ao seu projeto mais recente.",
     "step_write_hint_empty": "Abra um projeto para começar a escrever.",
     "step_review": "Revisão",
-    "step_review_hint": "Ajuste os recursos de idioma, ortografia e escrita.",
+    "step_review_hint": "Verifique a ortografia e a gramatica do seu projeto.",
     "step_deliver": "Enviar",
     "step_deliver_hint_project": "Compile, verifique o PDF e exporte seu envio.",
     "step_deliver_hint_empty": "Compile seu projeto quando tiver conteúdo.",

@@ -79,7 +79,7 @@
     "step_write_hint_project": "最新のプロジェクトに戻ります。",
     "step_write_hint_empty": "プロジェクトを開いて書き込みを開始します。",
     "step_review": "レビュー",
-    "step_review_hint": "言語、スペル、筆記補助を調整します。",
+    "step_review_hint": "プロジェクトのスペルと文法を確認します。",
     "step_deliver": "送信",
     "step_deliver_hint_project": "PDF をコンパイル、検証し、提出物をエクスポートします。",
     "step_deliver_hint_empty": "コンテンツを用意したらプロジェクトをコンパイルします。",

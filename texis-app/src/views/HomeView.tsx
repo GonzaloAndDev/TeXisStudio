@@ -430,7 +430,7 @@ export default function HomeView() {
       label: t("home.step_review"),
       hint: t("home.step_review_hint"),
       icon: <IconSearch size={13} />,
-      onClick: () => goTo("/settings/text"),
+      onClick: () => latestProject ? handleOpen(latestProject.path) : goTo("/new"),
     },
     {
       label: t("home.step_deliver"),

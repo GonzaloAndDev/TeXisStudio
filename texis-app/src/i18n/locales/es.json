@@ -84,7 +84,7 @@
     "step_write_hint_project": "Vuelve a tu proyecto más reciente.",
     "step_write_hint_empty": "Abre un proyecto para empezar a redactar.",
     "step_review": "Revisar",
-    "step_review_hint": "Ajusta idioma, ortografía y apoyos de escritura.",
+    "step_review_hint": "Revisa ortografía y gramática en tu proyecto.",
     "step_deliver": "Entregar",
     "step_deliver_hint_project": "Compila, verifica el PDF y exporta tu entrega.",
     "step_deliver_hint_empty": "Compila tu proyecto cuando ya tengas contenido.",

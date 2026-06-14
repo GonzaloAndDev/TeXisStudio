@@ -86,7 +86,7 @@
     "step_write_hint_project": "返回您最近的项目。",
     "step_write_hint_empty": "打开项目开始编写。",
     "step_review": "评论",
-    "step_review_hint": "调整语言、拼写和书写辅助工具。",
+    "step_review_hint": "检查项目中的拼写和语法。",
     "step_deliver": "提交",
     "step_deliver_hint_project": "编译、验证 PDF 并导出您的提交内容。",
     "step_deliver_hint_empty": "当您有内容时编译您的项目。",
