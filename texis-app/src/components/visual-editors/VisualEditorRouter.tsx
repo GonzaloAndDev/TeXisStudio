@@ -9,6 +9,7 @@
 import { useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HelpLink } from "../help/HelpLink";
+import { UiErrorBoundary } from "../ui/UiErrorBoundary";
 import { VisualEditorShell } from "./VisualEditorShell";
 import { useDocumentHistory } from "../../hooks/useDocumentHistory";
 import { getEditorMetadata } from "@texisstudio/plugins";
@@ -77,7 +78,38 @@ function extractDoc(parsed: ParsedSource): Record<string, unknown> {
 
 const FALLBACK_HELP_TOPIC: HelpSection = "figures";
 
-export function VisualEditorRouter({ sourceJson, onSourceChange }: Props) {
+/**
+ * Public component: routes to the right editor with a guard against malformed
+ * documents. Wraps the router's actual output in a UiErrorBoundary so a bad
+ * cast or runtime error inside a specific editor doesn't crash the parent
+ * modal — the user sees a friendly fallback and can still cancel/restore.
+ *
+ * The boundary's `key` is bound to engineId+doc identity so editing past a
+ * caught error attempts a re-render once the input changes; if the new input
+ * is also bad, the boundary catches again.
+ */
+export function VisualEditorRouter(props: Props) {
+  const { t } = useTranslation();
+  const parsedKey = useMemo(() => {
+    const p = parseSource(props.sourceJson);
+    return p ? `${p.engineId}-${props.sourceJson.length}` : "no-source";
+  }, [props.sourceJson]);
+  return (
+    <UiErrorBoundary
+      key={parsedKey}
+      fallback={
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", padding: "8px 0", display: "flex", alignItems: "center", gap: 8 }}>
+          {t("visual_editor.crash_fallback")}
+          <HelpLink topic="figures" />
+        </div>
+      }
+    >
+      <VisualEditorRouterInner {...props} />
+    </UiErrorBoundary>
+  );
+}
+
+function VisualEditorRouterInner({ sourceJson, onSourceChange }: Props) {
   const { t } = useTranslation();
 
   const parsed = useMemo(() => parseSource(sourceJson), [sourceJson]);

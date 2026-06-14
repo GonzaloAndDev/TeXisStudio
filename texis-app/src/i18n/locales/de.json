@@ -2791,6 +2791,7 @@
     "add_col_first": "Zuerst eine Spalte hinzufügen.",
     "new_col": "Spalte",
     "no_source": "Keine bearbeitbaren Daten für diese Abbildung gefunden.",
+    "crash_fallback": "The visual editor could not render this figure (corrupted or incompatible data). Close the modal and edit the metadata or regenerate the figure.",
     "engine_no_editor": "Visueller Editor nicht verfügbar für Engine: {{engineId}}.",
     "math_advanced_hint": "Dieser mathematische Ausdruck kann im LaTeX-Feld unten bearbeitet werden.",
     "data_points": "Datenpunkte",

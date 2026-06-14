@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -109,8 +110,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
+    // Reject empty toasts — these used to slip through as blank cards on
+    // the screen when a service call returned `error(String(e))` with an
+    // empty stringification.
+    if (!message || !message.trim()) return;
     const id = `toast-${++toastCounter}`;
     setToasts((prev) => {
+      // De-dupe back-to-back identical toasts (same type+message within a
+      // small window). Common when a retry loop fires the same failure
+      // several times — the user only needs to see it once.
+      const last = prev[prev.length - 1];
+      if (last && last.type === type && last.message === message) {
+        return prev;
+      }
       const next = [...prev, { id, type, message, duration }];
       return next.length > 5 ? next.slice(next.length - 5) : next;
     });
@@ -120,12 +132,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const api: ToastAPI = {
+  // useMemo so the api object reference is stable across re-renders.
+  // Consumers that put `toast` in useEffect deps used to re-fire their
+  // effect on every Provider render because `api` was a fresh object literal.
+  const api = useMemo<ToastAPI>(() => ({
     success: (msg, dur) => addToast("success", msg, dur),
     error:   (msg, dur) => addToast("error", msg, dur ?? 6000),
     warning: (msg, dur) => addToast("warning", msg, dur),
     info:    (msg, dur) => addToast("info", msg, dur),
-  };
+  }), [addToast]);
 
   return (
     <ToastContext.Provider value={api}>

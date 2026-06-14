@@ -2791,6 +2791,7 @@
     "add_col_first": "最初に列を追加してください。",
     "new_col": "列",
     "no_source": "この図の編集可能なデータが見つかりません。",
+    "crash_fallback": "The visual editor could not render this figure (corrupted or incompatible data). Close the modal and edit the metadata or regenerate the figure.",
     "engine_no_editor": "エンジン {{engineId}} のビジュアルエディタは利用できません。",
     "math_advanced_hint": "この数式は下のLaTeXフィールドで編集できます。",
     "data_points": "データポイント",

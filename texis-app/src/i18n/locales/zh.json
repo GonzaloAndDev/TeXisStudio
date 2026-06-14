@@ -2791,6 +2791,7 @@
     "add_col_first": "请先添加一列。",
     "new_col": "列",
     "no_source": "未找到该图形的可编辑数据。",
+    "crash_fallback": "The visual editor could not render this figure (corrupted or incompatible data). Close the modal and edit the metadata or regenerate the figure.",
     "engine_no_editor": "引擎 {{engineId}} 无可视化编辑器。",
     "math_advanced_hint": "此数学表达式可在下方的LaTeX字段中编辑。",
     "data_points": "数据点",

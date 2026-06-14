@@ -2796,6 +2796,7 @@
     "add_col_first": "Add a column first.",
     "new_col": "Column",
     "no_source": "No editable data found for this figure.",
+    "crash_fallback": "The visual editor could not render this figure (corrupted or incompatible data). Close the modal and edit the metadata or regenerate the figure.",
     "engine_no_editor": "Visual editor not available for engine: {{engineId}}.",
     "math_advanced_hint": "This math expression can be edited in the LaTeX field below.",
     "data_points": "Data points",
