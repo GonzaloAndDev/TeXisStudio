@@ -467,7 +467,13 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
               return (
                 <div
                   key={s.id}
-                  style={{ position: "relative" }}
+                  style={{
+                    position: "relative",
+                    // CSS containment: browser skips paint+layout for off-screen rows.
+                    // This replaces react-window since HTML5 DnD needs real DOM positions.
+                    contentVisibility: "auto",
+                    containIntrinsicSize: "auto 28px",
+                  }}
                   className="section-tree-row"
                   onDragOver={(e) => handleDragOver(e, s)}
                   onDragLeave={handleDragLeave}
