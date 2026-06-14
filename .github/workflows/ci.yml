@@ -151,6 +151,36 @@ jobs:
         run: npm run tauri build -- --no-bundle
         working-directory: texis-app
 
+  e2e:
+    name: E2E — Playwright browser smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: texis-app
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: texis-app
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        working-directory: texis-app
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: texis-app/test-results/
+
   smoke-tectonic:
     name: Smoke — Tectonic backend
     runs-on: ubuntu-latest

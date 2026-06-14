@@ -39,3 +39,5 @@ texis-app/src-tauri/icons/ios/
 
 # Codex — memoria operativa local, no pertenece al repo
 .codex/
+test-results/
+playwright-report/
