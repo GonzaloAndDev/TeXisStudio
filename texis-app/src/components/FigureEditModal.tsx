@@ -61,6 +61,13 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
 
   const captionRef = useRef<HTMLInputElement>(null);
 
+  // Tracks mount state so we don't setState after the modal is closed mid-await.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   const latexPrimaryBackend = useSettingsStore((s) => s.latexPrimaryBackend);
   const info = getPluginInfo(block.pluginId);
   const quality = QUALITY_BADGE[info?.qualityLevel ?? ""] ?? { label: info?.qualityLevel ?? "", color: "var(--fg-faint)" };
@@ -99,11 +106,16 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     setBusy("save"); setError(null);
     try {
       const updated = await updatePluginFigureMeta(block, caption.trim() || block.caption, label.trim() || block.label, projectPath);
+      if (!mountedRef.current) return;
       onUpdate(updated);
       setDone(true);
-      setTimeout(onClose, 600);
-    } catch (e) { setError(`${e}`); }
-    finally { setBusy(null); }
+      setTimeout(() => { if (mountedRef.current) onClose(); }, 600);
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setError(`${e}`);
+    } finally {
+      if (mountedRef.current) setBusy(null);
+    }
   }
 
   async function handleApplyVisual() {
@@ -118,17 +130,29 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
         caption.trim() || block.caption,
         label.trim() || block.label,
       );
+      if (!mountedRef.current) return;
       onUpdate(updated);
       setDone(true);
-      setTimeout(onClose, 700);
-    } catch (e) { setError(`${e}`); }
-    finally { setBusy(null); }
+      setTimeout(() => { if (mountedRef.current) onClose(); }, 700);
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setError(`${e}`);
+    } finally {
+      if (mountedRef.current) setBusy(null);
+    }
   }
 
+  // Monotonic preview compile id — only the latest compile's result is shown.
+  // Without this, a fast Recompile click after editing could let the older
+  // preview overwrite the newer one when the older compile finishes second.
+  const previewCompileIdRef = useRef(0);
   const handleCompilePreview = useCallback(async () => {
+    const myId = ++previewCompileIdRef.current;
     setPreviewBusy(true); setPreviewError(null);
     try {
       const path = await api.compileSnippetPreview(projectPath, block.figureId, latexPrimaryBackend);
+      if (!mountedRef.current) return;
+      if (myId !== previewCompileIdRef.current) return; // newer compile won
       if (!path) {
         setPreviewError(t("figure_edit.preview_no_tectonic"));
         setPreviewPdfPath(null);
@@ -137,10 +161,14 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
         setPreviewVersion(Date.now()); // cache-bust the rendered preview
       }
     } catch (e) {
+      if (!mountedRef.current) return;
+      if (myId !== previewCompileIdRef.current) return;
       setPreviewError(`${t("figure_edit.preview_error_prefix")} ${e}`);
       setPreviewPdfPath(null);
     } finally {
-      setPreviewBusy(false);
+      if (mountedRef.current && myId === previewCompileIdRef.current) {
+        setPreviewBusy(false);
+      }
     }
   }, [projectPath, block.figureId, latexPrimaryBackend, t]);
 
@@ -165,11 +193,16 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     setBusy("regen"); setError(null);
     try {
       const updated = await editPluginFigure(block, projectPath, caption.trim() || block.caption, label.trim() || block.label);
+      if (!mountedRef.current) return;
       onUpdate(updated);
       setDone(true);
-      setTimeout(onClose, 700);
-    } catch (e) { setError(`${e}`); }
-    finally { setBusy(null); }
+      setTimeout(() => { if (mountedRef.current) onClose(); }, 700);
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setError(`${e}`);
+    } finally {
+      if (mountedRef.current) setBusy(null);
+    }
   }
 
   const showVisualTab = hasVisualEditor(block.sourceJson, info?.editorType);

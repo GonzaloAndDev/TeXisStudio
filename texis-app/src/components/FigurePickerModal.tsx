@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listPlugins, groupPluginsByCategory, createPluginFigure } from "../services/figure-plugin-service";
 import type { PluginInfo } from "../services/figure-plugin-service";
@@ -114,14 +114,32 @@ export function FigurePickerModal({ projectPath, onInsert, onClose }: Props) {
     return counts;
   }, [plugins]);
 
+  // Mount tracking + concurrent-insert guard. Without these, rapid clicks on
+  // the same card could fire createPluginFigure twice (producing two figures
+  // for one user intent), and a failed insert could try to setState after
+  // the modal has been dismissed by the caller.
+  const mountedRef = useRef(true);
+  const insertingRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   async function handleInsert(plugin: PluginInfo) {
+    if (insertingRef.current) return;
+    insertingRef.current = true;
     setLoading(plugin.pluginId); setError(null);
     try {
       const block = await createPluginFigure(plugin.pluginId, projectPath);
+      if (!mountedRef.current) return;
+      // Caller closes us on success — no need to clear loading here.
       onInsert(block);
     } catch (e) {
+      if (!mountedRef.current) return;
       setError(t("figure_picker.error_generate", { error: String(e) }));
       setLoading(null);
+    } finally {
+      insertingRef.current = false;
     }
   }
 
