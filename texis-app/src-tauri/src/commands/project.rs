@@ -14,25 +14,29 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
+fn core_err(e: texis_core::error::CoreError) -> String {
+    crate::error_format::user_message(e)
+}
+
 fn generate_new_document(
     model: &ProjectModel,
     project_dir: &std::path::Path,
 ) -> Result<(), String> {
     let build_dir = project_dir.join("build");
-    let mut engine = DocumentEngine::new().map_err(err)?;
+    let mut engine = DocumentEngine::new().map_err(core_err)?;
     engine
         .generate(model, &build_dir, &EventBus::new())
-        .map_err(err)?;
-    engine.save_checksums(project_dir).map_err(err)
+        .map_err(core_err)?;
+    engine.save_checksums(project_dir).map_err(core_err)
 }
 
 fn sync_document(model: &ProjectModel, project_dir: &std::path::Path) -> Result<(), String> {
     let build_dir = project_dir.join("build");
-    let mut engine = DocumentEngine::load(project_dir).map_err(err)?;
+    let mut engine = DocumentEngine::load(project_dir).map_err(core_err)?;
     engine
         .sync_preserving_external_edits(model, &build_dir, None, None, &EventBus::new())
-        .map_err(err)?;
-    engine.save_checksums(project_dir).map_err(err)
+        .map_err(core_err)?;
+    engine.save_checksums(project_dir).map_err(core_err)
 }
 
 /// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
@@ -285,7 +289,7 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
     model.updated_at = now_iso8601();
 
     let saver = ProjectSaver;
-    saver.save_to_file(&model, &yaml_path).map_err(err)?;
+    saver.save_to_file(&model, &yaml_path).map_err(core_err)?;
 
     // Regenerar los archivos LaTeX de la sección modificada
     sync_document(&model, &PathBuf::from(&project_path))?;
@@ -300,7 +304,7 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
     let mut model: ProjectModel = serde_json::from_value(project).map_err(err)?;
     model.updated_at = now_iso8601();
     let saver = ProjectSaver;
-    saver.save_to_file(&model, &yaml_path).map_err(err)?;
+    saver.save_to_file(&model, &yaml_path).map_err(core_err)?;
     // Regenerar build/ con metadatos actualizados
     sync_document(&model, &PathBuf::from(&project_path))?;
     Ok(())

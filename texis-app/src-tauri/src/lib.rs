@@ -1,5 +1,6 @@
 mod ai;
 mod commands;
+mod error_format;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
