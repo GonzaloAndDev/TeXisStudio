@@ -11,7 +11,7 @@ import { ProjectDiagnosticsPanel } from "../components/ProjectDiagnosticsPanel";
 import {
   IconAcronym, IconAlgorithm, IconBuild, IconCheck, IconCode, IconFile,
   IconGlossaryEntry, IconHeading, IconHome, IconImage, IconList, IconMore, IconPlus, IconRefresh,
-  IconSearch, IconSettings, IconSigma, IconSliders, IconTable, IconText, IconTheorem, IconTrash, IconX,
+  IconSearch, IconSettings, IconSigma, IconSliders, IconSplit, IconTable, IconText, IconTheorem, IconTrash, IconX,
 } from "../components/Icons";
 import { SectionTree } from "./editor/SectionTree";
 import { LanguagePicker } from "../components/LanguagePicker";
@@ -579,6 +579,44 @@ export default function EditorView() {
     setEditingId(null);
   }, [scheduleAutoSave]);
 
+  /**
+   * Divide el bloque de párrafo actualmente en edición en dos bloques,
+   * justo en la posición del cursor.
+   *
+   * Usa document.activeElement + closest('[data-block-id]') para localizar el
+   * bloque sin necesidad de singletons adicionales, dado que el botón usa
+   * onMouseDown + preventDefault para mantener el foco en la textarea.
+   */
+  const handleSplitBlock = useCallback(() => {
+    const el = document.activeElement as HTMLTextAreaElement | null;
+    if (!el || el.tagName !== "TEXTAREA") return;
+    const blockEl = el.closest("[data-block-id]");
+    if (!blockEl) return;
+    const blockId = blockEl.getAttribute("data-block-id");
+    if (!blockId) return;
+
+    const pos = el.selectionStart ?? el.value.length;
+    if (pos <= 0 || pos >= el.value.length) return; // cursor en extremo — nada que dividir
+
+    const before = el.value.slice(0, pos).trimEnd();
+    const after  = el.value.slice(pos).trimStart();
+    const newId_ = newId();
+
+    setLocalBlocks((prev) => {
+      const idx = prev.findIndex((b) => b.id === blockId);
+      if (idx === -1) return prev;
+      const block = prev[idx];
+      if (block.type !== "paragraph") return prev;
+
+      const newBlock: ContentBlock = { type: "paragraph", id: newId_, content: after };
+      const updated = [...prev.slice(0, idx), { ...block, content: before }, newBlock, ...prev.slice(idx + 1)];
+      scheduleAutoSave(updated);
+      return updated;
+    });
+    // Mover el foco al bloque nuevo para que el usuario continúe escribiendo allí
+    setEditingId(newId_);
+  }, [scheduleAutoSave]);
+
   // Insertar cita bibliográfica desde el picker
   const insertCitation = useCallback((ref: BibReference, citType: "parenthetical" | "narrative" | "footnote" = "parenthetical") => {
     const id = newId();
@@ -809,6 +847,7 @@ export default function EditorView() {
         ["table", <IconTable size={12} />, t("editor.toolbar_add_table"), t("editor.toolbar_add_table_tip")],
         ["equation", <IconSigma size={12} />, t("editor.toolbar_add_equation"), t("editor.toolbar_add_equation_tip")],
         ["visual", <span style={{ fontSize: 12 }}>⬤⬤</span>, t("editor.toolbar_add_visual"), t("editor.toolbar_add_visual_tip")],
+        ["raw_latex", <IconCode size={12} />, t("editor.toolbar_raw_latex_label"), t("editor.toolbar_raw_latex_tip")],
       ]
     : [
         ["paragraph", <IconText size={12} />, t("editor.block_paragraph"), t("editor.toolbar_paragraph_tip")],
@@ -818,13 +857,16 @@ export default function EditorView() {
         ["visual", <span style={{ fontSize: 11 }}>⬤⬤</span>, t("editor.block_visual"), t("editor.toolbar_visual_tip")],
         ["figure", <IconImage size={12} />, t("editor.block_figure")],
         ["table", <IconTable size={12} />, t("editor.block_table")],
-        ["raw_latex", <IconCode size={12} />, "LaTeX", t("editor.toolbar_raw_latex_tip")],
+        ["raw_latex", <IconCode size={12} />, t("editor.toolbar_raw_latex_label"), t("editor.toolbar_raw_latex_tip")],
         ["code", <IconCode size={12} />, t("editor.block_code"), t("editor.toolbar_code_tip")],
         ["algorithm", <IconAlgorithm size={12} />, t("editor.block_algorithm"), t("editor.toolbar_algorithm_tip")],
         ["theorem", <IconTheorem size={12} />, t("editor.block_theorem"), t("editor.toolbar_theorem_tip")],
         ["glossary_entry", <IconGlossaryEntry size={12} />, t("editor.block_glossary"), t("editor.toolbar_glossary_tip")],
         ["acronym_entry", <IconAcronym size={12} />, t("editor.block_acronym"), t("editor.toolbar_acronym_tip")],
       ];
+
+  // "Dividir bloque" solo aplica cuando se está editando un párrafo
+  const canSplit = editingId !== null && localBlocks.some((b) => b.id === editingId && b.type === "paragraph");
 
   const saveLabel =
     saveStatus === "saving"  ? t("editor.saving") :
@@ -949,6 +991,19 @@ export default function EditorView() {
               style={{}}
             >
               <IconImage size={12} /><span>{t("editor.block_plugin_figure")}</span>
+            </button>
+
+            {/* Herramientas LaTeX */}
+            <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 4px", flexShrink: 0 }} />
+            <button
+              className="btn btn-ghost btn-sm editor-tool-button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleSplitBlock}
+              disabled={!canSplit}
+              title={canSplit ? t("editor.toolbar_split_tip") : t("editor.toolbar_split_tip_inactive")}
+              style={{ opacity: canSplit ? 1 : 0.4 }}
+            >
+              <IconSplit size={12} /><span>{t("editor.toolbar_split_label")}</span>
             </button>
 
             <div style={{ flex: "1 0 12px" }} />

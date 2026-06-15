@@ -260,3 +260,4 @@ export const IconLock     = (p: IconProps) => (
     <path d="M8 11V7a4 4 0 0 1 8 0v4" />
   </Icon>
 );
+export const IconSplit    = (p: IconProps) => <Icon {...p} d="M3 12h18M12 4v4M12 16v4M8 8l4-4 4 4M8 16l4 4 4-4" />;

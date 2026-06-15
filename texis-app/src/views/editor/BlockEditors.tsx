@@ -99,7 +99,8 @@ export function ParagraphEditor({
           e.target.style.height = "auto";
           e.target.style.height = e.target.scrollHeight + "px";
         }}
-        onBlur={onBlur}
+        onFocus={() => { if (ref.current) mathInsertManager.register(ref.current, onChange); }}
+        onBlur={() => { if (ref.current) mathInsertManager.unregister(ref.current); onBlur(); }}
         onKeyDown={handleKeyDown}
         style={{
           width: "100%", border: "none", outline: "none", resize: "none",
