@@ -301,7 +301,7 @@ mod tests {
 
         let latex = render_visual(&block);
         assert!(latex.contains("\\node[rounded] (n0)"));
-        assert!(latex.contains("\\node[diamond] (n1)"));
+        assert!(latex.contains("\\node[decision] (n1)"), "nodo diamond usa estilo 'decision' para evitar recursividad TikZ");
         assert!(!latex.contains("(inicio del usuario)"));
         assert!(latex.contains("\\draw[->] (n0) -- node[midway, right"));
     }

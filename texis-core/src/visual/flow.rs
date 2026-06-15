@@ -15,10 +15,10 @@ pub fn render(c: &FlowDiagramConfig) -> String {
   node distance=1.4cm,
   rect/.style={{draw, rounded corners=4pt, minimum width=3cm, minimum height=0.8cm,
                align=center, font=\small, fill=blue!10, draw=blue!60}},
-  diamond/.style={{draw, diamond, minimum width=3cm, minimum height=0.8cm,
-                  align=center, font=\small, fill=orange!15, draw=orange!70,
-                  aspect=2}},
-  circle_node/.style={{draw, circle, minimum size=0.8cm, align=center,
+  decision/.style={{draw, shape=diamond, minimum width=3cm, minimum height=0.8cm,
+                   align=center, font=\small, fill=orange!15, draw=orange!70,
+                   aspect=2}},
+  circle_node/.style={{draw, shape=circle, minimum size=0.8cm, align=center,
                        font=\small, fill=green!15, draw=green!60}},
   rounded/.style={{draw, rounded corners=8pt, minimum width=3cm, minimum height=0.8cm,
                   align=center, font=\small, fill=purple!10, draw=purple!60}},
@@ -42,7 +42,7 @@ fn render_nodes(nodes: &[FlowNode], ids: &HashMap<&str, String>, vertical: bool)
     let mut out = String::new();
     for (i, node) in nodes.iter().enumerate() {
         let style = match node.shape.as_str() {
-            "diamond" => "diamond",
+            "diamond" => "decision",
             "circle" => "circle_node",
             "rounded" => "rounded",
             _ => "rect",
