@@ -228,7 +228,6 @@ fn try_parse_figure(content: &str, parent_id: &str) -> Option<FigureBlock> {
     let path = extract_includegraphics_path(content)?;
     let caption = extract_braced_arg(content, "caption").unwrap_or_default();
     let label = extract_braced_arg(content, "label").unwrap_or_default();
-    let placement = extract_figure_placement(content).unwrap_or_else(|| "htbp".to_string());
 
     Some(FigureBlock {
         id: format!("{parent_id}_fig"),
@@ -270,18 +269,6 @@ fn extract_braced_arg(content: &str, cmd: &str) -> Option<String> {
     let end = rest.find('}')?;
     let val = rest[..end].trim().to_string();
     if val.is_empty() { None } else { Some(val) }
-}
-
-fn extract_figure_placement(content: &str) -> Option<String> {
-    for prefix in &["\\begin{figure*}[", "\\begin{figure}["] {
-        if let Some(pos) = content.find(prefix) {
-            let rest = &content[pos + prefix.len()..];
-            if let Some(end) = rest.find(']') {
-                return Some(rest[..end].to_string());
-            }
-        }
-    }
-    None
 }
 
 // ── Parseo de entornos de código ──────────────────────────────────────────────
@@ -745,5 +732,50 @@ mod tests {
         assert!(result.project_file.exists());
         // sections/intro se resuelve correctamente desde el contexto del chapters/cap1.tex
         // porque el fallback busca también en root_dir
+    }
+
+    /// Test de integración contra el proyecto LaTeX real en /tmp/test_importacion/.
+    /// Solo corre si la carpeta existe (no falla en CI si no está).
+    #[test]
+    fn import_real_proyecto_prueba() {
+        let src = std::path::Path::new("/tmp/test_importacion");
+        if !src.exists() {
+            eprintln!("SKIP: /tmp/test_importacion no existe");
+            return;
+        }
+
+        let dst = tempfile::tempdir().unwrap();
+        let opts = ImportOptions {
+            source_platform: ImportSourcePlatform::Other,
+            main_file_hint: None,
+            overwrite: false,
+        };
+        let result = import_from_folder(src, dst.path(), &opts).unwrap();
+
+        // Archivo de proyecto generado
+        assert!(result.project_file.exists(), "project_file debe existir");
+
+        // La figura PNG debe haberse copiado
+        assert_eq!(result.figures_copied, 1, "debe copiar diagrama.png");
+
+        // El .bib debe haberse copiado
+        assert_eq!(result.bibs_copied, 1, "debe copiar referencias.bib");
+
+        // El YAML debe tener secciones (al menos introduccion y matematicas)
+        let yaml_content = std::fs::read_to_string(&result.project_file).unwrap();
+        assert!(yaml_content.contains("Introducción") || yaml_content.contains("introduccion"),
+            "debe detectar sección de introducción");
+
+        // Los bloques TikZ deben producir avisos de compatibilidad
+        let has_tikz_warning = result.warnings.iter().any(|w|
+            w.contains("tikzpicture") || w.contains("TikZ") || w.contains("plugin")
+        );
+        assert!(has_tikz_warning, "debe advertir sobre tikzpicture: {:?}", result.warnings);
+
+        eprintln!("Import OK — figuras={}, bibs={}, avisos={}",
+            result.figures_copied, result.bibs_copied, result.warnings.len());
+        for w in &result.warnings {
+            eprintln!("  AVISO: {}", w);
+        }
     }
 }
