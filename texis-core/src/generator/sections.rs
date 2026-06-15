@@ -13,6 +13,26 @@ use minijinja::Value as JinjaValue;
 use std::collections::HashMap;
 use std::path::Path;
 
+// `\label{ID}` y `\ref{ID}`: { } cierran/abren grupos, # es parámetro,
+// % inicia comentario, \ inicia comando, ~ es espacio activo. Cualquiera
+// de estos rompe la compilación LaTeX si aparece dentro del argumento.
+fn sanitize_latex_label(s: &str) -> String {
+    s.chars()
+        .filter(|c| !matches!(c, '{' | '}' | '#' | '%' | '\\' | '~' | '\n' | '\r'))
+        .take(100)
+        .collect()
+}
+
+// `\parencite{KEY}`, `\textcite{KEY}`, etc.: el } prematuro cierra el argumento
+// y lo que sigue se interpreta como LaTeX. Los saltos de línea rompen el parser.
+// Biber permite unicode en las claves, por lo que solo filtramos lo estrictamente peligroso.
+fn sanitize_cite_key(s: &str) -> String {
+    s.chars()
+        .filter(|c| !matches!(c, '{' | '}' | '\n' | '\r'))
+        .take(100)
+        .collect()
+}
+
 pub fn generate_all(
     model: &ProjectModel,
     build_dir: &Path,
@@ -276,7 +296,7 @@ fn render_citation_cmd(c: &CitationBlock) -> String {
         (None, Some(post)) => format!("[{}]", post),
         (None, None) => String::new(),
     };
-    format!("\\{}{}{{{}}}", cmd, options, c.citation_key)
+    format!("\\{}{}{{{}}}", cmd, options, sanitize_cite_key(&c.citation_key))
 }
 
 pub(crate) fn render_block(block: &ContentBlock) -> String {
@@ -311,7 +331,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 } else {
                     format!(
                         "\\begin{{equation}}\n    {}\n    \\label{{{}}}\n\\end{{equation}}\n\n",
-                        content, label
+                        content, sanitize_latex_label(label)
                     )
                 }
             } else {
@@ -356,7 +376,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 width,
                 f.file,
                 caption,
-                f.label
+                sanitize_latex_label(&f.label)
             )
         }
 
@@ -416,7 +436,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             }
             if let Some(lbl) = &c.label {
                 if !lbl.is_empty() {
-                    opts.push(format!("label={{{}}}", lbl));
+                    opts.push(format!("label={{{}}}", sanitize_latex_label(lbl)));
                 }
             }
             let opts_str = if opts.is_empty() {
@@ -433,7 +453,7 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Algorithm(a) => {
             let label_line = match &a.label {
-                Some(l) if !l.is_empty() => format!("\\label{{{}}}\n", l),
+                Some(l) if !l.is_empty() => format!("\\label{{{}}}\n", sanitize_latex_label(l)),
                 _ => String::new(),
             };
             // \Require y \Ensure aceptan LaTeX (math, \ref, etc.) → sin escape
@@ -545,6 +565,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
         .join(" & ");
 
     let col_spec = (0..n).map(|_| "l").collect::<Vec<_>>().join(" ");
+    let label = sanitize_latex_label(&t.label);
 
     match &t.table_style {
         // ── Simple: tabular básico sin booktabs, sin adjustbox ────────────────
@@ -564,7 +585,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
             format!(
                 "\\begin{{table}}[htbp]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{tabular}}{{{col_spec}}}\n    \\hline\n    {header_row} \\\\\n    \\hline\n{rows}    \\hline\n  \\end{{tabular}}\n\\end{{table}}\n\n",
                 caption = caption,
-                label = t.label,
+                label = label,
                 col_spec = col_spec,
                 header_row = header_row,
                 rows = rows,
@@ -588,7 +609,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
             format!(
                 "\\begin{{sidewaystable}}[htbp]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{adjustbox}}{{max width=\\textheight}}\n    \\begin{{tabular}}{{{col_spec}}}\n    \\toprule\n    {header_row} \\\\\n    \\midrule\n{rows}    \\bottomrule\n    \\end{{tabular}}\n  \\end{{adjustbox}}\n\\end{{sidewaystable}}\n\n",
                 caption = caption,
-                label = t.label,
+                label = label,
                 col_spec = col_spec,
                 header_row = header_row,
                 rows = rows,
@@ -614,7 +635,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
                 "\\begin{{longtable}}{{{col_spec}}}\n  \\caption{{{caption}}}\\label{{{label}}} \\\\\n  \\toprule\n  {header_row} \\\\\n  \\midrule\n  \\endfirsthead\n  \\caption*{{\\tablename~\\thetable\\ (continuación)}} \\\\\n  \\toprule\n  {header_row} \\\\\n  \\midrule\n  \\endhead\n  \\midrule\n  \\multicolumn{{{n}}}{{r}}{{Continúa en la página siguiente\\ldots}}\n  \\endfoot\n  \\bottomrule\n  \\endlastfoot\n{rows}\\end{{longtable}}\n\n",
                 col_spec = col_spec,
                 caption = caption,
-                label = t.label,
+                label = label,
                 header_row = header_row,
                 n = n,
                 rows = rows,
@@ -647,7 +668,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
             format!(
                 "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{caption}}}\n    \\label{{{label}}}\n{inner}\n\\end{{table}}\n\n",
                 caption = caption,
-                label = t.label,
+                label = label,
                 inner = inner,
             )
         }
@@ -907,6 +928,80 @@ fn doc_kind_label(kind: &DocumentKind, level: &AcademicLevel) -> &'static str {
 mod tests {
     use super::*;
     use crate::project::model::{CitationBlock, CitationType, ContentBlock, RawLatexBlock};
+
+    // ── sanitize_latex_label ───────────────────────────────────────────────────
+
+    #[test]
+    fn sanitize_label_strips_closing_brace() {
+        // } y \ se eliminan — ambos romperían \label{...} en LaTeX
+        assert_eq!(sanitize_latex_label("tab:evil}\\drop"), "tab:evildrop");
+        assert_eq!(sanitize_latex_label("tab:a}b"), "tab:ab");
+    }
+
+    #[test]
+    fn sanitize_label_strips_all_latex_special() {
+        // {, }, #, %, \, ~ deben eliminarse
+        assert_eq!(sanitize_latex_label("a{b}c#d%e\\f~g"), "abcdefg");
+    }
+
+    #[test]
+    fn sanitize_label_preserves_colon_and_underscore() {
+        assert_eq!(sanitize_latex_label("tab:my_table-2"), "tab:my_table-2");
+    }
+
+    #[test]
+    fn sanitize_label_truncates_at_100() {
+        let long = "x".repeat(200);
+        assert_eq!(sanitize_latex_label(&long).len(), 100);
+    }
+
+    // ── sanitize_cite_key ──────────────────────────────────────────────────────
+
+    #[test]
+    fn sanitize_cite_key_strips_closing_brace() {
+        assert_eq!(sanitize_cite_key("author2024}\\evil"), "author2024\\evil");
+    }
+
+    #[test]
+    fn sanitize_cite_key_preserves_unicode() {
+        // Biber permite claves con acentos — no debemos filtrarlos
+        assert_eq!(sanitize_cite_key("garcía2020"), "garcía2020");
+    }
+
+    // ── Labels en bloques concretos ────────────────────────────────────────────
+
+    #[test]
+    fn figure_label_con_brace_no_rompe_latex() {
+        use crate::project::model::{FigureBlock, FigureWidth};
+        let block = ContentBlock::Figure(FigureBlock {
+            id: "f1".to_string(),
+            file: "foto.png".to_string(),
+            caption: "Mi figura".to_string(),
+            source: None,
+            label: "fig:a}b".to_string(),
+            width: FigureWidth::Half,
+            include_in_list: false,
+            verbatim_caption: false,
+        });
+        let out = render_block(&block);
+        assert!(!out.contains("fig:a}b"), "la llave del label no debe aparecer sin sanitizar");
+        assert!(out.contains("\\label{fig:ab}"), "label saneado debe estar en la salida");
+    }
+
+    #[test]
+    fn citation_key_con_brace_no_rompe_latex() {
+        let c = CitationBlock {
+            id: "c1".to_string(),
+            citation_key: "autor}evil".to_string(),
+            citation_type: CitationType::Parenthetical,
+            page: None,
+            prefix: None,
+            suffix: None,
+        };
+        let out = render_citation_cmd(&c);
+        assert!(!out.contains("}evil"), "la llave inyectada no debe aparecer en el cite");
+        assert!(out.contains("\\parencite{autorevil}"), "cite debe usar la clave saneada");
+    }
 
     #[test]
     fn raw_latex_confirmado_genera_contenido() {
