@@ -2,9 +2,18 @@
 
 use crate::project::model::MusicFragmentConfig;
 
+const ABC_MAX_LEN: usize = 2_000;
+
 pub fn render(c: &MusicFragmentConfig) -> String {
     if c.abc_notation.trim().is_empty() {
         return render_placeholder("Fragmento musical vacío");
+    }
+
+    if c.abc_notation.len() > ABC_MAX_LEN {
+        return render_placeholder(
+            "Fragmento musical demasiado largo para conversión automática. \
+             Exporte desde LilyPond o MuseScore e importe como figura PDF.",
+        );
     }
 
     if !c.try_musixtex {
@@ -142,4 +151,48 @@ fn abc_to_musixtex_basic(abc_body: &str) -> String {
     }
 
     notes
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::model::MusicFragmentConfig;
+
+    fn cfg(abc: &str, try_musixtex: bool) -> MusicFragmentConfig {
+        MusicFragmentConfig {
+            abc_notation: abc.to_string(),
+            instrument: None,
+            try_musixtex,
+        }
+    }
+
+    #[test]
+    fn render_empty_abc_returns_placeholder() {
+        let out = render(&cfg("", true));
+        assert!(out.contains("fbox") || out.contains("minipage"), "debe ser placeholder");
+        assert!(!out.contains("\\begin{music}"));
+    }
+
+    #[test]
+    fn render_too_long_returns_placeholder() {
+        let long_abc = "C".repeat(ABC_MAX_LEN + 1);
+        let out = render(&cfg(&long_abc, true));
+        assert!(!out.contains("\\begin{music}"), "abc demasiado largo debe ser placeholder");
+        assert!(out.contains("demasiado largo"));
+    }
+
+    #[test]
+    fn render_valid_short_abc_produces_music_env() {
+        let abc = "X:1\nM:4/4\nCDEF|GABc|";
+        let out = render(&cfg(abc, true));
+        assert!(out.contains("\\begin{music}"), "abc corto debe generar entorno music");
+        assert!(out.contains("\\endextract"));
+    }
+
+    #[test]
+    fn render_try_musixtex_false_returns_placeholder() {
+        let out = render(&cfg("CDEF", false));
+        assert!(!out.contains("\\begin{music}"));
+        assert!(out.contains("minipage"));
+    }
 }

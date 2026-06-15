@@ -1,31 +1,21 @@
 // Renderer TikZ para diagramas de Feynman (usando TikZ nativo con decoraciones).
 // No requiere tikz-feynman — usa decoraciones estándar para mayor compatibilidad.
+//
+// Los estilos fermion/photon/gluon/boson se declaran en el preámbulo del documento
+// a través de `visual::required_preamble()` → main_tex.rs los recoge y deduplica.
+// Así, múltiples diagramas de Feynman en un mismo documento no repiten el \tikzset.
 
 use crate::project::model::FeynmanConfig;
 
 pub fn render(c: &FeynmanConfig) -> String {
-    // Preamble de estilos (insertado una sola vez — el generador lo deduplica si se usan varios)
-    let header = r#"\usetikzlibrary{decorations.markings,decorations.pathmorphing,arrows.meta}
-\tikzset{
-  fermion/.style={postaction={decorate},decoration={markings,
-    mark=at position 0.55 with {\arrow{Latex}}}},
-  antifermion/.style={postaction={decorate},decoration={markings,
-    mark=at position 0.55 with {\arrowreversed{Latex}}}},
-  photon/.style={decorate,decoration={snake,amplitude=2pt,segment length=6pt}},
-  gluon/.style={decorate,decoration={coil,amplitude=3pt,segment length=5pt}},
-  boson/.style={dashed, thick},
-}"#;
-
-    let diagram = match c.preset.as_str() {
+    match c.preset.as_str() {
         "compton" => compton(),
         "muon_decay" => muon_decay(),
         "pair_production" => pair_production(),
         "bhabha" => bhabha(),
         "higgs_production" => higgs_production(),
         _ => vertex_qed(),
-    };
-
-    format!("{}\n{}", header, diagram)
+    }
 }
 
 fn vertex_qed() -> String {

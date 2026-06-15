@@ -87,6 +87,25 @@ pub fn extra_packages(_config: &VisualConfig) -> Vec<&'static str> {
     vec![]
 }
 
+/// Snippet LaTeX que debe ir en el preámbulo (una sola vez, deduplicado por main_tex).
+/// Se usa para definiciones globales como \tikzset{} que no caben en un usepackage.
+pub fn required_preamble(config: &VisualConfig) -> Option<&'static str> {
+    match config {
+        VisualConfig::Feynman(_) => Some(
+            "\\tikzset{\n\
+             \x20\x20fermion/.style={postaction={decorate},decoration={markings,\n\
+             \x20\x20\x20\x20mark=at position 0.55 with {\\arrow{Latex}}}},\n\
+             \x20\x20antifermion/.style={postaction={decorate},decoration={markings,\n\
+             \x20\x20\x20\x20mark=at position 0.55 with {\\arrowreversed{Latex}}}},\n\
+             \x20\x20photon/.style={decorate,decoration={snake,amplitude=2pt,segment length=6pt}},\n\
+             \x20\x20gluon/.style={decorate,decoration={coil,amplitude=3pt,segment length=5pt}},\n\
+             \x20\x20boson/.style={dashed, thick},\n\
+             }",
+        ),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -263,6 +282,61 @@ mod tests {
             extra_packages(&feynman).is_empty(),
             "Feynman usa TikZ nativo, no tikz-feynman"
         );
+    }
+
+    #[test]
+    fn required_preamble_feynman_tiene_tikzset() {
+        use crate::project::model::*;
+        let feynman = VisualConfig::Feynman(FeynmanConfig {
+            preset: "compton".to_string(),
+            particle_labels: Default::default(),
+            show_momentum: false,
+        });
+        let snip = required_preamble(&feynman);
+        assert!(snip.is_some(), "Feynman debe tener snippet de preámbulo");
+        let s = snip.unwrap();
+        assert!(s.contains("fermion"), "debe definir estilo fermion");
+        assert!(s.contains("photon"), "debe definir estilo photon");
+        assert!(s.contains("\\tikzset"), "debe ser un \\tikzset");
+        assert!(!s.contains("\\usetikzlibrary"), "la librería va por required_package, no aquí");
+    }
+
+    #[test]
+    fn required_preamble_otros_tipos_son_none() {
+        use crate::project::model::*;
+        let venn = VisualConfig::VennEuler(VennEulerConfig {
+            sets: vec![], intersections: Default::default(), style: "circles".to_string(),
+        });
+        assert!(required_preamble(&venn).is_none());
+
+        let chem = VisualConfig::ChemReaction(ChemReactionConfig {
+            equation: "".to_string(), catalyst: None, conditions: None,
+            reaction_type: "forward".to_string(), display_mode: true,
+        });
+        assert!(required_preamble(&chem).is_none());
+    }
+
+    #[test]
+    fn render_feynman_cuerpo_no_contiene_usetikzlibrary() {
+        use crate::project::model::*;
+        let block = VisualBlock {
+            id: "f1".to_string(),
+            caption: "Diagrama Compton".to_string(),
+            label: "fig:compton".to_string(),
+            include_in_list: true,
+            advanced_latex_override: None,
+            advanced_override_confirmed: false,
+            config: VisualConfig::Feynman(FeynmanConfig {
+                preset: "compton".to_string(),
+                particle_labels: Default::default(),
+                show_momentum: false,
+            }),
+        };
+        let latex = render_visual(&block);
+        assert!(!latex.contains("\\usetikzlibrary"), "\\usetikzlibrary va en el preámbulo, no en el cuerpo de la figura");
+        assert!(!latex.contains("\\tikzset"), "\\tikzset va en el preámbulo, no en el cuerpo de la figura");
+        assert!(latex.contains("tikzpicture"), "debe contener el diagrama tikzpicture");
+        assert!(latex.contains("fermion"), "debe usar el estilo fermion");
     }
 
     #[test]

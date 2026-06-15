@@ -2,20 +2,31 @@
 
 use crate::project::model::CircuitConfig;
 
+// Los valores de componentes se insertan dentro de to[R, l=$VALUE$].
+// Un ] cierra prematuramente el argumento to[...]; un $ cierra el modo math.
+// Los newlines rompen la línea LaTeX. Resto de caracteres (_, ^, {, }) son
+// válidos en math mode y necesarios para etiquetas como R_1, R_f.
+fn sanitize_circuit_label(s: &str) -> String {
+    s.chars()
+        .filter(|c| !matches!(c, ']' | '$' | '\n' | '\r'))
+        .take(50)
+        .collect()
+}
+
 pub fn render(c: &CircuitConfig) -> String {
     let vals = &c.component_values;
-    let r = vals.get("R").map(|s| s.as_str()).unwrap_or("R");
-    let c_ = vals.get("C").map(|s| s.as_str()).unwrap_or("C");
-    let l = vals.get("L").map(|s| s.as_str()).unwrap_or("L");
-    let v = vals.get("V").map(|s| s.as_str()).unwrap_or("V");
+    let r  = sanitize_circuit_label(vals.get("R").map(|s| s.as_str()).unwrap_or("R"));
+    let c_ = sanitize_circuit_label(vals.get("C").map(|s| s.as_str()).unwrap_or("C"));
+    let l  = sanitize_circuit_label(vals.get("L").map(|s| s.as_str()).unwrap_or("L"));
+    let v  = sanitize_circuit_label(vals.get("V").map(|s| s.as_str()).unwrap_or("V"));
 
     match c.preset.as_str() {
-        "rc_series" => rc_series(r, c_),
-        "rlc_parallel" => rlc_parallel(r, l, c_),
-        "voltage_divider" => voltage_divider(r, v),
-        "inverting_opamp" => inverting_opamp(r),
-        "full_wave_rectifier" => full_wave_rectifier(v),
-        _ => rc_series(r, c_),
+        "rc_series" => rc_series(&r, &c_),
+        "rlc_parallel" => rlc_parallel(&r, &l, &c_),
+        "voltage_divider" => voltage_divider(&r, &v),
+        "inverting_opamp" => inverting_opamp(&r),
+        "full_wave_rectifier" => full_wave_rectifier(&v),
+        _ => rc_series(&r, &c_),
     }
 }
 
@@ -85,4 +96,62 @@ fn full_wave_rectifier(v: &str) -> String {
   \draw (3,1.5) -- (3,1.2) node[below] {{$V_{{out}}^-$}};
 \end{{circuitikz}}"#
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_strips_closing_bracket() {
+        assert_eq!(sanitize_circuit_label("R]evil"), "Revil");
+    }
+
+    #[test]
+    fn sanitize_strips_dollar_sign() {
+        assert_eq!(sanitize_circuit_label("10k$Omega"), "10kOmega");
+    }
+
+    #[test]
+    fn sanitize_strips_newlines() {
+        assert_eq!(sanitize_circuit_label("10k\n\\evil"), "10k\\evil");
+    }
+
+    #[test]
+    fn sanitize_preserves_subscript_syntax() {
+        // _ y ^ son válidos en math mode de circuitikz
+        assert_eq!(sanitize_circuit_label("R_1"), "R_1");
+        assert_eq!(sanitize_circuit_label("R_f"), "R_f");
+    }
+
+    #[test]
+    fn sanitize_truncates_long_label() {
+        let long = "R".repeat(100);
+        assert_eq!(sanitize_circuit_label(&long).len(), 50);
+    }
+
+    #[test]
+    fn render_rc_series_uses_sanitized_values() {
+        use crate::project::model::CircuitConfig;
+        let mut vals = std::collections::HashMap::new();
+        // El ] intentaría cerrar el argumento to[...] de circuitikz prematuramente
+        vals.insert("R".to_string(), "10k]\\draw".to_string());
+        vals.insert("C".to_string(), "100nF".to_string());
+        let c = CircuitConfig { preset: "rc_series".to_string(), component_values: vals };
+        let out = render(&c);
+        // El ] del valor no debe aparecer seguido del texto inyectado
+        assert!(!out.contains("]\\draw"), "la secuencia de inyección ]\\draw no debe aparecer en la salida");
+        assert!(out.contains("10k"), "el valor limpio de R debe estar presente");
+        assert!(out.contains("circuitikz"), "la salida debe ser un entorno circuitikz válido");
+    }
+
+    #[test]
+    fn render_all_presets_produce_circuitikz() {
+        use crate::project::model::CircuitConfig;
+        for preset in &["rc_series", "rlc_parallel", "voltage_divider", "inverting_opamp", "full_wave_rectifier", "unknown"] {
+            let c = CircuitConfig { preset: preset.to_string(), component_values: Default::default() };
+            let out = render(&c);
+            assert!(out.contains("circuitikz"), "preset '{preset}' debe generar circuitikz");
+        }
+    }
 }

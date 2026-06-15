@@ -474,10 +474,12 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     // needs_tikz_libs se emite más abajo, después de packages_required, para que
     // \usetikzlibrary aparezca siempre después de \usepackage{tikz}.
     let needs_tikz_libs: bool;
+    let preamble_snippets: Vec<&'static str>;
     {
         use crate::project::model::ContentBlock;
-        use crate::visual::{extra_packages, required_package};
+        use crate::visual::{extra_packages, required_package, required_preamble};
         let mut vis_pkgs: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut snippets: std::collections::HashSet<&'static str> = Default::default();
         for section in &model.sections {
             for block in &section.blocks {
                 match block {
@@ -486,10 +488,19 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                         for ep in extra_packages(&v.config) {
                             vis_pkgs.insert(ep.to_string());
                         }
+                        if let Some(snip) = required_preamble(&v.config) {
+                            snippets.insert(snip);
+                        }
                     }
                     ContentBlock::PluginFigure(pf) => {
                         for pkg in &pf.required_packages {
-                            vis_pkgs.insert(pkg.clone());
+                            // Solo nombres de paquete seguros: [a-zA-Z0-9\-_]
+                            // Un nombre con } o \n rompería \usepackage{name}.
+                            if !pkg.is_empty()
+                                && pkg.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+                            {
+                                vis_pkgs.insert(pkg.clone());
+                            }
                         }
                     }
                     _ => {}
@@ -497,6 +508,7 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
             }
         }
         needs_tikz_libs = vis_pkgs.contains("tikz");
+        preamble_snippets = snippets.into_iter().collect();
         if !vis_pkgs.is_empty() {
             out.push_str("\n% Paquetes para elementos visuales (auto-detectados)\n");
             // Orden determinista
@@ -561,6 +573,18 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     // TikZ libraries — emitidas aquí, después de \usepackage{tikz}
     if needs_tikz_libs {
         out.push_str("\\usetikzlibrary{shapes.geometric,calc,decorations.markings,decorations.pathmorphing,arrows.meta,positioning}\n");
+    }
+
+    // Snippets de preámbulo requeridos por bloques visuales (e.g. \tikzset{} de Feynman).
+    // Se deduplicaron en la fase de recolección arriba.
+    if !preamble_snippets.is_empty() {
+        out.push_str("\n% Estilos de elementos visuales\n");
+        let mut sorted_snippets = preamble_snippets.clone();
+        sorted_snippets.sort_unstable();
+        for snip in &sorted_snippets {
+            out.push_str(snip);
+            out.push('\n');
+        }
     }
 
     // ── Operadores matemáticos personalizados ─────────────────────────────────

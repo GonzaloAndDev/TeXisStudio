@@ -52,10 +52,14 @@ type ParsedSource = {
 function parseSource(raw: string): ParsedSource | null {
   try {
     const parsed = JSON.parse(raw);
-    if (typeof parsed === "object" && parsed !== null && "engineId" in parsed) return parsed as ParsedSource;
+    if (typeof parsed === "object" && parsed !== null && typeof (parsed as Record<string, unknown>).engineId === "string") {
+      return parsed as ParsedSource;
+    }
     if (typeof parsed === "object" && parsed !== null && "data" in parsed) {
       const inner = (parsed as { data: unknown }).data;
-      if (typeof inner === "object" && inner !== null && "engineId" in inner) return inner as ParsedSource;
+      if (typeof inner === "object" && inner !== null && typeof (inner as Record<string, unknown>).engineId === "string") {
+        return inner as ParsedSource;
+      }
     }
     return null;
   } catch {
@@ -66,13 +70,16 @@ function parseSource(raw: string): ParsedSource | null {
 function wrap(doc: unknown, originalRaw: string): string {
   try {
     const outer = JSON.parse(originalRaw);
-    if ("data" in outer) return JSON.stringify({ ...outer, data: doc });
-  } catch { /* fallback */ }
+    if (typeof outer === "object" && outer !== null && "data" in outer) {
+      return JSON.stringify({ ...outer, data: doc });
+    }
+  } catch { /* fallback to bare doc */ }
   return JSON.stringify(doc);
 }
 
 function extractDoc(parsed: ParsedSource): Record<string, unknown> {
-  return ("data" in parsed ? (parsed as { data: unknown }).data : parsed) as Record<string, unknown>;
+  const raw = "data" in parsed ? (parsed as { data: unknown }).data : parsed;
+  return (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
 }
 
 
@@ -281,7 +288,7 @@ export function hasVisualEditor(
 
   const parsed = parseSource(sourceJson);
   if (!parsed) return false;
-  const engineId = parsed.engineId as string;
+  const engineId = parsed.engineId; // garantizado string por parseSource
 
   const VISUAL_EDITOR_ENGINES = new Set([
     "graph-node-engine",
