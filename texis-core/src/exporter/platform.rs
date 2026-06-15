@@ -72,10 +72,17 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
     let suffix = target_suffix(&input.target);
     let dir_name = format!("{slug}{suffix}");
 
-    // Generamos fuentes LaTeX en una carpeta temporal dentro del output_dir
+    // Generamos fuentes LaTeX en una carpeta temporal dentro del output_dir.
+    // Si ya existe del mismo slug (re-export), la eliminamos limpiamente.
+    // Esto es intencional: el export es siempre una operación idempotente.
     let export_root = input.output_dir.join(&dir_name);
     if export_root.exists() {
-        std::fs::remove_dir_all(&export_root).map_err(CoreError::Io)?;
+        std::fs::remove_dir_all(&export_root).map_err(|e| CoreError::InvalidProject {
+            message: format!(
+                "No se pudo limpiar la exportación previa en '{}': {e}",
+                export_root.display()
+            ),
+        })?;
     }
     std::fs::create_dir_all(&export_root).map_err(CoreError::Io)?;
 
@@ -130,7 +137,15 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
     // 5. Para Overleaf: comprimir en ZIP
     let artifact_path = if input.target == ExportTarget::Overleaf {
         let zip_path = input.output_dir.join(format!("{slug}_overleaf.zip"));
-        zip_directory(&export_root, &zip_path)?;
+        // Eliminar ZIP previo si existe (re-export idempotente)
+        if zip_path.exists() {
+            std::fs::remove_file(&zip_path).map_err(CoreError::Io)?;
+        }
+        if let Err(e) = zip_directory(&export_root, &zip_path) {
+            // Si el ZIP falla, limpiar la carpeta temporal y propagar el error
+            let _ = std::fs::remove_dir_all(&export_root);
+            return Err(e);
+        }
         std::fs::remove_dir_all(&export_root).map_err(CoreError::Io)?;
         zip_path
     } else {

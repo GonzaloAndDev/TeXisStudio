@@ -27,7 +27,7 @@ pub struct ConsolidatedTex {
     pub warnings: Vec<String>,
 }
 
-const MAX_DEPTH: usize = 12;
+const MAX_DEPTH: usize = 16;
 const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10 MB por archivo
 
 /// Consolida todos los archivos .tex de `source_dir` en un único string.
@@ -100,7 +100,7 @@ fn expand_tex(
             continue;
         }
 
-        if let Some(sub_path) = extract_include(trimmed, parent) {
+        if let Some(sub_path) = extract_include(trimmed, parent, root_dir) {
             // Marca el punto de inclusión con un comentario para depuración
             result.push_str(&format!("% --- begin included: {} ---\n", sub_path.display()));
             match expand_tex(&sub_path, root_dir, visited, depth + 1, warnings) {
@@ -122,43 +122,73 @@ fn expand_tex(
     Ok(result)
 }
 
-/// Extrae la ruta del archivo de un \input{...} o \include{...}.
-fn extract_include(line: &str, parent: &Path) -> Option<PathBuf> {
-    let prefixes = ["\\input{", "\\include{", "\\input ", "\\include "];
+/// Extrae la ruta del archivo de un \input{...}, \include{...} o \subfile{...}.
+///
+/// Búsqueda: primero relativa al directorio padre del archivo actual,
+/// luego relativa al `root_dir` (como hace Overleaf y la mayoría de proyectos
+/// académicos cuando todos los \input son relativos al main.tex).
+fn extract_include(line: &str, parent: &Path, root_dir: &Path) -> Option<PathBuf> {
+    // Prefijos con llave abierta (arg termina en '}')
+    let brace_prefixes = [
+        "\\input{",
+        "\\include{",
+        "\\subfile{",
+        "\\subimport{",
+    ];
+    // Prefijos sin llave (arg termina en whitespace o fin de línea)
+    let space_prefixes = ["\\input ", "\\include "];
 
-    for prefix in &prefixes {
-        if !line.starts_with(prefix) {
-            continue;
-        }
-        let rest = line[prefix.len()..].trim();
-        let arg = if prefix.ends_with('{') {
-            // Formato con llaves: \input{file}
-            let end = rest.find('}')?;
-            &rest[..end]
-        } else {
-            // Formato sin llaves: \input file
-            rest.split_whitespace().next()?
-        };
-        let arg = arg.trim();
-        if arg.is_empty() {
-            continue;
-        }
+    let arg: &str;
+    let mut found_arg = String::new();
 
-        // Probar con y sin extensión .tex
-        let candidates = [
-            parent.join(arg),
-            parent.join(format!("{arg}.tex")),
-        ];
+    // Intentar con prefijos de llave
+    let mut matched = false;
+    for prefix in &brace_prefixes {
+        if line.starts_with(prefix) {
+            let rest = line[prefix.len()..].trim();
+            // Para \subimport{dir}{file}: tomar solo el segundo argumento
+            if *prefix == "\\subimport{" {
+                let close1 = rest.find('}')?;
+                let after = rest[close1 + 1..].trim_start();
+                if after.starts_with('{') {
+                    let inner = &after[1..];
+                    let close2 = inner.find('}')?;
+                    let dir_part = &rest[..close1];
+                    let file_part = &inner[..close2];
+                    found_arg = format!("{dir_part}/{file_part}");
+                }
+            } else {
+                let end = rest.find('}')?;
+                found_arg = rest[..end].trim().to_string();
+            }
+            matched = true;
+            break;
+        }
+    }
+    if !matched {
+        for prefix in &space_prefixes {
+            if line.starts_with(prefix) {
+                let rest = line[prefix.len()..].trim();
+                found_arg = rest.split_whitespace().next()?.to_string();
+                matched = true;
+                break;
+            }
+        }
+    }
+    if !matched || found_arg.is_empty() {
+        return None;
+    }
+    arg = &found_arg;
+
+    // Probar primero relativo al padre, luego relativo al root
+    let search_bases = [parent, root_dir];
+    for base in &search_bases {
+        let candidates = [base.join(arg), base.join(format!("{arg}.tex"))];
         for candidate in &candidates {
             if candidate.exists() && candidate.is_file() {
                 return Some(candidate.clone());
             }
         }
-
-        // Buscar recursivamente en subdirectorios del parent
-        // (algunos proyectos usan rutas relativas al root, no al padre)
-        // ya probamos parent/arg — si no existe, devolver None
-        return None;
     }
     None
 }
@@ -167,7 +197,7 @@ fn extract_include(line: &str, parent: &Path) -> Option<PathBuf> {
 /// Criterios (en orden): tiene \documentclass, nombre "main.tex", el más grande.
 fn find_root_tex(dir: &Path, warnings: &mut Vec<String>) -> CoreResult<PathBuf> {
     let mut candidates: Vec<PathBuf> = WalkDir::new(dir)
-        .max_depth(3)
+        .max_depth(6)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| {

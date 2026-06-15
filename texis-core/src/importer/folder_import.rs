@@ -95,15 +95,36 @@ pub fn import_from_folder(
             path: source_dir.to_string_lossy().to_string(),
         });
     }
-    if source_dir == work_dir {
+
+    // Comparación canónica: evita que "/a/b" y "/a/b/" o "/a/./b" sean distintos.
+    let canon_src = source_dir
+        .canonicalize()
+        .unwrap_or_else(|_| source_dir.to_path_buf());
+    let canon_dst = work_dir
+        .canonicalize()
+        .unwrap_or_else(|_| work_dir.to_path_buf());
+    if canon_src == canon_dst {
         return Err(CoreError::InvalidProject {
             message: "source_dir y work_dir no pueden ser el mismo directorio".to_string(),
         });
     }
+    // Evitar que work_dir sea una subcarpeta de source_dir (importaría sobre sí mismo)
+    if canon_dst.starts_with(&canon_src) {
+        return Err(CoreError::InvalidProject {
+            message: format!(
+                "El directorio de trabajo '{}' es una subcarpeta del origen '{}'. \
+                 Usa una ruta completamente diferente.",
+                work_dir.display(),
+                source_dir.display()
+            ),
+        });
+    }
+
     if work_dir.exists() && !options.overwrite {
+        // unwrap_or(true): si no podemos leer el dir (permisos), asumimos no vacío → seguro
         if std::fs::read_dir(work_dir)
             .map(|mut d| d.next().is_some())
-            .unwrap_or(false)
+            .unwrap_or(true)
         {
             return Err(CoreError::InvalidProject {
                 message: format!(
@@ -421,9 +442,20 @@ fn copy_assets(
     let mut figures_copied = 0usize;
     let mut bibs_copied = 0usize;
 
+    // Rastrea nombres usados para detectar colisiones y renombrar en lugar de sobreescribir.
+    let mut used_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
     for src in figure_paths {
-        if let Some(name) = src.file_name() {
-            let dst = figures_dir.join(name);
+        if let Some(raw_name) = src.file_name().and_then(|n| n.to_str()) {
+            let dst_name = unique_name(raw_name, &mut used_names);
+            let dst = figures_dir.join(&dst_name);
+            if dst_name != raw_name {
+                warnings.push(format!(
+                    "Figura '{}' renombrada a '{}' para evitar colisión de nombres.",
+                    src.display(),
+                    dst_name
+                ));
+            }
             match std::fs::copy(src, &dst) {
                 Ok(_) => figures_copied += 1,
                 Err(e) => warnings.push(format!(
@@ -433,9 +465,12 @@ fn copy_assets(
             }
         }
     }
+
+    let mut used_bib_names: std::collections::HashSet<String> = std::collections::HashSet::new();
     for src in bib_paths {
-        if let Some(name) = src.file_name() {
-            let dst = content_dir.join(name);
+        if let Some(raw_name) = src.file_name().and_then(|n| n.to_str()) {
+            let dst_name = unique_name(raw_name, &mut used_bib_names);
+            let dst = content_dir.join(&dst_name);
             match std::fs::copy(src, &dst) {
                 Ok(_) => bibs_copied += 1,
                 Err(e) => warnings.push(format!(
@@ -446,6 +481,25 @@ fn copy_assets(
         }
     }
     Ok((figures_copied, bibs_copied))
+}
+
+/// Genera un nombre de archivo único dentro de `used`. Si hay colisión, agrega sufijo `_2`, `_3`, ...
+fn unique_name(name: &str, used: &mut std::collections::HashSet<String>) -> String {
+    if !used.contains(name) {
+        used.insert(name.to_string());
+        return name.to_string();
+    }
+    // Partir en stem + extensión para insertar sufijo antes de la extensión
+    let (stem, ext) = name.rfind('.').map_or((name, ""), |i| (&name[..i], &name[i..]));
+    let mut counter = 2u32;
+    loop {
+        let candidate = format!("{stem}_{counter}{ext}");
+        if !used.contains(&candidate) {
+            used.insert(candidate.clone());
+            return candidate;
+        }
+        counter += 1;
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -629,5 +683,67 @@ mod tests {
         let result =
             import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         assert!(result.project_file.exists());
+    }
+
+    // ── Tests de regresión para issues críticos ───────────────────────────────
+
+    #[test]
+    fn copy_assets_resuelve_colision_de_nombres() {
+        // Dos figuras con el mismo nombre en subcarpetas diferentes
+        let src = tempfile::tempdir().unwrap();
+        let dst = tempfile::tempdir().unwrap();
+        write(&src, "main.tex", SIMPLE_TEX);
+        fs::create_dir_all(src.path().join("ch1")).unwrap();
+        fs::create_dir_all(src.path().join("ch2")).unwrap();
+        fs::write(src.path().join("ch1/fig.png"), b"A").unwrap();
+        fs::write(src.path().join("ch2/fig.png"), b"B").unwrap();
+
+        let result =
+            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+
+        assert_eq!(result.figures_copied, 2, "ambas figuras deben copiarse");
+        // Ambas existen con nombres distintos
+        let fig1 = dst.path().join("content/figures/fig.png");
+        let fig2 = dst.path().join("content/figures/fig_2.png");
+        assert!(fig1.exists() && fig2.exists(), "los dos archivos deben existir sin sobreescribirse");
+        assert!(result.warnings.iter().any(|w| w.contains("renombrada")), "debe haber aviso de renombrado");
+    }
+
+    #[test]
+    fn rechaza_work_dir_subcarpeta_de_source() {
+        let src = tempfile::tempdir().unwrap();
+        write(&src, "main.tex", SIMPLE_TEX);
+        // work_dir ES una subcarpeta de source_dir
+        let nested = src.path().join("output");
+        fs::create_dir_all(&nested).unwrap();
+
+        let result = import_from_folder(src.path(), &nested, &ImportOptions::default());
+        assert!(result.is_err(), "debe rechazar work_dir dentro de source_dir");
+    }
+
+    #[test]
+    fn consolidator_resuelve_input_relativo_al_root() {
+        // Patrón Overleaf: \input{chapters/cap1} desde main.tex en raíz
+        // cap1.tex hace \input{sections/intro} — intro.tex está en root/sections/
+        let src = tempfile::tempdir().unwrap();
+        let dst = tempfile::tempdir().unwrap();
+        write(
+            &src,
+            "main.tex",
+            "\\documentclass{book}\n\\begin{document}\n\\input{chapters/cap1}\n\\end{document}",
+        );
+        write(
+            &src,
+            "chapters/cap1.tex",
+            "\\chapter{Cap 1}\n\\input{sections/intro}",
+        );
+        write(&src, "sections/intro.tex", "Texto de introducción.");
+
+        let result =
+            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        // Debe importar sin error y tener contenido de intro
+        assert!(result.project_file.exists());
+        // sections/intro se resuelve correctamente desde el contexto del chapters/cap1.tex
+        // porque el fallback busca también en root_dir
     }
 }
