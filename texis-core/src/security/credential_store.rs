@@ -79,7 +79,7 @@ impl CredentialStore for InMemoryCredentialStore {
     fn set(&self, service: &str, key: &str, value: &str) -> CredentialResult<()> {
         self.store
             .lock()
-            .unwrap()
+            .unwrap_or_else(|p| p.into_inner())
             .insert(Self::key(service, key), value.to_string());
         Ok(())
     }
@@ -88,13 +88,16 @@ impl CredentialStore for InMemoryCredentialStore {
         Ok(self
             .store
             .lock()
-            .unwrap()
+            .unwrap_or_else(|p| p.into_inner())
             .get(&Self::key(service, key))
             .cloned())
     }
 
     fn delete(&self, service: &str, key: &str) -> CredentialResult<()> {
-        self.store.lock().unwrap().remove(&Self::key(service, key));
+        self.store
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .remove(&Self::key(service, key));
         Ok(())
     }
 

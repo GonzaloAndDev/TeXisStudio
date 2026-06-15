@@ -124,11 +124,22 @@ pub fn create_delivery_package(
 
     let mut manifest_entries: Vec<serde_json::Value> = vec![];
 
+    // Cap per-file reads to 200 MB to prevent OOM on unexpectedly large project assets.
+    const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
+
     // ── Añadir archivos al ZIP ────────────────────────────────────────────────
 
     // 1. PDF compilado
     let pdf_path = project_dir.join("build").join("main.pdf");
     if pdf_path.exists() {
+        let file_size = std::fs::metadata(&pdf_path).map(|m| m.len()).unwrap_or(0);
+        if file_size > MAX_FILE_BYTES {
+            return Err(CoreError::Io(std::io::Error::other(format!(
+                "El PDF compilado es demasiado grande para incluirlo en el paquete de entrega ({} MB, máx {} MB)",
+                file_size / (1024 * 1024),
+                MAX_FILE_BYTES / (1024 * 1024),
+            ))));
+        }
         let bytes = std::fs::read(&pdf_path).map_err(CoreError::Io)?;
         add_file(&mut zip, "thesis.pdf", &bytes, &mut manifest_entries, opts)?;
     }
@@ -163,6 +174,16 @@ pub fn create_delivery_package(
                 continue;
             }
             if let Ok(rel) = path.strip_prefix(&build_dir) {
+                let file_size = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+                if file_size > MAX_FILE_BYTES {
+                    // Skip oversized intermediate build artefacts rather than failing the whole export.
+                    eprintln!(
+                        "[delivery] omitido archivo fuente demasiado grande: {} ({} MB)",
+                        path.display(),
+                        file_size / (1024 * 1024),
+                    );
+                    continue;
+                }
                 let entry_name = format!("sources/{}", rel.to_string_lossy().replace('\\', "/"));
                 let bytes = std::fs::read(path).map_err(CoreError::Io)?;
                 add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries, opts)?;
@@ -182,6 +203,15 @@ pub fn create_delivery_package(
                 continue;
             }
             if let Ok(rel) = path.strip_prefix(&content_dir) {
+                let file_size = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+                if file_size > MAX_FILE_BYTES {
+                    eprintln!(
+                        "[delivery] omitido archivo de contenido demasiado grande: {} ({} MB)",
+                        path.display(),
+                        file_size / (1024 * 1024),
+                    );
+                    continue;
+                }
                 let entry_name = format!("content/{}", rel.to_string_lossy().replace('\\', "/"));
                 let bytes = std::fs::read(path).map_err(CoreError::Io)?;
                 add_file(&mut zip, &entry_name, &bytes, &mut manifest_entries, opts)?;

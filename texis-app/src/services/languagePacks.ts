@@ -300,9 +300,17 @@ export function getInstalledLocales(): Array<{ id: string; data: Record<string, 
     .filter((p) => p.entry.capabilities.ui)
     .map((p) => {
       const raw = localStorage.getItem(`tx-lang-pack-ui:${p.id}`);
-      const data = raw
-        ? (JSON.parse(raw) as Record<string, unknown>)
-        : (p.ui_data ?? {});
+      let data: Record<string, unknown>;
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          console.warn(`[languagePacks] locale corrupto en localStorage para "${p.id}", usando fallback`);
+          data = p.ui_data ?? {};
+        }
+      } else {
+        data = p.ui_data ?? {};
+      }
       return { id: p.id, data };
     });
 }

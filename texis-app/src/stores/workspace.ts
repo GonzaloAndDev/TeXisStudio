@@ -37,7 +37,15 @@ const INITIAL_STATE: WorkspaceState = {
 export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   ...INITIAL_STATE,
 
-  hydrate: (state) => set({ ...state }),
+  hydrate: (state) =>
+    set({
+      ...state,
+      // Clamp zoom to a sane range in case persisted value is corrupted or from an old schema.
+      zoomLevel:
+        typeof state.zoomLevel === "number" && Number.isFinite(state.zoomLevel)
+          ? Math.min(Math.max(state.zoomLevel, 0.5), 3.0)
+          : 1,
+    }),
 
   setOpenFiles: (files) => set({ openFiles: files }),
 
