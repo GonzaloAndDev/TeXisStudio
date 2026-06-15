@@ -131,7 +131,18 @@ fn render_section(
 
     if let Some(title) = &section.title {
         let cmd = chapter_command(section);
-        out.push_str(&format!("\\{}{{{}}}\n\n", cmd, latex_escape(title)));
+        let escaped_title = latex_escape(title);
+        out.push_str(&format!("\\{}{{{}}}\n", cmd, escaped_title));
+        // Capítulos sin numeración (chapter*) no se añaden automáticamente al
+        // índice de contenidos. Lo añadimos explícitamente para que resumen,
+        // glosario, apéndices de backmatter, etc. aparezcan en el ToC.
+        if cmd == "chapter*" {
+            out.push_str(&format!(
+                "\\addcontentsline{{toc}}{{chapter}}{{{}}}\n",
+                escaped_title
+            ));
+        }
+        out.push('\n');
     }
 
     out.push_str(&render_blocks(&section.blocks));
@@ -425,23 +436,34 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 Some(l) if !l.is_empty() => format!("\\label{{{}}}\n", l),
                 _ => String::new(),
             };
+            // \Require y \Ensure aceptan LaTeX (math, \ref, etc.) → sin escape
             let input_line = match &a.input {
                 Some(inp) if !inp.trim().is_empty() => {
-                    format!("\\Require {}\n", latex_escape(inp))
+                    format!("\\Require {}\n", inp.trim())
                 }
                 _ => String::new(),
             };
             let output_line = match &a.output {
                 Some(out) if !out.trim().is_empty() => {
-                    format!("\\Ensure {}\n", latex_escape(out))
+                    format!("\\Ensure {}\n", out.trim())
                 }
                 _ => String::new(),
             };
+            // El body es LaTeX algorithmicx semi-libre: no se escapa.
+            // Líneas que ya empiezan con \ (p.ej. \If, \For, \EndIf) se emiten
+            // tal cual. Líneas de texto plano reciben \State automático.
             let body_lines: String = a
                 .body
                 .lines()
                 .filter(|l| !l.trim().is_empty())
-                .map(|line| format!("    \\State {}\n", latex_escape(line.trim())))
+                .map(|line| {
+                    let t = line.trim();
+                    if t.starts_with('\\') {
+                        format!("    {t}\n")
+                    } else {
+                        format!("    \\State {t}\n")
+                    }
+                })
                 .collect();
             format!(
                 "\\begin{{algorithm}}[H]\n\\caption{{{}}}\n{}\\begin{{algorithmic}}[1]\n{}{}{}\\end{{algorithmic}}\n\\end{{algorithm}}\n\n",
@@ -1123,5 +1145,184 @@ mod tests {
             !out.contains("\\begin{table}["),
             "Wide NO usa entorno table estándar"
         );
+    }
+
+    // ── Algorithm ─────────────────────────────────────────────────────────────
+
+    fn make_algorithm(input: Option<&str>, output: Option<&str>, body: &str) -> ContentBlock {
+        use crate::project::model::AlgorithmBlock;
+        ContentBlock::Algorithm(AlgorithmBlock {
+            id: "alg1".to_string(),
+            caption: "Algoritmo de prueba".to_string(),
+            label: Some("alg:test".to_string()),
+            input: input.map(|s| s.to_string()),
+            output: output.map(|s| s.to_string()),
+            body: body.to_string(),
+        })
+    }
+
+    #[test]
+    fn algorithm_body_linea_plain_recibe_state() {
+        let out = render_block(&make_algorithm(None, None, "Inicializar x = 0"));
+        assert!(out.contains("\\State Inicializar x = 0"), "línea plain debe tener \\State");
+    }
+
+    #[test]
+    fn algorithm_body_linea_con_barra_emitida_raw() {
+        let out = render_block(&make_algorithm(None, None, "\\If{$x > 0$}\n\\State Procesar\n\\EndIf"));
+        assert!(out.contains("\\If{$x > 0$}"), "\\If debe emitirse sin modificar");
+        assert!(out.contains("\\EndIf"), "\\EndIf debe emitirse sin modificar");
+        assert!(!out.contains("\\State \\If"), "\\If NO debe recibir \\State extra");
+    }
+
+    #[test]
+    fn algorithm_math_en_body_no_se_escapa() {
+        let out = render_block(&make_algorithm(None, None, "\\State Calcular $R^2_1$"));
+        assert!(out.contains("$R^2_1$"), "la math en body no debe escaparse");
+        assert!(!out.contains("\\$"), "$ no debe convertirse en \\$");
+        assert!(!out.contains("textasciicircum"), "^ no debe escaparse como textasciicircum");
+    }
+
+    #[test]
+    fn algorithm_input_output_con_math_no_se_escapan() {
+        let out = render_block(&make_algorithm(
+            Some("Datos $(t_i, q_i)$, umbral $R^2_{min} = 0.99$"),
+            Some("Modelo seleccionado con parámetros"),
+        "\\State Ajustar"));
+        assert!(out.contains("\\Require Datos $(t_i, q_i)$"), "\\Require debe contener math sin escapar");
+        assert!(out.contains("$R^2_{min} = 0.99$"), "math en Require no debe escaparse");
+        assert!(out.contains("\\Ensure Modelo seleccionado"), "\\Ensure debe emitirse raw");
+    }
+
+    #[test]
+    fn algorithm_ref_en_body_no_se_escapa() {
+        let out = render_block(&make_algorithm(None, None, "\\State Ec.~\\ref{eq:langmuir}"));
+        assert!(out.contains("\\ref{eq:langmuir}"), "\\ref debe emitirse sin modificar");
+        assert!(!out.contains("\\textbackslash"), "backslash no debe escaparse en body");
+    }
+
+    #[test]
+    fn algorithm_estructura_completa() {
+        let body = "\\If{$R^2_2 > R^2_1$}\n\\State Usar pseudo-2do orden\n\\Else\n\\State Usar pseudo-1er orden\n\\EndIf";
+        let out = render_block(&make_algorithm(Some("Datos"), Some("Modelo"), body));
+        assert!(out.contains("\\begin{algorithm}[H]"));
+        assert!(out.contains("\\begin{algorithmic}[1]"));
+        assert!(out.contains("\\end{algorithmic}"));
+        assert!(out.contains("\\end{algorithm}"));
+        assert!(out.contains("\\label{alg:test}"));
+        assert!(out.contains("\\caption{Algoritmo de prueba}"));
+    }
+
+    // ── chapter* + \addcontentsline ────────────────────────────────────────────
+
+    fn make_section_with_placement(placement: SectionPlacement, title: Option<&str>) -> ProjectSection {
+        use std::collections::HashMap;
+        use crate::project::model::SectionStatus;
+        ProjectSection {
+            id: "test_sec".to_string(),
+            title: title.map(|t| t.to_string()),
+            element_id: "custom".to_string(),
+            enabled: true,
+            required: false,
+            placement,
+            label: None,
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![],
+            fields: HashMap::new(),
+            children: vec![],
+        }
+    }
+
+    fn bare_model_for_toc() -> ProjectModel {
+        use crate::project::model::{
+            AcademicLevel, BibliographyBackend, CompilerKind, DocumentClassConfig,
+            DocumentKind, InstitutionData, LatexConfig, LatexEngine, ProjectMetadata,
+            StudentData,
+        };
+        use std::collections::HashMap;
+        ProjectModel {
+            id: "test".into(),
+            schema_version: "1.0.0".into(),
+            created_at: "".into(),
+            updated_at: "".into(),
+            metadata: ProjectMetadata {
+                title: "Tesis".into(),
+                subtitle: None,
+                document_kind: DocumentKind::Tesis,
+                academic_level: AcademicLevel::Maestria,
+                language: "es".into(),
+                city: "Ciudad".into(),
+                year: 2025,
+                keywords: vec![],
+                funding: None,
+            },
+            institution: InstitutionData {
+                name: "Universidad".into(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".into(),
+            },
+            student: StudentData {
+                full_name: "Autor".into(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                co_advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                committee: vec![],
+                orcid: None,
+            },
+            profile_id: "test.profile".into(),
+            latex_config: LatexConfig {
+                document_class: DocumentClassConfig {
+                    name: "book".into(),
+                    options: vec![],
+                },
+                engine: LatexEngine::Xelatex,
+                compiler: CompilerKind::Latexmk,
+                bibliography_backend: BibliographyBackend::Biber,
+                bibliography_style: "apa".into(),
+                packages_required: vec![],
+                typography: Default::default(),
+                page_layout: None,
+                packages_with_options: vec![],
+                preamble_config: Default::default(),
+            },
+            sections: vec![],
+            file_states: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn backmatter_con_titulo_agrega_addcontentsline() {
+        let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
+        let model = bare_model_for_toc();
+        let section = make_section_with_placement(SectionPlacement::BackMatter, Some("Apéndice Técnico"));
+        let out = render_section(&section, &engine, &model, None).unwrap();
+        assert!(out.contains("\\chapter*{"), "backmatter debe usar chapter*");
+        assert!(out.contains("\\addcontentsline{toc}{chapter}{"), "debe añadir al ToC");
+    }
+
+    #[test]
+    fn frontmatter_con_titulo_agrega_addcontentsline() {
+        let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
+        let model = bare_model_for_toc();
+        let section = make_section_with_placement(SectionPlacement::FrontMatter, Some("Resumen"));
+        let out = render_section(&section, &engine, &model, None).unwrap();
+        assert!(out.contains("\\chapter*{Resumen}"), "frontmatter usa chapter*");
+        assert!(out.contains("\\addcontentsline{toc}{chapter}{Resumen}"), "resumen debe ir al ToC");
+    }
+
+    #[test]
+    fn body_section_no_agrega_addcontentsline() {
+        let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
+        let model = bare_model_for_toc();
+        let section = make_section_with_placement(SectionPlacement::Body, Some("Introducci\u{f3}n"));
+        let out = render_section(&section, &engine, &model, None).unwrap();
+        assert!(out.contains("\\chapter{"), "body usa chapter numerado");
+        assert!(!out.contains("\\addcontentsline"), "body chapter NO añade addcontentsline");
     }
 }

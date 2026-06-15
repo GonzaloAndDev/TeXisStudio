@@ -81,7 +81,7 @@ fn glycolysis(c: &BioPathwayConfig) -> String {
     ];
     let cofactors_right = ["", "ATP→ADP", "", "ATP→ADP", "", "2 NADH, 4 ATP"];
     let mut out = String::from("\\begin{tikzpicture}[node distance=1.3cm, font=\\small]\n");
-    out.push_str("  \\tikzstyle{metabolite}=[draw, rounded corners=3pt, fill=blue!10, minimum width=3.5cm, minimum height=0.55cm, align=center, font=\\footnotesize\\bfseries]\n");
+    out.push_str("  \\tikzset{metabolite/.style={draw, rounded corners=3pt, fill=blue!10, minimum width=3.5cm, minimum height=0.55cm, align=center, font=\\footnotesize\\bfseries}}\n");
     for (i, (id, lbl)) in steps.iter().enumerate() {
         let pos = if i == 0 {
             String::new()
@@ -117,8 +117,8 @@ fn glycolysis(c: &BioPathwayConfig) -> String {
 fn photosynthesis(c: &BioPathwayConfig) -> String {
     format!(
         r#"\begin{{tikzpicture}}[scale=0.9, node distance=1.4cm]
-  \tikzstyle{{react}}=[draw, rounded corners=3pt, fill=green!15, minimum width=3cm,
-                       minimum height=0.55cm, align=center, font=\footnotesize\bfseries]
+  \tikzset{{react/.style={{draw, rounded corners=3pt, fill=green!15, minimum width=3cm,
+                       minimum height=0.55cm, align=center, font=\footnotesize\bfseries}}}}
   \node[react] (co2)   {{{co2}}};
   \node[react] (rubp)  [below of=co2]  {{{rubp}}};
   \node[react] (pg3)   [below of=rubp] {{{pg3}}};
@@ -146,7 +146,7 @@ fn electron_transport(c: &BioPathwayConfig) -> String {
         (label(c, "civ", "Complejo IV\\\\Cyt c oxidasa"), "orange!15"),
     ];
     let mut out = String::from("\\begin{tikzpicture}[node distance=1.8cm, font=\\small]\n");
-    out.push_str("  \\tikzstyle{complex}=[draw, rounded corners=3pt, minimum width=2.2cm, minimum height=1.2cm, align=center, font=\\footnotesize\\bfseries]\n");
+    out.push_str("  \\tikzset{complex/.style={draw, rounded corners=3pt, minimum width=2.2cm, minimum height=1.2cm, align=center, font=\\footnotesize\\bfseries}}\n");
     for (i, (lbl, color)) in steps.iter().enumerate() {
         let pos = if i == 0 {
             String::new()
@@ -189,7 +189,7 @@ fn beta_oxidation(c: &BioPathwayConfig) -> String {
         ["", "", "", "", ""]
     };
     let mut out = String::from("\\begin{tikzpicture}[node distance=1.3cm, font=\\small]\n");
-    out.push_str("  \\tikzstyle{step}=[draw, rounded corners, fill=yellow!15, minimum width=3.8cm, minimum height=0.55cm, align=center, font=\\footnotesize\\bfseries]\n");
+    out.push_str("  \\tikzset{step/.style={draw, rounded corners, fill=yellow!15, minimum width=3.8cm, minimum height=0.55cm, align=center, font=\\footnotesize\\bfseries}}\n");
     for (i, lbl) in steps.iter().enumerate() {
         let pos = if i == 0 {
             String::new()
@@ -222,4 +222,55 @@ fn beta_oxidation(c: &BioPathwayConfig) -> String {
     }
     out.push_str("\\end{tikzpicture}");
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::model::BioPathwayConfig;
+
+    fn cfg(preset: &str) -> BioPathwayConfig {
+        BioPathwayConfig {
+            preset: preset.to_string(),
+            custom_labels: Default::default(),
+            show_cofactors: false,
+        }
+    }
+
+    #[test]
+    fn ninguna_funcion_usa_tikzstyle_deprecated() {
+        for preset in &["glycolysis", "photosynthesis", "electron_transport", "beta_oxidation", "krebs_cycle"] {
+            let out = render(&cfg(preset));
+            assert!(!out.contains("\\tikzstyle"), "preset '{preset}' usa \\tikzstyle deprecated");
+            assert!(out.contains("tikzpicture"), "preset '{preset}' debe generar tikzpicture");
+        }
+    }
+
+    #[test]
+    fn glycolysis_usa_tikzset() {
+        let out = render(&cfg("glycolysis"));
+        assert!(out.contains("\\tikzset{metabolite/.style={"), "glycolysis debe usar \\tikzset con sintaxis /.style={{");
+    }
+
+    #[test]
+    fn photosynthesis_usa_tikzset() {
+        let out = render(&cfg("photosynthesis"));
+        assert!(out.contains("\\tikzset{react/.style={"), "photosynthesis debe usar \\tikzset");
+    }
+
+    #[test]
+    fn krebs_tiene_cofactores_cuando_show_true() {
+        let mut c = cfg("krebs_cycle");
+        c.show_cofactors = true;
+        let out = render(&c);
+        assert!(out.contains("NADH"), "krebs con cofactores debe mostrar NADH");
+    }
+
+    #[test]
+    fn custom_labels_se_escapan() {
+        let mut c = cfg("glycolysis");
+        c.custom_labels.insert("glucose".to_string(), "Glucosa & 6C".to_string());
+        let out = render(&c);
+        assert!(out.contains("\\&"), "& en custom label debe escaparse");
+    }
 }
