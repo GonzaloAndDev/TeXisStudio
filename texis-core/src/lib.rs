@@ -1,5 +1,6 @@
 pub mod asset;
 pub mod bibliography;
+pub mod importer;
 pub mod build_engine;
 pub mod commands;
 pub mod compiler;
