@@ -281,7 +281,12 @@ export default function EditorView() {
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
   const [mathPanelOpen, setMathPanelOpen]       = useState(false);
+  const [mathPanelCollapsed, setMathPanelCollapsed] = useState(false);
   const aiPanel = useAiStore();
+
+  // Estado de colapso de paneles laterales
+  const [leftCollapsed, setLeftCollapsed]   = useState(false);
+  const [metaCollapsed, setMetaCollapsed]   = useState(false);
 
   // Navegación a bloque específico (desde búsqueda en CommandPalette)
   const [jumpTargetBlockId, setJumpTargetBlockId] = useState<string | null>(null);
@@ -944,7 +949,7 @@ export default function EditorView() {
       <ExternalConflictBanner projectPath={activeProjectPath} />
 
       <div className="editor-shell">
-      <div className="editor-grid">
+      <div className={`editor-grid${leftCollapsed ? " editor-grid-left-collapsed" : ""}${metaCollapsed ? " editor-grid-meta-collapsed" : ""}`}>
 
         {/* ── Árbol de secciones ─────────────────────────────────── */}
         <SectionTree
@@ -952,6 +957,8 @@ export default function EditorView() {
           localBlocks={localBlocks}
           localizedTitle={localizedSectionTitle}
           userMode={userMode}
+          collapsed={leftCollapsed}
+          onToggleCollapse={() => setLeftCollapsed((v) => !v)}
         />
 
         {/* ── Canvas editor ──────────────────────────────────────── */}
@@ -1211,6 +1218,8 @@ export default function EditorView() {
           onSave={saveMetadata}
           onCompile={() => void goToCompile()}
           diagnosticsPanel={<ProjectDiagnosticsPanel projectPath={activeProjectPath} />}
+          collapsed={metaCollapsed}
+          onToggleCollapse={() => setMetaCollapsed((v) => !v)}
         />
       </div>
 
@@ -1280,12 +1289,16 @@ export default function EditorView() {
           onClose={() => setGrammarPanelOpen(false)}
         />
       )}
-      </div>
 
-      {/* Panel de símbolos matemáticos */}
+      {/* Panel de símbolos matemáticos — dentro de editor-shell para que aparezca como panel lateral derecho */}
       {mathPanelOpen && (
-        <MathToolbarPanel onClose={() => setMathPanelOpen(false)} />
+        <MathToolbarPanel
+          onClose={() => { setMathPanelOpen(false); setMathPanelCollapsed(false); }}
+          collapsed={mathPanelCollapsed}
+          onToggleCollapse={() => setMathPanelCollapsed((v) => !v)}
+        />
       )}
+      </div>
 
       {/* Panel de asistente IA */}
       {aiPanel.isPanelOpen && (

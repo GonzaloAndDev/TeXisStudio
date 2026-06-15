@@ -26,7 +26,9 @@
     "export": "Export",
     "confirm": "Confirm",
     "working": "Working…",
-    "language_picker_title": "Language"
+    "language_picker_title": "Language",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "app_error": {
     "title": "Something went wrong",
@@ -3113,6 +3115,8 @@
     "cat_relations": "Relations",
     "cat_arrows": "Arrows",
     "cat_structures": "Structures",
-    "cat_misc": "Miscellaneous"
+    "cat_misc": "Miscellaneous",
+    "collapse": "Collapse panel",
+    "expand": "Expand panel"
   }
 }

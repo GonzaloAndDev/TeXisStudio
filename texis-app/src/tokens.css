@@ -318,6 +318,8 @@ body {
 }
 
 .editor-panel-rail {
+  width: 42px;
+  flex: 0 0 42px;
   border-right: 1px solid var(--border-subtle);
   background: var(--bg-chrome);
   display: flex;

@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ReadinessOverview } from "./ReadinessOverview";
-import { IconBuild } from "./Icons";
+import { IconBuild, IconChevronL, IconChevronR } from "./Icons";
 import { deriveProjectReadiness } from "../lib/projectReadiness";
 import type {
   CommitteeMember,
@@ -75,6 +75,8 @@ export function EditorMetaPanel({
   onSave,
   onCompile,
   diagnosticsPanel,
+  collapsed,
+  onToggleCollapse,
 }: {
   project: ProjectModel;
   wordCount: number;
@@ -85,14 +87,41 @@ export function EditorMetaPanel({
   onSave: (updates: Record<string, unknown>) => void;
   onCompile: () => void;
   diagnosticsPanel?: React.ReactNode;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }) {
   const { t } = useTranslation();
   const readiness = deriveProjectReadiness(project);
+  const panelLabel = userMode === "basic" ? t("editor_meta.project_guide") : t("editor_meta.project");
+
+  if (collapsed) {
+    return (
+      <div className="editor-panel-rail editor-panel-rail-right" style={{ flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <button
+          className="btn btn-ghost btn-icon"
+          style={{ padding: 5 }}
+          title={t("common.expand")}
+          onClick={onToggleCollapse}
+        >
+          <IconChevronL size={13} />
+        </button>
+        <span className="editor-rail-label">{panelLabel}</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ borderLeft: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0, padding: 16, overflow: "auto" }} className="scroll">
-      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12 }}>
-        {userMode === "basic" ? t("editor_meta.project_guide") : t("editor_meta.project")}
+      <div style={{ fontSize: "var(--fs-xs)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span>{panelLabel}</span>
+        <button
+          className="btn btn-ghost btn-icon"
+          style={{ padding: 4, marginRight: -4 }}
+          title={t("common.collapse")}
+          onClick={onToggleCollapse}
+        >
+          <IconChevronR size={12} />
+        </button>
       </div>
 
       {userMode === "basic" && (

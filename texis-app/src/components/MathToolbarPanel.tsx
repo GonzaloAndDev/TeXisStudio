@@ -9,7 +9,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { mathInsertManager } from "../lib/mathInsertManager";
-import { IconX, IconSigma } from "./Icons";
+import { IconX, IconSigma, IconChevronR, IconChevronL } from "./Icons";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ const noBlur = (e: React.MouseEvent) => e.preventDefault();
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export function MathToolbarPanel({ onClose }: { onClose: () => void }) {
+export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onClose: () => void; collapsed: boolean; onToggleCollapse: () => void }) {
   const { t } = useTranslation();
   const [activeCat, setActiveCat] = useState<Category>("greek");
 
@@ -245,6 +245,36 @@ export function MathToolbarPanel({ onClose }: { onClose: () => void }) {
 
   const hasTarget = mathInsertManager.hasTarget();
   const symbols = SYMBOLS[activeCat];
+
+  if (collapsed) {
+    return (
+      <div
+        className="editor-panel-rail editor-panel-rail-right"
+        style={{ flexDirection: "column", alignItems: "center", gap: 4 }}
+      >
+        <button
+          className="btn btn-ghost btn-icon"
+          onMouseDown={noBlur}
+          onClick={onToggleCollapse}
+          title={t("math_toolbar.expand")}
+          style={{ padding: 5 }}
+        >
+          <IconChevronL size={13} />
+        </button>
+        <IconSigma size={12} style={{ color: "var(--fg-muted)", marginTop: 4 }} />
+        <span className="editor-rail-label">{t("math_toolbar.title")}</span>
+        <button
+          className="btn btn-ghost btn-icon"
+          onMouseDown={noBlur}
+          onClick={onClose}
+          title={t("common.close")}
+          style={{ padding: 4, marginTop: "auto", marginBottom: 8, color: "var(--fg-muted)" }}
+        >
+          <IconX size={11} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -283,6 +313,15 @@ export function MathToolbarPanel({ onClose }: { onClose: () => void }) {
         >
           {t("math_toolbar.title")}
         </span>
+        <button
+          className="btn btn-ghost btn-icon"
+          onMouseDown={noBlur}
+          onClick={onToggleCollapse}
+          title={t("math_toolbar.collapse")}
+          style={{ padding: 3, color: "var(--fg-muted)" }}
+        >
+          <IconChevronR size={11} />
+        </button>
         <button
           className="btn btn-ghost btn-icon"
           onMouseDown={noBlur}

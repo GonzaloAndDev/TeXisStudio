@@ -26,7 +26,9 @@
     "export": "Exportar",
     "confirm": "Confirmar",
     "working": "Trabajando…",
-    "language_picker_title": "Idioma"
+    "language_picker_title": "Idioma",
+    "collapse": "Contraer",
+    "expand": "Expandir"
   },
   "app_error": {
     "title": "Algo salió mal",
@@ -3113,6 +3115,8 @@
     "cat_relations": "Relaciones",
     "cat_arrows": "Flechas",
     "cat_structures": "Estructuras",
-    "cat_misc": "Miscelánea"
+    "cat_misc": "Miscelánea",
+    "collapse": "Contraer panel",
+    "expand": "Expandir panel"
   }
 }

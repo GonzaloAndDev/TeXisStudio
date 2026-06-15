@@ -5,6 +5,8 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconChevronD,
+  IconChevronL,
+  IconChevronR,
   IconEdit,
   IconEye,
   IconEyeOff,
@@ -28,6 +30,8 @@ interface SectionTreeProps {
   localBlocks: ContentBlock[];
   localizedTitle: (s: { id: string; element_id: string; title?: string }) => string;
   userMode: "basic" | "advanced";
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 // ── Constants ──────────────────────────────────────────────────────
@@ -54,7 +58,7 @@ function makeId(): string {
 
 // ── SectionTree ────────────────────────────────────────────────────
 
-export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, userMode }: SectionTreeProps) {
+export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, userMode, collapsed, onToggleCollapse }: SectionTreeProps) {
   const { t } = useTranslation();
   const confirm = useConfirm();
 
@@ -360,12 +364,37 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
   const suggestions = getSuggestions(docKind, existingElementIds);
   const kindLabel = t(KIND_KEY[docKind] as Parameters<typeof t>[0]);
 
+  if (collapsed) {
+    return (
+      <div className="editor-panel-rail" style={{ flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <button
+          className="btn btn-ghost btn-icon"
+          style={{ padding: 5 }}
+          title={t("common.expand")}
+          onClick={onToggleCollapse}
+        >
+          <IconChevronR size={13} />
+        </button>
+        <span className="editor-rail-label">{headerLabel}</span>
+      </div>
+    );
+  }
+
   return (
     <div style={{ borderRight: "1px solid var(--border-subtle)", background: "var(--bg-chrome)", display: "flex", flexDirection: "column", minHeight: 0 }}>
 
       {/* ── Header with + button ──────────────────────────────────── */}
       <div style={{ padding: "12px 14px 8px", fontSize: "var(--fs-xs)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-faint)", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         {headerLabel}
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <button
+            className="btn btn-ghost btn-icon"
+            style={{ padding: 4 }}
+            title={t("common.collapse")}
+            onClick={onToggleCollapse}
+          >
+            <IconChevronL size={12} />
+          </button>
         <div style={{ position: "relative" }} ref={addMenuRef}>
           <button
             className="btn btn-ghost btn-icon"
@@ -420,6 +449,7 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
 
