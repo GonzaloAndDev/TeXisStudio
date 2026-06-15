@@ -276,6 +276,20 @@ export const api = {
   ): Promise<{ artifact_path: string; info_url: string | null; note_key: string }> =>
     call("export_for_target", { projectPath, outputDir, target }),
 
+  importFromSource: (params: {
+    sourceDir: string;
+    workDir: string;
+    sourcePlatform: "overleaf" | "texstudio" | "miktex" | "texlive" | "vscode" | "other";
+    mainFileHint?: string;
+    overwrite?: boolean;
+  }): Promise<{
+    projectFile: string;
+    warnings: string[];
+    figuresCopied: number;
+    bibsCopied: number;
+  }> =>
+    call("import_from_source", { params }),
+
   checkPdfPostflight: (projectPath: string): Promise<PdfPostflightResult> =>
     call("check_pdf_postflight", { projectPath }),
 

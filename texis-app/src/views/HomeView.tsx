@@ -6,6 +6,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
 import { CorruptProjectModal } from "../components/CorruptProjectModal";
+import { ImportProjectModal } from "../components/ImportProjectModal";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook,
@@ -259,6 +260,7 @@ export default function HomeView() {
   const [projectsLoading, setProjectsLoading] = useState(cachedProjects.length === 0);
   const [latexLoading, setLatexLoading] = useState(latexInfo === null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importFolderOpen, setImportFolderOpen] = useState(false);
   const [importTexPath, setImportTexPath] = useState("");
   const [importOutputPath, setImportOutputPath] = useState("");
   const [importProjectName, setImportProjectName] = useState("");
@@ -558,6 +560,22 @@ export default function HomeView() {
           </div>
         </AppDialog>
       )}
+      {importFolderOpen && (
+        <ImportProjectModal
+          onClose={() => setImportFolderOpen(false)}
+          onProjectImported={(projectFile) => {
+            setImportFolderOpen(false);
+            // projectFile es la ruta al .yaml; getProject espera el directorio padre
+            const projectDir = projectFile.replace(/[/\\][^/\\]+$/, "");
+            api.getProject(projectDir).then((model) => {
+              useProjectStore.getState().openProject(model, projectDir);
+              navigate(`/project/${encodeURIComponent(projectDir)}`);
+            }).catch((e) => {
+              console.warn("[home] No se pudo abrir el proyecto importado:", e);
+            });
+          }}
+        />
+      )}
       {/* Barra de progreso de navegación */}
       {(busy || opening) && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 9999, background: "var(--bg-app)" }}>
@@ -653,6 +671,13 @@ export default function HomeView() {
                 }}
               >
                 <IconUpload size={13} /> {t("home.import_tex")}
+              </button>
+              <button
+                className="btn"
+                onClick={() => setImportFolderOpen(true)}
+                disabled={busy || !!opening}
+              >
+                <IconFolder size={13} /> {t("import_project.title")}
               </button>
               <button className="btn btn-ghost" onClick={handleOpenFolder}>{t("home.open_folder")}</button>
             </div>

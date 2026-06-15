@@ -2,11 +2,15 @@
 //!
 //! Estrategia: parseo estructural conservador.
 //!   1. Extrae preámbulo y cuerpo (entre \begin{document} y \end{document}).
-//!   2. Detecta capítulos (\chapter{} y \chapter*{}).
-//!   3. Dentro de cada capítulo detecta headings de sección.
-//!   4. El resto del contenido va a RawLatexBlock(user_confirmed: true).
-//!      → Nunca se pierde contenido.
-//!   5. Extrae metadata básica del preámbulo: título, autor, paquetes.
+//!   2. Detecta capitulos (\chapter y \chapter*).
+//!   3. Dentro de cada capitulo detecta headings de seccion.
+//!   4. El resto del contenido va a RawLatexBlock(user_confirmed: true) -- nunca se pierde contenido.
+//!   5. Extrae metadata basica del preambulo: titulo, autor, paquetes.
+
+pub mod consolidator;
+pub mod folder_import;
+
+pub use folder_import::{import_from_folder, FolderImportResult, ImportOptions, ImportSourcePlatform};
 
 use crate::project::model::{
     AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock, DocumentClassConfig,
