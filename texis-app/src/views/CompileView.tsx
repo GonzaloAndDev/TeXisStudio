@@ -20,6 +20,7 @@ import { useWorkspaceStore } from "../stores/workspace";
 type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
 import { isCancellationError } from "../lib/compileErrors";
+import { ExportPlatformModal } from "../components/ExportPlatformModal";
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ export default function CompileView() {
   const [postflightError, setPostflightError] = useState<string | null>(null);
   const [showTechnicalLog, setShowTechnicalLog] = useState(userMode === "advanced");
   const [readinessAction, setReadinessAction] = useState<PendingAction | null>(null);
+  const [showExportPlatform, setShowExportPlatform] = useState(false);
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
@@ -458,6 +460,12 @@ export default function CompileView() {
           </div>
         </AppDialog>
       )}
+      {showExportPlatform && activeProjectPath && (
+        <ExportPlatformModal
+          projectPath={activeProjectPath}
+          onClose={() => setShowExportPlatform(false)}
+        />
+      )}
       {checkReport && checkAction && (
         <DeliveryCheckModal
           report={checkReport}
@@ -807,6 +815,12 @@ export default function CompileView() {
                     >
                       <IconMore size={12} />
                       {exportBusy ? t("compile.generating") : t("compile.export_delivery_zip")}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => setShowExportPlatform(true)}
+                    >
+                      {t("export_platform.title")}
                     </button>
                     <button
                       className="btn btn-sm btn-ghost"

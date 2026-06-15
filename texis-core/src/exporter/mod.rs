@@ -7,5 +7,7 @@
 //! Punto de entrada principal: [`delivery::create_delivery_package`].
 
 pub mod delivery;
+pub mod platform;
 
 pub use delivery::{create_delivery_package, DeliveryInput, DeliveryOptions, DeliveryResult};
+pub use platform::{export_for_platform, ExportTarget, PlatformExportInput, PlatformExportResult};

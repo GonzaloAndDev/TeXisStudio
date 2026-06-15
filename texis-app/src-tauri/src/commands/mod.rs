@@ -4,6 +4,7 @@
 pub mod ai;
 pub mod bibliography_unified;
 pub mod build;
+pub mod export_platform;
 pub mod compiler;
 pub mod datacite;
 pub mod doi;

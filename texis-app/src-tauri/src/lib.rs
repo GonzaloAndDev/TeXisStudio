@@ -55,6 +55,7 @@ pub fn run() {
             commands::project::update_typography,
             commands::project::update_preamble_config,
             commands::project::export_delivery,
+            commands::export_platform::export_for_target,
             commands::project::check_pdf_postflight,
             commands::project::generate_review_report,
             commands::project::get_section_progress,

@@ -269,6 +269,13 @@ export const api = {
   exportDelivery: (projectPath: string, outputPath: string, exportMode?: string): Promise<ExportDeliveryResult> =>
     call("export_delivery", { projectPath, outputPath, exportMode }),
 
+  exportForTarget: (
+    projectPath: string,
+    outputDir: string,
+    target: "overleaf" | "texstudio" | "vscode" | "local",
+  ): Promise<{ artifact_path: string; info_url: string | null; note_key: string }> =>
+    call("export_for_target", { projectPath, outputDir, target }),
+
   checkPdfPostflight: (projectPath: string): Promise<PdfPostflightResult> =>
     call("check_pdf_postflight", { projectPath }),
 
