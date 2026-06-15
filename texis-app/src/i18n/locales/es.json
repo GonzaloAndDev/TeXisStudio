@@ -3097,5 +3097,18 @@
     "error_no_dest": "Selecciona la carpeta de destino.",
     "error_same_folder": "La carpeta de origen y destino no pueden ser la misma.",
     "error_generic": "Error al importar: {{error}}"
+  },
+  "math_toolbar": {
+    "title": "Símbolos matemáticos",
+    "toggle_label": "Matemáticas",
+    "toggle_title": "Abrir/cerrar panel de símbolos matemáticos",
+    "hint_no_target": "Haz clic en un editor de ecuaciones o en un bloque LaTeX para activar la inserción.",
+    "footer_hint": "Haz clic en un símbolo para insertarlo en el cursor",
+    "cat_greek": "Griegas",
+    "cat_operators": "Operadores",
+    "cat_relations": "Relaciones",
+    "cat_arrows": "Flechas",
+    "cat_structures": "Estructuras",
+    "cat_misc": "Miscelánea"
   }
 }

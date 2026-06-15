@@ -3097,5 +3097,18 @@
     "error_no_dest": "Select the destination folder.",
     "error_same_folder": "Source and destination folders cannot be the same.",
     "error_generic": "Import error: {{error}}"
+  },
+  "math_toolbar": {
+    "title": "Math Symbols",
+    "toggle_label": "Math",
+    "toggle_title": "Open/close math symbol panel",
+    "hint_no_target": "Click on an equation editor or a LaTeX block to enable symbol insertion.",
+    "footer_hint": "Click a symbol to insert it at the cursor",
+    "cat_greek": "Greek",
+    "cat_operators": "Operators",
+    "cat_relations": "Relations",
+    "cat_arrows": "Arrows",
+    "cat_structures": "Structures",
+    "cat_misc": "Miscellaneous"
   }
 }

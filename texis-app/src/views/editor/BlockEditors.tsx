@@ -7,6 +7,7 @@ import { applyAutocorrect } from "../../services/autocorrect";
 import { useSettingsStore } from "../../stores/settings";
 import { useWorkspaceStore } from "../../stores/workspace";
 import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from "../../types";
+import { mathInsertManager } from "../../lib/mathInsertManager";
 
 // ── Componentes de bloque: modo edición ───────────────────────────
 
@@ -355,6 +356,8 @@ export function EquationEditor({
   onBlur: () => void;
 }) {
   const { t } = useTranslation();
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -365,10 +368,12 @@ export function EquationEditor({
         </label>
       </div>
       <textarea
+        ref={taRef}
         autoFocus
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
+        onFocus={() => { if (taRef.current) mathInsertManager.register(taRef.current, onChange); }}
+        onBlur={() => { if (taRef.current) mathInsertManager.unregister(taRef.current); onBlur(); }}
         onKeyDown={(e) => { if (e.key === "Escape") onBlur(); }}
         rows={3}
         style={{

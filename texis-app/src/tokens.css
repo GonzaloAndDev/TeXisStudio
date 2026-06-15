@@ -437,6 +437,13 @@ body {
   flex-basis: clamp(360px, 34vw, 480px);
 }
 
+.editor-math-panel {
+  width: clamp(200px, 18vw, 260px);
+  flex: 0 0 clamp(200px, 18vw, 260px);
+  min-width: 0;
+  min-height: 0;
+}
+
 /* ≤1400px — paneles ligeramente compactos (monitores de 1440p con zoom, etc.) */
 @media (max-width: 1400px) {
   .editor-grid {

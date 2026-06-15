@@ -18,6 +18,7 @@ import { LanguagePicker } from "../components/LanguagePicker";
 import { SpellPanel } from "../components/SpellPanel";
 import { GrammarPanel } from "../components/GrammarPanel";
 import { AiAssistantPanel } from "../components/AiAssistantPanel";
+import { MathToolbarPanel } from "../components/MathToolbarPanel";
 import { useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
@@ -279,6 +280,7 @@ export default function EditorView() {
   // Paneles de revisión de texto
   const [spellPanelOpen, setSpellPanelOpen]     = useState(false);
   const [grammarPanelOpen, setGrammarPanelOpen] = useState(false);
+  const [mathPanelOpen, setMathPanelOpen]       = useState(false);
   const aiPanel = useAiStore();
 
   // Navegación a bloque específico (desde búsqueda en CommandPalette)
@@ -954,6 +956,17 @@ export default function EditorView() {
             {/* Botones de revisión */}
             <div style={{ width: 1, height: 22, background: "var(--border-subtle)", margin: "0 4px", flexShrink: 0 }} />
             <button
+              className={`btn btn-sm ${mathPanelOpen ? "btn-accent" : "btn-ghost"}`}
+              onClick={() => setMathPanelOpen((v) => !v)}
+              aria-label={t("math_toolbar.title")}
+              aria-pressed={mathPanelOpen}
+              title={t("math_toolbar.toggle_title")}
+              style={{ fontSize: "var(--fs-xs)", padding: "4px 8px", gap: 4 }}
+            >
+              <IconSigma size={11} />
+              {t("math_toolbar.toggle_label")}
+            </button>
+            <button
               className={`btn btn-sm ${spellPanelOpen ? "btn-accent" : "btn-ghost"}`}
               onClick={() => { setSpellPanelOpen((v) => !v); if (grammarPanelOpen) setGrammarPanelOpen(false); }}
               aria-label={t("spell.panel_title")}
@@ -1213,6 +1226,11 @@ export default function EditorView() {
         />
       )}
       </div>
+
+      {/* Panel de símbolos matemáticos */}
+      {mathPanelOpen && (
+        <MathToolbarPanel onClose={() => setMathPanelOpen(false)} />
+      )}
 
       {/* Panel de asistente IA */}
       {aiPanel.isPanelOpen && (
