@@ -269,51 +269,91 @@ export function BlockItem({
         );
       case "raw_latex": {
         const latexErrs = validateRawLatex(block.content ?? "");
+        const confirmed = !!block.user_confirmed;
+        // Colores según estado: ámbar = incluido, rojo = bloqueado del PDF
+        const accentColor = confirmed ? "#C8922A" : "var(--build-err)";
+        const accentBg    = confirmed ? "rgba(200,146,42,0.07)" : "rgba(220,50,50,0.06)";
+        const accentBorder = confirmed ? "rgba(200,146,42,0.35)" : "rgba(220,50,50,0.4)";
         return (
-          <div>
-            <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-              ⚠ {t("block_item.manual_latex_warning")}
-              <HelpLink topic="latex" style={{ marginLeft: "auto" }} />
-            </div>
-            <textarea
-              autoFocus
-              value={block.content}
-              onChange={(e) => onUpdate({ content: e.target.value, user_confirmed: false } as Partial<ContentBlock>)}
-              rows={4}
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
-                background: "var(--ink-900)", border: "none", outline: "none",
-                padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical", width: "100%",
-                borderBottom: latexErrs.length > 0 ? "2px solid var(--build-err)" : "none",
-              }}
-            />
-            {latexErrs.length > 0 && (
-              <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
-                {latexErrs.map((e, i) => (
-                  <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", display: "flex", alignItems: "center", gap: 4 }}>
-                    ✕ {e.key === "latex_err_open_brace" ? t("block_item.latex_err_open_brace", { n: e.n })
-                      : e.key === "latex_err_close_brace" ? t("block_item.latex_err_close_brace")
-                      : e.key === "latex_err_math" ? t("block_item.latex_err_math")
-                      : e.key === "latex_err_begin" ? t("block_item.latex_err_begin", { env: e.env })
-                      : t("block_item.latex_err_end", { env: e.env })}
-                  </div>
-                ))}
+          <div style={{
+            borderLeft: `3px solid ${accentColor}`,
+            borderRadius: "0 var(--r-sm) var(--r-sm) 0",
+            background: accentBg,
+            overflow: "hidden",
+          }}>
+            {/* Banner de contexto — siempre visible */}
+            <div style={{
+              padding: "8px 12px",
+              borderBottom: `1px solid ${accentBorder}`,
+              display: "flex",
+              flexDirection: "column",
+              gap: 3,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 13 }}>{confirmed ? "⚙" : "⚠"}</span>
+                <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: accentColor, letterSpacing: "0.01em" }}>
+                  {confirmed ? t("block_item.raw_native_title") : t("block_item.raw_unconfirmed_title")}
+                </span>
+                <HelpLink topic="latex" style={{ marginLeft: "auto", opacity: 0.6 }} />
               </div>
-            )}
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--fs-xs)", color: block.user_confirmed ? "var(--build-ok)" : "var(--fg-faint)" }}>
-                <input
-                  type="checkbox"
-                  checked={!!block.user_confirmed}
-                  onChange={(e) => onUpdate({ user_confirmed: e.target.checked } as Partial<ContentBlock>)}
-                  style={{ accentColor: "var(--build-ok)", cursor: "pointer" }}
-                />
-                {t("block_item.confirm_manual_latex")}
-              </label>
+              <p style={{ margin: 0, fontSize: "10px", lineHeight: 1.5, color: "var(--fg-muted)", paddingLeft: 19 }}>
+                {confirmed ? t("block_item.raw_native_desc") : t("block_item.raw_unconfirmed_desc")}
+              </p>
             </div>
-            {!block.user_confirmed && (
-              <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
-                {t("block_item.unconfirmed_latex_hint")}
+
+            {/* Editor de código */}
+            <div style={{ position: "relative" }}>
+              <textarea
+                autoFocus
+                value={block.content}
+                onChange={(e) => onUpdate({ content: e.target.value } as Partial<ContentBlock>)}
+                rows={Math.max(3, (block.content ?? "").split("\n").length)}
+                spellCheck={false}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  color: "#C8C2B5",
+                  background: "var(--ink-900)",
+                  border: "none",
+                  borderBottom: latexErrs.length > 0 ? `2px solid var(--build-err)` : "none",
+                  outline: "none",
+                  padding: "10px 14px",
+                  resize: "vertical",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  display: "block",
+                  tabSize: 2,
+                }}
+              />
+              {/* Errores de validación inline */}
+              {latexErrs.length > 0 && (
+                <div style={{ background: "rgba(220,50,50,0.08)", padding: "6px 14px", display: "flex", flexDirection: "column", gap: 2 }}>
+                  {latexErrs.map((e, i) => (
+                    <div key={i} style={{ fontSize: "var(--fs-xs)", color: "var(--build-err)", display: "flex", alignItems: "center", gap: 4 }}>
+                      ✕ {e.key === "latex_err_open_brace" ? t("block_item.latex_err_open_brace", { n: e.n })
+                        : e.key === "latex_err_close_brace" ? t("block_item.latex_err_close_brace")
+                        : e.key === "latex_err_math" ? t("block_item.latex_err_math")
+                        : e.key === "latex_err_begin" ? t("block_item.latex_err_begin", { env: e.env })
+                        : t("block_item.latex_err_end", { env: e.env })}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer: confirmación (solo si no confirmado) */}
+            {!confirmed && (
+              <div style={{ padding: "8px 12px", borderTop: `1px solid ${accentBorder}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    onChange={(e) => onUpdate({ user_confirmed: e.target.checked } as Partial<ContentBlock>)}
+                    style={{ accentColor: "var(--build-ok)", cursor: "pointer" }}
+                  />
+                  {t("block_item.confirm_manual_latex")}
+                </label>
               </div>
             )}
           </div>
@@ -494,19 +534,52 @@ export function BlockItem({
             {block.page ? `[p. ${block.page}]` : ""}
           </span>
         );
-      case "raw_latex":
+      case "raw_latex": {
+        const confirmed = !!block.user_confirmed;
+        const accentColor = confirmed ? "#C8922A" : "var(--build-err)";
+        const accentBg    = confirmed ? "rgba(200,146,42,0.07)" : "rgba(220,50,50,0.06)";
+        const accentBorder = confirmed ? "rgba(200,146,42,0.35)" : "rgba(220,50,50,0.4)";
         return (
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5", padding: "10px 14px", background: "var(--ink-900)", borderRadius: "var(--r-sm)" }}>
-              {block.content || t("block_item.empty_latex")}
+          <div style={{
+            borderLeft: `3px solid ${accentColor}`,
+            borderRadius: "0 var(--r-sm) var(--r-sm) 0",
+            background: accentBg,
+            overflow: "hidden",
+          }}>
+            {/* Banner compacto — siempre visible en preview */}
+            <div style={{
+              padding: "5px 10px",
+              borderBottom: `1px solid ${accentBorder}`,
+              display: "flex",
+              alignItems: "baseline",
+              gap: 6,
+              flexWrap: "wrap",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: accentColor, whiteSpace: "nowrap" }}>
+                {confirmed ? `⚙ ${t("block_item.raw_native_title")}` : `⚠ ${t("block_item.raw_unconfirmed_title")}`}
+              </span>
+              <span style={{ fontSize: "10px", color: "var(--fg-faint)", lineHeight: 1.4 }}>
+                {confirmed ? t("block_item.raw_native_desc_short") : t("block_item.raw_unconfirmed_desc_short")}
+              </span>
             </div>
-            {!block.user_confirmed && (
-              <div style={{ marginTop: 4, fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontStyle: "italic" }}>
-                ⚠ {t("block_item.not_confirmed_pdf")}
-              </div>
-            )}
+            {/* Código */}
+            <div style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              lineHeight: 1.6,
+              color: "#C8C2B5",
+              padding: "8px 14px",
+              background: "var(--ink-900)",
+              whiteSpace: "pre-wrap",
+              overflowX: "auto",
+              maxHeight: 200,
+              overflowY: "auto",
+            }}>
+              {block.content || <span style={{ opacity: 0.4 }}>{t("block_item.empty_latex")}</span>}
+            </div>
           </div>
         );
+      }
       // ── Posgrado previews ─────────────────────────────────────────
       case "glossary_entry":
         return (
