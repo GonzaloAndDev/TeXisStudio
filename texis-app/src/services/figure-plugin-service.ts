@@ -132,6 +132,7 @@ export async function createPluginFigure(
     caption: finalCaption,
     label: finalLabel,
     warnings: result.warnings,
+    manualEdit: false, // generated from source — body matches the visual model
   });
 
   // Fire-and-forget: generate preview.pdf for inline block rendering
@@ -216,6 +217,7 @@ export async function writePluginFigureTex(
     caption: block.caption,
     label: block.label,
     warnings: block.warnings,
+    manualEdit: true, // body diverges from source.json — flag it for the visual editor
   });
 }
 
@@ -272,6 +274,7 @@ export async function editPluginFigureWithSource(
     caption: finalCaption,
     label: finalLabel,
     warnings: result.warnings,
+    manualEdit: false, // regenerated from source — body matches the visual model
   });
 
   // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh
@@ -332,6 +335,7 @@ export async function editPluginFigure(
     caption: finalCaption,
     label: finalLabel,
     warnings: result.warnings,
+    manualEdit: false, // regenerated from source — body matches the visual model
   });
 
   // Fire-and-forget: regenerate preview.pdf so inline block preview stays fresh

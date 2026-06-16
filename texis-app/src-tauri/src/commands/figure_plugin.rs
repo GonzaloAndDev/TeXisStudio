@@ -46,6 +46,7 @@ pub fn save_plugin_figure(
     caption: String,
     label: String,
     warnings: Vec<String>,
+    manual_edit: Option<bool>,
 ) -> Result<Value, String> {
     if !safe_figure_id(&figure_id) {
         return Err(format!("figureId inválido: '{figure_id}'"));
@@ -55,6 +56,17 @@ pub fn save_plugin_figure(
 
     let dir = figure_dir(&project_path, &figure_id);
     std::fs::create_dir_all(&dir).map_err(err)?;
+
+    // Resolve the manual-edit flag: an explicit value wins; otherwise preserve
+    // whatever is already on disk (so a caption/label-only save doesn't clear it).
+    let manual_edit_flag = match manual_edit {
+        Some(v) => v,
+        None => std::fs::read_to_string(dir.join("manifest.json"))
+            .ok()
+            .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+            .and_then(|m| m["manualEdit"].as_bool())
+            .unwrap_or(false),
+    };
 
     // Write output.tex (the bare figure body). An empty latex_tex signals a
     // meta-only update (caption/label), so the existing body is left intact.
@@ -73,6 +85,7 @@ pub fn save_plugin_figure(
         "label": label,
         "requiredPackages": required_packages,
         "warnings": warnings,
+        "manualEdit": manual_edit_flag,
         "updatedAt": chrono::Utc::now().to_rfc3339(),
     });
     std::fs::write(dir.join("manifest.json"), manifest.to_string()).map_err(err)?;

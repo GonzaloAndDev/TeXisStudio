@@ -406,6 +406,13 @@ export const api = {
     return call("compile_snippet_preview", { projectPath, figureId, backend });
   },
 
+  /** Valida que un cuerpo LaTeX editado a mano compila, sin tocar output.tex.
+   *  Resuelve si compila; rechaza con el error del compilador si falla. */
+  validateFigureTex: (projectPath: string, figureId: string, texBody: string, backend: string): Promise<void> => {
+    if (!isTauri()) return Promise.resolve();
+    return call("validate_figure_snippet", { projectPath, figureId, texBody, backend });
+  },
+
   /**
    * Abre el diálogo nativo de selección de carpeta. Retorna null si el usuario
    * cancela o si el dialog plugin no está disponible (e.g. plugin no registrado).

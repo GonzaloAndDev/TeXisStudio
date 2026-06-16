@@ -125,6 +125,7 @@ pub fn run() {
             commands::figure_plugin::list_plugin_figures,
             // Snippet preview
             commands::snippet_preview::compile_snippet_preview,
+            commands::snippet_preview::validate_figure_snippet,
             // Workspace state
             commands::workspace::save_workspace_state,
             commands::workspace::load_workspace_state,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { useDialogEscape } from "../hooks/useDialogEscape";
 import { useSettingsStore } from "../stores/settings";
 import { buildLatexInputBlock } from "@texisstudio/plugins";
@@ -57,6 +57,8 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
+  // Whether the figure body has been hand-edited (diverges from source.json)
+  const [hasManualEdit, setHasManualEdit] = useState(false);
   // Full figure body (the real output.tex the plugin generated)
   const [showFullCode, setShowFullCode] = useState(false);
   const [fullCode, setFullCode] = useState<string | null>(null);
@@ -212,6 +214,15 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     }
   }
 
+  // Read the manual-edit flag from the figure manifest on open.
+  useEffect(() => {
+    let cancelled = false;
+    invoke<{ manifest?: { manualEdit?: boolean } | null }>("load_figure_source", { projectPath, figureId: block.figureId })
+      .then((res) => { if (!cancelled) setHasManualEdit(res.manifest?.manualEdit === true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectPath, block.figureId]);
+
   // Load the real figure body (output.tex) the first time the section opens.
   useEffect(() => {
     if (!showFullCode || fullCode !== null || fullCodeBusy) return;
@@ -229,16 +240,21 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
 
   async function saveFullCode() {
     if (fullCodeBusy || fullCodeDraft === fullCode) return;
+    if (!fullCodeDraft.trim()) { setFullCodeError(t("figure_edit.full_code_empty")); return; }
     setFullCodeBusy(true); setFullCodeError(null);
     try {
+      // Safety gate: only persist the hand-edit if it actually compiles.
+      await api.validateFigureTex(projectPath, block.figureId, fullCodeDraft, latexPrimaryBackend);
       await writePluginFigureTex(block, projectPath, fullCodeDraft);
       setFullCode(fullCodeDraft);
       setFullCodeEditing(false);
+      setHasManualEdit(true);
       // Refresh the preview so the hand-edited body is reflected
       setPreviewPdfPath(null); setPreviewError(null);
       void handleCompilePreview();
     } catch (e) {
-      setFullCodeError(`${e}`);
+      // Validation failed — the body was NOT written; show the compiler error.
+      setFullCodeError(`${t("figure_edit.full_code_invalid")}\n${e}`);
     } finally {
       setFullCodeBusy(false);
     }
@@ -312,6 +328,11 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
           {/* ── Visual editor tab ── */}
           {activeTab === "visual" && showVisualTab && (
             <div style={{ padding: "14px 18px" }}>
+              {hasManualEdit && (
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--build-warn)", padding: "8px 10px", marginBottom: 10, background: "var(--build-warn-tint, #ffcc0015)", border: "1px solid var(--build-warn)", borderRadius: "var(--r-xs)", lineHeight: 1.5 }}>
+                  ⚠ {t("figure_edit.manual_edit_warning")}
+                </div>
+              )}
               <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                 {t("figure_edit.visual_hint")}
                 <HelpLink topic="figures" style={{ marginLeft: "auto" }} />
