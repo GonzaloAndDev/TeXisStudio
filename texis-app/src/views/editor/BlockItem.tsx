@@ -5,7 +5,6 @@ import { IconDrag, IconTrash } from "../../components/Icons";
 import { HelpLink } from "../../components/help/HelpLink";
 import { PdfPagePreview } from "../../components/PdfPagePreview";
 import type { ContentBlock, HeadingLevel, PluginFigureBlock } from "../../types";
-import { mathInsertManager } from "../../lib/mathInsertManager";
 import {
   ParagraphEditor, HeadingEditor, KaTeXPreview, EquationEditor, ListEditor,
   FigureEditor, TableEditor, CitationEditor, GlossaryEntryEditor,
@@ -310,13 +309,6 @@ export function BlockItem({
                 autoFocus
                 value={block.content}
                 onChange={(e) => onUpdate({ content: e.target.value } as Partial<ContentBlock>)}
-                onFocus={() => {
-                  if (rawLatexRef.current)
-                    mathInsertManager.register(rawLatexRef.current, (v) =>
-                      onUpdate({ content: v } as Partial<ContentBlock>),
-                    );
-                }}
-                onBlur={() => { if (rawLatexRef.current) mathInsertManager.unregister(rawLatexRef.current); }}
                 rows={Math.max(3, (block.content ?? "").split("\n").length)}
                 spellCheck={false}
                 style={{

@@ -19,6 +19,7 @@ import { SpellPanel } from "../components/SpellPanel";
 import { GrammarPanel } from "../components/GrammarPanel";
 import { AiAssistantPanel } from "../components/AiAssistantPanel";
 import { MathToolbarPanel } from "../components/MathToolbarPanel";
+import { mathInsertManager } from "../lib/mathInsertManager";
 import { useAiStore } from "../stores/ai";
 import type { GrammarMatch } from "../services/grammar";
 import { useSettingsStore } from "../stores/settings";
@@ -574,6 +575,35 @@ export default function EditorView() {
     });
     setEditingId(id);
   }, [scheduleAutoSave]);
+
+  // Math panel creator path. When the user clicks a symbol with no equation
+  // textarea focused, spawn a new EquationBlock right after the currently
+  // edited block (or at the end of the section), seeded with the snippet.
+  // The new block autofocuses, registers itself as the equation target, so
+  // subsequent clicks append into the same block.
+  useEffect(() => {
+    if (!mathPanelOpen) return;
+    const unregister = mathInsertManager.registerCreator((latex) => {
+      const id = newId();
+      const newBlock: ContentBlock = { type: "equation", id, latex_content: latex, numbered: false };
+      setLocalBlocks((prev) => {
+        const insertAfter = editingId ?? (prev.length > 0 ? prev[prev.length - 1].id : null);
+        let next: ContentBlock[];
+        if (insertAfter) {
+          const idx = prev.findIndex((b) => b.id === insertAfter);
+          next = idx !== -1
+            ? [...prev.slice(0, idx + 1), newBlock, ...prev.slice(idx + 1)]
+            : [...prev, newBlock];
+        } else {
+          next = [...prev, newBlock];
+        }
+        scheduleAutoSave(next);
+        return next;
+      });
+      setEditingId(id);
+    });
+    return unregister;
+  }, [mathPanelOpen, editingId, scheduleAutoSave]);
 
   const deleteBlock = useCallback((id: string) => {
     setLocalBlocks((prev) => {

@@ -125,6 +125,8 @@ Supports: thesis (`tesis`), short thesis (`tesina`), and postgraduate research d
 
 Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking (`draft → in_review → revised → approved`). Autosave with debounce.
 
+The side math-symbol panel always lands content in a dedicated equation block: with no equation focused, clicking a symbol spawns a new equation block right after the current cursor position (live KaTeX preview). With an equation focused, clicks splice the snippet into it at the caret.
+
 #### Plugin visual editors
 
 9 GUI editors for plugin-backed figures — no LaTeX required:
@@ -363,6 +365,8 @@ Soporta: tesis, tesina, especialidad, maestría, doctorado y posdoctorado. El ni
 15 tipos de bloque de contenido: párrafo, título, lista, figura, tabla, ecuación, código, algoritmo, teorema, cita, LaTeX libre, entrada de glosario, entrada de acrónimo, figura visual y figura de plugin.
 
 Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX. Seguimiento de estado por sección (`borrador → revisión → revisado → aprobado`). Autoguardado con debounce.
+
+El panel lateral de símbolos matemáticos siempre coloca el contenido en un bloque de ecuación dedicado: sin ecuación enfocada, hacer clic en un símbolo crea un nuevo bloque de ecuación justo después de la posición actual del cursor (vista previa KaTeX en vivo). Con una ecuación enfocada, el clic inserta el fragmento en la posición del cursor.
 
 #### Editores visuales de plugins
 

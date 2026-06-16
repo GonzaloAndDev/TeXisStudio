@@ -243,7 +243,8 @@ export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onC
   const [, forceUpdate] = useReducer((n: number) => n + 1, 0);
   useEffect(() => mathInsertManager.subscribe(forceUpdate), []);
 
-  const hasTarget = mathInsertManager.hasTarget();
+  const insertionMode = mathInsertManager.insertionMode();
+  const canInsert = insertionMode !== "none";
   const symbols = SYMBOLS[activeCat];
 
   if (collapsed) {
@@ -333,8 +334,8 @@ export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onC
         </button>
       </div>
 
-      {/* ── Estado: sin textarea activa ───────────────────────────── */}
-      {!hasTarget && (
+      {/* ── Hint contextual: qué hará el siguiente clic ──────────── */}
+      {insertionMode !== "insert" && (
         <div
           style={{
             display: "flex",
@@ -348,9 +349,13 @@ export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onC
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>⌨</span>
+          <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>
+            {insertionMode === "create" ? "∑" : "⌨"}
+          </span>
           <p style={{ margin: 0, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5 }}>
-            {t("math_toolbar.hint_no_target")}
+            {insertionMode === "create"
+              ? t("math_toolbar.hint_create_block")
+              : t("math_toolbar.hint_no_target")}
           </p>
         </div>
       )}
@@ -402,7 +407,7 @@ export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onC
                 title={sym.title ?? sym.latex}
                 onMouseDown={noBlur}
                 onClick={() => mathInsertManager.insert(sym.latex)}
-                disabled={!hasTarget}
+                disabled={!canInsert}
                 style={{
                   fontSize: isLong ? 8 : isMed ? 9 : 15,
                   fontFamily: isMed || isLong ? "var(--font-mono)" : "Georgia, 'Times New Roman', serif",
@@ -410,8 +415,8 @@ export function MathToolbarPanel({ onClose, collapsed, onToggleCollapse }: { onC
                   minHeight: 30,
                   minWidth: 30,
                   lineHeight: 1,
-                  opacity: hasTarget ? 1 : 0.35,
-                  color: hasTarget ? "var(--fg-body)" : "var(--fg-faint)",
+                  opacity: canInsert ? 1 : 0.35,
+                  color: canInsert ? "var(--fg-body)" : "var(--fg-faint)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",

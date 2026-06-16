@@ -99,8 +99,7 @@ export function ParagraphEditor({
           e.target.style.height = "auto";
           e.target.style.height = e.target.scrollHeight + "px";
         }}
-        onFocus={() => { if (ref.current) mathInsertManager.register(ref.current, onChange); }}
-        onBlur={() => { if (ref.current) mathInsertManager.unregister(ref.current); onBlur(); }}
+        onBlur={onBlur}
         onKeyDown={handleKeyDown}
         style={{
           width: "100%", border: "none", outline: "none", resize: "none",
@@ -373,7 +372,7 @@ export function EquationEditor({
         autoFocus
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => { if (taRef.current) mathInsertManager.register(taRef.current, onChange); }}
+        onFocus={() => { if (taRef.current) mathInsertManager.register(taRef.current, onChange, "equation"); }}
         onBlur={() => { if (taRef.current) mathInsertManager.unregister(taRef.current); onBlur(); }}
         onKeyDown={(e) => { if (e.key === "Escape") onBlur(); }}
         rows={3}
