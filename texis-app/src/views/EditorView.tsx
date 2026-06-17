@@ -360,19 +360,36 @@ export default function EditorView() {
     return () => { cancelled = true; };
   }, [activeProject?.profile_id, i18n.language, i18n.resolvedLanguage]);
 
-  // Sincronizar localBlocks cuando cambia la sección activa
+  // Cuando cambia la sección activa, hidratamos localBlocks y reiniciamos
+  // todo el estado de edición. Esto se separa intencionalmente del sync que
+  // viene del store en el efecto siguiente: si activeProject muta porque
+  // NOSOTROS acabamos de guardar, no queremos sacar al usuario de su edición
+  // — solo queremos resetear cuando la sección realmente cambia.
+  const lastSectionIdRef = useRef<string | null>(null);
   useEffect(() => {
+    if (lastSectionIdRef.current === activeSectionId) return;
+    lastSectionIdRef.current = activeSectionId ?? null;
     const section = activeProject?.sections.find((s) => s.id === activeSectionId);
     setLocalBlocks(section?.blocks ?? []);
     setEditingId(null);
     setSaveStatus("saved");
-    // Actualizar contexto de UI para el asistente de IA
     useAiStore.getState().setUiContext({
       activePanel: "editor",
       activeSectionType: section?.element_id,
       profileId: activeProject?.profile_id,
     });
   }, [activeSectionId, activeProject]);
+
+  // Resync silencioso de localBlocks cuando el proyecto cambia por causas
+  // externas (snapshot restaurado, conflict resolution, etc.) — pero NUNCA
+  // mientras el usuario está editando un bloque, porque eso pisaría su
+  // borrador y le movería el cursor. El autosave habitual cae aquí también
+  // y es inofensivo: localBlocks ya contiene lo que se acaba de guardar.
+  useEffect(() => {
+    if (editingId) return;
+    const section = activeProject?.sections.find((s) => s.id === activeSectionId);
+    if (section) setLocalBlocks(section.blocks);
+  }, [activeProject, activeSectionId, editingId]);
 
   const doSave = useCallback(async (blocks: ContentBlock[], sectionId: string): Promise<boolean> => {
     setSaveStatus("saving");
