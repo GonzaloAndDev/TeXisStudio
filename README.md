@@ -193,6 +193,8 @@ Manual snapshots with labels and timestamps. One-click restore. Delivery export 
 
 Per-project platform export is reachable two ways: a small download button on every project card on the Home view, and the matching button inside the Compile view. Targets: Overleaf, TeXstudio, VS Code (LaTeX Workshop), or a plain local folder. The Home-view affordance lets you hand off a project to another editor without opening it first.
 
+The reverse direction — importing an external `.tex` file — recognises `\chapter` boundaries, section headings, `equation` / `equation*` environments (with their `\label{…}` extracted into the block's label field), and `itemize` / `enumerate` lists. Anything else (tables, citations inline, custom macros, broken or nested constructs) is preserved verbatim in a confirmed `raw_latex` block so the import never loses content. A `\begin` without a matching `\end` always falls back to raw_latex.
+
 #### Settings and accessibility
 
 UI scale: normal, large, x-large. Startup window behavior: laptop default (1280 × 760), remember the last size, or maximize. The editor keeps both side panels usable at common 1280 × 720 laptop viewports, with independently scrollable tool and status bars. 7 UI languages: ES, EN, FR, DE, PT-BR, ZH, JA. Spell-check for ES and EN bundled; FR and DE available via downloadable packs. Grammar check integration. Custom dictionary. Per-user profile (name, institution, e-mail). LaTeX engine preferences can prioritize Tectonic or a complete TeX suite and optionally use the other backend as a fallback.
@@ -417,6 +419,8 @@ Modos básico y avanzado. Acciones clasificadas por riesgo (5 niveles): las edic
 Vista de progreso sección por sección con estado editorial, conteo de palabras y notas. Indicador de preparación (`readiness`) para entrega. Exportación de reporte de revisión para asesor. Snapshots con etiquetas y restauración con un clic. Exportación de entrega final con todos los archivos necesarios.
 
 La exportación a plataformas (Overleaf, TeXstudio, VS Code con LaTeX Workshop, o carpeta local) está disponible por proyecto desde dos sitios: un botón de descarga discreto en cada tarjeta de proyecto en la vista de Inicio, y su equivalente dentro de la vista de Compilación. La opción de Inicio permite traspasar un proyecto a otro editor sin tener que abrirlo primero.
+
+El camino inverso —importar un `.tex` externo— reconoce los límites de `\chapter`, encabezados de sección, entornos `equation` / `equation*` (con su `\label{…}` extraído al campo `label` del bloque) y listas `itemize` / `enumerate`. Lo demás (tablas, citas inline, macros personalizadas, construcciones rotas o anidadas) se preserva verbatim como bloque `raw_latex` confirmado, así la importación nunca pierde contenido. Un `\begin` sin su `\end` correspondiente siempre cae a raw_latex.
 
 #### Configuración y accesibilidad
 

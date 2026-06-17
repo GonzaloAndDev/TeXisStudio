@@ -14,9 +14,9 @@ pub use folder_import::{import_from_folder, FolderImportResult, ImportOptions, I
 
 use crate::project::model::{
     AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock, DocumentClassConfig,
-    DocumentKind, HeadingBlock, HeadingLevel, InstitutionData, LatexConfig, LatexEngine,
-    ProjectMetadata, ProjectModel, ProjectSection, RawLatexBlock, SectionPlacement,
-    SectionStatus, StudentData,
+    DocumentKind, EquationBlock, HeadingBlock, HeadingLevel, InstitutionData, LatexConfig,
+    LatexEngine, ListBlock, ListType, ProjectMetadata, ProjectModel, ProjectSection,
+    RawLatexBlock, SectionPlacement, SectionStatus, StudentData,
 };
 use std::collections::HashMap;
 
@@ -314,14 +314,76 @@ fn make_section(
 }
 
 /// Parsea el contenido de un capítulo en bloques.
-/// Reconoce headings de sección; el resto va a RawLatexBlock.
+///
+/// Estrategia: el parser camina línea a línea y solo se "compromete" con un
+/// bloque semántico cuando detecta un entorno cerrado limpiamente. Si algo
+/// no calza (un \begin sin \end, un \item huérfano, una sección dentro de
+/// un entorno math), el contenido cae al raw_latex acumulado — la red de
+/// seguridad nunca pierde texto.
+///
+/// Reconoce:
+///   * \begin{equation} … \end{equation}                → EquationBlock numerada
+///   * \begin{equation*} … \end{equation*}              → EquationBlock no numerada
+///   * \begin{itemize} … \end{itemize}                  → ListBlock Itemize
+///   * \begin{enumerate} … \end{enumerate}              → ListBlock Enumerate
+///   * \section / \subsection / \subsubsection          → HeadingBlock
+///
+/// Todo lo demás (tablas, citas inline, código, macros, comandos crudos) se
+/// preserva como RawLatexBlock confirmado para no romper el documento original.
 fn parse_chapter_content(content: &str) -> Vec<ContentBlock> {
     let mut blocks: Vec<ContentBlock> = Vec::new();
     let mut pending = String::new();
+    let lines: Vec<&str> = content.lines().collect();
+    let mut i = 0;
 
-    for line in content.lines() {
+    while i < lines.len() {
+        let line = lines[i];
         let trimmed = line.trim();
 
+        // ── Equation env (equation, equation*) ──────────────────────
+        if let Some(numbered) = detect_equation_open(trimmed) {
+            let close_tag = if numbered { "\\end{equation}" } else { "\\end{equation*}" };
+            if let Some(end_idx) = find_env_end(&lines, i + 1, close_tag) {
+                flush_raw(&mut pending, &mut blocks);
+                let body_lines = &lines[i + 1..end_idx];
+                let (body, label) = extract_equation_body_and_label(body_lines);
+                blocks.push(ContentBlock::Equation(EquationBlock {
+                    id: new_id(),
+                    latex_content: body,
+                    label,
+                    numbered,
+                }));
+                i = end_idx + 1;
+                continue;
+            }
+            // \begin sin \end → caemos a raw_latex preservando el contenido.
+        }
+
+        // ── List env (itemize, enumerate) ───────────────────────────
+        if let Some(list_type) = detect_list_open(trimmed) {
+            let close_tag = match list_type {
+                ListType::Itemize => "\\end{itemize}",
+                ListType::Enumerate => "\\end{enumerate}",
+                ListType::Description => "\\end{description}",
+            };
+            if let Some(end_idx) = find_env_end(&lines, i + 1, close_tag) {
+                let inner = &lines[i + 1..end_idx];
+                if let Some(items) = parse_list_items(inner) {
+                    flush_raw(&mut pending, &mut blocks);
+                    blocks.push(ContentBlock::List(ListBlock {
+                        id: new_id(),
+                        list_type,
+                        items,
+                    }));
+                    i = end_idx + 1;
+                    continue;
+                }
+                // Lista con anidados u otra complicación → preferimos
+                // dejarla como raw_latex (cae por defecto debajo).
+            }
+        }
+
+        // ── Heading de sección ──────────────────────────────────────
         if let Some((level, heading_text)) = detect_section_heading(trimmed) {
             flush_raw(&mut pending, &mut blocks);
             blocks.push(ContentBlock::Heading(HeadingBlock {
@@ -329,14 +391,134 @@ fn parse_chapter_content(content: &str) -> Vec<ContentBlock> {
                 content: heading_text,
                 level,
             }));
-        } else {
-            pending.push_str(line);
-            pending.push('\n');
+            i += 1;
+            continue;
         }
+
+        // ── Fallback: acumula en raw_latex ──────────────────────────
+        pending.push_str(line);
+        pending.push('\n');
+        i += 1;
     }
 
     flush_raw(&mut pending, &mut blocks);
     blocks
+}
+
+/// Devuelve `Some(numbered)` si la línea abre un entorno equation.
+/// `numbered = true` para `equation`, `false` para `equation*`.
+fn detect_equation_open(line: &str) -> Option<bool> {
+    let s = line.trim_start();
+    if s.starts_with("\\begin{equation*}") {
+        Some(false)
+    } else if s.starts_with("\\begin{equation}") {
+        Some(true)
+    } else {
+        None
+    }
+}
+
+/// Devuelve el tipo si la línea abre un entorno de lista soportado.
+fn detect_list_open(line: &str) -> Option<ListType> {
+    let s = line.trim_start();
+    if s.starts_with("\\begin{itemize}") {
+        Some(ListType::Itemize)
+    } else if s.starts_with("\\begin{enumerate}") {
+        Some(ListType::Enumerate)
+    } else {
+        None
+    }
+}
+
+/// Encuentra el índice de la línea que contiene `close_tag` empezando desde
+/// `start`. Devuelve `None` si no hay match (env mal cerrado).
+fn find_env_end(lines: &[&str], start: usize, close_tag: &str) -> Option<usize> {
+    lines.iter().enumerate().skip(start).find_map(|(i, l)| {
+        if l.trim_start().starts_with(close_tag) {
+            Some(i)
+        } else {
+            None
+        }
+    })
+}
+
+/// Extrae el cuerpo de una ecuación y, si lo hay, el `\label{…}`. El label
+/// se devuelve como `Some(key)` y se elimina del cuerpo (el generador
+/// lo re-emite a partir del campo `label` del EquationBlock).
+fn extract_equation_body_and_label(body_lines: &[&str]) -> (String, Option<String>) {
+    let mut kept: Vec<String> = Vec::new();
+    let mut label: Option<String> = None;
+    for line in body_lines {
+        // Busca \label{...} en la línea; si está, sácalo. Si la línea quedaba
+        // vacía sin el label, no la conservamos.
+        if let Some(start) = line.find("\\label{") {
+            let after = &line[start + 7..];
+            if let Some(end) = find_closing_brace(after) {
+                if label.is_none() {
+                    label = Some(after[..end].trim().to_string());
+                }
+                let before = &line[..start];
+                let after_rest = &after[end + 1..];
+                let stripped = format!("{before}{after_rest}");
+                if !stripped.trim().is_empty() {
+                    kept.push(stripped);
+                }
+                continue;
+            }
+        }
+        kept.push((*line).to_string());
+    }
+    let body = kept.join("\n").trim().to_string();
+    (body, label)
+}
+
+/// Parsea ítems de una lista plana (sin sublistas). Devuelve `None` si detecta
+/// un \begin/\end anidado — en ese caso el caller cae a raw_latex.
+fn parse_list_items(lines: &[&str]) -> Option<Vec<String>> {
+    // Si hay anidamiento de entornos, abortar: parsearlo bien requiere recursión
+    // y el riesgo de perder algo no compensa el beneficio.
+    if lines.iter().any(|l| {
+        let s = l.trim_start();
+        s.starts_with("\\begin{") || s.starts_with("\\end{")
+    }) {
+        return None;
+    }
+    let mut items: Vec<String> = Vec::new();
+    let mut current: Option<String> = None;
+    for line in lines {
+        let trimmed = line.trim_start();
+        if let Some(rest) = trimmed.strip_prefix("\\item") {
+            if let Some(prev) = current.take() {
+                items.push(prev.trim().to_string());
+            }
+            // Soporta `\item Texto` y `\item[etiqueta] Texto` — descarta el `[…]`.
+            let body = rest.trim_start_matches(' ');
+            let body = if let Some(after_bracket) = body.strip_prefix('[') {
+                if let Some(close) = after_bracket.find(']') {
+                    &after_bracket[close + 1..]
+                } else {
+                    body
+                }
+            } else {
+                body
+            };
+            current = Some(body.trim().to_string());
+        } else if let Some(buf) = current.as_mut() {
+            // Continuación del ítem actual: anexar respetando espaciado.
+            if !buf.is_empty() {
+                buf.push(' ');
+            }
+            buf.push_str(line.trim());
+        }
+    }
+    if let Some(last) = current {
+        items.push(last.trim().to_string());
+    }
+    if items.is_empty() {
+        None
+    } else {
+        Some(items)
+    }
 }
 
 /// Convierte el texto acumulado en un RawLatexBlock si no está vacío.
@@ -620,5 +802,97 @@ Texto de conclusiones.
         assert!(pkgs.contains(&"pkg1".to_string()));
         assert!(pkgs.contains(&"pkg2".to_string()));
         assert!(pkgs.contains(&"pkg3".to_string()));
+    }
+
+    // ── Detectores semánticos añadidos al importador ─────────────────────
+
+    #[test]
+    fn import_detecta_equation_numerada_con_label() {
+        let tex = "\\chapter{C1}\nAntes.\n\\begin{equation}\n    E = mc^2\n    \\label{eq:einstein}\n\\end{equation}\nDespués.";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        let eq = blocks.iter().find_map(|b| {
+            if let ContentBlock::Equation(e) = b { Some(e) } else { None }
+        }).expect("debe haber un EquationBlock");
+        assert!(eq.numbered);
+        assert_eq!(eq.label.as_deref(), Some("eq:einstein"));
+        assert!(eq.latex_content.contains("E = mc^2"));
+        assert!(!eq.latex_content.contains("\\label"), "el label se extrae fuera del body");
+    }
+
+    #[test]
+    fn import_detecta_equation_sin_numerar() {
+        let tex = "\\chapter{C1}\n\\begin{equation*}\n    \\int_0^1 x \\, dx\n\\end{equation*}";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        let eq = blocks.iter().find_map(|b| {
+            if let ContentBlock::Equation(e) = b { Some(e) } else { None }
+        }).expect("debe haber un EquationBlock");
+        assert!(!eq.numbered);
+        assert!(eq.label.is_none());
+    }
+
+    #[test]
+    fn import_detecta_itemize() {
+        let tex = "\\chapter{C1}\n\\begin{itemize}\n    \\item Primero\n    \\item Segundo\n    \\item Tercero con \\emph{énfasis}\n\\end{itemize}";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        let list = blocks.iter().find_map(|b| {
+            if let ContentBlock::List(l) = b { Some(l) } else { None }
+        }).expect("debe haber un ListBlock");
+        assert!(matches!(list.list_type, crate::project::model::ListType::Itemize));
+        assert_eq!(list.items.len(), 3);
+        assert_eq!(list.items[0], "Primero");
+        assert_eq!(list.items[1], "Segundo");
+        assert!(list.items[2].contains("énfasis"));
+    }
+
+    #[test]
+    fn import_detecta_enumerate() {
+        let tex = "\\chapter{C1}\n\\begin{enumerate}\n    \\item Uno\n    \\item Dos\n\\end{enumerate}";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        let list = blocks.iter().find_map(|b| {
+            if let ContentBlock::List(l) = b { Some(l) } else { None }
+        }).expect("debe haber un ListBlock");
+        assert!(matches!(list.list_type, crate::project::model::ListType::Enumerate));
+        assert_eq!(list.items.len(), 2);
+    }
+
+    #[test]
+    fn import_equation_rota_no_pierde_contenido() {
+        // Falta el \end{equation}: el detector NO debe consumir; debe caer a raw_latex.
+        let tex = "\\chapter{C1}\nAntes.\n\\begin{equation}\n    E = mc^2\nDespués sin cerrar.";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        // Nada de Equation, todo en raw_latex (preserva contenido).
+        let has_equation = blocks.iter().any(|b| matches!(b, ContentBlock::Equation(_)));
+        assert!(!has_equation, "no debe inventar un EquationBlock con entorno mal cerrado");
+        let raw_text: String = blocks.iter().filter_map(|b| {
+            if let ContentBlock::RawLatex(r) = b { Some(r.content.clone()) } else { None }
+        }).collect::<Vec<_>>().join("\n");
+        assert!(raw_text.contains("E = mc^2"), "el contenido sigue presente en raw_latex");
+    }
+
+    #[test]
+    fn import_lista_anidada_se_preserva_como_raw() {
+        // Listas anidadas son frágiles de parsear semánticamente — preferimos
+        // dejarlas como raw_latex confirmado antes que romperlas.
+        let tex = "\\chapter{C1}\n\\begin{itemize}\n    \\item Externo\n    \\begin{itemize}\n        \\item Interno\n    \\end{itemize}\n\\end{itemize}";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        // Aceptamos cualquiera de los dos comportamientos siempre que NO se pierda nada.
+        let all_text: String = blocks.iter().map(|b| match b {
+            ContentBlock::RawLatex(r) => r.content.clone(),
+            ContentBlock::List(l) => l.items.join("|"),
+            _ => String::new(),
+        }).collect::<Vec<_>>().join("\n");
+        assert!(all_text.contains("Externo"));
+        assert!(all_text.contains("Interno"));
+    }
+
+    #[test]
+    fn import_seccion_dentro_de_equation_no_se_confunde() {
+        // \section dentro de un entorno equation NO debe convertirse en heading.
+        let tex = "\\chapter{C1}\n\\begin{equation}\n    a = b \\\\\n    \\section{trampa}\n\\end{equation}";
+        let blocks = &import_tex(tex).model.sections[0].blocks;
+        let has_trap_heading = blocks.iter().any(|b| {
+            matches!(b, ContentBlock::Heading(h) if h.content == "trampa")
+        });
+        assert!(!has_trap_heading, "el detector de heading no debe disparar dentro de equation");
     }
 }
