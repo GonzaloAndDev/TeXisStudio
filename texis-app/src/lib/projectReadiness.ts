@@ -26,7 +26,9 @@ function blockText(block: ContentBlock): string {
     case "plugin_figure":
       return block.caption;
     case "equation":
-      return block.latex_content;
+      // Strip LaTeX commands the same way raw_latex does — otherwise
+      // every \frac, \sum etc. would count as a word and inflate the total.
+      return block.latex_content.replace(/\\[a-zA-Z]+\*?(?:\[[^\]]*])?(?:\{[^}]*})?/g, " ");
     case "list":
       return block.items.join(" ");
     case "algorithm":

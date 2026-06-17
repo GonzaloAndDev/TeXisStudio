@@ -581,13 +581,19 @@ export default function EditorView() {
   // edited block (or at the end of the section), seeded with the snippet.
   // The new block autofocuses, registers itself as the equation target, so
   // subsequent clicks append into the same block.
+  //
+  // editingId lives in a ref so this effect doesn't re-register on every
+  // cursor move — the creator always reads the latest value when fired.
+  const editingIdRef = useRef<string | null>(editingId);
+  useEffect(() => { editingIdRef.current = editingId; }, [editingId]);
+
   useEffect(() => {
     if (!mathPanelOpen) return;
-    const unregister = mathInsertManager.registerCreator((latex) => {
+    return mathInsertManager.registerCreator((latex) => {
       const id = newId();
       const newBlock: ContentBlock = { type: "equation", id, latex_content: latex, numbered: false };
       setLocalBlocks((prev) => {
-        const insertAfter = editingId ?? (prev.length > 0 ? prev[prev.length - 1].id : null);
+        const insertAfter = editingIdRef.current ?? (prev.length > 0 ? prev[prev.length - 1].id : null);
         let next: ContentBlock[];
         if (insertAfter) {
           const idx = prev.findIndex((b) => b.id === insertAfter);
@@ -602,8 +608,7 @@ export default function EditorView() {
       });
       setEditingId(id);
     });
-    return unregister;
-  }, [mathPanelOpen, editingId, scheduleAutoSave]);
+  }, [mathPanelOpen, scheduleAutoSave]);
 
   const deleteBlock = useCallback((id: string) => {
     setLocalBlocks((prev) => {

@@ -204,7 +204,7 @@ fn zip_directory(src: &Path, dst: &Path) -> CoreResult<()> {
             .replace('\\', "/");
 
         if entry.file_type().is_dir() {
-            zip.add_directory(&format!("{rel}/"), opts)
+            zip.add_directory(format!("{rel}/"), opts)
                 .map_err(|e| CoreError::Io(std::io::Error::other(e)))?;
         } else {
             zip.start_file(&rel, opts)

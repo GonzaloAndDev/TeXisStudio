@@ -475,12 +475,16 @@ fn epoch_to_ymd(mut secs: u64) -> (u64, u64, u64, u64, u64, u64) {
     let mut days = secs;
     let mut y = 1970u64;
     loop {
-        let leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+        let leap = (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400);
         let dy = if leap { 366 } else { 365 };
         if days < dy { break; }
         days -= dy; y += 1;
     }
-    let months = [31u64, if (y%4==0&&y%100!=0)||y%400==0{29}else{28}, 31,30,31,30,31,31,30,31,30,31];
+    let months = [
+        31u64,
+        if (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400) { 29 } else { 28 },
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+    ];
     let mut mo = 1u64;
     for &dm in &months {
         if days < dm { break; }
