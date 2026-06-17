@@ -6,10 +6,12 @@ import { Trans, useTranslation } from "react-i18next";
 import { documentDir } from "@tauri-apps/api/path";
 import { AppDialog } from "../components/AppDialog";
 import { CorruptProjectModal } from "../components/CorruptProjectModal";
+import { ExportPlatformModal } from "../components/ExportPlatformModal";
 import { ImportProjectModal } from "../components/ImportProjectModal";
 import { TxAppbar, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
   IconBook,
+  IconDownload,
   IconFolder, IconPlus, IconSearch, IconSettings, IconUpload, IconWarn,
 } from "../components/Icons";
 import { LanguagePicker } from "../components/LanguagePicker";
@@ -261,6 +263,7 @@ export default function HomeView() {
   const [latexLoading, setLatexLoading] = useState(latexInfo === null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFolderOpen, setImportFolderOpen] = useState(false);
+  const [exportingPath, setExportingPath] = useState<string | null>(null);
   const [importTexPath, setImportTexPath] = useState("");
   const [importOutputPath, setImportOutputPath] = useState("");
   const [importProjectName, setImportProjectName] = useState("");
@@ -560,6 +563,12 @@ export default function HomeView() {
           </div>
         </AppDialog>
       )}
+      {exportingPath && (
+        <ExportPlatformModal
+          projectPath={exportingPath}
+          onClose={() => setExportingPath(null)}
+        />
+      )}
       {importFolderOpen && (
         <ImportProjectModal
           onClose={() => setImportFolderOpen(false)}
@@ -737,12 +746,19 @@ export default function HomeView() {
           ) : (
           <div style={S.grid}>
             {projects.map((p, i) => (
-              <button
+              <div
                 key={i}
-                type="button"
-                className="tx-unstyled-button tx-card-action"
-                style={{ ...S.card, display: "flex" }}
+                role="button"
+                tabIndex={0}
+                className="tx-card-action"
+                style={{ ...S.card, display: "flex", position: "relative", cursor: "pointer" }}
                 onClick={() => handleOpen(p.path)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleOpen(p.path);
+                  }
+                }}
                 aria-label={p.title}
               >
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -750,6 +766,19 @@ export default function HomeView() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={S.cardTitle}>{p.title}</h3>
                   </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-icon"
+                    aria-label={t("home.export_project_aria", { title: p.title })}
+                    title={t("home.export_project_tip")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExportingPath(p.path);
+                    }}
+                    style={{ flexShrink: 0, padding: 4, color: "var(--fg-muted)" }}
+                  >
+                    <IconDownload size={13} />
+                  </button>
                 </div>
                 <div style={S.cardMeta}>
                   <span className="chip">{levelLabel(p.academic_level)}</span>
@@ -763,7 +792,7 @@ export default function HomeView() {
                   <span>{p.path.split(/[/\\]/).pop()}</span>
                   <span>{formatUpdatedAt(p.updated_at, t)}</span>
                 </div>
-              </button>
+              </div>
             ))}
 
             {projects.length === 0 && (

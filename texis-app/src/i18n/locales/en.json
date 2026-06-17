@@ -73,6 +73,8 @@
     "latex_not_detected": "LaTeX not detected",
     "latex_ready": "LaTeX ready",
     "open": "Open",
+    "export_project_aria": "Export project: {{title}}",
+    "export_project_tip": "Export this project to Overleaf, TeXstudio, VS Code or a local folder",
     "guided_route": "Suggested path",
     "continue_recent": "Continue your project",
     "resume_project": "Resume your project",
