@@ -396,17 +396,31 @@ export function EquationEditor({
     try { localStorage.setItem(SHOW_SRC_KEY, showSource ? "true" : "false"); } catch { /* ignore */ }
   }, [showSource]);
 
-  // When the source is hidden, we still need a target the math panel can
-  // insert into so subsequent clicks go to *this* block. Register manually
-  // on mount/unmount when hidden; let the textarea's onFocus handle it
-  // otherwise.
+  // Keep the latest onChange in a ref so the registration effect below
+  // doesn't churn on every parent render — onChange is recreated on each
+  // keystroke by the parent's inline lambda, but the textarea instance is
+  // stable. We register once and read the live onChange when needed.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
+  // The textarea is always focusable, even when the LaTeX source is hidden,
+  // so the user's keyboard still types into this equation. When hidden, we
+  // also wire up the math-panel target manually so the panel inserts here.
   useEffect(() => {
-    if (showSource) return;
-    if (!taRef.current) return;
     const el = taRef.current;
-    mathInsertManager.register(el, onChange, "equation");
+    if (!el) return;
+    mathInsertManager.register(el, (v) => onChangeRef.current(v), "equation");
+    // Focus on mount so the cursor lands here regardless of showSource.
+    // Already-focused textareas (autoFocus) no-op on extra focus calls.
+    el.focus();
     return () => mathInsertManager.unregister(el);
-  }, [showSource, onChange]);
+  }, []);
+
+  // When the user toggles "Show LaTeX" back on, send focus to the now-visible
+  // textarea so they can resume typing without an extra click.
+  useEffect(() => {
+    if (showSource && taRef.current) taRef.current.focus();
+  }, [showSource]);
 
   // Hint for the empty equation: only really used when both source is hidden
   // and the equation is empty — gives the user something to click.
@@ -456,18 +470,17 @@ export function EquationEditor({
         </button>
       </div>
 
-      {/* Primary: live KaTeX render. Click focuses the source so the math
-          panel inserts here; if the source is hidden, the manual registration
-          above already keeps the panel pointed at this block. */}
+      {/* Primary: live KaTeX render. Clicking it always focuses the textarea
+          so the keyboard goes here, whether or not the source line is visible. */}
       <div
-        onClick={() => { if (showSource) taRef.current?.focus(); }}
+        onClick={() => taRef.current?.focus()}
         style={{
           padding: "16px 16px",
           background: "var(--bg-app)",
           borderRadius: "var(--r-sm)",
           minHeight: 56,
-          cursor: showSource ? "default" : "text",
-          border: showSource ? "1px solid transparent" : "1px solid var(--border-subtle)",
+          cursor: "text",
+          border: "1px solid transparent",
         }}
       >
         {showEmptyHint ? (
@@ -485,11 +498,13 @@ export function EquationEditor({
           the cursor position survives toggling. */}
       <textarea
         ref={taRef}
-        autoFocus={showSource}
+        autoFocus
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => { if (taRef.current) mathInsertManager.register(taRef.current, onChange, "equation"); }}
-        onBlur={() => { if (taRef.current) mathInsertManager.unregister(taRef.current); onBlur(); }}
+        // onFocus does NOT re-register: registration is centralised in the
+        // mount effect above so the math panel stays pointed at this block
+        // even when the textarea is visually hidden and never refocuses.
+        onBlur={onBlur}
         // Esc commits and steps OUT of the LaTeX source but does NOT exit
         // edit mode. The global Esc handler in EditorView would close the
         // whole block otherwise — too eager for a user who pressed Esc just
@@ -497,12 +512,20 @@ export function EquationEditor({
         onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); taRef.current?.blur(); } }}
         rows={2}
         spellCheck={false}
-        style={{
-          display: showSource ? "block" : "none",
+        // When the source is "hidden" we keep the element mounted, focusable
+        // and able to receive keyboard input — just visually offscreen. Using
+        // display:none would block focus and keyboard typing entirely.
+        style={showSource ? {
           fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
           background: "var(--ink-900)", border: "none", outline: "none",
           padding: "8px 12px", borderRadius: "var(--r-sm)", resize: "vertical",
           width: "100%", boxSizing: "border-box",
+        } : {
+          // Offscreen but accessible to focus/keyboard. Not `display:none`
+          // because that removes the element from the tab/focus order.
+          position: "absolute", left: -9999, top: -9999,
+          width: 1, height: 1, opacity: 0,
+          padding: 0, margin: 0, border: 0,
         }}
         placeholder="\frac{d}{dx} f(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}"
       />
