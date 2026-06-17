@@ -18,6 +18,48 @@
 
 type TargetKind = "equation";
 
+/** True if the pair at index `i` is an empty `{}` or `[]` slot. */
+function isEmptySlotAt(text: string, i: number): boolean {
+  if (i < 0 || i + 1 >= text.length) return false;
+  const a = text[i];
+  const b = text[i + 1];
+  return (a === "{" && b === "}") || (a === "[" && b === "]");
+}
+
+/**
+ * Returns the cursor position inside the first empty slot within [from, to),
+ * or null if no slot exists in that range. A "slot" is an empty `{}` or `[]`
+ * pair. Position is the index right after the opening bracket, so placing
+ * the cursor there puts it inside the empty pair — ready for the user to
+ * type.
+ *
+ * Used for "fill-in-the-blanks" math input: snippets like `\frac{}{}`
+ * insert with the cursor pre-positioned in the first slot.
+ */
+export function findFirstEmptySlot(text: string, from: number, to: number): number | null {
+  const stop = Math.min(to, text.length) - 1;
+  for (let i = Math.max(from, 0); i <= stop; i++) {
+    if (isEmptySlotAt(text, i)) return i + 1;
+  }
+  return null;
+}
+
+/** Next empty slot at or after `from` in the full text. */
+export function findNextEmptySlot(text: string, from: number): number | null {
+  return findFirstEmptySlot(text, from, text.length);
+}
+
+/**
+ * Previous empty slot strictly before `before` (the cursor position).
+ * Scans backwards so the closest preceding slot wins.
+ */
+export function findPrevEmptySlot(text: string, before: number): number | null {
+  for (let i = Math.min(before - 2, text.length - 2); i >= 0; i--) {
+    if (isEmptySlotAt(text, i)) return i + 1;
+  }
+  return null;
+}
+
 interface MathTarget {
   el: HTMLTextAreaElement;
   onChange: (v: string) => void;
@@ -97,9 +139,15 @@ export const mathInsertManager = {
       const end = el.selectionEnd ?? el.value.length;
       const next = el.value.slice(0, start) + latex + el.value.slice(end);
       onChange(next);
+      // If the snippet contains an empty `{}` slot, drop the cursor inside
+      // the first one so the user types directly into the placeholder. This
+      // is the Wolfram-style "fill in the boxes" UX. Otherwise, cursor
+      // lands at the end of the inserted text as before.
+      const insertedEnd = start + latex.length;
+      const slot = findFirstEmptySlot(next, start, insertedEnd);
+      const pos = slot ?? insertedEnd;
       requestAnimationFrame(() => {
         el.focus();
-        const pos = start + latex.length;
         el.setSelectionRange(pos, pos);
       });
       return;

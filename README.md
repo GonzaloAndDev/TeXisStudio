@@ -129,6 +129,8 @@ The side math-symbol panel always lands content in a dedicated equation block: w
 
 Inside the equation block the rendered KaTeX preview is the dominant visual; the LaTeX source line sits underneath in a compact monospace strip and can be hidden entirely with a per-session toggle. Pressing Escape while inside the source field only steps out of the source — it does not exit the block — so reflexive Esc presses don't lose the user's place.
 
+Math-panel insertions land Wolfram-style: snippets like `\frac{}{}`, `\sqrt{}`, `\sum_{}^{}` or `\sqrt[]{}` place the cursor directly inside the first empty `{}` or `[]` placeholder, and Tab / Shift+Tab jump between unfilled slots so the user fills in the boxes instead of hand-positioning the caret.
+
 #### Plugin visual editors
 
 9 GUI editors for plugin-backed figures — no LaTeX required:
@@ -375,6 +377,8 @@ Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX
 El panel lateral de símbolos matemáticos siempre coloca el contenido en un bloque de ecuación dedicado: sin ecuación enfocada, hacer clic en un símbolo crea un nuevo bloque de ecuación justo después de la posición actual del cursor (vista previa KaTeX en vivo). Con una ecuación enfocada, el clic inserta el fragmento en la posición del cursor. Las ecuaciones numeradas exponen un campo `etiqueta` directamente en la barra del bloque para poder referenciarlas con `\eqref{…}` sin editar LaTeX a mano. Las ecuaciones vacías se omiten del PDF generado, el validador avisa cuando hay ecuaciones numeradas sin etiqueta, y la vista previa KaTeX muestra el error real del parser para que el autor sepa qué corregir.
 
 Dentro del bloque de ecuación, la vista previa KaTeX renderizada es el elemento dominante; el código LaTeX queda debajo en una franja monoespaciada compacta y puede ocultarse por completo con un interruptor por sesión. Pulsar Escape dentro del campo de código solo sale del campo —no cierra el bloque—, así los Esc por reflejo no pierden el lugar del autor.
+
+Las inserciones del panel matemático funcionan al estilo Wolfram: los fragmentos como `\frac{}{}`, `\sqrt{}`, `\sum_{}^{}` o `\sqrt[]{}` posicionan el cursor directamente dentro del primer hueco `{}` o `[]`, y Tab / Shift+Tab saltan entre los huecos vacíos para que el autor rellene los cuadritos en vez de mover el cursor a mano.
 
 #### Editores visuales de plugins
 

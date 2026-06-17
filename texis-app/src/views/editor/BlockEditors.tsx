@@ -7,7 +7,7 @@ import { applyAutocorrect } from "../../services/autocorrect";
 import { useSettingsStore } from "../../stores/settings";
 import { useWorkspaceStore } from "../../stores/workspace";
 import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from "../../types";
-import { mathInsertManager } from "../../lib/mathInsertManager";
+import { mathInsertManager, findFirstEmptySlot, findNextEmptySlot, findPrevEmptySlot } from "../../lib/mathInsertManager";
 
 // ── Componentes de bloque: modo edición ───────────────────────────
 
@@ -413,6 +413,11 @@ export function EquationEditor({
     // Focus on mount so the cursor lands here regardless of showSource.
     // Already-focused textareas (autoFocus) no-op on extra focus calls.
     el.focus();
+    // If the block was seeded with a snippet that has an empty `{}` slot
+    // (e.g. spawned from `\frac{}{}`), drop the cursor INSIDE the first
+    // slot so the user types directly into the placeholder.
+    const slot = findFirstEmptySlot(el.value, 0, el.value.length);
+    if (slot !== null) el.setSelectionRange(slot, slot);
     return () => mathInsertManager.unregister(el);
   }, []);
 
@@ -505,11 +510,36 @@ export function EquationEditor({
         // mount effect above so the math panel stays pointed at this block
         // even when the textarea is visually hidden and never refocuses.
         onBlur={onBlur}
-        // Esc commits and steps OUT of the LaTeX source but does NOT exit
-        // edit mode. The global Esc handler in EditorView would close the
-        // whole block otherwise — too eager for a user who pressed Esc just
-        // to clear the source field. stopPropagation isolates this textarea.
-        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); taRef.current?.blur(); } }}
+        // Key handling:
+        //   * Esc: commits and steps OUT of the LaTeX source but does NOT
+        //     exit edit mode. The global Esc handler in EditorView would
+        //     close the whole block otherwise — too eager for a reflexive
+        //     Esc. stopPropagation isolates this textarea.
+        //   * Tab / Shift+Tab: jump to the next/previous empty `{}` slot —
+        //     Wolfram-style "fill in the boxes" math input. If there's no
+        //     slot ahead, fall through to the default tab behaviour so the
+        //     user can still leave the field with the keyboard.
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.stopPropagation();
+            taRef.current?.blur();
+            return;
+          }
+          if (e.key === "Tab") {
+            const el = taRef.current;
+            if (!el) return;
+            const pos = el.selectionEnd ?? 0;
+            // For forward Tab, look strictly past the current selection so
+            // an in-slot caret advances to the NEXT slot instead of staying.
+            const target = e.shiftKey
+              ? findPrevEmptySlot(el.value, pos)
+              : findNextEmptySlot(el.value, pos + 1);
+            if (target !== null) {
+              e.preventDefault();
+              el.setSelectionRange(target, target);
+            }
+          }
+        }}
         rows={2}
         spellCheck={false}
         // When the source is "hidden" we keep the element mounted, focusable
