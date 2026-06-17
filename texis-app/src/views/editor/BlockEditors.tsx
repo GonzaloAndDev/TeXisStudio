@@ -384,16 +384,43 @@ export function EquationEditor({
   // Re-sync if the block's label changes externally (e.g., reset on regenerate).
   useEffect(() => { setLabelDraft(label ?? ""); }, [label]);
 
+  // Layout: KaTeX preview is the primary visual; the LaTeX source line lives
+  // below it as a compact monospace input. The user can collapse the source
+  // entirely and work purely from the panel + live preview. The persisted
+  // preference key keeps the choice across reloads of the same session.
+  const SHOW_SRC_KEY = "tx.equation.showSource";
+  const [showSource, setShowSource] = useState<boolean>(() => {
+    try { return localStorage.getItem(SHOW_SRC_KEY) !== "false"; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SHOW_SRC_KEY, showSource ? "true" : "false"); } catch { /* ignore */ }
+  }, [showSource]);
+
+  // When the source is hidden, we still need a target the math panel can
+  // insert into so subsequent clicks go to *this* block. Register manually
+  // on mount/unmount when hidden; let the textarea's onFocus handle it
+  // otherwise.
+  useEffect(() => {
+    if (showSource) return;
+    if (!taRef.current) return;
+    const el = taRef.current;
+    mathInsertManager.register(el, onChange, "equation");
+    return () => mathInsertManager.unregister(el);
+  }, [showSource, onChange]);
+
+  // Hint for the empty equation: only really used when both source is hidden
+  // and the equation is empty — gives the user something to click.
+  const showEmptyHint = !latex_content.trim();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>LaTeX</span>
         <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer" }}>
           <input type="checkbox" checked={numbered} onChange={(e) => onNumberedChange(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
           {t("block_editor.numbered_lower")}
         </label>
         {numbered && (
-          <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <label htmlFor="eq-label" style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
               {t("block_editor.eq_label")}
             </label>
@@ -418,26 +445,67 @@ export function EquationEditor({
             />
           </div>
         )}
+        <button
+          type="button"
+          onClick={() => setShowSource((v) => !v)}
+          className="btn btn-ghost btn-sm"
+          style={{ marginLeft: "auto", fontSize: "var(--fs-xs)", padding: "2px 8px" }}
+          title={t("block_editor.eq_toggle_source_hint")}
+        >
+          {showSource ? t("block_editor.eq_hide_source") : t("block_editor.eq_show_source")}
+        </button>
       </div>
+
+      {/* Primary: live KaTeX render. Click focuses the source so the math
+          panel inserts here; if the source is hidden, the manual registration
+          above already keeps the panel pointed at this block. */}
+      <div
+        onClick={() => { if (showSource) taRef.current?.focus(); }}
+        style={{
+          padding: "16px 16px",
+          background: "var(--bg-app)",
+          borderRadius: "var(--r-sm)",
+          minHeight: 56,
+          cursor: showSource ? "default" : "text",
+          border: showSource ? "1px solid transparent" : "1px solid var(--border-subtle)",
+        }}
+      >
+        {showEmptyHint ? (
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--fg-faint)", fontStyle: "italic", textAlign: "center" }}>
+            {t("block_editor.eq_empty_hint")}
+          </div>
+        ) : (
+          <KaTeXPreview latex={latex_content} displayMode />
+        )}
+      </div>
+
+      {/* Secondary: compact LaTeX source. Hidden by default if the user has
+          collapsed it via the toggle. We always keep the textarea mounted
+          (just visually hidden) so the math-panel target stays attached and
+          the cursor position survives toggling. */}
       <textarea
         ref={taRef}
-        autoFocus
+        autoFocus={showSource}
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => { if (taRef.current) mathInsertManager.register(taRef.current, onChange, "equation"); }}
         onBlur={() => { if (taRef.current) mathInsertManager.unregister(taRef.current); onBlur(); }}
-        onKeyDown={(e) => { if (e.key === "Escape") onBlur(); }}
-        rows={3}
+        // Esc commits and steps OUT of the LaTeX source but does NOT exit
+        // edit mode. The global Esc handler in EditorView would close the
+        // whole block otherwise — too eager for a user who pressed Esc just
+        // to clear the source field. stopPropagation isolates this textarea.
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); taRef.current?.blur(); } }}
+        rows={2}
+        spellCheck={false}
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, color: "#C8C2B5",
+          display: showSource ? "block" : "none",
+          fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
           background: "var(--ink-900)", border: "none", outline: "none",
-          padding: "10px 14px", borderRadius: "var(--r-sm)", resize: "vertical",
-          width: "100%",
+          padding: "8px 12px", borderRadius: "var(--r-sm)", resize: "vertical",
+          width: "100%", boxSizing: "border-box",
         }}
         placeholder="\frac{d}{dx} f(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}"
       />
-      {/* Preview en tiempo real */}
-      <KaTeXPreview latex={latex_content} displayMode />
     </div>
   );
 }

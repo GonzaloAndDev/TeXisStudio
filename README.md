@@ -127,6 +127,8 @@ Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking
 
 The side math-symbol panel always lands content in a dedicated equation block: with no equation focused, clicking a symbol spawns a new equation block right after the current cursor position (live KaTeX preview). With an equation focused, clicks splice the snippet into it at the caret. Numbered equations expose a `label` field directly in the block toolbar so they can be cross-referenced with `\eqref{…}` without hand-editing LaTeX. Empty equations are skipped from the generated PDF, the validator flags numbered equations without a label, and the KaTeX preview surfaces the parser's actual error so the writer knows what to fix.
 
+Inside the equation block the rendered KaTeX preview is the dominant visual; the LaTeX source line sits underneath in a compact monospace strip and can be hidden entirely with a per-session toggle. Pressing Escape while inside the source field only steps out of the source — it does not exit the block — so reflexive Esc presses don't lose the user's place.
+
 #### Plugin visual editors
 
 9 GUI editors for plugin-backed figures — no LaTeX required:
@@ -371,6 +373,8 @@ Soporta: tesis, tesina, especialidad, maestría, doctorado y posdoctorado. El ni
 Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX. Seguimiento de estado por sección (`borrador → revisión → revisado → aprobado`). Autoguardado con debounce.
 
 El panel lateral de símbolos matemáticos siempre coloca el contenido en un bloque de ecuación dedicado: sin ecuación enfocada, hacer clic en un símbolo crea un nuevo bloque de ecuación justo después de la posición actual del cursor (vista previa KaTeX en vivo). Con una ecuación enfocada, el clic inserta el fragmento en la posición del cursor. Las ecuaciones numeradas exponen un campo `etiqueta` directamente en la barra del bloque para poder referenciarlas con `\eqref{…}` sin editar LaTeX a mano. Las ecuaciones vacías se omiten del PDF generado, el validador avisa cuando hay ecuaciones numeradas sin etiqueta, y la vista previa KaTeX muestra el error real del parser para que el autor sepa qué corregir.
+
+Dentro del bloque de ecuación, la vista previa KaTeX renderizada es el elemento dominante; el código LaTeX queda debajo en una franja monoespaciada compacta y puede ocultarse por completo con un interruptor por sesión. Pulsar Escape dentro del campo de código solo sale del campo —no cierra el bloque—, así los Esc por reflejo no pierden el lugar del autor.
 
 #### Editores visuales de plugins
 
