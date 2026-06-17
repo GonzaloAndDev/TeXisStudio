@@ -194,8 +194,13 @@ export function HeadingEditor({
   );
 }
 
-/** Renderiza LaTeX con KaTeX. Muestra un mensaje de error si la sintaxis es inválida. */
+/** Renderiza LaTeX con KaTeX. En error de sintaxis muestra el mensaje del parser
+ *  junto con la expresión cruda — el usuario necesita saber QUÉ está mal, no
+ *  solo que algo está mal. KaTeX es un subconjunto de LaTeX, así que algunos
+ *  entornos válidos en PDF (p.ej. `align`) no se previsualizan aquí: en ese
+ *  caso el mensaje lo aclara explícitamente. */
 export function KaTeXPreview({ latex, displayMode = true }: { latex: string; displayMode?: boolean }) {
+  const { t } = useTranslation();
   if (!latex.trim()) return null;
   try {
     const html = katex.renderToString(latex, {
@@ -210,15 +215,21 @@ export function KaTeXPreview({ latex, displayMode = true }: { latex: string; dis
         style={{ textAlign: "center", padding: "8px 0", color: "var(--fg-strong)", overflowX: "auto" }}
       />
     );
-  } catch {
-    // KaTeX parse error — mostrar la expresión cruda en rojo
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e);
+    // KaTeX prefixes its messages with "KaTeX parse error: " — trim that off
+    // so the actual hint is the first thing the user reads.
+    const detail = raw.replace(/^KaTeX parse error:\s*/i, "");
     return (
       <div style={{
         fontFamily: "var(--font-mono)", fontSize: 12, color: "#E07070",
         padding: "6px 10px", background: "rgba(224,80,80,0.08)",
-        borderRadius: "var(--r-sm)", textAlign: "center",
+        borderRadius: "var(--r-sm)", textAlign: "left",
+        display: "flex", flexDirection: "column", gap: 4,
       }}>
-        {latex}
+        <div style={{ fontWeight: 600 }}>{t("equation_preview.error_title")}</div>
+        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{detail}</div>
+        <div style={{ opacity: 0.7, fontSize: 11 }}>{t("equation_preview.error_hint")}</div>
       </div>
     );
   }
@@ -347,25 +358,66 @@ export function SectionStatusBar({
   );
 }
 
+/** Label cleaner: keep a-z, A-Z, 0-9, "-", ":", "_". Strip everything else.
+ *  Matches the spirit of `sanitize_latex_label` in the Rust generator so the
+ *  preview the user sees is exactly the label that will land in the PDF. */
+function sanitizeEquationLabel(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9_:-]/g, "");
+}
+
 export function EquationEditor({
-  latex_content, numbered, onChange, onNumberedChange, onBlur,
+  latex_content, numbered, label, onChange, onNumberedChange, onLabelChange, onBlur,
 }: {
-  latex_content: string; numbered: boolean;
+  latex_content: string;
+  numbered: boolean;
+  label?: string;
   onChange: (v: string) => void;
   onNumberedChange: (v: boolean) => void;
+  onLabelChange: (v: string | undefined) => void;
   onBlur: () => void;
 }) {
   const { t } = useTranslation();
   const taRef = useRef<HTMLTextAreaElement>(null);
+  // Local draft for the label so the user can type characters that will be
+  // sanitised on commit, instead of seeing each keystroke fight back.
+  const [labelDraft, setLabelDraft] = useState(label ?? "");
+  // Re-sync if the block's label changes externally (e.g., reset on regenerate).
+  useEffect(() => { setLabelDraft(label ?? ""); }, [label]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", fontFamily: "var(--font-mono)" }}>LaTeX</span>
         <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "var(--fs-xs)", color: "var(--fg-muted)", cursor: "pointer" }}>
           <input type="checkbox" checked={numbered} onChange={(e) => onNumberedChange(e.target.checked)} style={{ accentColor: "var(--accent)" }} />
           {t("block_editor.numbered_lower")}
         </label>
+        {numbered && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+            <label htmlFor="eq-label" style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+              {t("block_editor.eq_label")}
+            </label>
+            <input
+              id="eq-label"
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={() => {
+                const clean = sanitizeEquationLabel(labelDraft).trim();
+                setLabelDraft(clean);
+                onLabelChange(clean ? clean : undefined);
+              }}
+              placeholder={t("block_editor.eq_label_placeholder")}
+              spellCheck={false}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 12,
+                padding: "3px 8px", borderRadius: "var(--r-xs)",
+                border: "1px solid var(--border-firm)", background: "var(--bg-app)",
+                color: "var(--fg-default)", width: 160,
+              }}
+              title={t("block_editor.eq_label_hint")}
+            />
+          </div>
+        )}
       </div>
       <textarea
         ref={taRef}

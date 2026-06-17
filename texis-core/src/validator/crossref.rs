@@ -173,6 +173,7 @@ fn check_tables(model: &ProjectModel, corpus: &str, issues: &mut Vec<ValidationI
 
 fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<ValidationIssue>) {
     let mut seen_labels: HashSet<String> = HashSet::new();
+    let mut numbered_without_label = 0_usize;
 
     for section in &model.sections {
         if !section.enabled {
@@ -182,7 +183,16 @@ fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validati
             if let ContentBlock::Equation(eq) = block {
                 let label = match eq.label.as_deref() {
                     Some(l) if !l.is_empty() => l,
-                    _ => continue,
+                    _ => {
+                        // Numbered equations without a label are uncitable —
+                        // they get a number but \ref/\eqref can't target them.
+                        // Skip entirely empty drafts (no content) since those
+                        // already get filtered out at generation time.
+                        if eq.numbered && !eq.latex_content.trim().is_empty() {
+                            numbered_without_label += 1;
+                        }
+                        continue;
+                    }
                 };
                 if seen_labels.contains(label) {
                     continue;
@@ -208,6 +218,23 @@ fn check_equations(model: &ProjectModel, corpus: &str, issues: &mut Vec<Validati
                 }
             }
         }
+    }
+
+    if numbered_without_label > 0 {
+        issues.push(ValidationIssue {
+            severity: IssueSeverity::Warning,
+            code: "W_EQUATION_NUMBERED_NO_LABEL".to_string(),
+            message: format!(
+                "Hay {} ecuación(es) numerada(s) sin etiqueta: ocupan un número del contador pero no se pueden referenciar.",
+                numbered_without_label
+            ),
+            suggestion: Some(
+                "Asigna una etiqueta (campo 'label') a cada ecuación numerada, o desmárcala como numerada si no la vas a citar.".to_string()
+            ),
+            section_id: None,
+            automated: Some(false),
+            ..Default::default()
+        });
     }
 }
 

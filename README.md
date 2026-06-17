@@ -125,7 +125,7 @@ Supports: thesis (`tesis`), short thesis (`tesina`), and postgraduate research d
 
 Drag-and-drop reordering. Inline math preview via KaTeX. Section status tracking (`draft → in_review → revised → approved`). Autosave with debounce.
 
-The side math-symbol panel always lands content in a dedicated equation block: with no equation focused, clicking a symbol spawns a new equation block right after the current cursor position (live KaTeX preview). With an equation focused, clicks splice the snippet into it at the caret.
+The side math-symbol panel always lands content in a dedicated equation block: with no equation focused, clicking a symbol spawns a new equation block right after the current cursor position (live KaTeX preview). With an equation focused, clicks splice the snippet into it at the caret. Numbered equations expose a `label` field directly in the block toolbar so they can be cross-referenced with `\eqref{…}` without hand-editing LaTeX. Empty equations are skipped from the generated PDF, the validator flags numbered equations without a label, and the KaTeX preview surfaces the parser's actual error so the writer knows what to fix.
 
 #### Plugin visual editors
 
@@ -366,7 +366,7 @@ Soporta: tesis, tesina, especialidad, maestría, doctorado y posdoctorado. El ni
 
 Reordenamiento con arrastrar y soltar. Vista previa matemática inline con KaTeX. Seguimiento de estado por sección (`borrador → revisión → revisado → aprobado`). Autoguardado con debounce.
 
-El panel lateral de símbolos matemáticos siempre coloca el contenido en un bloque de ecuación dedicado: sin ecuación enfocada, hacer clic en un símbolo crea un nuevo bloque de ecuación justo después de la posición actual del cursor (vista previa KaTeX en vivo). Con una ecuación enfocada, el clic inserta el fragmento en la posición del cursor.
+El panel lateral de símbolos matemáticos siempre coloca el contenido en un bloque de ecuación dedicado: sin ecuación enfocada, hacer clic en un símbolo crea un nuevo bloque de ecuación justo después de la posición actual del cursor (vista previa KaTeX en vivo). Con una ecuación enfocada, el clic inserta el fragmento en la posición del cursor. Las ecuaciones numeradas exponen un campo `etiqueta` directamente en la barra del bloque para poder referenciarlas con `\eqref{…}` sin editar LaTeX a mano. Las ecuaciones vacías se omiten del PDF generado, el validador avisa cuando hay ecuaciones numeradas sin etiqueta, y la vista previa KaTeX muestra el error real del parser para que el autor sepa qué corregir.
 
 #### Editores visuales de plugins
 

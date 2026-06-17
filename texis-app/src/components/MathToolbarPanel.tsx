@@ -187,10 +187,10 @@ const SYMBOLS: Record<Category, MathSymbol[]> = {
     { display: "⌊·⌋",   latex: "\\left\\lfloor \\right\\rfloor",                                     title: "\\lfloor \\rfloor" },
     { display: "⌈·⌉",   latex: "\\left\\lceil \\right\\rceil",                                       title: "\\lceil \\rceil" },
     { display: "⟨·⟩",   latex: "\\langle  \\rangle",                                                 title: "\\langle \\rangle" },
-    { display: "mat",   latex: "\\begin{pmatrix}\n & \\\\\\\\ \n & \n\\end{pmatrix}",                 title: "pmatrix 2×2" },
-    { display: "bmat",  latex: "\\begin{bmatrix}\n & \\\\\\\\ \n & \n\\end{bmatrix}",                 title: "bmatrix 2×2" },
-    { display: "cases", latex: "\\begin{cases}\n   & \\text{if } \\\\\\\\\n   & \\text{if }\n\\end{cases}", title: "cases" },
-    { display: "align", latex: "\\begin{align}\n  \n\\end{align}",                                    title: "align" },
+    { display: "mat",   latex: "\\begin{pmatrix}\n   & \\\\\n   & \n\\end{pmatrix}",                  title: "pmatrix 2×2" },
+    { display: "bmat",  latex: "\\begin{bmatrix}\n   & \\\\\n   & \n\\end{bmatrix}",                  title: "bmatrix 2×2" },
+    { display: "cases", latex: "\\begin{cases}\n   & \\text{if } \\\\\n   & \\text{if }\n\\end{cases}", title: "cases" },
+    { display: "align", latex: "\\begin{aligned}\n   &= \\\\\n   &=\n\\end{aligned}",                 title: "aligned (nestable)" },
   ],
 
   misc: [

@@ -221,8 +221,10 @@ export function BlockItem({
             <EquationEditor
               latex_content={block.latex_content}
               numbered={block.numbered}
+              label={block.label}
               onChange={(latex_content) => onUpdate({ latex_content } as Partial<ContentBlock>)}
               onNumberedChange={(numbered) => onUpdate({ numbered } as Partial<ContentBlock>)}
+              onLabelChange={(label) => onUpdate({ label } as Partial<ContentBlock>)}
               onBlur={() => {}}
             />
           </div>

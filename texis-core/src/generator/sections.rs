@@ -321,7 +321,12 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
 
         ContentBlock::Equation(eq) => {
             let content = eq.latex_content.trim();
-            if eq.numbered {
+            // Skip empty equations entirely: emitting `\begin{equation}\end{equation}`
+            // with no body produces an empty numbered slot in the PDF and burns a
+            // counter. An empty equation block is almost always a draft placeholder.
+            if content.is_empty() {
+                String::new()
+            } else if eq.numbered {
                 let label = eq.label.as_deref().unwrap_or("");
                 if label.is_empty() {
                     format!(

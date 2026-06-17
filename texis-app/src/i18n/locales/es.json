@@ -454,6 +454,10 @@
       }
     }
   },
+  "equation_preview": {
+    "error_title": "La vista previa falló",
+    "error_hint": "KaTeX es un subconjunto de LaTeX. Algunas macros y entornos (por ejemplo align, gather) no se renderizan aquí pero pueden compilar correctamente en el PDF final."
+  },
   "editor": {
     "conflict_title": "Edición externa detectada",
     "conflict_body": "{{file}} fue modificado fuera de TeXisStudio. ¿Qué deseas hacer?",
@@ -1811,6 +1815,9 @@
     "notes_placeholder": "Notas internas para esta sección (no se incluyen en el PDF)…",
     "numbered_lower": "numerada",
     "numbered": "Numerado",
+    "eq_label": "etiqueta",
+    "eq_label_placeholder": "eq:mi-ecuacion",
+    "eq_label_hint": "Se usa para referenciar la ecuación con \\eqref{…}. Solo letras, dígitos, guiones, guiones bajos y dos puntos.",
     "list_bulleted": "• Lista",
     "list_numbered": "1. Numerada",
     "item_placeholder": "Ítem {{n}}…",

@@ -454,6 +454,10 @@
       }
     }
   },
+  "equation_preview": {
+    "error_title": "Live preview failed",
+    "error_hint": "KaTeX is a subset of LaTeX. Some macros and environments (e.g. align, gather) won't render here but may still compile in the final PDF."
+  },
   "editor": {
     "conflict_title": "External edit detected",
     "conflict_body": "{{file}} was modified outside TeXisStudio. What would you like to do?",
@@ -1811,6 +1815,9 @@
     "notes_placeholder": "Internal notes for this section (not included in the PDF)…",
     "numbered_lower": "numbered",
     "numbered": "Numbered",
+    "eq_label": "label",
+    "eq_label_placeholder": "eq:my-equation",
+    "eq_label_hint": "Used to cross-reference the equation with \\eqref{…}. Letters, digits, dashes, underscores and colons only.",
     "list_bulleted": "• List",
     "list_numbered": "1. Numbered",
     "item_placeholder": "Item {{n}}…",
