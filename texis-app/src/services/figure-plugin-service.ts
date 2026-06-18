@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeTauri as invoke } from "../lib/tauri";
 import { PLUGIN_REGISTRY, buildLatexInputBlock, setPluginLocale } from "@texisstudio/plugins";
 import type { VisualDiagramPlugin, VisualFigureResult, PluginCategory, UserLevel, EditorType } from "@texisstudio/plugins";
 import type { PluginFigureBlock } from "../types";

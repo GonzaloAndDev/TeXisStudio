@@ -144,6 +144,42 @@ export class TauriCommandError extends Error {
   }
 }
 
+// ── Mocks dinámicos para comandos con estado ──────────────────────────────
+//
+// Algunos comandos del backend (figuras de plugins) son stateful: el frontend
+// guarda algo y luego lo lee. Mockearlos con un valor fijo no sirve — el flujo
+// completo del editor de figuras requiere que load_figure_source devuelva lo
+// que save_plugin_figure acaba de persistir. Usamos un Map en memoria para
+// que el flujo end-to-end funcione en navegador (modo dev sin Tauri).
+
+const _figureStore = new Map<string, { sourceJson: string; manifest?: { manualEdit?: boolean | null } | null }>();
+
+const BROWSER_DYNAMIC_MOCKS: Record<string, (args?: Record<string, unknown>) => unknown> = {
+  save_plugin_figure: (args) => {
+    const figureId = String(args?.figureId ?? "");
+    const sourceJson = args?.sourceJson;
+    if (figureId && typeof sourceJson === "string") {
+      _figureStore.set(figureId, { sourceJson, manifest: { manualEdit: Boolean(args?.manualEdit) } });
+    }
+    return undefined;
+  },
+  load_figure_source: (args) => {
+    const figureId = String(args?.figureId ?? "");
+    const stored = _figureStore.get(figureId);
+    if (!stored) {
+      // Fallback: devuelve un doc math-engine vacío para que el editor visual
+      // pueda al menos renderizar sin romperse.
+      return { sourceJson: JSON.stringify({ engineId: "math-engine", version: "1.0.0", mode: "equation", numbered: false, tree: [] }), manifest: null };
+    }
+    return stored;
+  },
+  delete_plugin_figure: (args) => {
+    _figureStore.delete(String(args?.figureId ?? ""));
+    return undefined;
+  },
+  compile_snippet_preview: () => undefined,
+};
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
     try {
@@ -155,11 +191,25 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
       throw new TauriCommandError(cmd, e);
     }
   }
+  if (cmd in BROWSER_DYNAMIC_MOCKS) {
+    return BROWSER_DYNAMIC_MOCKS[cmd](args) as T;
+  }
   if (cmd in BROWSER_MOCKS) {
     return BROWSER_MOCKS[cmd] as T;
   }
   // Fallback para desarrollo en browser sin Tauri
   throw new TauriCommandError(cmd, "Tauri runtime is not available in this context");
+}
+
+/**
+ * Public invoke wrapper that respects the browser-mode mock layer.
+ *
+ * Cualquier código de la app que llame al backend Tauri debe usar esta
+ * función en vez del `invoke` crudo de `@tauri-apps/api`, para que las
+ * rutas de desarrollo en navegador funcionen end-to-end.
+ */
+export async function invokeTauri<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return call<T>(cmd, args);
 }
 
 export const api = {
