@@ -7,7 +7,8 @@ import { applyAutocorrect } from "../../services/autocorrect";
 import { useSettingsStore } from "../../stores/settings";
 import { useWorkspaceStore } from "../../stores/workspace";
 import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from "../../types";
-import { mathInsertManager, findFirstEmptySlot, findNextEmptySlot, findPrevEmptySlot } from "../../lib/mathInsertManager";
+import { findFirstEmptySlot } from "../../lib/mathInsertManager";
+import { useMathField } from "../../lib/useMathField";
 import { SlotLegend } from "../../components/SlotLegend";
 
 // ── Componentes de bloque: modo edición ───────────────────────────
@@ -378,7 +379,10 @@ export function EquationEditor({
   onBlur: () => void;
 }) {
   const { t } = useTranslation();
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  // Contrato unificado de campo de matemáticas (sticky-target + Tab entre
+  // cajas + cleanup en unmount), el MISMO hook que usan las filas del plugin.
+  // autoFocusOnMount: el bloque se enfoca al aparecer (registra el target).
+  const { ref: taRef, handlers } = useMathField<HTMLTextAreaElement>(onChange, { autoFocusOnMount: true });
   // Local draft for the label so the user can type characters that will be
   // sanitised on commit, instead of seeing each keystroke fight back.
   const [labelDraft, setLabelDraft] = useState(label ?? "");
@@ -397,43 +401,17 @@ export function EquationEditor({
     try { localStorage.setItem(SHOW_SRC_KEY, showSource ? "true" : "false"); } catch { /* ignore */ }
   }, [showSource]);
 
-  // Keep the latest onChange in a ref so the registration effect below
-  // doesn't churn on every parent render — onChange is recreated on each
-  // keystroke by the parent's inline lambda, but the textarea instance is
-  // stable. We register once and read the live onChange when needed.
-  const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-
-  // Sticky-target model (shared with the plugin's row editor): we register on
-  // mount AND on focus so that, with several equation blocks open, the panel
-  // always inserts into the block the user last touched — not the last one
-  // mounted. Cleanup on unmount releases the target if it's still us.
+  // Seeding del cursor: si el bloque nació con un snippet que tiene una caja
+  // `{}` vacía (p. ej. spawneado desde `\frac{}{}`), dejamos el cursor DENTRO
+  // de la primera caja. El foco/registro lo hace useMathField (autoFocus);
+  // este effect solo coloca el caret, después del foco.
   useEffect(() => {
     const el = taRef.current;
     if (!el) return;
-    mathInsertManager.register(el, (v) => onChangeRef.current(v), "equation");
-    // Focus on mount so the cursor lands here regardless of showSource.
-    // Already-focused textareas (autoFocus) no-op on extra focus calls.
-    el.focus();
-    // If the block was seeded with a snippet that has an empty `{}` slot
-    // (e.g. spawned from `\frac{}{}`), drop the cursor INSIDE the first
-    // slot so the user types directly into the placeholder.
     const slot = findFirstEmptySlot(el.value, 0, el.value.length);
     if (slot !== null) el.setSelectionRange(slot, slot);
-    return () => mathInsertManager.unregister(el);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Re-assert this block as the sticky target whenever it regains focus.
-  const handleFocus = () => {
-    const el = taRef.current;
-    if (el) mathInsertManager.register(el, (v) => onChangeRef.current(v), "equation");
-  };
-  // Blur only hides the slot legend; the target stays sticky so a palette
-  // click still lands here even though focus moved to the panel button.
-  const handleBlur = () => {
-    mathInsertManager.clearActiveInsertion();
-    onBlur();
-  };
 
   // When the user toggles "Show LaTeX" back on, send focus to the now-visible
   // textarea so they can resume typing without an extra click.
@@ -517,42 +495,23 @@ export function EquationEditor({
           the cursor position survives toggling. */}
       <textarea
         ref={taRef}
-        autoFocus
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
-        // Sticky target: re-register on focus so the panel follows the block
-        // the user is actually editing (matters with several equation blocks).
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        // Key handling:
-        //   * Esc: commits and steps OUT of the LaTeX source but does NOT
-        //     exit edit mode. The global Esc handler in EditorView would
-        //     close the whole block otherwise — too eager for a reflexive
-        //     Esc. stopPropagation isolates this textarea.
-        //   * Tab / Shift+Tab: jump to the next/previous empty `{}` slot —
-        //     Wolfram-style "fill in the boxes" math input. If there's no
-        //     slot ahead, fall through to the default tab behaviour so the
-        //     user can still leave the field with the keyboard.
+        // Foco/blur/Tab vienen del hook compartido (sticky-target + slot-nav).
+        // Componemos para añadir lo propio del bloque inline:
+        //   * onBlur: además de ocultar el legend (hook), llama al onBlur prop.
+        //   * Esc: sale del campo LaTeX sin cerrar el bloque (el handler global
+        //     de EditorView lo cerraría); stopPropagation aísla esta textarea.
+        //     El Tab lo delega al hook.
+        onFocus={handlers.onFocus}
+        onBlur={() => { handlers.onBlur(); onBlur(); }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             e.stopPropagation();
             taRef.current?.blur();
             return;
           }
-          if (e.key === "Tab") {
-            const el = taRef.current;
-            if (!el) return;
-            const pos = el.selectionEnd ?? 0;
-            // For forward Tab, look strictly past the current selection so
-            // an in-slot caret advances to the NEXT slot instead of staying.
-            const target = e.shiftKey
-              ? findPrevEmptySlot(el.value, pos)
-              : findNextEmptySlot(el.value, pos + 1);
-            if (target !== null) {
-              e.preventDefault();
-              el.setSelectionRange(target, target);
-            }
-          }
+          handlers.onKeyDown(e);
         }}
         rows={2}
         spellCheck={false}

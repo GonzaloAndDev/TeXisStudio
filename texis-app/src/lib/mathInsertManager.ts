@@ -149,6 +149,22 @@ export const mathInsertManager = {
   },
 
   /**
+   * Libera el target sticky por completo. Lo invocan los editores ante un
+   * cambio ESTRUCTURAL (borrar una fila/caso/ecuación, cambiar de modo): tras
+   * eso, el <textarea> registrado podría haber sido reusado por React para
+   * otra fila (listas con key por índice), así que el target sticky dejaría de
+   * ser fiable. Limpiarlo obliga a que el usuario reenfoque un campo antes de
+   * que la paleta vuelva a insertar — evita insertar en la fila equivocada.
+   */
+  releaseTarget(): void {
+    if (_current !== null || _activeInsertion !== null) {
+      _current = null;
+      _activeInsertion = null;
+      _notify();
+    }
+  },
+
+  /**
    * Register a fallback creator. When no equation textarea is focused, the
    * panel calls this with the LaTeX snippet to spawn a new equation block.
    * Returns an unregister fn so the host view can clean up on unmount.

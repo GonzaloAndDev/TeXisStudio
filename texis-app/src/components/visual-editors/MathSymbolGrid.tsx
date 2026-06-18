@@ -22,12 +22,15 @@ export function MathSymbolGrid() {
   const [activeCat, setActiveCat] = useState<MathCategory>("greek");
   const symbols = SYMBOLS[activeCat];
 
-  // Refleja el estado real del manager: si no hay campo registrado como
+  // Refleja el estado real del manager: si no hay un CAMPO registrado como
   // target, los símbolos se ven deshabilitados (feedback honesto en vez de
-  // "clic sin efecto"). Nos re-renderizamos cuando cambia el target.
+  // "clic sin efecto"). Usamos hasTarget() y no insertionMode(): la grid vive
+  // dentro del modal de figura, donde NO queremos caer al "creator" del
+  // documento (que generaría un bloque de ecuación suelto en la tesis). Solo
+  // insertamos en un campo enfocado de la propia figura.
   const [, force] = useReducer((n: number) => n + 1, 0);
   useEffect(() => mathInsertManager.subscribe(force), []);
-  const canInsert = mathInsertManager.insertionMode() !== "none";
+  const canInsert = mathInsertManager.hasTarget();
 
   return (
     <div

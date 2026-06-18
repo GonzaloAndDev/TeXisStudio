@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { MathEngine } from "@texisstudio/plugins/engines/math-engine/engine.js";
 import type { MathEngineDocument, MathMode, MathNode, SystemDocument } from "../../types-engines";
+import { mathInsertManager } from "../../lib/mathInsertManager";
 import { useMathField } from "../../lib/useMathField";
 import { KaTeXPreview } from "../../views/editor/BlockEditors";
 import { MathSymbolGrid } from "./MathSymbolGrid";
@@ -54,11 +55,15 @@ export function MathExpressionEditor({ doc, onChange }: Props) {
   const isSystem = doc.mode === "system";
 
   const setMode = (mode: MathMode) => {
+    // Cambiar de modo reconstruye las filas → el target sticky dejaría de ser
+    // fiable; lo liberamos para que el usuario reenfoque antes de insertar.
     if (mode === "system" && !isSystem) {
+      mathInsertManager.releaseTarget();
       onChange(treeToSystem(doc as MathEngineDocument, (doc as Partial<SystemDocument>).variables ?? []));
       return;
     }
     if (mode !== "system" && isSystem) {
+      mathInsertManager.releaseTarget();
       onChange(systemToTree(doc as SystemDocument, mode));
       return;
     }
@@ -165,7 +170,9 @@ function TreeBody({ doc, onChange }: { doc: MathEngineDocument; onChange: (d: Ma
   };
   const addRow = () => { focusLastRef.current = true; onChange(addRowT(doc)); };
   const addCasesBlock = () => onChange(addCasesBlockT(doc));
-  const removeRow = (i: number) => onChange(removeRowT(doc, i));
+  // Liberar el target sticky: tras borrar, el <textarea> registrado pudo ser
+  // reusado por React (key por índice) para otra fila.
+  const removeRow = (i: number) => { mathInsertManager.releaseTarget(); onChange(removeRowT(doc, i)); };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -230,6 +237,7 @@ function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: Syst
     onChange({ ...doc, equations: [...doc.equations, "x &= 0"] });
   };
   const removeEquation = (i: number) => {
+    mathInsertManager.releaseTarget();
     onChange({ ...doc, equations: doc.equations.filter((_, idx) => idx !== i) });
   };
   const setVariables = (value: string) => {
@@ -335,7 +343,7 @@ function CasesRow({
 
   const setCase = (i: number, field: "expr" | "cond", value: string) => onChange(setCaseField(node, i, field, value));
   const addCase = () => onChange(addCaseT(node));
-  const removeCase = (i: number) => onChange(removeCaseT(node, i));
+  const removeCase = (i: number) => { mathInsertManager.releaseTarget(); onChange(removeCaseT(node, i)); };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, border: "1px dashed var(--border-soft)", borderRadius: "var(--r-sm)", padding: "8px 10px" }}>

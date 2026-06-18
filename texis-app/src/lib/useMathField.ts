@@ -44,19 +44,28 @@ export function useMathField<T extends MathField = HTMLTextAreaElement>(
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
+  const register = () => {
+    if (ref.current) mathInsertManager.register(ref.current, (v) => onChangeRef.current(v), "equation");
+  };
+
   // Foco → registrar como target sticky. Cleanup en UNMOUNT (no en blur):
   // así el target sigue apuntando aquí aunque el foco se vaya a un botón de
   // la paleta, y solo se libera cuando el campo deja de existir.
   useEffect(() => {
     const el = ref.current;
-    if (autoFocusOnMount && el) el.focus();
+    if (autoFocusOnMount && el) {
+      el.focus();
+      // Registrar TAMBIÉN de forma directa: si el elemento ya estaba enfocado
+      // (remonte de StrictMode, o un foco que no re-dispara onFocus), el evento
+      // de foco no vuelve a llegar y el target quedaría sin registrar pese a
+      // tener el cursor dentro. El register directo lo garantiza.
+      register();
+    }
     return () => { if (el) mathInsertManager.unregister(el); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onFocus = () => {
-    if (ref.current) mathInsertManager.register(ref.current, (v) => onChangeRef.current(v), "equation");
-  };
+  const onFocus = register;
 
   // Blur solo oculta el legend de slots; el target sigue sticky.
   const onBlur = () => {
