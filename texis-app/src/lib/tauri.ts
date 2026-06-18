@@ -1,7 +1,7 @@
 // Wrappers type-safe sobre las invoke calls de Tauri.
 // Si no estamos en Tauri (dev en browser), usa datos mock.
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import type {
   BatchDoiResult,
   BibReference,
@@ -214,6 +214,22 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
  */
 export async function invokeTauri<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   return call<T>(cmd, args);
+}
+
+/**
+ * Safe wrapper sobre convertFileSrc. La función real de Tauri lee
+ * `window.__TAURI_INTERNALS__`, que NO existe en desarrollo en navegador, así
+ * que llamarla ahí lanza "Cannot read properties of undefined". En navegador
+ * devolvemos la ruta cruda (el `fetch` posterior simplemente fallará en HEAD y
+ * el preview se queda vacío, sin tumbar la app). En Tauri delega normal.
+ */
+export function safeConvertFileSrc(path: string): string {
+  if (!isTauri()) return path;
+  try {
+    return convertFileSrc(path);
+  } catch {
+    return path;
+  }
 }
 
 export const api = {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { safeConvertFileSrc as convertFileSrc, invokeTauri as invoke } from "../lib/tauri";
 import { useDialogEscape } from "../hooks/useDialogEscape";
 import { useSettingsStore } from "../stores/settings";
 import { buildLatexInputBlock } from "@texisstudio/plugins";

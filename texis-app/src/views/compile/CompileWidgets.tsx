@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { IconCheck, IconCheckCircle, IconErr, IconPlay, IconWarn, IconX } from "../../components/Icons";
 import { AI_ASSISTANT_ENABLED, useAiStore } from "../../stores/ai";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { safeConvertFileSrc as convertFileSrc } from "../../lib/tauri";
 import type { DependencyIssue, PdfaCheck, PdfPostflightResult, UserError, ValidationReport, ValidationIssue } from "../../types";
 import { useWorkspaceStore } from "../../stores/workspace";
 

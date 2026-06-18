@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { safeConvertFileSrc as convertFileSrc } from "../../lib/tauri";
 import { IconDrag, IconTrash } from "../../components/Icons";
 import { HelpLink } from "../../components/help/HelpLink";
 import { PdfPagePreview } from "../../components/PdfPagePreview";
