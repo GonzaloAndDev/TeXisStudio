@@ -139,20 +139,18 @@ fn extract_include(line: &str, parent: &Path, root_dir: &Path) -> Option<PathBuf
     // Prefijos sin llave (arg termina en whitespace o fin de línea)
     let space_prefixes = ["\\input ", "\\include "];
 
-    let arg: &str;
     let mut found_arg = String::new();
 
     // Intentar con prefijos de llave
     let mut matched = false;
     for prefix in &brace_prefixes {
-        if line.starts_with(prefix) {
-            let rest = line[prefix.len()..].trim();
+        if let Some(stripped) = line.strip_prefix(prefix) {
+            let rest = stripped.trim();
             // Para \subimport{dir}{file}: tomar solo el segundo argumento
             if *prefix == "\\subimport{" {
                 let close1 = rest.find('}')?;
                 let after = rest[close1 + 1..].trim_start();
-                if after.starts_with('{') {
-                    let inner = &after[1..];
+                if let Some(inner) = after.strip_prefix('{') {
                     let close2 = inner.find('}')?;
                     let dir_part = &rest[..close1];
                     let file_part = &inner[..close2];
@@ -168,8 +166,8 @@ fn extract_include(line: &str, parent: &Path, root_dir: &Path) -> Option<PathBuf
     }
     if !matched {
         for prefix in &space_prefixes {
-            if line.starts_with(prefix) {
-                let rest = line[prefix.len()..].trim();
+            if let Some(stripped) = line.strip_prefix(prefix) {
+                let rest = stripped.trim();
                 found_arg = rest.split_whitespace().next()?.to_string();
                 matched = true;
                 break;
@@ -179,7 +177,7 @@ fn extract_include(line: &str, parent: &Path, root_dir: &Path) -> Option<PathBuf
     if !matched || found_arg.is_empty() {
         return None;
     }
-    arg = &found_arg;
+    let arg: &str = &found_arg;
 
     // Probar primero relativo al padre, luego relativo al root
     let search_bases = [parent, root_dir];

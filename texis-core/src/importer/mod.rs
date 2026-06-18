@@ -145,8 +145,7 @@ fn extract_document_class(preamble: &str) -> Option<String> {
         rest
     };
     let rest = rest.trim_start();
-    if rest.starts_with('{') {
-        let inner = &rest[1..];
+    if let Some(inner) = rest.strip_prefix('{') {
         let end = inner.find('}')?;
         Some(inner[..end].trim().to_string())
     } else {
@@ -173,8 +172,7 @@ fn extract_packages(preamble: &str) -> Vec<String> {
             rest
         };
         let rest = rest.trim_start();
-        if rest.starts_with('{') {
-            let inner = &rest[1..];
+        if let Some(inner) = rest.strip_prefix('{') {
             if let Some(end) = inner.find('}') {
                 // Puede ser \usepackage{pkg1, pkg2} con lista
                 for p in inner[..end].split(',') {
@@ -281,17 +279,16 @@ fn split_into_chapters(body: &str) -> Vec<RawChapter> {
 /// Devuelve (starred, Option<title>).
 fn detect_chapter(line: &str) -> Option<(bool, Option<String>)> {
     let line = line.trim_start();
-    let (starred, rest) = if line.starts_with("\\chapter*") {
-        (true, &line["\\chapter*".len()..])
-    } else if line.starts_with("\\chapter") {
-        (false, &line["\\chapter".len()..])
+    let (starred, rest) = if let Some(stripped) = line.strip_prefix("\\chapter*") {
+        (true, stripped)
+    } else if let Some(stripped) = line.strip_prefix("\\chapter") {
+        (false, stripped)
     } else {
         return None;
     };
     // El siguiente char debe ser { o espacio+{
     let rest = rest.trim_start();
-    let title = if rest.starts_with('{') {
-        let inner = &rest[1..];
+    let title = if let Some(inner) = rest.strip_prefix('{') {
         find_closing_brace(inner)
             .map(|end| inner[..end].trim().to_string())
             .filter(|t| !t.is_empty())
@@ -558,8 +555,7 @@ fn detect_section_heading(line: &str) -> Option<(HeadingLevel, String)> {
         ("\\section{", HeadingLevel::Section),
     ];
     for (prefix, level) in candidates {
-        if line.starts_with(prefix) {
-            let inner = &line[prefix.len()..];
+        if let Some(inner) = line.strip_prefix(prefix) {
             let end = find_closing_brace(inner)?;
             return Some((level, inner[..end].trim().to_string()));
         }

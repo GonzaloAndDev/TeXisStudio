@@ -400,17 +400,16 @@ fn apply_platform_hints(
         ImportSourcePlatform::TeXstudio | ImportSourcePlatform::MikTeX => {
             // Sin más señales, no cambiamos el motor — import_tex lo detectó bien.
         }
-        ImportSourcePlatform::Overleaf => {
-            // Si no se detectó nada que implique XeLaTeX, Overleaf usa pdflatex.
+        ImportSourcePlatform::Overleaf
             if matches!(model.latex_config.engine, LatexEngine::Xelatex)
                 && !model
                     .latex_config
                     .packages_required
                     .iter()
-                    .any(|p| p == "fontspec" || p == "polyglossia")
-            {
-                model.latex_config.engine = LatexEngine::Pdflatex;
-            }
+                    .any(|p| p == "fontspec" || p == "polyglossia") =>
+        {
+            // Si no se detectó nada que implique XeLaTeX, Overleaf usa pdflatex.
+            model.latex_config.engine = LatexEngine::Pdflatex;
         }
         _ => {}
     }
