@@ -36,9 +36,21 @@ const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10 MB por archivo
 /// desde él. Si hay varios candidatos, se elige el mayor (heurística: suele
 /// ser el main.tex).
 pub fn consolidate_directory(source_dir: &Path) -> CoreResult<ConsolidatedTex> {
+    consolidate_directory_with_root_hint(source_dir, None)
+}
+
+/// Consolida todos los archivos .tex de `source_dir` usando `root_hint` cuando
+/// el usuario ya conoce el archivo principal.
+pub fn consolidate_directory_with_root_hint(
+    source_dir: &Path,
+    root_hint: Option<&str>,
+) -> CoreResult<ConsolidatedTex> {
     let mut warnings = Vec::new();
 
-    let root = find_root_tex(source_dir, &mut warnings)?;
+    let root = match root_hint.and_then(non_empty_hint) {
+        Some(hint) => resolve_root_hint(source_dir, hint)?,
+        None => find_root_tex(source_dir, &mut warnings)?,
+    };
     let tex = expand_tex(&root, source_dir, &mut HashSet::new(), 0, &mut warnings)?;
 
     let (figure_paths, bib_paths) = collect_assets(source_dir);
@@ -48,6 +60,54 @@ pub fn consolidate_directory(source_dir: &Path) -> CoreResult<ConsolidatedTex> {
         figure_paths,
         bib_paths,
         warnings,
+    })
+}
+
+fn non_empty_hint(hint: &str) -> Option<&str> {
+    let hint = hint.trim();
+    if hint.is_empty() {
+        None
+    } else {
+        Some(hint)
+    }
+}
+
+fn resolve_root_hint(source_dir: &Path, hint: &str) -> CoreResult<PathBuf> {
+    let hinted = Path::new(hint);
+    if hinted.is_absolute()
+        || hinted
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(CoreError::InvalidProject {
+            message: format!("El archivo raíz '{}' debe estar dentro del origen.", hint),
+        });
+    }
+
+    let candidates = [
+        source_dir.join(hinted),
+        source_dir.join(format!("{hint}.tex")),
+    ];
+    let source_root = source_dir
+        .canonicalize()
+        .unwrap_or_else(|_| source_dir.to_path_buf());
+    for candidate in candidates {
+        if candidate.exists() && candidate.is_file() {
+            let canonical = candidate
+                .canonicalize()
+                .unwrap_or_else(|_| candidate.to_path_buf());
+            if canonical.starts_with(&source_root) {
+                return Ok(candidate);
+            }
+        }
+    }
+
+    Err(CoreError::InvalidProject {
+        message: format!(
+            "No se encontró el archivo raíz '{}' dentro de '{}'.",
+            hint,
+            source_dir.display()
+        ),
     })
 }
 
@@ -325,6 +385,37 @@ mod tests {
         ]);
         let result = consolidate_directory(dir.path()).unwrap();
         assert!(result.tex.contains("Contenido del capítulo 1."));
+    }
+
+    #[test]
+    fn consolidate_uses_root_hint_when_multiple_docclass_files_exist() {
+        let dir = setup_project(&[
+            (
+                "main.tex",
+                "\\documentclass{book}\n\\begin{document}\nMAIN\n\\end{document}",
+            ),
+            (
+                "paper.tex",
+                "\\documentclass{article}\n\\begin{document}\nPAPER\n\\end{document}",
+            ),
+        ]);
+
+        let result = consolidate_directory_with_root_hint(dir.path(), Some("paper")).unwrap();
+
+        assert!(result.tex.contains("PAPER"));
+        assert!(!result.tex.contains("MAIN"));
+    }
+
+    #[test]
+    fn consolidate_rejects_root_hint_outside_source() {
+        let dir = setup_project(&[(
+            "main.tex",
+            "\\documentclass{book}\n\\begin{document}\\end{document}",
+        )]);
+
+        let result = consolidate_directory_with_root_hint(dir.path(), Some("../main.tex"));
+
+        assert!(result.is_err());
     }
 
     #[test]

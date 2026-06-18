@@ -100,22 +100,17 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
         copy_dir_all(&figures_src, &figures_dst)?;
     }
 
-    // 3. Copiar bibliografía (.bib)
-    let content_src = input.project_dir.join("content");
-    if content_src.exists() {
-        let content_dst = export_root.join("content");
-        std::fs::create_dir_all(&content_dst).map_err(CoreError::Io)?;
-        for entry in std::fs::read_dir(&content_src).map_err(CoreError::Io)? {
-            let entry = entry.map_err(CoreError::Io)?;
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("bib") {
-                let dst = content_dst.join(entry.file_name());
-                std::fs::copy(&path, &dst).map_err(CoreError::Io)?;
-            }
-        }
+    // 3. Copiar bibliografía y assets generados por plugins visuales.
+    copy_bibliography_for_export(input.project_dir, &export_root)?;
+    let plugin_assets_src = input.project_dir.join("texisstudio-assets");
+    if plugin_assets_src.exists() {
+        copy_dir_all(&plugin_assets_src, &export_root.join("texisstudio-assets"))?;
     }
 
-    // 4. Extras por plataforma
+    // 4. Ajustar rutas para que el paquete exportado sea autocontenido.
+    rewrite_export_tex_paths(&export_root)?;
+
+    // 5. Extras por plataforma
     match &input.target {
         ExportTarget::Overleaf => {
             write_text(&export_root.join("README.md"), overleaf_readme(input.model))?;
@@ -134,7 +129,7 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
         }
     }
 
-    // 5. Para Overleaf: comprimir en ZIP
+    // 6. Para Overleaf: comprimir en ZIP
     let artifact_path = if input.target == ExportTarget::Overleaf {
         let zip_path = input.output_dir.join(format!("{slug}_overleaf.zip"));
         // Eliminar ZIP previo si existe (re-export idempotente)
@@ -182,6 +177,36 @@ fn copy_dir_all(src: &Path, dst: &Path) -> CoreResult<()> {
             std::fs::create_dir_all(&target).map_err(CoreError::Io)?;
         } else {
             std::fs::copy(entry.path(), &target).map_err(CoreError::Io)?;
+        }
+    }
+    Ok(())
+}
+
+fn copy_bibliography_for_export(project_dir: &Path, export_root: &Path) -> CoreResult<()> {
+    let references = project_dir
+        .join("content")
+        .join("bibliography")
+        .join("references.bib");
+    if references.exists() {
+        std::fs::copy(&references, export_root.join("references.bib")).map_err(CoreError::Io)?;
+    }
+    Ok(())
+}
+
+fn rewrite_export_tex_paths(export_root: &Path) -> CoreResult<()> {
+    for entry in WalkDir::new(export_root).min_depth(1) {
+        let entry = entry.map_err(|e| CoreError::Io(std::io::Error::other(e)))?;
+        if !entry.file_type().is_file()
+            || entry.path().extension().and_then(|e| e.to_str()) != Some("tex")
+        {
+            continue;
+        }
+
+        let path = entry.path();
+        let content = std::fs::read_to_string(path).map_err(CoreError::Io)?;
+        let rewritten = content.replace("../content/figures/", "content/figures/");
+        if rewritten != content {
+            std::fs::write(path, rewritten).map_err(CoreError::Io)?;
         }
     }
     Ok(())
@@ -242,7 +267,8 @@ fn overleaf_readme(model: &ProjectModel) -> String {
          ## Notas\n\n\
          - El archivo principal es `main.tex`\n\
          - Las figuras están en `content/figures/`\n\
-         - La bibliografía está en `content/references.bib`\n\
+         - La bibliografía está en `references.bib`\n\
+         - Assets de plugins visuales, si existen, están en `texisstudio-assets/`\n\
          - Requiere compilar con **Biber** (ya configurado en Overleaf)\n"
     )
 }
@@ -282,7 +308,8 @@ fn local_readme(model: &ProjectModel) -> String {
          - `main.tex` — archivo principal\n\
          - `sections/` — capítulos y secciones\n\
          - `content/figures/` — imágenes\n\
-         - `content/references.bib` — bibliografía\n",
+         - `references.bib` — bibliografía\n\
+         - `texisstudio-assets/` — assets de plugins visuales, si existen\n",
         model.metadata.title,
     )
 }
@@ -411,6 +438,7 @@ fn ensure_export_root_is_outside_project(project_dir: &Path, export_root: &Path)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
 
     #[test]
     fn title_slug_normal() {
@@ -524,6 +552,63 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    #[test]
+    fn local_export_is_standalone_for_figures_and_bibliography() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("project");
+        let output_dir = dir.path().join("exports");
+        write_project_assets(&project_dir);
+        let model = make_model_with_figure(crate::project::model::LatexEngine::Xelatex);
+
+        let result = export_for_platform(&PlatformExportInput {
+            project_dir: &project_dir,
+            model: &model,
+            output_dir: &output_dir,
+            target: ExportTarget::Local,
+        })
+        .unwrap();
+
+        assert!(result.artifact_path.join("references.bib").exists());
+        assert!(result
+            .artifact_path
+            .join("content/figures/img.png")
+            .exists());
+        let tex =
+            std::fs::read_to_string(result.artifact_path.join("capitulos/01_s1.tex")).unwrap();
+        assert!(tex.contains("content/figures/img.png"));
+        assert!(!tex.contains("../content/figures"));
+    }
+
+    #[test]
+    fn overleaf_zip_includes_root_bibliography() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("project");
+        let output_dir = dir.path().join("exports");
+        write_project_assets(&project_dir);
+        let model = make_model_with_figure(crate::project::model::LatexEngine::Xelatex);
+
+        let result = export_for_platform(&PlatformExportInput {
+            project_dir: &project_dir,
+            model: &model,
+            output_dir: &output_dir,
+            target: ExportTarget::Overleaf,
+        })
+        .unwrap();
+
+        let zip_file = std::fs::File::open(result.artifact_path).unwrap();
+        let mut archive = zip::ZipArchive::new(zip_file).unwrap();
+        assert!(archive.by_name("references.bib").is_ok());
+        assert!(archive.by_name("content/figures/img.png").is_ok());
+        let mut section_tex = String::new();
+        archive
+            .by_name("capitulos/01_s1.tex")
+            .unwrap()
+            .read_to_string(&mut section_tex)
+            .unwrap();
+        assert!(section_tex.contains("content/figures/img.png"));
+        assert!(!section_tex.contains("../content/figures"));
+    }
+
     fn make_model(engine: crate::project::model::LatexEngine) -> ProjectModel {
         use crate::project::model::*;
         use std::collections::HashMap;
@@ -580,5 +665,47 @@ mod tests {
             sections: vec![],
             file_states: HashMap::new(),
         }
+    }
+
+    fn make_model_with_figure(engine: crate::project::model::LatexEngine) -> ProjectModel {
+        use crate::project::model::*;
+        let mut model = make_model(engine);
+        model.sections = vec![ProjectSection {
+            id: "s1".into(),
+            title: Some("Capitulo".into()),
+            element_id: "chapter".into(),
+            placement: SectionPlacement::Body,
+            enabled: true,
+            required: false,
+            label: None,
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![ContentBlock::Figure(FigureBlock {
+                id: "fig1".into(),
+                file: "img.png".into(),
+                caption: "Imagen".into(),
+                label: "fig:img".into(),
+                source: None,
+                width: FigureWidth::Full,
+                include_in_list: true,
+                verbatim_caption: false,
+            })],
+            fields: Default::default(),
+            children: vec![],
+        }];
+        model
+    }
+
+    fn write_project_assets(project_dir: &Path) {
+        let figures = project_dir.join("content/figures");
+        let bibliography = project_dir.join("content/bibliography");
+        std::fs::create_dir_all(&figures).unwrap();
+        std::fs::create_dir_all(&bibliography).unwrap();
+        std::fs::write(figures.join("img.png"), b"PNG").unwrap();
+        std::fs::write(
+            bibliography.join("references.bib"),
+            "@article{k,title={Title}}",
+        )
+        .unwrap();
     }
 }

@@ -16,13 +16,14 @@
 //!   - Todo lo demás → RawLatexBlock(user_confirmed: true)
 
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::error::{CoreError, CoreResult};
-use crate::importer::consolidator::consolidate_directory;
+use crate::importer::consolidator::consolidate_directory_with_root_hint;
 use crate::importer::import_tex;
 use crate::project::model::{
-    CodeBlock, ContentBlock, FigureBlock, FigureWidth, LatexEngine, RawLatexBlock,
+    CodeBlock, ContentBlock, FigureBlock, FigureWidth, LatexEngine, ProjectModel, RawLatexBlock,
 };
 use crate::project::saver::ProjectSaver;
 
@@ -139,7 +140,8 @@ pub fn import_from_folder(
     let mut warnings = Vec::new();
 
     // 1. Consolidar multi-archivo → un único .tex
-    let consolidated = consolidate_directory(source_dir)?;
+    let consolidated =
+        consolidate_directory_with_root_hint(source_dir, options.main_file_hint.as_deref())?;
     warnings.extend(consolidated.warnings);
 
     // 2. Parseo estructural
@@ -162,12 +164,14 @@ pub fn import_from_folder(
     create_scaffold(work_dir)?;
 
     // 6. Copiar assets
-    let (figures_copied, bibs_copied) = copy_assets(
+    let asset_result = copy_assets(
         &consolidated.figure_paths,
         &consolidated.bib_paths,
+        source_dir,
         work_dir,
         &mut warnings,
     )?;
+    remap_imported_figure_paths(&mut model, &asset_result.figure_map, &mut warnings);
 
     // 7. Guardar project YAML
     let project_file = work_dir.join("tesis.project.yaml");
@@ -177,8 +181,8 @@ pub fn import_from_folder(
     Ok(FolderImportResult {
         project_file,
         warnings,
-        figures_copied,
-        bibs_copied,
+        figures_copied: asset_result.figures_copied,
+        bibs_copied: asset_result.bibs_copied,
     })
 }
 
@@ -431,19 +435,27 @@ fn create_scaffold(work_dir: &Path) -> CoreResult<()> {
 
 // ── Copia de assets ───────────────────────────────────────────────────────────
 
+struct AssetCopyResult {
+    figures_copied: usize,
+    bibs_copied: usize,
+    figure_map: HashMap<String, String>,
+}
+
 fn copy_assets(
     figure_paths: &[PathBuf],
     bib_paths: &[PathBuf],
+    source_dir: &Path,
     work_dir: &Path,
     warnings: &mut Vec<String>,
-) -> CoreResult<(usize, usize)> {
+) -> CoreResult<AssetCopyResult> {
     let figures_dir = work_dir.join("content").join("figures");
     let content_dir = work_dir.join("content");
     let mut figures_copied = 0usize;
     let mut bibs_copied = 0usize;
+    let mut figure_map = HashMap::new();
 
     // Rastrea nombres usados para detectar colisiones y renombrar en lugar de sobreescribir.
-    let mut used_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut used_names: HashSet<String> = HashSet::new();
 
     for src in figure_paths {
         if let Some(raw_name) = src.file_name().and_then(|n| n.to_str()) {
@@ -457,7 +469,10 @@ fn copy_assets(
                 ));
             }
             match std::fs::copy(src, &dst) {
-                Ok(_) => figures_copied += 1,
+                Ok(_) => {
+                    figures_copied += 1;
+                    register_figure_mapping(&mut figure_map, source_dir, src, raw_name, &dst_name);
+                }
                 Err(e) => {
                     warnings.push(format!("No se pudo copiar figura '{}': {e}", src.display()))
                 }
@@ -465,7 +480,7 @@ fn copy_assets(
         }
     }
 
-    let mut used_bib_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut used_bib_names: HashSet<String> = HashSet::new();
     for src in bib_paths {
         if let Some(raw_name) = src.file_name().and_then(|n| n.to_str()) {
             let dst_name = unique_name(raw_name, &mut used_bib_names);
@@ -476,11 +491,98 @@ fn copy_assets(
             }
         }
     }
-    Ok((figures_copied, bibs_copied))
+    Ok(AssetCopyResult {
+        figures_copied,
+        bibs_copied,
+        figure_map,
+    })
+}
+
+fn register_figure_mapping(
+    figure_map: &mut HashMap<String, String>,
+    source_dir: &Path,
+    src: &Path,
+    raw_name: &str,
+    dst_name: &str,
+) {
+    for key in figure_mapping_keys(source_dir, src, raw_name) {
+        figure_map
+            .entry(key)
+            .or_insert_with(|| dst_name.to_string());
+    }
+}
+
+fn figure_mapping_keys(source_dir: &Path, src: &Path, raw_name: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    push_figure_key(&mut keys, raw_name);
+    if let Some(stem) = src.file_stem().and_then(|s| s.to_str()) {
+        push_figure_key(&mut keys, stem);
+    }
+    if let Ok(rel) = src.strip_prefix(source_dir) {
+        let rel = normalize_latex_path(&rel.to_string_lossy());
+        push_figure_key(&mut keys, &rel);
+        if let Some((without_ext, _)) = rel.rsplit_once('.') {
+            push_figure_key(&mut keys, without_ext);
+        }
+    }
+    keys
+}
+
+fn push_figure_key(keys: &mut Vec<String>, key: &str) {
+    let normalized = normalize_latex_path(key);
+    if !normalized.is_empty() && !keys.contains(&normalized) {
+        keys.push(normalized);
+    }
+}
+
+fn normalize_latex_path(path: &str) -> String {
+    path.trim()
+        .trim_start_matches("./")
+        .replace('\\', "/")
+        .trim_start_matches("./")
+        .to_string()
+}
+
+fn remap_imported_figure_paths(
+    model: &mut ProjectModel,
+    figure_map: &HashMap<String, String>,
+    warnings: &mut Vec<String>,
+) {
+    for section in &mut model.sections {
+        for block in &mut section.blocks {
+            if let ContentBlock::Figure(figure) = block {
+                remap_imported_figure(figure, figure_map, warnings);
+            }
+        }
+    }
+}
+
+fn remap_imported_figure(
+    figure: &mut FigureBlock,
+    figure_map: &HashMap<String, String>,
+    warnings: &mut Vec<String>,
+) {
+    let original = normalize_latex_path(&figure.file);
+    if let Some(dst_name) = figure_map.get(&original).or_else(|| {
+        Path::new(&original)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .and_then(|name| figure_map.get(&normalize_latex_path(name)))
+    }) {
+        figure.file = dst_name.clone();
+        return;
+    }
+
+    if original.contains('/') {
+        warnings.push(format!(
+            "Figura '{}' importada sin mapeo de archivo; revisa la ruta en TeXisStudio.",
+            original
+        ));
+    }
 }
 
 /// Genera un nombre de archivo único dentro de `used`. Si hay colisión, agrega sufijo `_2`, `_3`, ...
-fn unique_name(name: &str, used: &mut std::collections::HashSet<String>) -> String {
+fn unique_name(name: &str, used: &mut HashSet<String>) -> String {
     if !used.contains(name) {
         used.insert(name.to_string());
         return name.to_string();
@@ -683,6 +785,68 @@ mod tests {
         assert!(result.project_file.exists());
     }
 
+    #[test]
+    fn import_respeta_main_file_hint() {
+        let src = tempfile::tempdir().unwrap();
+        let dst = tempfile::tempdir().unwrap();
+        write(
+            &src,
+            "main.tex",
+            "\\documentclass{book}\n\\begin{document}\n\\chapter{Main}\n\\end{document}",
+        );
+        write(
+            &src,
+            "paper.tex",
+            "\\documentclass{book}\n\\begin{document}\n\\chapter{Paper}\n\\end{document}",
+        );
+
+        let result = import_from_folder(
+            src.path(),
+            dst.path(),
+            &ImportOptions {
+                main_file_hint: Some("paper".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let yaml_content = fs::read_to_string(result.project_file).unwrap();
+        assert!(yaml_content.contains("Paper"));
+        assert!(!yaml_content.contains("Main"));
+    }
+
+    #[test]
+    fn import_remapea_ruta_de_figura_a_nombre_copiado() {
+        let src = tempfile::tempdir().unwrap();
+        let dst = tempfile::tempdir().unwrap();
+        write(
+            &src,
+            "main.tex",
+            concat!(
+                "\\documentclass{book}\n",
+                "\\begin{document}\n",
+                "\\chapter{Cap}\n",
+                "\\begin{figure}\n",
+                "\\includegraphics{figures/img.png}\n",
+                "\\caption{Imagen}\n",
+                "\\label{fig:img}\n",
+                "\\end{figure}\n",
+                "\\end{document}",
+            ),
+        );
+        fs::create_dir_all(src.path().join("figures")).unwrap();
+        fs::write(src.path().join("figures/img.png"), b"PNG").unwrap();
+
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let model = crate::project::loader::ProjectLoader
+            .load_from_file(&result.project_file)
+            .unwrap();
+        let files = figure_files(&model);
+
+        assert_eq!(files, vec!["img.png"]);
+        assert!(dst.path().join("content/figures/img.png").exists());
+    }
+
     // ── Tests de regresión para issues críticos ───────────────────────────────
 
     #[test]
@@ -710,6 +874,38 @@ mod tests {
             result.warnings.iter().any(|w| w.contains("renombrada")),
             "debe haber aviso de renombrado"
         );
+    }
+
+    #[test]
+    fn import_remapea_figuras_con_colision_a_nombres_unicos() {
+        let src = tempfile::tempdir().unwrap();
+        let dst = tempfile::tempdir().unwrap();
+        fs::create_dir_all(src.path().join("ch1")).unwrap();
+        fs::create_dir_all(src.path().join("ch2")).unwrap();
+        fs::write(src.path().join("ch1/fig.png"), b"A").unwrap();
+        fs::write(src.path().join("ch2/fig.png"), b"B").unwrap();
+        fs::create_dir_all(dst.path().join("content/figures")).unwrap();
+        fs::create_dir_all(dst.path().join("content")).unwrap();
+        let mut warnings = Vec::new();
+        let result = copy_assets(
+            &[
+                src.path().join("ch1/fig.png"),
+                src.path().join("ch2/fig.png"),
+            ],
+            &[],
+            src.path(),
+            dst.path(),
+            &mut warnings,
+        )
+        .unwrap();
+        let mut first = test_figure("ch1/fig.png");
+        let mut second = test_figure("ch2/fig.png");
+
+        remap_imported_figure(&mut first, &result.figure_map, &mut warnings);
+        remap_imported_figure(&mut second, &result.figure_map, &mut warnings);
+        let files = vec![first.file, second.file];
+
+        assert_eq!(files, vec!["fig.png", "fig_2.png"]);
     }
 
     #[test]
@@ -805,6 +1001,31 @@ mod tests {
         );
         for w in &result.warnings {
             eprintln!("  AVISO: {}", w);
+        }
+    }
+
+    fn figure_files(model: &ProjectModel) -> Vec<String> {
+        model
+            .sections
+            .iter()
+            .flat_map(|section| section.blocks.iter())
+            .filter_map(|block| match block {
+                ContentBlock::Figure(figure) => Some(figure.file.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn test_figure(file: &str) -> FigureBlock {
+        FigureBlock {
+            id: format!("fig_{file}"),
+            file: file.to_string(),
+            caption: String::new(),
+            label: String::new(),
+            source: None,
+            width: FigureWidth::Full,
+            include_in_list: true,
+            verbatim_caption: false,
         }
     }
 }
