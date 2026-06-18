@@ -17,6 +17,7 @@ import "@texisstudio/plugins/engines/metadata-init.js";
 import { GraphNodeEditor } from "./GraphNodeEditor";
 import { PGFPlotsEditor } from "./PGFPlotsEditor";
 import { MatrixEditor } from "./MatrixEditor";
+import { MathExpressionEditor } from "./MathExpressionEditor";
 import { GanttEditor } from "./GanttEditor";
 import { TableDataEditor } from "./TableDataEditor";
 import { TreeEditor } from "./TreeEditor";
@@ -25,7 +26,7 @@ import { CircuitEditor } from "./CircuitEditor";
 import { TikzShapeEditor } from "./TikzShapeEditor";
 import type { GraphNodeDocument } from "../../types-engines";
 import type { PGFPlotsDocument } from "../../types-engines";
-import type { MatrixDocument } from "../../types-engines";
+import type { MatrixDocument, MathEngineDocument, SystemDocument } from "../../types-engines";
 import type { TimelineGanttDocument } from "../../types-engines";
 import type { TableDataDocument } from "../../types-engines";
 import type { TreeForestDocument } from "../../types-engines";
@@ -97,9 +98,15 @@ const FALLBACK_HELP_TOPIC: HelpSection = "figures";
  */
 export function VisualEditorRouter(props: Props) {
   const { t } = useTranslation();
+  // El key del error boundary se ata SOLO al engineId — no a la longitud del
+  // sourceJson — porque atarlo a la longitud causa un remount completo del
+  // subárbol en CADA keystroke. Para editores con textarea + insert manager
+  // (math-engine no-matrix), el remount destruye el ref del textarea y rompe
+  // SlotLegend, foco, undo, etc. La recuperación de errores ahora se hace al
+  // cambiar de plugin o reabrir el modal, no por cada edición de contenido.
   const parsedKey = useMemo(() => {
     const p = parseSource(props.sourceJson);
-    return p ? `${p.engineId}-${props.sourceJson.length}` : "no-source";
+    return p ? p.engineId : "no-source";
   }, [props.sourceJson]);
   return (
     <UiErrorBoundary
@@ -217,10 +224,12 @@ function VisualEditorRouterInner({ sourceJson, onSourceChange }: Props) {
         );
       }
       return (
-        <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", padding: "8px 0", display: "flex", alignItems: "center", gap: 8 }}>
-          {t("visual_editor.math_advanced_hint")}
-          <HelpLink topic="latex" />
-        </div>
+        <VisualEditorShell {...shellProps} helpTopic="latex">
+          <MathExpressionEditor
+            doc={doc as unknown as MathEngineDocument | SystemDocument}
+            onChange={handleChange}
+          />
+        </VisualEditorShell>
       );
 
     case "timeline-gantt-engine":
@@ -304,8 +313,11 @@ export function hasVisualEditor(
   if (!VISUAL_EDITOR_ENGINES.has(engineId)) return false;
 
   if (engineId === "math-engine") {
+    // matrix tiene su editor de grilla; el resto (equation/display/align/
+    // gather/cases/system) usa MathExpressionEditor. inline no aparece como
+    // figura, pero se acepta por defecto.
     const doc = ("data" in parsed ? (parsed as { data: unknown }).data : parsed) as { mode?: string };
-    return doc.mode === "matrix";
+    return doc.mode !== "inline";
   }
 
   return true;
