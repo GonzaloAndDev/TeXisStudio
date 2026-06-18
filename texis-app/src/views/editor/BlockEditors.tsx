@@ -8,6 +8,7 @@ import { useSettingsStore } from "../../stores/settings";
 import { useWorkspaceStore } from "../../stores/workspace";
 import type { HeadingLevel, ProjectSection, SectionStatus, TheoremKind } from "../../types";
 import { mathInsertManager, findFirstEmptySlot, findNextEmptySlot, findPrevEmptySlot } from "../../lib/mathInsertManager";
+import { SlotLegend } from "../../components/SlotLegend";
 
 // ── Componentes de bloque: modo edición ───────────────────────────
 
@@ -546,8 +547,8 @@ export function EquationEditor({
         // and able to receive keyboard input — just visually offscreen. Using
         // display:none would block focus and keyboard typing entirely.
         style={showSource ? {
-          fontFamily: "var(--font-mono)", fontSize: 12, color: "#C8C2B5",
-          background: "var(--ink-900)", border: "none", outline: "none",
+          fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-default)",
+          background: "var(--bg-paper)", border: "1px solid var(--border-soft)", outline: "none",
           padding: "8px 12px", borderRadius: "var(--r-sm)", resize: "vertical",
           width: "100%", boxSizing: "border-box",
         } : {
@@ -559,6 +560,7 @@ export function EquationEditor({
         }}
         placeholder="\frac{d}{dx} f(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}"
       />
+      <SlotLegend ownerEl={taRef.current} />
     </div>
   );
 }

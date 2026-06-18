@@ -16,6 +16,8 @@
  * rather than corrupting the paragraph with raw LaTeX.
  */
 
+import { OPERATOR_SLOTS, computeSlotRanges } from "./mathSymbols";
+
 type TargetKind = "equation";
 
 /** True if the pair at index `i` is an empty `{}` or `[]` slot. */
@@ -66,9 +68,26 @@ interface MathTarget {
   kind: TargetKind;
 }
 
+/**
+ * Información de la última inserción multi-slot. La consulta `SlotLegend`
+ * para mostrar al usuario qué espera cada `{}` del comando que acaba de
+ * insertar. Se setea desde `insert()` cuando hay metadata en
+ * `OPERATOR_SLOTS`. Se limpia automáticamente cuando:
+ *   - se inserta algo nuevo (cualquier inserción reinicia el estado)
+ *   - la textarea pierde foco (blur)
+ *   - el cursor se aleja del primer al último slot (lo decide el consumidor)
+ */
+export interface ActiveInsertion {
+  el: HTMLTextAreaElement;
+  latex: string;
+  nameKey: string;
+  slots: Array<{ start: number; end: number; labelKey: string }>;
+}
+
 let _current: MathTarget | null = null;
 let _creator: ((latex: string) => void) | null = null;
 let _listeners: Array<() => void> = [];
+let _activeInsertion: ActiveInsertion | null = null;
 
 export const mathInsertManager = {
   /** Call on equation-textarea focus to register it as the active target. */
@@ -81,6 +100,24 @@ export const mathInsertManager = {
   unregister(el: HTMLTextAreaElement): void {
     if (_current?.el === el) {
       _current = null;
+      _notify();
+    }
+    // El legend de slots se invalida al perder foco la textarea origen.
+    if (_activeInsertion?.el === el) {
+      _activeInsertion = null;
+      _notify();
+    }
+  },
+
+  /** Última inserción multi-slot, o null si no hay una activa. */
+  activeInsertion(): ActiveInsertion | null {
+    return _activeInsertion;
+  },
+
+  /** Limpia el legend (lo invoca el consumidor al salir del último slot). */
+  clearActiveInsertion(): void {
+    if (_activeInsertion !== null) {
+      _activeInsertion = null;
       _notify();
     }
   },
@@ -146,6 +183,28 @@ export const mathInsertManager = {
       const insertedEnd = start + latex.length;
       const slot = findFirstEmptySlot(next, start, insertedEnd);
       const pos = slot ?? insertedEnd;
+
+      // Si el snippet es uno de los multi-slot conocidos, calculamos los
+      // rangos absolutos de cada `{}` y los publicamos para que `SlotLegend`
+      // muestre qué espera cada caja.
+      const meta = OPERATOR_SLOTS[latex];
+      if (meta && meta.slotKeys.length > 0) {
+        const ranges = computeSlotRanges(latex, start);
+        _activeInsertion = {
+          el,
+          latex,
+          nameKey: meta.nameKey,
+          slots: ranges.slice(0, meta.slotKeys.length).map((r, i) => ({
+            start: r.start,
+            end: r.end,
+            labelKey: meta.slotKeys[i],
+          })),
+        };
+      } else {
+        _activeInsertion = null;
+      }
+      _notify();
+
       requestAnimationFrame(() => {
         el.focus();
         el.setSelectionRange(pos, pos);
