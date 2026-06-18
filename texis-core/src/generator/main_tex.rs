@@ -497,7 +497,9 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
                             // Solo nombres de paquete seguros: [a-zA-Z0-9\-_]
                             // Un nombre con } o \n rompería \usepackage{name}.
                             if !pkg.is_empty()
-                                && pkg.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+                                && pkg
+                                    .chars()
+                                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
                             {
                                 vis_pkgs.insert(pkg.clone());
                             }

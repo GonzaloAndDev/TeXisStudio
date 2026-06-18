@@ -239,23 +239,41 @@ mod tests {
 
     #[test]
     fn ninguna_funcion_usa_tikzstyle_deprecated() {
-        for preset in &["glycolysis", "photosynthesis", "electron_transport", "beta_oxidation", "krebs_cycle"] {
+        for preset in &[
+            "glycolysis",
+            "photosynthesis",
+            "electron_transport",
+            "beta_oxidation",
+            "krebs_cycle",
+        ] {
             let out = render(&cfg(preset));
-            assert!(!out.contains("\\tikzstyle"), "preset '{preset}' usa \\tikzstyle deprecated");
-            assert!(out.contains("tikzpicture"), "preset '{preset}' debe generar tikzpicture");
+            assert!(
+                !out.contains("\\tikzstyle"),
+                "preset '{preset}' usa \\tikzstyle deprecated"
+            );
+            assert!(
+                out.contains("tikzpicture"),
+                "preset '{preset}' debe generar tikzpicture"
+            );
         }
     }
 
     #[test]
     fn glycolysis_usa_tikzset() {
         let out = render(&cfg("glycolysis"));
-        assert!(out.contains("\\tikzset{metabolite/.style={"), "glycolysis debe usar \\tikzset con sintaxis /.style={{");
+        assert!(
+            out.contains("\\tikzset{metabolite/.style={"),
+            "glycolysis debe usar \\tikzset con sintaxis /.style={{"
+        );
     }
 
     #[test]
     fn photosynthesis_usa_tikzset() {
         let out = render(&cfg("photosynthesis"));
-        assert!(out.contains("\\tikzset{react/.style={"), "photosynthesis debe usar \\tikzset");
+        assert!(
+            out.contains("\\tikzset{react/.style={"),
+            "photosynthesis debe usar \\tikzset"
+        );
     }
 
     #[test]
@@ -263,13 +281,17 @@ mod tests {
         let mut c = cfg("krebs_cycle");
         c.show_cofactors = true;
         let out = render(&c);
-        assert!(out.contains("NADH"), "krebs con cofactores debe mostrar NADH");
+        assert!(
+            out.contains("NADH"),
+            "krebs con cofactores debe mostrar NADH"
+        );
     }
 
     #[test]
     fn custom_labels_se_escapan() {
         let mut c = cfg("glycolysis");
-        c.custom_labels.insert("glucose".to_string(), "Glucosa & 6C".to_string());
+        c.custom_labels
+            .insert("glucose".to_string(), "Glucosa & 6C".to_string());
         let out = render(&c);
         assert!(out.contains("\\&"), "& en custom label debe escaparse");
     }

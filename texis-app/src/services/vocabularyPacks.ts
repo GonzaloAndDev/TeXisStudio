@@ -103,6 +103,39 @@ async function safeFetch(url: string, label: string, maxBytes: number): Promise<
   return res;
 }
 
+async function readTextLimited(res: Response, label: string, maxBytes: number): Promise<string> {
+  if (!res.body) {
+    const text = await res.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) {
+      throw new Error(`${label}: respuesta demasiado grande (máx ${maxBytes} bytes)`);
+    }
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let received = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        throw new Error(
+          `${label}: respuesta demasiado grande (${received} bytes, máx ${maxBytes})`,
+        );
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 // ── Catalog entry validation ──────────────────────────────────────────────────
 
 /** Validates that a raw object has the required shape for a VocabPackEntry. */
@@ -148,10 +181,7 @@ function saveCustomRepos(repos: CustomVocabRepo[]): void {
 
 export async function fetchVocabPacksFromCatalog(): Promise<VocabPackEntry[]> {
   const res = await safeFetch(OFFICIAL_CATALOG, "catálogo oficial", MAX_CATALOG_BYTES);
-  const text = await res.text();
-  if (text.length > MAX_CATALOG_BYTES) {
-    throw new Error(`Catálogo oficial demasiado grande (${text.length} bytes, máx ${MAX_CATALOG_BYTES})`);
-  }
+  const text = await readTextLimited(res, "catálogo oficial", MAX_CATALOG_BYTES);
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(text) as Record<string, unknown>;
@@ -173,10 +203,7 @@ export async function fetchVocabPacksFromCatalog(): Promise<VocabPackEntry[]> {
 export async function fetchVocabPacksFromUrl(url: string): Promise<VocabPackEntry[]> {
   requireHttps(url, "URL de repositorio personalizado");
   const res = await safeFetch(url, `catálogo en ${url}`, MAX_CATALOG_BYTES);
-  const text = await res.text();
-  if (text.length > MAX_CATALOG_BYTES) {
-    throw new Error(`Catálogo demasiado grande (${text.length} bytes, máx ${MAX_CATALOG_BYTES})`);
-  }
+  const text = await readTextLimited(res, `catálogo en ${url}`, MAX_CATALOG_BYTES);
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(text) as Record<string, unknown>;
@@ -209,12 +236,7 @@ export async function installVocabPack(entry: VocabPackEntry): Promise<Installed
   }
 
   const res = await safeFetch(entry.pack_url, `pack "${entry.id}"`, MAX_PACK_BYTES);
-  const text = await res.text();
-  if (text.length > MAX_PACK_BYTES) {
-    throw new Error(
-      `Pack "${entry.id}" demasiado grande (${text.length} bytes, máx ${MAX_PACK_BYTES})`,
-    );
-  }
+  const text = await readTextLimited(res, `pack "${entry.id}"`, MAX_PACK_BYTES);
 
   const terms = extractTermsFromPackYaml(text);
 

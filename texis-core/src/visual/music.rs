@@ -169,7 +169,10 @@ mod tests {
     #[test]
     fn render_empty_abc_returns_placeholder() {
         let out = render(&cfg("", true));
-        assert!(out.contains("fbox") || out.contains("minipage"), "debe ser placeholder");
+        assert!(
+            out.contains("fbox") || out.contains("minipage"),
+            "debe ser placeholder"
+        );
         assert!(!out.contains("\\begin{music}"));
     }
 
@@ -177,7 +180,10 @@ mod tests {
     fn render_too_long_returns_placeholder() {
         let long_abc = "C".repeat(ABC_MAX_LEN + 1);
         let out = render(&cfg(&long_abc, true));
-        assert!(!out.contains("\\begin{music}"), "abc demasiado largo debe ser placeholder");
+        assert!(
+            !out.contains("\\begin{music}"),
+            "abc demasiado largo debe ser placeholder"
+        );
         assert!(out.contains("demasiado largo"));
     }
 
@@ -185,7 +191,10 @@ mod tests {
     fn render_valid_short_abc_produces_music_env() {
         let abc = "X:1\nM:4/4\nCDEF|GABc|";
         let out = render(&cfg(abc, true));
-        assert!(out.contains("\\begin{music}"), "abc corto debe generar entorno music");
+        assert!(
+            out.contains("\\begin{music}"),
+            "abc corto debe generar entorno music"
+        );
         assert!(out.contains("\\endextract"));
     }
 

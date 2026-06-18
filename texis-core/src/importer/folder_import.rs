@@ -15,8 +15,8 @@
 //!     con aviso de compatibilidad con plugin visual
 //!   - Todo lo demás → RawLatexBlock(user_confirmed: true)
 
-use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
 
 use crate::error::{CoreError, CoreResult};
 use crate::importer::consolidator::consolidate_directory;
@@ -210,10 +210,16 @@ fn try_remap_raw(raw: RawLatexBlock, warnings: &mut Vec<String>) -> Vec<ContentB
              Se conserva como bloque LaTeX editable.",
             env_name
         ));
-        return vec![ContentBlock::RawLatex(RawLatexBlock { user_confirmed: true, ..raw })];
+        return vec![ContentBlock::RawLatex(RawLatexBlock {
+            user_confirmed: true,
+            ..raw
+        })];
     }
 
-    vec![ContentBlock::RawLatex(RawLatexBlock { user_confirmed: true, ..raw })]
+    vec![ContentBlock::RawLatex(RawLatexBlock {
+        user_confirmed: true,
+        ..raw
+    })]
 }
 
 // ── Parseo de entorno figure ──────────────────────────────────────────────────
@@ -259,7 +265,11 @@ fn extract_includegraphics_path(content: &str) -> Option<String> {
     let inner = &rest[1..];
     let end = inner.find('}')?;
     let p = inner[..end].trim().to_string();
-    if p.is_empty() { None } else { Some(p) }
+    if p.is_empty() {
+        None
+    } else {
+        Some(p)
+    }
 }
 
 fn extract_braced_arg(content: &str, cmd: &str) -> Option<String> {
@@ -268,7 +278,11 @@ fn extract_braced_arg(content: &str, cmd: &str) -> Option<String> {
     let rest = &content[pos..];
     let end = rest.find('}')?;
     let val = rest[..end].trim().to_string();
-    if val.is_empty() { None } else { Some(val) }
+    if val.is_empty() {
+        None
+    } else {
+        Some(val)
+    }
 }
 
 // ── Parseo de entornos de código ──────────────────────────────────────────────
@@ -445,10 +459,9 @@ fn copy_assets(
             }
             match std::fs::copy(src, &dst) {
                 Ok(_) => figures_copied += 1,
-                Err(e) => warnings.push(format!(
-                    "No se pudo copiar figura '{}': {e}",
-                    src.display()
-                )),
+                Err(e) => {
+                    warnings.push(format!("No se pudo copiar figura '{}': {e}", src.display()))
+                }
             }
         }
     }
@@ -460,10 +473,7 @@ fn copy_assets(
             let dst = content_dir.join(&dst_name);
             match std::fs::copy(src, &dst) {
                 Ok(_) => bibs_copied += 1,
-                Err(e) => warnings.push(format!(
-                    "No se pudo copiar .bib '{}': {e}",
-                    src.display()
-                )),
+                Err(e) => warnings.push(format!("No se pudo copiar .bib '{}': {e}", src.display())),
             }
         }
     }
@@ -477,7 +487,9 @@ fn unique_name(name: &str, used: &mut std::collections::HashSet<String>) -> Stri
         return name.to_string();
     }
     // Partir en stem + extensión para insertar sufijo antes de la extensión
-    let (stem, ext) = name.rfind('.').map_or((name, ""), |i| (&name[..i], &name[i..]));
+    let (stem, ext) = name
+        .rfind('.')
+        .map_or((name, ""), |i| (&name[..i], &name[i..]));
     let mut counter = 2u32;
     loop {
         let candidate = format!("{stem}_{counter}{ext}");
@@ -522,8 +534,7 @@ mod tests {
         let dst = tempfile::tempdir().unwrap();
         write(&src, "main.tex", SIMPLE_TEX);
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         assert!(result.project_file.exists());
     }
 
@@ -547,8 +558,7 @@ mod tests {
         fs::create_dir_all(src.path().join("figures")).unwrap();
         fs::write(src.path().join("figures/img.png"), b"PNG").unwrap();
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         assert_eq!(result.figures_copied, 1);
         assert!(dst.path().join("content/figures/img.png").exists());
     }
@@ -560,8 +570,7 @@ mod tests {
         write(&src, "main.tex", SIMPLE_TEX);
         fs::write(src.path().join("refs.bib"), "@article{k,title={T}}").unwrap();
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         assert_eq!(result.bibs_copied, 1);
         assert!(dst.path().join("content/refs.bib").exists());
     }
@@ -569,9 +578,7 @@ mod tests {
     #[test]
     fn import_rechaza_src_igual_dst() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(
-            import_from_folder(dir.path(), dir.path(), &ImportOptions::default()).is_err()
-        );
+        assert!(import_from_folder(dir.path(), dir.path(), &ImportOptions::default()).is_err());
     }
 
     #[test]
@@ -584,7 +591,10 @@ mod tests {
         assert!(import_from_folder(
             src.path(),
             dst.path(),
-            &ImportOptions { overwrite: false, ..Default::default() }
+            &ImportOptions {
+                overwrite: false,
+                ..Default::default()
+            }
         )
         .is_err());
     }
@@ -599,7 +609,10 @@ mod tests {
         assert!(import_from_folder(
             src.path(),
             dst.path(),
-            &ImportOptions { overwrite: true, ..Default::default() }
+            &ImportOptions {
+                overwrite: true,
+                ..Default::default()
+            }
         )
         .is_ok());
     }
@@ -667,8 +680,7 @@ mod tests {
         );
         write(&src, "cap1.tex", "\\chapter{Cap Uno}\nTexto del cap.");
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         assert!(result.project_file.exists());
     }
 
@@ -685,15 +697,20 @@ mod tests {
         fs::write(src.path().join("ch1/fig.png"), b"A").unwrap();
         fs::write(src.path().join("ch2/fig.png"), b"B").unwrap();
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
 
         assert_eq!(result.figures_copied, 2, "ambas figuras deben copiarse");
         // Ambas existen con nombres distintos
         let fig1 = dst.path().join("content/figures/fig.png");
         let fig2 = dst.path().join("content/figures/fig_2.png");
-        assert!(fig1.exists() && fig2.exists(), "los dos archivos deben existir sin sobreescribirse");
-        assert!(result.warnings.iter().any(|w| w.contains("renombrada")), "debe haber aviso de renombrado");
+        assert!(
+            fig1.exists() && fig2.exists(),
+            "los dos archivos deben existir sin sobreescribirse"
+        );
+        assert!(
+            result.warnings.iter().any(|w| w.contains("renombrada")),
+            "debe haber aviso de renombrado"
+        );
     }
 
     #[test]
@@ -705,7 +722,10 @@ mod tests {
         fs::create_dir_all(&nested).unwrap();
 
         let result = import_from_folder(src.path(), &nested, &ImportOptions::default());
-        assert!(result.is_err(), "debe rechazar work_dir dentro de source_dir");
+        assert!(
+            result.is_err(),
+            "debe rechazar work_dir dentro de source_dir"
+        );
     }
 
     #[test]
@@ -726,8 +746,7 @@ mod tests {
         );
         write(&src, "sections/intro.tex", "Texto de introducción.");
 
-        let result =
-            import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
+        let result = import_from_folder(src.path(), dst.path(), &ImportOptions::default()).unwrap();
         // Debe importar sin error y tener contenido de intro
         assert!(result.project_file.exists());
         // sections/intro se resuelve correctamente desde el contexto del chapters/cap1.tex
@@ -763,17 +782,28 @@ mod tests {
 
         // El YAML debe tener secciones (al menos introduccion y matematicas)
         let yaml_content = std::fs::read_to_string(&result.project_file).unwrap();
-        assert!(yaml_content.contains("Introducción") || yaml_content.contains("introduccion"),
-            "debe detectar sección de introducción");
+        assert!(
+            yaml_content.contains("Introducción") || yaml_content.contains("introduccion"),
+            "debe detectar sección de introducción"
+        );
 
         // Los bloques TikZ deben producir avisos de compatibilidad
-        let has_tikz_warning = result.warnings.iter().any(|w|
-            w.contains("tikzpicture") || w.contains("TikZ") || w.contains("plugin")
+        let has_tikz_warning = result
+            .warnings
+            .iter()
+            .any(|w| w.contains("tikzpicture") || w.contains("TikZ") || w.contains("plugin"));
+        assert!(
+            has_tikz_warning,
+            "debe advertir sobre tikzpicture: {:?}",
+            result.warnings
         );
-        assert!(has_tikz_warning, "debe advertir sobre tikzpicture: {:?}", result.warnings);
 
-        eprintln!("Import OK — figuras={}, bibs={}, avisos={}",
-            result.figures_copied, result.bibs_copied, result.warnings.len());
+        eprintln!(
+            "Import OK — figuras={}, bibs={}, avisos={}",
+            result.figures_copied,
+            result.bibs_copied,
+            result.warnings.len()
+        );
         for w in &result.warnings {
             eprintln!("  AVISO: {}", w);
         }

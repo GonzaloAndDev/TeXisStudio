@@ -159,7 +159,11 @@ const BROWSER_DYNAMIC_MOCKS: Record<string, (args?: Record<string, unknown>) => 
     const figureId = String(args?.figureId ?? "");
     const sourceJson = args?.sourceJson;
     if (figureId && typeof sourceJson === "string") {
-      _figureStore.set(figureId, { sourceJson, manifest: { manualEdit: Boolean(args?.manualEdit) } });
+      const previous = _figureStore.get(figureId);
+      const manualEdit = typeof args?.manualEdit === "boolean"
+        ? args.manualEdit
+        : previous?.manifest?.manualEdit ?? false;
+      _figureStore.set(figureId, { sourceJson, manifest: { manualEdit } });
     }
     return undefined;
   },

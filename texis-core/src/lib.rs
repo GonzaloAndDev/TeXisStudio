@@ -1,6 +1,5 @@
 pub mod asset;
 pub mod bibliography;
-pub mod importer;
 pub mod build_engine;
 pub mod commands;
 pub mod compiler;
@@ -13,6 +12,7 @@ pub mod events;
 pub mod exporter;
 pub mod generator;
 pub mod glossary;
+pub mod importer;
 pub mod package;
 pub mod plugin;
 pub mod postflight;

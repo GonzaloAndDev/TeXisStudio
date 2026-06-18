@@ -10,13 +10,15 @@
 pub mod consolidator;
 pub mod folder_import;
 
-pub use folder_import::{import_from_folder, FolderImportResult, ImportOptions, ImportSourcePlatform};
+pub use folder_import::{
+    import_from_folder, FolderImportResult, ImportOptions, ImportSourcePlatform,
+};
 
 use crate::project::model::{
     AcademicLevel, BibliographyBackend, CompilerKind, ContentBlock, DocumentClassConfig,
     DocumentKind, EquationBlock, HeadingBlock, HeadingLevel, InstitutionData, LatexConfig,
-    LatexEngine, ListBlock, ListType, ProjectMetadata, ProjectModel, ProjectSection,
-    RawLatexBlock, SectionPlacement, SectionStatus, StudentData,
+    LatexEngine, ListBlock, ListType, ProjectMetadata, ProjectModel, ProjectSection, RawLatexBlock,
+    SectionPlacement, SectionStatus, StudentData,
 };
 use std::collections::HashMap;
 
@@ -78,19 +80,22 @@ struct PreambleMeta {
 }
 
 fn parse_preamble_metadata(preamble: &str, warnings: &mut Vec<String>) -> PreambleMeta {
-    let title = extract_command_arg(preamble, "title")
-        .unwrap_or_else(|| "Título importado".to_string());
-    let author = extract_command_arg(preamble, "author")
-        .unwrap_or_else(|| "Autor".to_string());
-    let doc_class = extract_document_class(preamble)
-        .unwrap_or_else(|| "book".to_string());
+    let title =
+        extract_command_arg(preamble, "title").unwrap_or_else(|| "Título importado".to_string());
+    let author = extract_command_arg(preamble, "author").unwrap_or_else(|| "Autor".to_string());
+    let doc_class = extract_document_class(preamble).unwrap_or_else(|| "book".to_string());
 
     let packages = extract_packages(preamble);
     if packages.is_empty() {
         warnings.push("No se detectaron \\usepackage en el preámbulo.".to_string());
     }
 
-    PreambleMeta { title, author, doc_class, packages }
+    PreambleMeta {
+        title,
+        author,
+        doc_class,
+        packages,
+    }
 }
 
 /// Extrae el argumento principal de un comando LaTeX simple: `\cmd{ARG}`.
@@ -103,7 +108,11 @@ fn extract_command_arg(tex: &str, cmd: &str) -> Option<String> {
     let raw = &rest[..end];
     // Quitar saltos de línea y comprimir espacios
     let clean: String = raw.split_whitespace().collect::<Vec<_>>().join(" ");
-    if clean.is_empty() { None } else { Some(clean) }
+    if clean.is_empty() {
+        None
+    } else {
+        Some(clean)
+    }
 }
 
 /// Localiza la } de cierre contando niveles de anidación.
@@ -184,7 +193,7 @@ fn extract_packages(preamble: &str) -> Vec<String> {
 
 struct RawChapter {
     title: Option<String>,
-    starred: bool,     // \chapter* vs \chapter
+    starred: bool, // \chapter* vs \chapter
     content: String,
 }
 
@@ -193,9 +202,8 @@ fn build_sections(body: &str, warnings: &mut Vec<String>) -> Vec<ProjectSection>
 
     if chapters.is_empty() {
         // Sin capítulos detectados — todo el body como una sola sección
-        warnings.push(
-            "No se detectaron \\chapter. Todo el cuerpo va en una sola sección.".to_string(),
-        );
+        warnings
+            .push("No se detectaron \\chapter. Todo el cuerpo va en una sola sección.".to_string());
         return vec![make_section(
             None,
             SectionPlacement::Body,
@@ -213,7 +221,12 @@ fn build_sections(body: &str, warnings: &mut Vec<String>) -> Vec<ProjectSection>
             } else {
                 SectionPlacement::Body
             };
-            make_section(ch.title.as_deref(), placement, ch.content.trim(), ch.starred)
+            make_section(
+                ch.title.as_deref(),
+                placement,
+                ch.content.trim(),
+                ch.starred,
+            )
         })
         .collect()
 }
@@ -342,7 +355,11 @@ fn parse_chapter_content(content: &str) -> Vec<ContentBlock> {
 
         // ── Equation env (equation, equation*) ──────────────────────
         if let Some(numbered) = detect_equation_open(trimmed) {
-            let close_tag = if numbered { "\\end{equation}" } else { "\\end{equation*}" };
+            let close_tag = if numbered {
+                "\\end{equation}"
+            } else {
+                "\\end{equation*}"
+            };
             if let Some(end_idx) = find_env_end(&lines, i + 1, close_tag) {
                 flush_raw(&mut pending, &mut blocks);
                 let body_lines = &lines[i + 1..end_idx];
@@ -553,15 +570,18 @@ fn detect_section_heading(line: &str) -> Option<(HeadingLevel, String)> {
 // ── Construcción del ProjectModel ─────────────────────────────────────────────
 
 fn build_model(meta: PreambleMeta, sections: Vec<ProjectSection>) -> ProjectModel {
-    let doc_class_name = if ["book", "article", "report", "memoir"]
-        .contains(&meta.doc_class.as_str())
-    {
-        meta.doc_class.clone()
-    } else {
-        "book".to_string()
-    };
+    let doc_class_name =
+        if ["book", "article", "report", "memoir"].contains(&meta.doc_class.as_str()) {
+            meta.doc_class.clone()
+        } else {
+            "book".to_string()
+        };
 
-    let engine = if meta.packages.iter().any(|p| p == "fontspec" || p == "polyglossia") {
+    let engine = if meta
+        .packages
+        .iter()
+        .any(|p| p == "fontspec" || p == "polyglossia")
+    {
         LatexEngine::Xelatex
     } else {
         LatexEngine::Pdflatex
@@ -627,8 +647,8 @@ fn build_model(meta: PreambleMeta, sections: Vec<ProjectSection>) -> ProjectMode
 // ── Utilidades ────────────────────────────────────────────────────────────────
 
 fn new_id() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -650,27 +670,49 @@ fn chrono_or_placeholder() -> String {
 }
 
 fn epoch_to_ymd(mut secs: u64) -> (u64, u64, u64, u64, u64, u64) {
-    let s = secs % 60; secs /= 60;
-    let mi = secs % 60; secs /= 60;
-    let h = secs % 24; secs /= 24;
+    let s = secs % 60;
+    secs /= 60;
+    let mi = secs % 60;
+    secs /= 60;
+    let h = secs % 24;
+    secs /= 24;
     // Días desde 1970-01-01
     let mut days = secs;
     let mut y = 1970u64;
     loop {
         let leap = (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400);
         let dy = if leap { 366 } else { 365 };
-        if days < dy { break; }
-        days -= dy; y += 1;
+        if days < dy {
+            break;
+        }
+        days -= dy;
+        y += 1;
     }
     let months = [
         31u64,
-        if (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400) { 29 } else { 28 },
-        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+        if (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400) {
+            29
+        } else {
+            28
+        },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
     ];
     let mut mo = 1u64;
     for &dm in &months {
-        if days < dm { break; }
-        days -= dm; mo += 1;
+        if days < dm {
+            break;
+        }
+        days -= dm;
+        mo += 1;
     }
     (y, mo, days + 1, h, mi, s)
 }
@@ -711,13 +753,19 @@ Texto de conclusiones.
     #[test]
     fn capitulo_body_tiene_placement_body() {
         let result = import_tex(SIMPLE_TEX);
-        assert!(matches!(result.model.sections[0].placement, SectionPlacement::Body));
+        assert!(matches!(
+            result.model.sections[0].placement,
+            SectionPlacement::Body
+        ));
     }
 
     #[test]
     fn capitulo_starred_tiene_placement_backmatter() {
         let result = import_tex(SIMPLE_TEX);
-        assert!(matches!(result.model.sections[1].placement, SectionPlacement::BackMatter));
+        assert!(matches!(
+            result.model.sections[1].placement,
+            SectionPlacement::BackMatter
+        ));
     }
 
     #[test]
@@ -735,23 +783,35 @@ Texto de conclusiones.
     #[test]
     fn import_extrae_paquetes() {
         let result = import_tex(SIMPLE_TEX);
-        assert!(result.model.latex_config.packages_required.contains(&"fontspec".to_string()));
-        assert!(result.model.latex_config.packages_required.contains(&"amsmath".to_string()));
+        assert!(result
+            .model
+            .latex_config
+            .packages_required
+            .contains(&"fontspec".to_string()));
+        assert!(result
+            .model
+            .latex_config
+            .packages_required
+            .contains(&"amsmath".to_string()));
     }
 
     #[test]
     fn engine_xelatex_cuando_fontspec() {
         let result = import_tex(SIMPLE_TEX);
-        assert!(matches!(result.model.latex_config.engine, LatexEngine::Xelatex));
+        assert!(matches!(
+            result.model.latex_config.engine,
+            LatexEngine::Xelatex
+        ));
     }
 
     #[test]
     fn seccion_dentro_de_capitulo_es_heading_block() {
         let result = import_tex(SIMPLE_TEX);
         let intro = &result.model.sections[0];
-        let has_heading = intro.blocks.iter().any(|b| {
-            matches!(b, ContentBlock::Heading(h) if h.content == "Contexto")
-        });
+        let has_heading = intro
+            .blocks
+            .iter()
+            .any(|b| matches!(b, ContentBlock::Heading(h) if h.content == "Contexto"));
         assert!(has_heading, "la \\section debe convertirse en HeadingBlock");
     }
 
@@ -762,7 +822,10 @@ Texto de conclusiones.
         let has_raw = intro.blocks.iter().any(|b| {
             matches!(b, ContentBlock::RawLatex(r) if r.user_confirmed && r.content.contains("introducción"))
         });
-        assert!(has_raw, "el texto no reconocido debe ser RawLatexBlock confirmado");
+        assert!(
+            has_raw,
+            "el texto no reconocido debe ser RawLatexBlock confirmado"
+        );
     }
 
     #[test]
@@ -778,11 +841,15 @@ Texto de conclusiones.
         let tex = "\\begin{document}\nTexto libre sin capítulos.\n\\end{document}";
         let result = import_tex(tex);
         assert_eq!(result.model.sections.len(), 1);
-        let has_raw = result.model.sections[0].blocks.iter().any(|b| {
-            matches!(b, ContentBlock::RawLatex(r) if r.user_confirmed)
-        });
+        let has_raw = result.model.sections[0]
+            .blocks
+            .iter()
+            .any(|b| matches!(b, ContentBlock::RawLatex(r) if r.user_confirmed));
         assert!(has_raw);
-        assert!(!result.warnings.is_empty(), "debe emitir aviso de sin capítulos");
+        assert!(
+            !result.warnings.is_empty(),
+            "debe emitir aviso de sin capítulos"
+        );
     }
 
     #[test]
@@ -810,22 +877,39 @@ Texto de conclusiones.
     fn import_detecta_equation_numerada_con_label() {
         let tex = "\\chapter{C1}\nAntes.\n\\begin{equation}\n    E = mc^2\n    \\label{eq:einstein}\n\\end{equation}\nDespués.";
         let blocks = &import_tex(tex).model.sections[0].blocks;
-        let eq = blocks.iter().find_map(|b| {
-            if let ContentBlock::Equation(e) = b { Some(e) } else { None }
-        }).expect("debe haber un EquationBlock");
+        let eq = blocks
+            .iter()
+            .find_map(|b| {
+                if let ContentBlock::Equation(e) = b {
+                    Some(e)
+                } else {
+                    None
+                }
+            })
+            .expect("debe haber un EquationBlock");
         assert!(eq.numbered);
         assert_eq!(eq.label.as_deref(), Some("eq:einstein"));
         assert!(eq.latex_content.contains("E = mc^2"));
-        assert!(!eq.latex_content.contains("\\label"), "el label se extrae fuera del body");
+        assert!(
+            !eq.latex_content.contains("\\label"),
+            "el label se extrae fuera del body"
+        );
     }
 
     #[test]
     fn import_detecta_equation_sin_numerar() {
         let tex = "\\chapter{C1}\n\\begin{equation*}\n    \\int_0^1 x \\, dx\n\\end{equation*}";
         let blocks = &import_tex(tex).model.sections[0].blocks;
-        let eq = blocks.iter().find_map(|b| {
-            if let ContentBlock::Equation(e) = b { Some(e) } else { None }
-        }).expect("debe haber un EquationBlock");
+        let eq = blocks
+            .iter()
+            .find_map(|b| {
+                if let ContentBlock::Equation(e) = b {
+                    Some(e)
+                } else {
+                    None
+                }
+            })
+            .expect("debe haber un EquationBlock");
         assert!(!eq.numbered);
         assert!(eq.label.is_none());
     }
@@ -834,10 +918,20 @@ Texto de conclusiones.
     fn import_detecta_itemize() {
         let tex = "\\chapter{C1}\n\\begin{itemize}\n    \\item Primero\n    \\item Segundo\n    \\item Tercero con \\emph{énfasis}\n\\end{itemize}";
         let blocks = &import_tex(tex).model.sections[0].blocks;
-        let list = blocks.iter().find_map(|b| {
-            if let ContentBlock::List(l) = b { Some(l) } else { None }
-        }).expect("debe haber un ListBlock");
-        assert!(matches!(list.list_type, crate::project::model::ListType::Itemize));
+        let list = blocks
+            .iter()
+            .find_map(|b| {
+                if let ContentBlock::List(l) = b {
+                    Some(l)
+                } else {
+                    None
+                }
+            })
+            .expect("debe haber un ListBlock");
+        assert!(matches!(
+            list.list_type,
+            crate::project::model::ListType::Itemize
+        ));
         assert_eq!(list.items.len(), 3);
         assert_eq!(list.items[0], "Primero");
         assert_eq!(list.items[1], "Segundo");
@@ -846,12 +940,23 @@ Texto de conclusiones.
 
     #[test]
     fn import_detecta_enumerate() {
-        let tex = "\\chapter{C1}\n\\begin{enumerate}\n    \\item Uno\n    \\item Dos\n\\end{enumerate}";
+        let tex =
+            "\\chapter{C1}\n\\begin{enumerate}\n    \\item Uno\n    \\item Dos\n\\end{enumerate}";
         let blocks = &import_tex(tex).model.sections[0].blocks;
-        let list = blocks.iter().find_map(|b| {
-            if let ContentBlock::List(l) = b { Some(l) } else { None }
-        }).expect("debe haber un ListBlock");
-        assert!(matches!(list.list_type, crate::project::model::ListType::Enumerate));
+        let list = blocks
+            .iter()
+            .find_map(|b| {
+                if let ContentBlock::List(l) = b {
+                    Some(l)
+                } else {
+                    None
+                }
+            })
+            .expect("debe haber un ListBlock");
+        assert!(matches!(
+            list.list_type,
+            crate::project::model::ListType::Enumerate
+        ));
         assert_eq!(list.items.len(), 2);
     }
 
@@ -861,12 +966,28 @@ Texto de conclusiones.
         let tex = "\\chapter{C1}\nAntes.\n\\begin{equation}\n    E = mc^2\nDespués sin cerrar.";
         let blocks = &import_tex(tex).model.sections[0].blocks;
         // Nada de Equation, todo en raw_latex (preserva contenido).
-        let has_equation = blocks.iter().any(|b| matches!(b, ContentBlock::Equation(_)));
-        assert!(!has_equation, "no debe inventar un EquationBlock con entorno mal cerrado");
-        let raw_text: String = blocks.iter().filter_map(|b| {
-            if let ContentBlock::RawLatex(r) = b { Some(r.content.clone()) } else { None }
-        }).collect::<Vec<_>>().join("\n");
-        assert!(raw_text.contains("E = mc^2"), "el contenido sigue presente en raw_latex");
+        let has_equation = blocks
+            .iter()
+            .any(|b| matches!(b, ContentBlock::Equation(_)));
+        assert!(
+            !has_equation,
+            "no debe inventar un EquationBlock con entorno mal cerrado"
+        );
+        let raw_text: String = blocks
+            .iter()
+            .filter_map(|b| {
+                if let ContentBlock::RawLatex(r) = b {
+                    Some(r.content.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            raw_text.contains("E = mc^2"),
+            "el contenido sigue presente en raw_latex"
+        );
     }
 
     #[test]
@@ -876,11 +997,15 @@ Texto de conclusiones.
         let tex = "\\chapter{C1}\n\\begin{itemize}\n    \\item Externo\n    \\begin{itemize}\n        \\item Interno\n    \\end{itemize}\n\\end{itemize}";
         let blocks = &import_tex(tex).model.sections[0].blocks;
         // Aceptamos cualquiera de los dos comportamientos siempre que NO se pierda nada.
-        let all_text: String = blocks.iter().map(|b| match b {
-            ContentBlock::RawLatex(r) => r.content.clone(),
-            ContentBlock::List(l) => l.items.join("|"),
-            _ => String::new(),
-        }).collect::<Vec<_>>().join("\n");
+        let all_text: String = blocks
+            .iter()
+            .map(|b| match b {
+                ContentBlock::RawLatex(r) => r.content.clone(),
+                ContentBlock::List(l) => l.items.join("|"),
+                _ => String::new(),
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
         assert!(all_text.contains("Externo"));
         assert!(all_text.contains("Interno"));
     }
@@ -890,9 +1015,12 @@ Texto de conclusiones.
         // \section dentro de un entorno equation NO debe convertirse en heading.
         let tex = "\\chapter{C1}\n\\begin{equation}\n    a = b \\\\\n    \\section{trampa}\n\\end{equation}";
         let blocks = &import_tex(tex).model.sections[0].blocks;
-        let has_trap_heading = blocks.iter().any(|b| {
-            matches!(b, ContentBlock::Heading(h) if h.content == "trampa")
-        });
-        assert!(!has_trap_heading, "el detector de heading no debe disparar dentro de equation");
+        let has_trap_heading = blocks
+            .iter()
+            .any(|b| matches!(b, ContentBlock::Heading(h) if h.content == "trampa"));
+        assert!(
+            !has_trap_heading,
+            "el detector de heading no debe disparar dentro de equation"
+        );
     }
 }

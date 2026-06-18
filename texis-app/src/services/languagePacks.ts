@@ -182,6 +182,37 @@ async function safeFetch(
   return res;
 }
 
+async function readTextLimited(res: Response, label: string, maxBytes: number): Promise<string> {
+  if (!res.body) {
+    const text = await res.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) {
+      throw new Error(`${label}: file too large (max ${maxBytes} bytes)`);
+    }
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let received = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        throw new Error(`${label}: file too large (${received} bytes, max ${maxBytes})`);
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export async function installPack(
   entry: LangPackEntry,
   onProgress?: (step: "ui" | "spelling" | "autocorrect" | "done") => void,
@@ -204,10 +235,7 @@ export async function installPack(
   if (entry.capabilities.ui && entry.ui_url) {
     onProgress?.("ui");
     const res = await safeFetch(entry.ui_url, `${entry.id} UI locale`, MAX_UI_BYTES);
-    const text = await res.text();
-    if (text.length > MAX_UI_BYTES) {
-      throw new Error(`${entry.id} UI locale too large (${text.length} bytes, max ${MAX_UI_BYTES})`);
-    }
+    const text = await readTextLimited(res, `${entry.id} UI locale`, MAX_UI_BYTES);
     try {
       ui_data = JSON.parse(text) as Record<string, unknown>;
     } catch {
@@ -219,9 +247,13 @@ export async function installPack(
   if (entry.capabilities.spelling && entry.spelling_aff_url && entry.spelling_dic_url) {
     onProgress?.("spelling");
     // Validate both files exist and are valid before declaring success
-    await Promise.all([
+    const [affRes, dicRes] = await Promise.all([
       safeFetch(entry.spelling_aff_url, `${entry.id} .aff`, MAX_DICT_BYTES),
       safeFetch(entry.spelling_dic_url, `${entry.id} .dic`, MAX_DICT_BYTES),
+    ]);
+    await Promise.all([
+      readTextLimited(affRes, `${entry.id} .aff`, MAX_DICT_BYTES),
+      readTextLimited(dicRes, `${entry.id} .dic`, MAX_DICT_BYTES),
     ]);
     // Note: we do NOT store dict content in localStorage (too large).
     // The browser HTTP cache provides persistence between sessions.
@@ -231,7 +263,7 @@ export async function installPack(
   if (entry.capabilities.autocorrect && entry.autocorrect_url) {
     onProgress?.("autocorrect");
     const res = await safeFetch(entry.autocorrect_url, `${entry.id} autocorrect`, MAX_UI_BYTES);
-    const text = await res.text();
+    const text = await readTextLimited(res, `${entry.id} autocorrect`, MAX_UI_BYTES);
     try {
       autocorrectData = JSON.parse(text);
     } catch {
@@ -244,10 +276,7 @@ export async function installPack(
   const needsLatex = entry.capabilities.latex_babel || entry.capabilities.latex_polyglossia;
   if (needsLatex && entry.latex_url) {
     const res = await safeFetch(entry.latex_url, `${entry.id} latex.json`, MAX_UI_BYTES);
-    const text = await res.text();
-    if (text.length > MAX_UI_BYTES) {
-      throw new Error(`${entry.id} latex.json too large (${text.length} bytes, max ${MAX_UI_BYTES})`);
-    }
+    const text = await readTextLimited(res, `${entry.id} latex.json`, MAX_UI_BYTES);
     try {
       latexData = JSON.parse(text) as Record<string, unknown>;
     } catch {

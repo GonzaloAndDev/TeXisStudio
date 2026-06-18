@@ -296,7 +296,12 @@ fn render_citation_cmd(c: &CitationBlock) -> String {
         (None, Some(post)) => format!("[{}]", post),
         (None, None) => String::new(),
     };
-    format!("\\{}{}{{{}}}", cmd, options, sanitize_cite_key(&c.citation_key))
+    format!(
+        "\\{}{}{{{}}}",
+        cmd,
+        options,
+        sanitize_cite_key(&c.citation_key)
+    )
 }
 
 pub(crate) fn render_block(block: &ContentBlock) -> String {
@@ -336,7 +341,8 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
                 } else {
                     format!(
                         "\\begin{{equation}}\n    {}\n    \\label{{{}}}\n\\end{{equation}}\n\n",
-                        content, sanitize_latex_label(label)
+                        content,
+                        sanitize_latex_label(label)
                     )
                 }
             } else {
@@ -989,8 +995,14 @@ mod tests {
             verbatim_caption: false,
         });
         let out = render_block(&block);
-        assert!(!out.contains("fig:a}b"), "la llave del label no debe aparecer sin sanitizar");
-        assert!(out.contains("\\label{fig:ab}"), "label saneado debe estar en la salida");
+        assert!(
+            !out.contains("fig:a}b"),
+            "la llave del label no debe aparecer sin sanitizar"
+        );
+        assert!(
+            out.contains("\\label{fig:ab}"),
+            "label saneado debe estar en la salida"
+        );
     }
 
     #[test]
@@ -1004,8 +1016,14 @@ mod tests {
             suffix: None,
         };
         let out = render_citation_cmd(&c);
-        assert!(!out.contains("}evil"), "la llave inyectada no debe aparecer en el cite");
-        assert!(out.contains("\\parencite{autorevil}"), "cite debe usar la clave saneada");
+        assert!(
+            !out.contains("}evil"),
+            "la llave inyectada no debe aparecer en el cite"
+        );
+        assert!(
+            out.contains("\\parencite{autorevil}"),
+            "cite debe usar la clave saneada"
+        );
     }
 
     #[test]
@@ -1264,15 +1282,31 @@ mod tests {
     #[test]
     fn algorithm_body_linea_plain_recibe_state() {
         let out = render_block(&make_algorithm(None, None, "Inicializar x = 0"));
-        assert!(out.contains("\\State Inicializar x = 0"), "línea plain debe tener \\State");
+        assert!(
+            out.contains("\\State Inicializar x = 0"),
+            "línea plain debe tener \\State"
+        );
     }
 
     #[test]
     fn algorithm_body_linea_con_barra_emitida_raw() {
-        let out = render_block(&make_algorithm(None, None, "\\If{$x > 0$}\n\\State Procesar\n\\EndIf"));
-        assert!(out.contains("\\If{$x > 0$}"), "\\If debe emitirse sin modificar");
-        assert!(out.contains("\\EndIf"), "\\EndIf debe emitirse sin modificar");
-        assert!(!out.contains("\\State \\If"), "\\If NO debe recibir \\State extra");
+        let out = render_block(&make_algorithm(
+            None,
+            None,
+            "\\If{$x > 0$}\n\\State Procesar\n\\EndIf",
+        ));
+        assert!(
+            out.contains("\\If{$x > 0$}"),
+            "\\If debe emitirse sin modificar"
+        );
+        assert!(
+            out.contains("\\EndIf"),
+            "\\EndIf debe emitirse sin modificar"
+        );
+        assert!(
+            !out.contains("\\State \\If"),
+            "\\If NO debe recibir \\State extra"
+        );
     }
 
     #[test]
@@ -1280,7 +1314,10 @@ mod tests {
         let out = render_block(&make_algorithm(None, None, "\\State Calcular $R^2_1$"));
         assert!(out.contains("$R^2_1$"), "la math en body no debe escaparse");
         assert!(!out.contains("\\$"), "$ no debe convertirse en \\$");
-        assert!(!out.contains("textasciicircum"), "^ no debe escaparse como textasciicircum");
+        assert!(
+            !out.contains("textasciicircum"),
+            "^ no debe escaparse como textasciicircum"
+        );
     }
 
     #[test]
@@ -1288,17 +1325,37 @@ mod tests {
         let out = render_block(&make_algorithm(
             Some("Datos $(t_i, q_i)$, umbral $R^2_{min} = 0.99$"),
             Some("Modelo seleccionado con parámetros"),
-        "\\State Ajustar"));
-        assert!(out.contains("\\Require Datos $(t_i, q_i)$"), "\\Require debe contener math sin escapar");
-        assert!(out.contains("$R^2_{min} = 0.99$"), "math en Require no debe escaparse");
-        assert!(out.contains("\\Ensure Modelo seleccionado"), "\\Ensure debe emitirse raw");
+            "\\State Ajustar",
+        ));
+        assert!(
+            out.contains("\\Require Datos $(t_i, q_i)$"),
+            "\\Require debe contener math sin escapar"
+        );
+        assert!(
+            out.contains("$R^2_{min} = 0.99$"),
+            "math en Require no debe escaparse"
+        );
+        assert!(
+            out.contains("\\Ensure Modelo seleccionado"),
+            "\\Ensure debe emitirse raw"
+        );
     }
 
     #[test]
     fn algorithm_ref_en_body_no_se_escapa() {
-        let out = render_block(&make_algorithm(None, None, "\\State Ec.~\\ref{eq:langmuir}"));
-        assert!(out.contains("\\ref{eq:langmuir}"), "\\ref debe emitirse sin modificar");
-        assert!(!out.contains("\\textbackslash"), "backslash no debe escaparse en body");
+        let out = render_block(&make_algorithm(
+            None,
+            None,
+            "\\State Ec.~\\ref{eq:langmuir}",
+        ));
+        assert!(
+            out.contains("\\ref{eq:langmuir}"),
+            "\\ref debe emitirse sin modificar"
+        );
+        assert!(
+            !out.contains("\\textbackslash"),
+            "backslash no debe escaparse en body"
+        );
     }
 
     #[test]
@@ -1315,9 +1372,12 @@ mod tests {
 
     // ── chapter* + \addcontentsline ────────────────────────────────────────────
 
-    fn make_section_with_placement(placement: SectionPlacement, title: Option<&str>) -> ProjectSection {
-        use std::collections::HashMap;
+    fn make_section_with_placement(
+        placement: SectionPlacement,
+        title: Option<&str>,
+    ) -> ProjectSection {
         use crate::project::model::SectionStatus;
+        use std::collections::HashMap;
         ProjectSection {
             id: "test_sec".to_string(),
             title: title.map(|t| t.to_string()),
@@ -1336,9 +1396,8 @@ mod tests {
 
     fn bare_model_for_toc() -> ProjectModel {
         use crate::project::model::{
-            AcademicLevel, BibliographyBackend, CompilerKind, DocumentClassConfig,
-            DocumentKind, InstitutionData, LatexConfig, LatexEngine, ProjectMetadata,
-            StudentData,
+            AcademicLevel, BibliographyBackend, CompilerKind, DocumentClassConfig, DocumentKind,
+            InstitutionData, LatexConfig, LatexEngine, ProjectMetadata, StudentData,
         };
         use std::collections::HashMap;
         ProjectModel {
@@ -1400,10 +1459,14 @@ mod tests {
     fn backmatter_con_titulo_agrega_addcontentsline() {
         let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
         let model = bare_model_for_toc();
-        let section = make_section_with_placement(SectionPlacement::BackMatter, Some("Apéndice Técnico"));
+        let section =
+            make_section_with_placement(SectionPlacement::BackMatter, Some("Apéndice Técnico"));
         let out = render_section(&section, &engine, &model, None).unwrap();
         assert!(out.contains("\\chapter*{"), "backmatter debe usar chapter*");
-        assert!(out.contains("\\addcontentsline{toc}{chapter}{"), "debe añadir al ToC");
+        assert!(
+            out.contains("\\addcontentsline{toc}{chapter}{"),
+            "debe añadir al ToC"
+        );
     }
 
     #[test]
@@ -1412,17 +1475,27 @@ mod tests {
         let model = bare_model_for_toc();
         let section = make_section_with_placement(SectionPlacement::FrontMatter, Some("Resumen"));
         let out = render_section(&section, &engine, &model, None).unwrap();
-        assert!(out.contains("\\chapter*{Resumen}"), "frontmatter usa chapter*");
-        assert!(out.contains("\\addcontentsline{toc}{chapter}{Resumen}"), "resumen debe ir al ToC");
+        assert!(
+            out.contains("\\chapter*{Resumen}"),
+            "frontmatter usa chapter*"
+        );
+        assert!(
+            out.contains("\\addcontentsline{toc}{chapter}{Resumen}"),
+            "resumen debe ir al ToC"
+        );
     }
 
     #[test]
     fn body_section_no_agrega_addcontentsline() {
         let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
         let model = bare_model_for_toc();
-        let section = make_section_with_placement(SectionPlacement::Body, Some("Introducci\u{f3}n"));
+        let section =
+            make_section_with_placement(SectionPlacement::Body, Some("Introducci\u{f3}n"));
         let out = render_section(&section, &engine, &model, None).unwrap();
         assert!(out.contains("\\chapter{"), "body usa chapter numerado");
-        assert!(!out.contains("\\addcontentsline"), "body chapter NO añade addcontentsline");
+        assert!(
+            !out.contains("\\addcontentsline"),
+            "body chapter NO añade addcontentsline"
+        );
     }
 }

@@ -298,20 +298,28 @@ mod tests {
         assert!(s.contains("fermion"), "debe definir estilo fermion");
         assert!(s.contains("photon"), "debe definir estilo photon");
         assert!(s.contains("\\tikzset"), "debe ser un \\tikzset");
-        assert!(!s.contains("\\usetikzlibrary"), "la librería va por required_package, no aquí");
+        assert!(
+            !s.contains("\\usetikzlibrary"),
+            "la librería va por required_package, no aquí"
+        );
     }
 
     #[test]
     fn required_preamble_otros_tipos_son_none() {
         use crate::project::model::*;
         let venn = VisualConfig::VennEuler(VennEulerConfig {
-            sets: vec![], intersections: Default::default(), style: "circles".to_string(),
+            sets: vec![],
+            intersections: Default::default(),
+            style: "circles".to_string(),
         });
         assert!(required_preamble(&venn).is_none());
 
         let chem = VisualConfig::ChemReaction(ChemReactionConfig {
-            equation: "".to_string(), catalyst: None, conditions: None,
-            reaction_type: "forward".to_string(), display_mode: true,
+            equation: "".to_string(),
+            catalyst: None,
+            conditions: None,
+            reaction_type: "forward".to_string(),
+            display_mode: true,
         });
         assert!(required_preamble(&chem).is_none());
     }
@@ -333,9 +341,18 @@ mod tests {
             }),
         };
         let latex = render_visual(&block);
-        assert!(!latex.contains("\\usetikzlibrary"), "\\usetikzlibrary va en el preámbulo, no en el cuerpo de la figura");
-        assert!(!latex.contains("\\tikzset"), "\\tikzset va en el preámbulo, no en el cuerpo de la figura");
-        assert!(latex.contains("tikzpicture"), "debe contener el diagrama tikzpicture");
+        assert!(
+            !latex.contains("\\usetikzlibrary"),
+            "\\usetikzlibrary va en el preámbulo, no en el cuerpo de la figura"
+        );
+        assert!(
+            !latex.contains("\\tikzset"),
+            "\\tikzset va en el preámbulo, no en el cuerpo de la figura"
+        );
+        assert!(
+            latex.contains("tikzpicture"),
+            "debe contener el diagrama tikzpicture"
+        );
         assert!(latex.contains("fermion"), "debe usar el estilo fermion");
     }
 
@@ -375,7 +392,10 @@ mod tests {
 
         let latex = render_visual(&block);
         assert!(latex.contains("\\node[rounded] (n0)"));
-        assert!(latex.contains("\\node[decision] (n1)"), "nodo diamond usa estilo 'decision' para evitar recursividad TikZ");
+        assert!(
+            latex.contains("\\node[decision] (n1)"),
+            "nodo diamond usa estilo 'decision' para evitar recursividad TikZ"
+        );
         assert!(!latex.contains("(inicio del usuario)"));
         assert!(latex.contains("\\draw[->] (n0) -- node[midway, right"));
     }

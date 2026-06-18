@@ -144,9 +144,11 @@ fn build_stress_model() -> ProjectModel {
         student_id: None,
     }];
     m.institution.name = "Instituto Politécnico Nacional".to_string();
-    m.institution.faculty = Some("Centro Interdisciplinario de Investigaciones y \
+    m.institution.faculty = Some(
+        "Centro Interdisciplinario de Investigaciones y \
                                    Estudios sobre Medio Ambiente y Desarrollo"
-        .to_string());
+            .to_string(),
+    );
 
     // ── Sections: completar el FrontMatter ──────────────────────────────────
     // (title_page y table_of_contents ya están en fixtures::generic_thesis_model)
@@ -221,12 +223,20 @@ fn build_stress_model() -> ProjectModel {
     );
 
     // ── Limpiar la sección introduction del fixture y reconstruirla ──────────
-    let intro_idx = m.sections.iter().position(|s| s.id == "introduction").unwrap();
+    let intro_idx = m
+        .sections
+        .iter()
+        .position(|s| s.id == "introduction")
+        .unwrap();
     m.sections[intro_idx].title = Some("Introducción".to_string());
     m.sections[intro_idx].blocks = chapter_introduccion();
 
     // ── Añadir capítulos del cuerpo ──────────────────────────────────────────
-    let refs_idx = m.sections.iter().position(|s| s.id == "references").unwrap();
+    let refs_idx = m
+        .sections
+        .iter()
+        .position(|s| s.id == "references")
+        .unwrap();
 
     m.sections.insert(refs_idx, chapter_conclusiones());
     m.sections.insert(refs_idx, chapter_resultados());
@@ -234,7 +244,11 @@ fn build_stress_model() -> ProjectModel {
     m.sections.insert(refs_idx, chapter_marco_teorico());
 
     // ── Glosario ─────────────────────────────────────────────────────────────
-    let refs_idx2 = m.sections.iter().position(|s| s.id == "references").unwrap();
+    let refs_idx2 = m
+        .sections
+        .iter()
+        .position(|s| s.id == "references")
+        .unwrap();
     m.sections.insert(refs_idx2, section_glosario());
 
     // ── Apéndices ────────────────────────────────────────────────────────────
@@ -346,9 +360,10 @@ fn chapter_marco_teorico() -> ProjectSection {
         children: vec![],
         blocks: vec![
             ContentBlock::Paragraph(ParagraphBlock {
-                id: "mt-p1".to_string(), content: P_TEORIA_1.to_string(), verbatim: true,
+                id: "mt-p1".to_string(),
+                content: P_TEORIA_1.to_string(),
+                verbatim: true,
             }),
-
             // Ecuación: Langmuir
             ContentBlock::Heading(HeadingBlock {
                 id: "mt-h1".to_string(),
@@ -356,11 +371,14 @@ fn chapter_marco_teorico() -> ProjectSection {
                 level: HeadingLevel::Section,
             }),
             ContentBlock::Paragraph(ParagraphBlock {
-                id: "mt-p2".to_string(), content: P_TEORIA_2.to_string(), verbatim: true,
+                id: "mt-p2".to_string(),
+                content: P_TEORIA_2.to_string(),
+                verbatim: true,
             }),
             ContentBlock::Equation(EquationBlock {
                 id: "eq-langmuir".to_string(),
-                latex_content: "\\frac{C_e}{q_e} = \\frac{1}{q_m K_L} + \\frac{C_e}{q_m}".to_string(),
+                latex_content: "\\frac{C_e}{q_e} = \\frac{1}{q_m K_L} + \\frac{C_e}{q_m}"
+                    .to_string(),
                 label: Some("eq:langmuir".to_string()),
                 numbered: true,
             }),
@@ -372,11 +390,11 @@ fn chapter_marco_teorico() -> ProjectSection {
             }),
             ContentBlock::Equation(EquationBlock {
                 id: "eq-darcy".to_string(),
-                latex_content: "J = -\\frac{k}{\\mu} \\nabla P = L_p (\\Delta P - \\Delta \\pi)".to_string(),
+                latex_content: "J = -\\frac{k}{\\mu} \\nabla P = L_p (\\Delta P - \\Delta \\pi)"
+                    .to_string(),
                 label: Some("eq:darcy".to_string()),
                 numbered: true,
             }),
-
             // Tabla de comparación de nanomateriales
             ContentBlock::Heading(HeadingBlock {
                 id: "mt-h2".to_string(),
@@ -385,7 +403,9 @@ fn chapter_marco_teorico() -> ProjectSection {
             }),
             ContentBlock::Table(TableBlock {
                 id: "tab-nanomaterials".to_string(),
-                caption: "Comparación de nanomateriales adsorbentes para remoción de metales pesados".to_string(),
+                caption:
+                    "Comparación de nanomateriales adsorbentes para remoción de metales pesados"
+                        .to_string(),
                 source: Some("Elaboración propia basada en revisión bibliográfica".to_string()),
                 label: "tab:nanomaterials".to_string(),
                 include_in_list: true,
@@ -400,11 +420,41 @@ fn chapter_marco_teorico() -> ProjectSection {
                     "Ref.".to_string(),
                 ],
                 rows: vec![
-                    vec!["Carbón activado".to_string(), "35.7".to_string(), "800--1200".to_string(), "5--7".to_string(), "\\cite{ahmad2020carbon}".to_string()],
-                    vec!["Fe₃O₄ magnético".to_string(), "76.9".to_string(), "120--180".to_string(), "5--6".to_string(), "\\cite{yean2005magnetic}".to_string()],
-                    vec!["ZnO nanopart.".to_string(), "119.3".to_string(), "200--400".to_string(), "6--7".to_string(), "\\cite{lin2012zinc}".to_string()],
-                    vec!["GO estándar".to_string(), "189.5".to_string(), "1200--1800".to_string(), "4--6".to_string(), "\\cite{sitko2013graphene}".to_string()],
-                    vec!["\\textbf{GO-TiO₂ (este trabajo)}".to_string(), "\\textbf{246.9}".to_string(), "\\textbf{2100}".to_string(), "\\textbf{5.0}".to_string(), "---".to_string()],
+                    vec![
+                        "Carbón activado".to_string(),
+                        "35.7".to_string(),
+                        "800--1200".to_string(),
+                        "5--7".to_string(),
+                        "\\cite{ahmad2020carbon}".to_string(),
+                    ],
+                    vec![
+                        "Fe₃O₄ magnético".to_string(),
+                        "76.9".to_string(),
+                        "120--180".to_string(),
+                        "5--6".to_string(),
+                        "\\cite{yean2005magnetic}".to_string(),
+                    ],
+                    vec![
+                        "ZnO nanopart.".to_string(),
+                        "119.3".to_string(),
+                        "200--400".to_string(),
+                        "6--7".to_string(),
+                        "\\cite{lin2012zinc}".to_string(),
+                    ],
+                    vec![
+                        "GO estándar".to_string(),
+                        "189.5".to_string(),
+                        "1200--1800".to_string(),
+                        "4--6".to_string(),
+                        "\\cite{sitko2013graphene}".to_string(),
+                    ],
+                    vec![
+                        "\\textbf{GO-TiO₂ (este trabajo)}".to_string(),
+                        "\\textbf{246.9}".to_string(),
+                        "\\textbf{2100}".to_string(),
+                        "\\textbf{5.0}".to_string(),
+                        "---".to_string(),
+                    ],
                 ],
                 table_style: TableStyle::Booktabs,
             }),
@@ -417,11 +467,11 @@ fn chapter_marco_teorico() -> ProjectSection {
                     .to_string(),
                 verbatim: true,
             }),
-
             // Molécula de benceno (base del grafeno)
             ContentBlock::Visual(VisualBlock {
                 id: "mt-mol1".to_string(),
-                caption: "Estructura química del benceno, unidad fundamental de la red grafítica".to_string(),
+                caption: "Estructura química del benceno, unidad fundamental de la red grafítica"
+                    .to_string(),
                 label: "fig:benzene".to_string(),
                 include_in_list: true,
                 advanced_latex_override: None,
@@ -432,11 +482,11 @@ fn chapter_marco_teorico() -> ProjectSection {
                     scale: 1.2,
                 }),
             }),
-
             // Reacción química: síntesis GO
             ContentBlock::Visual(VisualBlock {
                 id: "mt-chem1".to_string(),
-                caption: "Reacción de oxidación de grafita a óxido de grafeno (método Hummers)".to_string(),
+                caption: "Reacción de oxidación de grafita a óxido de grafeno (método Hummers)"
+                    .to_string(),
                 label: "fig:hummers-rxn".to_string(),
                 include_in_list: true,
                 advanced_latex_override: None,
@@ -449,34 +499,63 @@ fn chapter_marco_teorico() -> ProjectSection {
                     display_mode: true,
                 }),
             }),
-
             // Timeline: Historia de la nanotecnología
             ContentBlock::Heading(HeadingBlock {
                 id: "mt-h3".to_string(),
-                content: "Cronología del Desarrollo de Nanomateriales para Tratamiento de Agua".to_string(),
+                content: "Cronología del Desarrollo de Nanomateriales para Tratamiento de Agua"
+                    .to_string(),
                 level: HeadingLevel::Section,
             }),
             ContentBlock::Visual(VisualBlock {
                 id: "mt-tl1".to_string(),
-                caption: "Hitos históricos en el desarrollo de nanomateriales para purificación de agua".to_string(),
+                caption:
+                    "Hitos históricos en el desarrollo de nanomateriales para purificación de agua"
+                        .to_string(),
                 label: "fig:timeline-nano".to_string(),
                 include_in_list: true,
                 advanced_latex_override: None,
                 advanced_override_confirmed: false,
                 config: VisualConfig::Timeline(TimelineConfig {
                     events: vec![
-                        TimelineEvent { date: "1991".to_string(), title: "Nanotubos de carbono (Iijima)".to_string(), description: Some("Descubrimiento de CNTs".to_string()) },
-                        TimelineEvent { date: "1999".to_string(), title: "Nanopartículas de Fe₃O₄".to_string(), description: Some("Aplicación magnética en remediación".to_string()) },
-                        TimelineEvent { date: "2004".to_string(), title: "Grafeno (Novoselov & Geim)".to_string(), description: Some("Premio Nobel de Física 2010".to_string()) },
-                        TimelineEvent { date: "2010".to_string(), title: "GO en membranas de ultrafiltración".to_string(), description: Some("Flux 5× superior a membranas poliméricas".to_string()) },
-                        TimelineEvent { date: "2018".to_string(), title: "GO-TiO₂ fotocatalítico".to_string(), description: Some("Degradación de antibióticos bajo luz solar".to_string()) },
-                        TimelineEvent { date: "2024".to_string(), title: "Escalamiento a planta piloto".to_string(), description: Some("Demostración en 10,000 L/día".to_string()) },
+                        TimelineEvent {
+                            date: "1991".to_string(),
+                            title: "Nanotubos de carbono (Iijima)".to_string(),
+                            description: Some("Descubrimiento de CNTs".to_string()),
+                        },
+                        TimelineEvent {
+                            date: "1999".to_string(),
+                            title: "Nanopartículas de Fe₃O₄".to_string(),
+                            description: Some("Aplicación magnética en remediación".to_string()),
+                        },
+                        TimelineEvent {
+                            date: "2004".to_string(),
+                            title: "Grafeno (Novoselov & Geim)".to_string(),
+                            description: Some("Premio Nobel de Física 2010".to_string()),
+                        },
+                        TimelineEvent {
+                            date: "2010".to_string(),
+                            title: "GO en membranas de ultrafiltración".to_string(),
+                            description: Some(
+                                "Flux 5× superior a membranas poliméricas".to_string(),
+                            ),
+                        },
+                        TimelineEvent {
+                            date: "2018".to_string(),
+                            title: "GO-TiO₂ fotocatalítico".to_string(),
+                            description: Some(
+                                "Degradación de antibióticos bajo luz solar".to_string(),
+                            ),
+                        },
+                        TimelineEvent {
+                            date: "2024".to_string(),
+                            title: "Escalamiento a planta piloto".to_string(),
+                            description: Some("Demostración en 10,000 L/día".to_string()),
+                        },
                     ],
                     orientation: "vertical".to_string(),
                     accent_color: "blue!70".to_string(),
                 }),
             }),
-
             // Teorema (proposición matemática)
             ContentBlock::Theorem(TheoremBlock {
                 id: "thm-convex".to_string(),
@@ -1143,76 +1222,203 @@ fn stress_all_block_types_generate() {
         .filter_map(|e| e.ok())
         .map(|e| e.path())
         .collect();
-    assert!(cap_paths.len() >= 5, "debe haber al menos 5 capítulos, hay {}", cap_paths.len());
+    assert!(
+        cap_paths.len() >= 5,
+        "debe haber al menos 5 capítulos, hay {}",
+        cap_paths.len()
+    );
 
     // ── Contenido de main.tex ────────────────────────────────────────────────
     let main_content = fs::read_to_string(&main).unwrap();
-    assert!(main_content.contains("\\documentclass"), "documentclass requerido");
-    assert!(main_content.contains("\\frontmatter"), "frontmatter requerido");
-    assert!(main_content.contains("\\mainmatter"), "mainmatter requerido");
-    assert!(main_content.contains("\\printbibliography"), "printbibliography requerido");
+    assert!(
+        main_content.contains("\\documentclass"),
+        "documentclass requerido"
+    );
+    assert!(
+        main_content.contains("\\frontmatter"),
+        "frontmatter requerido"
+    );
+    assert!(
+        main_content.contains("\\mainmatter"),
+        "mainmatter requerido"
+    );
+    assert!(
+        main_content.contains("\\printbibliography"),
+        "printbibliography requerido"
+    );
 
     // ── Paquetes auto-detectados ─────────────────────────────────────────────
     let pkg_content = fs::read_to_string(&paquetes).unwrap();
-    assert!(pkg_content.contains("tikz"), "tikz: requerido por VennEuler, FlowDiagram, Timeline, Feynman, BioPathway");
-    assert!(pkg_content.contains("chemfig"), "chemfig: requerido por Molecule(benzene)");
-    assert!(pkg_content.contains("mhchem"), "mhchem: requerido por ChemReaction");
-    assert!(pkg_content.contains("circuitikz"), "circuitikz: requerido por Circuit");
-    assert!(pkg_content.contains("pgfplots"), "pgfplots: requerido por PluginFigure");
-    assert!(pkg_content.contains("glossaries"), "glossaries: requerido por GlossaryEntry/AcronymEntry");
-    assert!(pkg_content.contains("\\makeglossaries"), "makeglossaries requerido");
+    assert!(
+        pkg_content.contains("tikz"),
+        "tikz: requerido por VennEuler, FlowDiagram, Timeline, Feynman, BioPathway"
+    );
+    assert!(
+        pkg_content.contains("chemfig"),
+        "chemfig: requerido por Molecule(benzene)"
+    );
+    assert!(
+        pkg_content.contains("mhchem"),
+        "mhchem: requerido por ChemReaction"
+    );
+    assert!(
+        pkg_content.contains("circuitikz"),
+        "circuitikz: requerido por Circuit"
+    );
+    assert!(
+        pkg_content.contains("pgfplots"),
+        "pgfplots: requerido por PluginFigure"
+    );
+    assert!(
+        pkg_content.contains("glossaries"),
+        "glossaries: requerido por GlossaryEntry/AcronymEntry"
+    );
+    assert!(
+        pkg_content.contains("\\makeglossaries"),
+        "makeglossaries requerido"
+    );
 
     // ── Contenido del glosario ───────────────────────────────────────────────
     let glos_content = fs::read_to_string(&glossary).unwrap();
-    assert!(glos_content.contains("\\newglossaryentry{g-go}"), "entrada GO en glosario");
-    assert!(glos_content.contains("\\newacronym") && glos_content.contains("{acr-ftir}"), "acrónimo FTIR");
+    assert!(
+        glos_content.contains("\\newglossaryentry{g-go}"),
+        "entrada GO en glosario"
+    );
+    assert!(
+        glos_content.contains("\\newacronym") && glos_content.contains("{acr-ftir}"),
+        "acrónimo FTIR"
+    );
     assert!(glos_content.contains("{acr-xrd}"), "acrónimo XRD");
     assert!(glos_content.contains("{acr-go}"), "acrónimo GO");
 
     // ── Contenido de capítulos ───────────────────────────────────────────────
-    let intro_file = cap_paths.iter().find(|p| {
-        p.file_name().unwrap().to_str().unwrap().contains("introduction")
-    }).expect("capítulo introducción debe existir");
+    let intro_file = cap_paths
+        .iter()
+        .find(|p| {
+            p.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("introduction")
+        })
+        .expect("capítulo introducción debe existir");
     let intro_content = fs::read_to_string(intro_file).unwrap();
-    assert!(intro_content.contains("tikzpicture"), "VennEuler genera tikzpicture en intro");
-    assert!(intro_content.contains("enumerate"), "Lista enumerate en intro");
+    assert!(
+        intro_content.contains("tikzpicture"),
+        "VennEuler genera tikzpicture en intro"
+    );
+    assert!(
+        intro_content.contains("enumerate"),
+        "Lista enumerate en intro"
+    );
 
     // Capítulo marco teórico
-    let mt_file = cap_paths.iter().find(|p| {
-        p.file_name().unwrap().to_str().unwrap().contains("marco_teorico")
-    }).expect("capítulo marco teórico debe existir");
+    let mt_file = cap_paths
+        .iter()
+        .find(|p| {
+            p.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("marco_teorico")
+        })
+        .expect("capítulo marco teórico debe existir");
     let mt_content = fs::read_to_string(mt_file).unwrap();
-    assert!(mt_content.contains("\\begin{equation}"), "ecuaciones en marco teórico");
-    assert!(mt_content.contains("\\label{eq:langmuir}"), "label de ecuación Langmuir");
-    assert!(mt_content.contains("\\toprule"), "tabla Booktabs en marco teórico");
-    assert!(mt_content.contains("chemfig"), "molécula chemfig en marco teórico");
-    assert!(mt_content.contains("\\ce{"), "reacción química mhchem en marco teórico");
+    assert!(
+        mt_content.contains("\\begin{equation}"),
+        "ecuaciones en marco teórico"
+    );
+    assert!(
+        mt_content.contains("\\label{eq:langmuir}"),
+        "label de ecuación Langmuir"
+    );
+    assert!(
+        mt_content.contains("\\toprule"),
+        "tabla Booktabs en marco teórico"
+    );
+    assert!(
+        mt_content.contains("chemfig"),
+        "molécula chemfig en marco teórico"
+    );
+    assert!(
+        mt_content.contains("\\ce{"),
+        "reacción química mhchem en marco teórico"
+    );
 
     // Capítulo metodología
-    let met_file = cap_paths.iter().find(|p| {
-        p.file_name().unwrap().to_str().unwrap().contains("metodologia")
-    }).expect("capítulo metodología debe existir");
+    let met_file = cap_paths
+        .iter()
+        .find(|p| {
+            p.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("metodologia")
+        })
+        .expect("capítulo metodología debe existir");
     let met_content = fs::read_to_string(met_file).unwrap();
-    assert!(met_content.contains("circuitikz"), "circuito en metodología");
-    assert!(met_content.contains("\\begin{lstlisting}"), "código Python en metodología");
-    assert!(met_content.contains("longtable") || met_content.contains("\\begin{table}"), "tabla en metodología");
-    assert!(met_content.contains("FlowDiagram") || met_content.contains("tikzpicture"), "diagrama de flujo en metodología");
+    assert!(
+        met_content.contains("circuitikz"),
+        "circuito en metodología"
+    );
+    assert!(
+        met_content.contains("\\begin{lstlisting}"),
+        "código Python en metodología"
+    );
+    assert!(
+        met_content.contains("longtable") || met_content.contains("\\begin{table}"),
+        "tabla en metodología"
+    );
+    assert!(
+        met_content.contains("FlowDiagram") || met_content.contains("tikzpicture"),
+        "diagrama de flujo en metodología"
+    );
 
     // Capítulo resultados
-    let res_file = cap_paths.iter().find(|p| {
-        p.file_name().unwrap().to_str().unwrap().contains("resultados")
-    }).expect("capítulo resultados debe existir");
+    let res_file = cap_paths
+        .iter()
+        .find(|p| {
+            p.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("resultados")
+        })
+        .expect("capítulo resultados debe existir");
     let res_content = fs::read_to_string(res_file).unwrap();
-    assert!(res_content.contains("\\begin{longtable}"), "LongTable en resultados");
-    assert!(res_content.contains("Compton") || res_content.contains("fermion"), "Feynman en resultados");
-    assert!(res_content.contains("texisstudio-figure-id"), "PluginFigure en resultados");
-    assert!(res_content.contains("\\begin{tikzpicture}") && res_content.contains("pgfplots") || res_content.contains("axis"), "PGFPlots en resultados");
-    assert!(res_content.contains("\\begin{algorithm}") || res_content.contains("algorithm2e"), "algoritmo en resultados");
+    assert!(
+        res_content.contains("\\begin{longtable}"),
+        "LongTable en resultados"
+    );
+    assert!(
+        res_content.contains("Compton") || res_content.contains("fermion"),
+        "Feynman en resultados"
+    );
+    assert!(
+        res_content.contains("texisstudio-figure-id"),
+        "PluginFigure en resultados"
+    );
+    assert!(
+        res_content.contains("\\begin{tikzpicture}") && res_content.contains("pgfplots")
+            || res_content.contains("axis"),
+        "PGFPlots en resultados"
+    );
+    assert!(
+        res_content.contains("\\begin{algorithm}") || res_content.contains("algorithm2e"),
+        "algoritmo en resultados"
+    );
 
     // Capítulo conclusiones
-    let conc_file = cap_paths.iter().find(|p| {
-        p.file_name().unwrap().to_str().unwrap().contains("conclusiones")
-    }).expect("capítulo conclusiones debe existir");
+    let conc_file = cap_paths
+        .iter()
+        .find(|p| {
+            p.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("conclusiones")
+        })
+        .expect("capítulo conclusiones debe existir");
     let conc_content = fs::read_to_string(conc_file).unwrap();
     assert!(conc_content.contains("enumerate"), "lista en conclusiones");
     assert!(
@@ -1239,30 +1445,48 @@ fn stress_add_remove_sections() {
     let dir_full = tempfile::tempdir().unwrap();
     gen.generate(&model, dir_full.path()).unwrap();
     let caps_full: Vec<_> = fs::read_dir(dir_full.path().join("capitulos"))
-        .unwrap().filter_map(|e| e.ok()).collect();
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
     let n_full = caps_full.len();
 
     // Deshabilitar capítulo de resultados
-    let res = model.sections.iter_mut().find(|s| s.id == "resultados").unwrap();
+    let res = model
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "resultados")
+        .unwrap();
     res.enabled = false;
 
     let dir_without_res = tempfile::tempdir().unwrap();
     gen.generate(&model, dir_without_res.path()).unwrap();
     let caps_without: Vec<_> = fs::read_dir(dir_without_res.path().join("capitulos"))
-        .unwrap().filter_map(|e| e.ok()).collect();
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
     let n_without = caps_without.len();
 
-    assert!(n_without < n_full,
+    assert!(
+        n_without < n_full,
         "al deshabilitar una sección el número de capítulos debe reducirse: antes={}, después={}",
-        n_full, n_without);
+        n_full,
+        n_without
+    );
 
-    let has_resultados = caps_without.iter().any(|e| {
-        e.file_name().to_str().unwrap().contains("resultados")
-    });
-    assert!(!has_resultados, "el capítulo resultados no debe generarse cuando está deshabilitado");
+    let has_resultados = caps_without
+        .iter()
+        .any(|e| e.file_name().to_str().unwrap().contains("resultados"));
+    assert!(
+        !has_resultados,
+        "el capítulo resultados no debe generarse cuando está deshabilitado"
+    );
 
     // Rehabilitar y agregar nueva sección
-    let res2 = model.sections.iter_mut().find(|s| s.id == "resultados").unwrap();
+    let res2 = model
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "resultados")
+        .unwrap();
     res2.enabled = true;
     model.sections.push(ProjectSection {
         id: "agradecimientos".to_string(),
@@ -1276,22 +1500,26 @@ fn stress_add_remove_sections() {
         notes: None,
         fields: HashMap::new(),
         children: vec![],
-        blocks: vec![
-            ContentBlock::Paragraph(ParagraphBlock {
-                id: "agr-p1".to_string(),
-                content: "La autora agradece el apoyo del CONAHCYT mediante la beca No. 2024-PNPC-042.".to_string(),
-                verbatim: false,
-            }),
-        ],
+        blocks: vec![ContentBlock::Paragraph(ParagraphBlock {
+            id: "agr-p1".to_string(),
+            content: "La autora agradece el apoyo del CONAHCYT mediante la beca No. 2024-PNPC-042."
+                .to_string(),
+            verbatim: false,
+        })],
     });
 
     let dir_extended = tempfile::tempdir().unwrap();
     gen.generate(&model, dir_extended.path()).unwrap();
     let caps_extended: Vec<_> = fs::read_dir(dir_extended.path().join("capitulos"))
-        .unwrap().filter_map(|e| e.ok()).collect();
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
 
-    assert_eq!(caps_extended.len(), n_full,
-        "con resultados rehabilitado el número de capítulos del cuerpo debe ser igual al original");
+    assert_eq!(
+        caps_extended.len(),
+        n_full,
+        "con resultados rehabilitado el número de capítulos del cuerpo debe ser igual al original"
+    );
 
     eprintln!("\n✓ Prueba add/remove sections OK");
     eprintln!("  Capítulos completos: {}", n_full);
@@ -1310,27 +1538,44 @@ fn stress_manual_edit_preserved_on_regen() {
 
     // Simular edición manual del usuario en el capítulo marco teórico
     let mt_paths: Vec<_> = fs::read_dir(dir.path().join("capitulos"))
-        .unwrap().filter_map(|e| e.ok())
+        .unwrap()
+        .filter_map(|e| e.ok())
         .filter(|e| e.file_name().to_str().unwrap().contains("marco_teorico"))
         .collect();
-    let mt_path = mt_paths.first().expect("capítulo marco teórico debe existir").path();
-    let rel_path = format!("capitulos/{}", mt_path.file_name().unwrap().to_str().unwrap());
+    let mt_path = mt_paths
+        .first()
+        .expect("capítulo marco teórico debe existir")
+        .path();
+    let rel_path = format!(
+        "capitulos/{}",
+        mt_path.file_name().unwrap().to_str().unwrap()
+    );
 
     fs::write(&mt_path, b"% === EDICION MANUAL DEL USUARIO ===\n").unwrap();
 
     // Regenerar respetando ediciones manuales
     let mut model2 = build_stress_model();
-    let mt_section = model2.sections.iter_mut().find(|s| s.id == "marco_teorico").unwrap();
-    mt_section.blocks.push(ContentBlock::Paragraph(ParagraphBlock {
-        id: "mt-nuevo".to_string(),
-        content: "Nuevo párrafo agregado por el usuario en el panel de contenido.".to_string(),
-        verbatim: false,
-    }));
+    let mt_section = model2
+        .sections
+        .iter_mut()
+        .find(|s| s.id == "marco_teorico")
+        .unwrap();
+    mt_section
+        .blocks
+        .push(ContentBlock::Paragraph(ParagraphBlock {
+            id: "mt-nuevo".to_string(),
+            content: "Nuevo párrafo agregado por el usuario en el panel de contenido.".to_string(),
+            verbatim: false,
+        }));
 
     // Marcar como manual
-    model2.file_states.insert(rel_path.clone(), FileState::Manual);
+    model2
+        .file_states
+        .insert(rel_path.clone(), FileState::Manual);
 
-    let report = gen.generate_respecting_manual_edits(&model2, dir.path(), None, None).unwrap();
+    let report = gen
+        .generate_respecting_manual_edits(&model2, dir.path(), None, None)
+        .unwrap();
 
     // El archivo manual debe preservarse
     assert!(
@@ -1405,7 +1650,10 @@ fn stress_compile_full_pdf() {
     }
 
     let pdf = build_dir.join("main.pdf");
-    assert!(pdf.exists(), "main.pdf debe existir tras compilación exitosa");
+    assert!(
+        pdf.exists(),
+        "main.pdf debe existir tras compilación exitosa"
+    );
 
     let pdf_size = fs::metadata(&pdf).unwrap().len();
     eprintln!("\n✓ PDF generado exitosamente");
@@ -1415,7 +1663,11 @@ fn stress_compile_full_pdf() {
     // Contar páginas
     let page_count = count_pdf_pages(&pdf);
     eprintln!("  Páginas estimadas: {}", page_count);
-    assert!(page_count >= 20, "La tesis debe tener al menos 20 páginas, tiene {}", page_count);
+    assert!(
+        page_count >= 20,
+        "La tesis debe tener al menos 20 páginas, tiene {}",
+        page_count
+    );
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

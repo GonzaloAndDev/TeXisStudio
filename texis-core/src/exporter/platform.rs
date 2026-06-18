@@ -38,7 +38,9 @@ impl ExportTarget {
         match self {
             Self::Overleaf => Some("https://www.overleaf.com/project"),
             Self::TeXstudio => Some("https://www.texstudio.org"),
-            Self::VsCode => Some("https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop"),
+            Self::VsCode => {
+                Some("https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop")
+            }
             Self::Local => None,
         }
     }
@@ -76,6 +78,7 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
     // Si ya existe del mismo slug (re-export), la eliminamos limpiamente.
     // Esto es intencional: el export es siempre una operación idempotente.
     let export_root = input.output_dir.join(&dir_name);
+    ensure_export_root_is_outside_project(input.project_dir, &export_root)?;
     if export_root.exists() {
         std::fs::remove_dir_all(&export_root).map_err(|e| CoreError::InvalidProject {
             message: format!(
@@ -122,10 +125,7 @@ pub fn export_for_platform(input: &PlatformExportInput<'_>) -> CoreResult<Platfo
             let vs_dir = export_root.join(".vscode");
             std::fs::create_dir_all(&vs_dir).map_err(CoreError::Io)?;
             let engine = latex_engine_str(input.model);
-            write_text(
-                &vs_dir.join("settings.json"),
-                vscode_settings(engine),
-            )?;
+            write_text(&vs_dir.join("settings.json"), vscode_settings(engine))?;
             write_text(&export_root.join("README.md"), vscode_readme())?;
         }
         ExportTarget::Local => {
@@ -191,8 +191,7 @@ fn zip_directory(src: &Path, dst: &Path) -> CoreResult<()> {
     let file = std::fs::File::create(dst).map_err(CoreError::Io)?;
     let writer = BufWriter::new(file);
     let mut zip = ZipWriter::new(writer);
-    let opts = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let opts = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     for entry in WalkDir::new(src).min_depth(1) {
         let entry = entry.map_err(|e| CoreError::Io(std::io::Error::other(e)))?;
@@ -336,20 +335,75 @@ fn latexmkrc(model: &ProjectModel) -> String {
 fn title_slug(title: &str) -> String {
     let slug: String = title
         .chars()
-        .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
         .take(40)
         .collect::<String>();
     let slug = slug.trim_matches('_').to_string();
-    if slug.is_empty() { "tesis".to_string() } else { slug }
+    if slug.is_empty() {
+        "tesis".to_string()
+    } else {
+        slug
+    }
 }
 
 fn target_suffix(target: &ExportTarget) -> &'static str {
     match target {
-        ExportTarget::Overleaf => "",   // va al ZIP directamente
+        ExportTarget::Overleaf => "", // va al ZIP directamente
         ExportTarget::TeXstudio => "_texstudio",
         ExportTarget::VsCode => "_vscode",
         ExportTarget::Local => "_local",
     }
+}
+
+fn comparable_path(path: &Path) -> PathBuf {
+    if let Ok(canonical) = path.canonicalize() {
+        return canonical;
+    }
+
+    let mut missing = Vec::new();
+    let mut cursor = path;
+    while !cursor.exists() {
+        if let Some(name) = cursor.file_name() {
+            missing.push(name.to_owned());
+        }
+        let Some(parent) = cursor.parent() else {
+            return path.to_path_buf();
+        };
+        cursor = parent;
+    }
+
+    let mut normalized = cursor
+        .canonicalize()
+        .unwrap_or_else(|_| cursor.to_path_buf());
+    for part in missing.iter().rev() {
+        normalized.push(part);
+    }
+    normalized
+}
+
+fn ensure_export_root_is_outside_project(project_dir: &Path, export_root: &Path) -> CoreResult<()> {
+    let project_dir = comparable_path(project_dir);
+    let export_root = comparable_path(export_root);
+    if export_root == project_dir
+        || export_root.starts_with(&project_dir)
+        || project_dir.starts_with(&export_root)
+    {
+        return Err(CoreError::InvalidProject {
+            message: format!(
+                "El destino de exportación '{}' se solapa con el proyecto '{}'. \
+                 Elige una carpeta externa para evitar sobrescribir archivos del proyecto.",
+                export_root.display(),
+                project_dir.display()
+            ),
+        });
+    }
+    Ok(())
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -422,6 +476,52 @@ mod tests {
     #[test]
     fn local_info_url_is_none() {
         assert!(ExportTarget::Local.info_url().is_none());
+    }
+
+    #[test]
+    fn export_root_rejects_project_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("my_thesis");
+        std::fs::create_dir_all(&project_dir).unwrap();
+
+        let result = ensure_export_root_is_outside_project(&project_dir, &project_dir);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn export_root_rejects_directory_inside_project() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("project");
+        let export_root = project_dir.join("content");
+        std::fs::create_dir_all(&project_dir).unwrap();
+
+        let result = ensure_export_root_is_outside_project(&project_dir, &export_root);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn export_root_rejects_parent_of_project() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("project").join("child");
+        std::fs::create_dir_all(&project_dir).unwrap();
+
+        let result = ensure_export_root_is_outside_project(&project_dir, dir.path());
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn export_root_allows_sibling_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path().join("project");
+        let export_root = dir.path().join("project_export");
+        std::fs::create_dir_all(&project_dir).unwrap();
+
+        let result = ensure_export_root_is_outside_project(&project_dir, &export_root);
+
+        assert!(result.is_ok());
     }
 
     fn make_model(engine: crate::project::model::LatexEngine) -> ProjectModel {

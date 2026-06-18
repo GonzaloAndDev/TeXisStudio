@@ -15,10 +15,10 @@ fn sanitize_circuit_label(s: &str) -> String {
 
 pub fn render(c: &CircuitConfig) -> String {
     let vals = &c.component_values;
-    let r  = sanitize_circuit_label(vals.get("R").map(|s| s.as_str()).unwrap_or("R"));
+    let r = sanitize_circuit_label(vals.get("R").map(|s| s.as_str()).unwrap_or("R"));
     let c_ = sanitize_circuit_label(vals.get("C").map(|s| s.as_str()).unwrap_or("C"));
-    let l  = sanitize_circuit_label(vals.get("L").map(|s| s.as_str()).unwrap_or("L"));
-    let v  = sanitize_circuit_label(vals.get("V").map(|s| s.as_str()).unwrap_or("V"));
+    let l = sanitize_circuit_label(vals.get("L").map(|s| s.as_str()).unwrap_or("L"));
+    let v = sanitize_circuit_label(vals.get("V").map(|s| s.as_str()).unwrap_or("V"));
 
     match c.preset.as_str() {
         "rc_series" => rc_series(&r, &c_),
@@ -137,21 +137,46 @@ mod tests {
         // El ] intentaría cerrar el argumento to[...] de circuitikz prematuramente
         vals.insert("R".to_string(), "10k]\\draw".to_string());
         vals.insert("C".to_string(), "100nF".to_string());
-        let c = CircuitConfig { preset: "rc_series".to_string(), component_values: vals };
+        let c = CircuitConfig {
+            preset: "rc_series".to_string(),
+            component_values: vals,
+        };
         let out = render(&c);
         // El ] del valor no debe aparecer seguido del texto inyectado
-        assert!(!out.contains("]\\draw"), "la secuencia de inyección ]\\draw no debe aparecer en la salida");
-        assert!(out.contains("10k"), "el valor limpio de R debe estar presente");
-        assert!(out.contains("circuitikz"), "la salida debe ser un entorno circuitikz válido");
+        assert!(
+            !out.contains("]\\draw"),
+            "la secuencia de inyección ]\\draw no debe aparecer en la salida"
+        );
+        assert!(
+            out.contains("10k"),
+            "el valor limpio de R debe estar presente"
+        );
+        assert!(
+            out.contains("circuitikz"),
+            "la salida debe ser un entorno circuitikz válido"
+        );
     }
 
     #[test]
     fn render_all_presets_produce_circuitikz() {
         use crate::project::model::CircuitConfig;
-        for preset in &["rc_series", "rlc_parallel", "voltage_divider", "inverting_opamp", "full_wave_rectifier", "unknown"] {
-            let c = CircuitConfig { preset: preset.to_string(), component_values: Default::default() };
+        for preset in &[
+            "rc_series",
+            "rlc_parallel",
+            "voltage_divider",
+            "inverting_opamp",
+            "full_wave_rectifier",
+            "unknown",
+        ] {
+            let c = CircuitConfig {
+                preset: preset.to_string(),
+                component_values: Default::default(),
+            };
             let out = render(&c);
-            assert!(out.contains("circuitikz"), "preset '{preset}' debe generar circuitikz");
+            assert!(
+                out.contains("circuitikz"),
+                "preset '{preset}' debe generar circuitikz"
+            );
         }
     }
 }

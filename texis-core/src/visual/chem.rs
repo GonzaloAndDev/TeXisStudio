@@ -121,13 +121,15 @@ mod tests {
         // Un ] dentro del catalizador ya no puede cerrar prematuramente el campo mhchem.
         // Resultado esperado: "->[catevil]" — los corchetes del usuario se eliminan,
         // pero el ] de cierre del formato mhchem es parte de la sintaxis y permanece.
-        let result = build_conditions(
-            &Some("cat][evil".to_string()),
-            &None,
-            "->",
+        let result = build_conditions(&Some("cat][evil".to_string()), &None, "->");
+        assert_eq!(
+            result, "->[catevil]",
+            "los [] del catalizador deben eliminarse, el ] final es de la sintaxis mhchem"
         );
-        assert_eq!(result, "->[catevil]", "los [] del catalizador deben eliminarse, el ] final es de la sintaxis mhchem");
-        assert!(!result.contains("]["), "no debe quedar secuencia ][ del usuario dentro del campo");
+        assert!(
+            !result.contains("]["),
+            "no debe quedar secuencia ][ del usuario dentro del campo"
+        );
     }
 
     #[test]

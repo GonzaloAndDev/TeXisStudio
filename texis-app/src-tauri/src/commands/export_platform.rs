@@ -35,7 +35,9 @@ pub fn export_for_target(
 ) -> Result<PlatformExportSummary, String> {
     let project_dir = PathBuf::from(&project_path);
     if !project_dir.exists() {
-        return Err(format!("El directorio del proyecto no existe: {project_path}"));
+        return Err(format!(
+            "El directorio del proyecto no existe: {project_path}"
+        ));
     }
 
     let out_dir = PathBuf::from(&output_dir);

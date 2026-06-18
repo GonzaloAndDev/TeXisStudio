@@ -42,6 +42,8 @@ const ALLOWED_ACADEMIC_LEVELS = new Set([
   "especialidad", "maestria", "doctorado", "posdoctorado",
 ]);
 
+const MAX_PROFILE_CATALOG_BYTES = 2 * 1024 * 1024;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface CatalogProfile {
@@ -335,8 +337,41 @@ async function loadCatalogJson(url: string): Promise<unknown> {
   }
 
   try {
-    return await res.json();
+    return JSON.parse(await readTextLimited(res, "catálogo de perfiles", MAX_PROFILE_CATALOG_BYTES));
   } catch (e) {
     throw new Error(`El catálogo de perfiles no es JSON válido: ${e}`);
+  }
+}
+
+async function readTextLimited(res: Response, label: string, maxBytes: number): Promise<string> {
+  if (!res.body) {
+    const text = await res.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) {
+      throw new Error(`${label}: respuesta demasiado grande (máx ${maxBytes} bytes)`);
+    }
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let received = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        throw new Error(
+          `${label}: respuesta demasiado grande (${received} bytes, máx ${maxBytes})`,
+        );
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
   }
 }

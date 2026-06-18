@@ -13,6 +13,7 @@ const BUNDLED_LANGS = new Set(["en", "es", "fr", "de"]);
 // localhost-style bundled fetch and still bounded enough to surface real
 // network failures.
 const DICT_FETCH_TIMEOUT_MS = 20_000;
+const MAX_DICT_BYTES = 5 * 1024 * 1024;
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
@@ -21,6 +22,42 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
     return await fetch(url, { signal: controller.signal });
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function readTextLimited(res: Response, label: string, maxBytes: number): Promise<string> {
+  const contentLength = res.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+    throw new Error(`${label} too large (${contentLength} bytes, max ${maxBytes})`);
+  }
+
+  if (!res.body) {
+    const text = await res.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) {
+      throw new Error(`${label} too large (max ${maxBytes} bytes)`);
+    }
+    return text;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let received = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) {
+        throw new Error(`${label} too large (${received} bytes, max ${maxBytes})`);
+      }
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } finally {
+    reader.releaseLock();
   }
 }
 
@@ -46,7 +83,10 @@ async function loadDictionary(lang: string): Promise<NSpell> {
   if (!affRes.ok || !dicRes.ok) {
     throw new Error(`Dictionary ${lang} fetch failed (${affRes.status}/${dicRes.status})`);
   }
-  const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
+  const [aff, dic] = await Promise.all([
+    readTextLimited(affRes, `${lang} .aff`, MAX_DICT_BYTES),
+    readTextLimited(dicRes, `${lang} .dic`, MAX_DICT_BYTES),
+  ]);
   return nspell({ aff, dic });
 }
 

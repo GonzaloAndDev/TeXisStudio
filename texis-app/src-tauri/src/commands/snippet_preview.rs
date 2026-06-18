@@ -80,8 +80,16 @@ fn run_backend(backend: &str, out_dir: &Path, tex_path: &Path) -> Result<(), Str
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let detail = if stderr.trim().is_empty() { stdout } else { stderr };
-        let name = if backend == "latexmk" { "latexmk" } else { "Tectonic" };
+        let detail = if stderr.trim().is_empty() {
+            stdout
+        } else {
+            stderr
+        };
+        let name = if backend == "latexmk" {
+            "latexmk"
+        } else {
+            "Tectonic"
+        };
         return Err(format!("{name} falló:\n{detail}"));
     }
     Ok(())

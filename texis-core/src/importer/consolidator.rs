@@ -69,7 +69,10 @@ fn expand_tex(
 
     let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     if visited.contains(&canonical) {
-        warnings.push(format!("Ciclo detectado: '{}' ya fue incluido.", path.display()));
+        warnings.push(format!(
+            "Ciclo detectado: '{}' ya fue incluido.",
+            path.display()
+        ));
         return Ok(String::new());
     }
     visited.insert(canonical.clone());
@@ -102,7 +105,10 @@ fn expand_tex(
 
         if let Some(sub_path) = extract_include(trimmed, parent, root_dir) {
             // Marca el punto de inclusión con un comentario para depuración
-            result.push_str(&format!("% --- begin included: {} ---\n", sub_path.display()));
+            result.push_str(&format!(
+                "% --- begin included: {} ---\n",
+                sub_path.display()
+            ));
             match expand_tex(&sub_path, root_dir, visited, depth + 1, warnings) {
                 Ok(expanded) => result.push_str(&expanded),
                 Err(_) => {
@@ -129,12 +135,7 @@ fn expand_tex(
 /// académicos cuando todos los \input son relativos al main.tex).
 fn extract_include(line: &str, parent: &Path, root_dir: &Path) -> Option<PathBuf> {
     // Prefijos con llave abierta (arg termina en '}')
-    let brace_prefixes = [
-        "\\input{",
-        "\\include{",
-        "\\subfile{",
-        "\\subimport{",
-    ];
+    let brace_prefixes = ["\\input{", "\\include{", "\\subfile{", "\\subimport{"];
     // Prefijos sin llave (arg termina en whitespace o fin de línea)
     let space_prefixes = ["\\input ", "\\include "];
 
@@ -201,8 +202,7 @@ fn find_root_tex(dir: &Path, warnings: &mut Vec<String>) -> CoreResult<PathBuf> 
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| {
-            e.file_type().is_file()
-                && e.path().extension().and_then(|x| x.to_str()) == Some("tex")
+            e.file_type().is_file() && e.path().extension().and_then(|x| x.to_str()) == Some("tex")
         })
         .map(|e| e.path().to_path_buf())
         .collect();
@@ -239,17 +239,16 @@ fn find_root_tex(dir: &Path, warnings: &mut Vec<String>) -> CoreResult<PathBuf> 
     // Prioridad 2: nombre main.tex o thesis.tex
     let priority_names = ["main.tex", "thesis.tex", "tesis.tex", "document.tex"];
     for name in &priority_names {
-        if let Some(p) = candidates.iter().find(|p| {
-            p.file_name().and_then(|n| n.to_str()) == Some(name)
-        }) {
+        if let Some(p) = candidates
+            .iter()
+            .find(|p| p.file_name().and_then(|n| n.to_str()) == Some(name))
+        {
             return Ok(p.clone());
         }
     }
 
     // Prioridad 3: el archivo más grande (heurística)
-    candidates.sort_by_key(|p| {
-        std::fs::metadata(p).map(|m| m.len()).unwrap_or(0)
-    });
+    candidates.sort_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0));
     warnings.push(format!(
         "No se detectó un archivo raíz claro. Se usará '{}' (el más grande).",
         candidates.last().unwrap().display()
@@ -304,18 +303,26 @@ mod tests {
 
     #[test]
     fn consolidate_single_file() {
-        let dir = setup_project(&[
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\nHola\n\\end{document}"),
-        ]);
+        let dir = setup_project(&[(
+            "main.tex",
+            "\\documentclass{book}\n\\begin{document}\nHola\n\\end{document}",
+        )]);
         let result = consolidate_directory(dir.path()).unwrap();
         assert!(result.tex.contains("Hola"));
-        assert!(result.warnings.is_empty(), "no debe haber avisos: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "no debe haber avisos: {:?}",
+            result.warnings
+        );
     }
 
     #[test]
     fn consolidate_with_input() {
         let dir = setup_project(&[
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\n\\input{cap1}\n\\end{document}"),
+            (
+                "main.tex",
+                "\\documentclass{book}\n\\begin{document}\n\\input{cap1}\n\\end{document}",
+            ),
             ("cap1.tex", "Contenido del capítulo 1."),
         ]);
         let result = consolidate_directory(dir.path()).unwrap();
@@ -325,18 +332,25 @@ mod tests {
     #[test]
     fn consolidate_with_input_subdir() {
         let dir = setup_project(&[
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\n\\input{chapters/cap1}\n\\end{document}"),
+            (
+                "main.tex",
+                "\\documentclass{book}\n\\begin{document}\n\\input{chapters/cap1}\n\\end{document}",
+            ),
             ("chapters/cap1.tex", "Contenido subcarpeta."),
         ]);
         let result = consolidate_directory(dir.path()).unwrap();
-        assert!(result.tex.contains("Contenido subcarpeta."), "debe expandir subcarpetas");
+        assert!(
+            result.tex.contains("Contenido subcarpeta."),
+            "debe expandir subcarpetas"
+        );
     }
 
     #[test]
     fn consolidate_detects_figures() {
-        let dir = setup_project(&[
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\\end{document}"),
-        ]);
+        let dir = setup_project(&[(
+            "main.tex",
+            "\\documentclass{book}\n\\begin{document}\\end{document}",
+        )]);
         fs::create_dir_all(dir.path().join("figures")).unwrap();
         fs::write(dir.path().join("figures/img.png"), b"PNG").unwrap();
         fs::write(dir.path().join("img2.jpg"), b"JPG").unwrap();
@@ -347,19 +361,28 @@ mod tests {
     #[test]
     fn consolidate_cycle_detection() {
         let dir = setup_project(&[
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\n\\input{a}\n\\end{document}"),
+            (
+                "main.tex",
+                "\\documentclass{book}\n\\begin{document}\n\\input{a}\n\\end{document}",
+            ),
             ("a.tex", "\\input{b}"),
-            ("b.tex", "\\input{a}"),  // ciclo
+            ("b.tex", "\\input{a}"), // ciclo
         ]);
         let result = consolidate_directory(dir.path()).unwrap();
-        assert!(result.warnings.iter().any(|w| w.contains("iclo")), "debe detectar ciclo");
+        assert!(
+            result.warnings.iter().any(|w| w.contains("iclo")),
+            "debe detectar ciclo"
+        );
     }
 
     #[test]
     fn find_root_prefers_documentclass() {
         let dir = setup_project(&[
             ("chapter.tex", "Solo texto sin documentclass"),
-            ("main.tex", "\\documentclass{book}\n\\begin{document}\\end{document}"),
+            (
+                "main.tex",
+                "\\documentclass{book}\n\\begin{document}\\end{document}",
+            ),
         ]);
         let mut warnings = Vec::new();
         let root = find_root_tex(dir.path(), &mut warnings).unwrap();
