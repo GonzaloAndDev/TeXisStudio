@@ -404,9 +404,10 @@ export function EquationEditor({
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
-  // The textarea is always focusable, even when the LaTeX source is hidden,
-  // so the user's keyboard still types into this equation. When hidden, we
-  // also wire up the math-panel target manually so the panel inserts here.
+  // Sticky-target model (shared with the plugin's row editor): we register on
+  // mount AND on focus so that, with several equation blocks open, the panel
+  // always inserts into the block the user last touched — not the last one
+  // mounted. Cleanup on unmount releases the target if it's still us.
   useEffect(() => {
     const el = taRef.current;
     if (!el) return;
@@ -421,6 +422,18 @@ export function EquationEditor({
     if (slot !== null) el.setSelectionRange(slot, slot);
     return () => mathInsertManager.unregister(el);
   }, []);
+
+  // Re-assert this block as the sticky target whenever it regains focus.
+  const handleFocus = () => {
+    const el = taRef.current;
+    if (el) mathInsertManager.register(el, (v) => onChangeRef.current(v), "equation");
+  };
+  // Blur only hides the slot legend; the target stays sticky so a palette
+  // click still lands here even though focus moved to the panel button.
+  const handleBlur = () => {
+    mathInsertManager.clearActiveInsertion();
+    onBlur();
+  };
 
   // When the user toggles "Show LaTeX" back on, send focus to the now-visible
   // textarea so they can resume typing without an extra click.
@@ -507,10 +520,10 @@ export function EquationEditor({
         autoFocus
         value={latex_content}
         onChange={(e) => onChange(e.target.value)}
-        // onFocus does NOT re-register: registration is centralised in the
-        // mount effect above so the math panel stays pointed at this block
-        // even when the textarea is visually hidden and never refocuses.
-        onBlur={onBlur}
+        // Sticky target: re-register on focus so the panel follows the block
+        // the user is actually editing (matters with several equation blocks).
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         // Key handling:
         //   * Esc: commits and steps OUT of the LaTeX source but does NOT
         //     exit edit mode. The global Esc handler in EditorView would
@@ -560,7 +573,7 @@ export function EquationEditor({
         }}
         placeholder="\frac{d}{dx} f(x) = \lim_{h \to 0} \frac{f(x+h) - f(x)}{h}"
       />
-      <SlotLegend ownerEl={taRef.current} />
+      <SlotLegend ownerRef={taRef} />
     </div>
   );
 }

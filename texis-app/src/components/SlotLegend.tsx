@@ -14,15 +14,18 @@
  */
 
 import { useEffect, useReducer, useState } from "react";
+import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { mathInsertManager } from "../lib/mathInsertManager";
+import { mathInsertManager, type MathField } from "../lib/mathInsertManager";
 
 /**
- * `ownerEl` es la textarea cuyo "dueño" puede mostrar el legend. Si el
- * activeInsertion del manager apunta a esta misma, se renderiza; si no,
- * el componente no produce salida. Acepta `null` (el ref aún no se asignó).
+ * `ownerRef` apunta al campo cuyo "dueño" puede mostrar el legend. Tomamos
+ * el RefObject (no `ref.current`) para no depender de que el padre re-renderice
+ * para leer el elemento: nos suscribimos al manager y leemos `ownerRef.current`
+ * en el momento del render. Si el activeInsertion del manager apunta a este
+ * mismo campo, se renderiza; si no, no produce salida.
  */
-export function SlotLegend({ ownerEl }: { ownerEl: HTMLTextAreaElement | null }) {
+export function SlotLegend({ ownerRef }: { ownerRef: RefObject<MathField | null> }) {
   const { t } = useTranslation();
   const [, force] = useReducer((n: number) => n + 1, 0);
   const [caretPos, setCaretPos] = useState<number>(0);
@@ -30,16 +33,17 @@ export function SlotLegend({ ownerEl }: { ownerEl: HTMLTextAreaElement | null })
   useEffect(() => mathInsertManager.subscribe(force), []);
 
   useEffect(() => {
-    if (!ownerEl) return;
     const onSel = () => {
-      if (document.activeElement === ownerEl) {
-        setCaretPos(ownerEl.selectionStart ?? 0);
+      const el = ownerRef.current;
+      if (el && document.activeElement === el) {
+        setCaretPos(el.selectionStart ?? 0);
       }
     };
     document.addEventListener("selectionchange", onSel);
     return () => document.removeEventListener("selectionchange", onSel);
-  }, [ownerEl]);
+  }, [ownerRef]);
 
+  const ownerEl = ownerRef.current;
   const active = mathInsertManager.activeInsertion();
   if (!active || !ownerEl || active.el !== ownerEl) return null;
 

@@ -10,17 +10,24 @@
  * comparte el target con la textarea activa.
  */
 
-import { useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { mathInsertManager } from "../../lib/mathInsertManager";
 import { CATEGORIES, SYMBOLS, type MathCategory } from "../../lib/mathSymbols";
 
 const noBlur = (e: React.MouseEvent) => e.preventDefault();
 
-export function MathSymbolGrid({ canInsert = true }: { canInsert?: boolean }) {
+export function MathSymbolGrid() {
   const { t } = useTranslation();
   const [activeCat, setActiveCat] = useState<MathCategory>("greek");
   const symbols = SYMBOLS[activeCat];
+
+  // Refleja el estado real del manager: si no hay campo registrado como
+  // target, los símbolos se ven deshabilitados (feedback honesto en vez de
+  // "clic sin efecto"). Nos re-renderizamos cuando cambia el target.
+  const [, force] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => mathInsertManager.subscribe(force), []);
+  const canInsert = mathInsertManager.insertionMode() !== "none";
 
   return (
     <div
@@ -60,6 +67,13 @@ export function MathSymbolGrid({ canInsert = true }: { canInsert?: boolean }) {
           </button>
         ))}
       </div>
+
+      {/* Hint cuando no hay campo enfocado: explica por qué se ven apagados. */}
+      {!canInsert && (
+        <div style={{ padding: "5px 8px", fontSize: 10, color: "var(--fg-faint)", fontStyle: "italic", borderBottom: "1px solid var(--border-subtle)" }}>
+          {t("math_editor.palette_no_target")}
+        </div>
+      )}
 
       {/* Grid */}
       <div

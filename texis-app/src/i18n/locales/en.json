@@ -3238,6 +3238,7 @@
     "add_case": "Add case",
     "case_if": "if",
     "case_expr_placeholder": "expression",
-    "case_cond_placeholder": "\\text{if } x > 0"
+    "case_cond_placeholder": "\\text{if } x > 0",
+    "palette_no_target": "Click a field above to insert symbols there."
   }
 }

@@ -19,7 +19,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { MathEngine } from "@texisstudio/plugins/engines/math-engine/engine.js";
 import type { MathEngineDocument, MathMode, MathNode, SystemDocument } from "../../types-engines";
-import { mathInsertManager, findNextEmptySlot, findPrevEmptySlot } from "../../lib/mathInsertManager";
+import { useMathField } from "../../lib/useMathField";
 import { KaTeXPreview } from "../../views/editor/BlockEditors";
 import { MathSymbolGrid } from "./MathSymbolGrid";
 import { SlotLegend } from "../SlotLegend";
@@ -153,11 +153,17 @@ function TreeBody({ doc, onChange }: { doc: MathEngineDocument; onChange: (d: Ma
   const { t } = useTranslation();
   const tree = doc.tree;
 
+  // Flag de "consumo único": al agregar una fila, marcamos para que la última
+  // SymbolRow se enfoque al montar. Se limpia en un effect post-commit (corre
+  // DESPUÉS del mount-effect del hijo, que ya leyó el flag).
+  const focusLastRef = useRef(false);
+  useEffect(() => { focusLastRef.current = false; });
+
   const updateNode = (i: number, node: MathNode) => {
     const next = tree.map((n, idx) => (idx === i ? node : n));
     onChange({ ...doc, tree: next });
   };
-  const addRow = () => onChange(addRowT(doc));
+  const addRow = () => { focusLastRef.current = true; onChange(addRowT(doc)); };
   const addCasesBlock = () => onChange(addCasesBlockT(doc));
   const removeRow = (i: number) => onChange(removeRowT(doc, i));
 
@@ -189,6 +195,7 @@ function TreeBody({ doc, onChange }: { doc: MathEngineDocument; onChange: (d: Ma
             onRemove={() => removeRow(i)}
             placeholder={doc.mode === "align" ? "x &= y + z" : "f(x) = \\sin(x)"}
             rowLabel={t("math_editor.row_n", { n: i + 1 })}
+            autoFocusOnMount={focusLastRef.current && i === tree.length - 1}
           />
         );
       })}
@@ -211,11 +218,15 @@ function TreeBody({ doc, onChange }: { doc: MathEngineDocument; onChange: (d: Ma
 function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: SystemDocument) => void }) {
   const { t } = useTranslation();
 
+  const focusLastRef = useRef(false);
+  useEffect(() => { focusLastRef.current = false; });
+
   const setEquation = (i: number, value: string) => {
     const equations = doc.equations.map((e, idx) => (idx === i ? value : e));
     onChange({ ...doc, equations });
   };
   const addEquation = () => {
+    focusLastRef.current = true;
     onChange({ ...doc, equations: [...doc.equations, "x &= 0"] });
   };
   const removeEquation = (i: number) => {
@@ -236,6 +247,7 @@ function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: Syst
           onRemove={() => removeEquation(i)}
           placeholder="x_1 + 2 x_2 &= 3"
           rowLabel={t("math_editor.row_n", { n: i + 1 })}
+          autoFocusOnMount={focusLastRef.current && i === doc.equations.length - 1}
         />
       ))}
       <button type="button" className="btn btn-ghost btn-sm" onClick={addEquation} style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)" }}>
@@ -262,41 +274,19 @@ function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: Syst
 // ───────────────────────────────────────────────────────────────────────────
 
 function SymbolRow({
-  value, onChange, onRemove, placeholder, rowLabel,
+  value, onChange, onRemove, placeholder, rowLabel, autoFocusOnMount,
 }: {
   value: string;
   onChange: (v: string) => void;
   onRemove: () => void;
   placeholder: string;
   rowLabel: string;
+  autoFocusOnMount?: boolean;
 }) {
   const { t } = useTranslation();
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-
-  // Cada fila se registra al hacer foco, para que la paleta inserte aquí.
-  const handleFocus = () => {
-    if (ref.current) mathInsertManager.register(ref.current, (v) => onChangeRef.current(v), "equation");
-  };
-  const handleBlur = () => {
-    if (ref.current) mathInsertManager.unregister(ref.current);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      const el = ref.current;
-      if (!el) return;
-      const pos = el.selectionEnd ?? 0;
-      const target = e.shiftKey
-        ? findPrevEmptySlot(el.value, pos)
-        : findNextEmptySlot(el.value, pos + 1);
-      if (target !== null) {
-        e.preventDefault();
-        el.setSelectionRange(target, target);
-      }
-    }
-  };
+  // Contrato unificado de campo de matemáticas: sticky-target + Tab entre
+  // cajas + cleanup en unmount. Misma implementación que el bloque inline.
+  const { ref, handlers } = useMathField<HTMLTextAreaElement>(onChange, { autoFocusOnMount });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -306,9 +296,7 @@ function SymbolRow({
           ref={ref}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
+          {...handlers}
           placeholder={placeholder}
           spellCheck={false}
           rows={1}
@@ -329,7 +317,7 @@ function SymbolRow({
           ×
         </button>
       </div>
-      <SlotLegend ownerEl={ref.current} />
+      <SlotLegend ownerRef={ref} />
     </div>
   );
 }
@@ -357,27 +345,35 @@ function CasesRow({
       </div>
       {cases.map((c, i) => (
         <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input
-            value={c.expr}
-            onChange={(e) => setCase(i, "expr", e.target.value)}
-            placeholder={t("math_editor.case_expr_placeholder")}
-            spellCheck={false}
-            style={{ ...inputStyle, fontFamily: "var(--font-mono)", flex: 1 }}
-          />
+          <CaseField value={c.expr} onChange={(v) => setCase(i, "expr", v)} placeholder={t("math_editor.case_expr_placeholder")} />
           <span style={{ color: "var(--fg-faint)", fontSize: 11 }}>{t("math_editor.case_if")}</span>
-          <input
-            value={c.cond}
-            onChange={(e) => setCase(i, "cond", e.target.value)}
-            placeholder={t("math_editor.case_cond_placeholder")}
-            spellCheck={false}
-            style={{ ...inputStyle, fontFamily: "var(--font-mono)", flex: 1 }}
-          />
+          <CaseField value={c.cond} onChange={(v) => setCase(i, "cond", v)} placeholder={t("math_editor.case_cond_placeholder")} />
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeCase(i)} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>×</button>
         </div>
       ))}
       <button type="button" className="btn btn-ghost btn-sm" onClick={addCase} style={{ alignSelf: "flex-start", fontSize: "var(--fs-xs)", marginTop: 2 }}>
         + {t("math_editor.add_case")}
       </button>
+    </div>
+  );
+}
+
+/** Campo expr/cond de un bloque cases. Usa el mismo contrato de math-field
+ *  (sticky-target + Tab + SlotLegend) que las filas, sobre un <input>. */
+function CaseField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  const { ref, handlers } = useMathField<HTMLInputElement>(onChange);
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+      <input
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        {...handlers}
+        placeholder={placeholder}
+        spellCheck={false}
+        style={{ ...inputStyle, fontFamily: "var(--font-mono)", width: "100%", boxSizing: "border-box" }}
+      />
+      <SlotLegend ownerRef={ref} />
     </div>
   );
 }

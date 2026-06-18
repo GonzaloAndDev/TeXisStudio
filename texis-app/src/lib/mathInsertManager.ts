@@ -2,23 +2,46 @@
  * Singleton that routes math-symbol insertions from the side panel to the
  * right destination in the document:
  *
- *  1. If an equation textarea is currently focused (a "live target"), the
- *     snippet is inserted at the cursor inside it.
+ *  1. If an equation textarea is the live target, the snippet is inserted at
+ *     the cursor inside it.
  *  2. Otherwise, if the host view has registered a `creator`, the snippet
  *     is used to spawn a new equation block in the document. This is the
  *     "dedicated block" path — the panel never dumps raw LaTeX into a
  *     paragraph or arbitrary text field.
  *  3. With neither path available, insert() is a no-op.
  *
- * Only equation textareas register as live targets (kind: "equation").
- * Paragraph / raw-latex textareas intentionally do NOT register, so a
- * panel click while editing a paragraph creates a new equation block
- * rather than corrupting the paragraph with raw LaTeX.
+ * ── Modelo "sticky target" (unificado entre el bloque inline y el plugin) ──
+ *
+ * TODOS los textareas de matemáticas siguen el mismo contrato:
+ *   • onFocus   → register(): este textarea pasa a ser el target activo.
+ *   • onBlur    → clearActiveInsertion(): solo oculta el legend de slots; el
+ *                 target sigue apuntando aquí (sticky), de modo que un clic en
+ *                 la paleta inserta en la última caja donde estuvo el cursor,
+ *                 aunque el foco se haya ido al hacer clic en el botón.
+ *   • onUnmount → unregister(): libera el target SOLO si seguía siendo este
+ *                 (fila eliminada, modal cerrado, bloque desmontado). Evita
+ *                 que el manager retenga un <textarea> ya desconectado.
+ *
+ * insert() valida `el.isConnected` antes de escribir: si el target quedó
+ * huérfano (desmontado sin cleanup), cae al creator o a no-op en vez de
+ * escribir en un nodo muerto.
+ *
+ * Solo textareas de ecuación registran como target (kind: "equation").
+ * Párrafos / raw-latex NO registran, así un clic en la paleta mientras se
+ * edita un párrafo crea un bloque de ecuación nuevo en vez de corromperlo.
  */
 
 import { OPERATOR_SLOTS, computeSlotRanges } from "./mathSymbols";
 
 type TargetKind = "equation";
+
+/**
+ * Cualquier campo que pueda recibir LaTeX desde la paleta. Aceptamos tanto
+ * <textarea> (filas de ecuación, bloque inline) como <input> (campos expr/cond
+ * de los bloques cases). Ambos exponen value, selectionStart/End y
+ * setSelectionRange, que es todo lo que necesitan el slot-nav y el insert.
+ */
+export type MathField = HTMLTextAreaElement | HTMLInputElement;
 
 /** True if the pair at index `i` is an empty `{}` or `[]` slot. */
 function isEmptySlotAt(text: string, i: number): boolean {
@@ -63,7 +86,7 @@ export function findPrevEmptySlot(text: string, before: number): number | null {
 }
 
 interface MathTarget {
-  el: HTMLTextAreaElement;
+  el: MathField;
   onChange: (v: string) => void;
   kind: TargetKind;
 }
@@ -78,7 +101,7 @@ interface MathTarget {
  *   - el cursor se aleja del primer al último slot (lo decide el consumidor)
  */
 export interface ActiveInsertion {
-  el: HTMLTextAreaElement;
+  el: MathField;
   latex: string;
   nameKey: string;
   slots: Array<{ start: number; end: number; labelKey: string }>;
@@ -90,19 +113,22 @@ let _listeners: Array<() => void> = [];
 let _activeInsertion: ActiveInsertion | null = null;
 
 export const mathInsertManager = {
-  /** Call on equation-textarea focus to register it as the active target. */
-  register(el: HTMLTextAreaElement, onChange: (v: string) => void, kind: TargetKind = "equation"): void {
+  /** Call on math-field focus to register it as the active (sticky) target. */
+  register(el: MathField, onChange: (v: string) => void, kind: TargetKind = "equation"): void {
     _current = { el, onChange, kind };
     _notify();
   },
 
-  /** Call on textarea blur to unregister (only if it's still the active one). */
-  unregister(el: HTMLTextAreaElement): void {
+  /**
+   * Call on UNMOUNT (not blur) to release the target if it's still this el.
+   * Blur must NOT call this — the target is sticky so the palette keeps
+   * inserting into the last-focused row even after focus moves to a button.
+   */
+  unregister(el: MathField): void {
     if (_current?.el === el) {
       _current = null;
       _notify();
     }
-    // El legend de slots se invalida al perder foco la textarea origen.
     if (_activeInsertion?.el === el) {
       _activeInsertion = null;
       _notify();
@@ -170,6 +196,12 @@ export const mathInsertManager = {
    * spawned in the document.
    */
   insert(latex: string): void {
+    // Si el target quedó desconectado del DOM (desmontado sin cleanup), no
+    // escribimos en un nodo muerto: lo soltamos y caemos al creator/no-op.
+    if (_current && !_current.el.isConnected) {
+      _current = null;
+      _activeInsertion = null;
+    }
     if (_current) {
       const { el, onChange } = _current;
       const start = el.selectionStart ?? el.value.length;
