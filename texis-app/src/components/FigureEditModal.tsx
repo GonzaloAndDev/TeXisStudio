@@ -229,6 +229,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
     let cancelled = false;
     setFullCodeBusy(true); setFullCodeError(null);
     const url = convertFileSrc(`${projectPath}/texisstudio-assets/figures/${block.figureId}/output.tex`);
+    if (!url) { setFullCodeBusy(false); return; } // navegador sin Tauri: sin asset servible
     fetch(`${url}?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => { if (!r.ok) throw new Error(); return r.text(); })
       .then((text) => { if (!cancelled) { setFullCode(text); setFullCodeDraft(text); } })
@@ -529,7 +530,7 @@ export function FigureEditModal({ block, projectPath, onUpdate, onClose }: Props
                   {previewError}
                 </div>
               )}
-              {previewPdfPath && (
+              {previewPdfPath && convertFileSrc(previewPdfPath) && (
                 <div style={{ overflow: "hidden", border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", background: "#fff" }}>
                   <PdfPagePreview
                     src={`${convertFileSrc(previewPdfPath)}?t=${previewVersion}`}

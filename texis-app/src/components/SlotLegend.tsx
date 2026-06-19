@@ -32,7 +32,17 @@ export function SlotLegend({ ownerRef }: { ownerRef: RefObject<MathField | null>
 
   useEffect(() => mathInsertManager.subscribe(force), []);
 
+  const ownerEl = ownerRef.current;
+  const active = mathInsertManager.activeInsertion();
+  // Este legend solo es "el activo" si el manager apunta a NUESTRO campo.
+  const isActive = !!active && !!ownerEl && active.el === ownerEl;
+
+  // El listener de selectionchange (que actualiza el resaltado del slot) solo
+  // se monta en el legend ACTIVO. Antes cada instancia (una por fila/caso)
+  // mantenía su propio listener global y todos se disparaban en cada
+  // movimiento de cursor → O(N). Ahora hay como mucho UNO a la vez.
   useEffect(() => {
+    if (!isActive) return;
     const onSel = () => {
       const el = ownerRef.current;
       if (el && document.activeElement === el) {
@@ -41,11 +51,9 @@ export function SlotLegend({ ownerRef }: { ownerRef: RefObject<MathField | null>
     };
     document.addEventListener("selectionchange", onSel);
     return () => document.removeEventListener("selectionchange", onSel);
-  }, [ownerRef]);
+  }, [isActive, ownerRef]);
 
-  const ownerEl = ownerRef.current;
-  const active = mathInsertManager.activeInsertion();
-  if (!active || !ownerEl || active.el !== ownerEl) return null;
+  if (!isActive || !active) return null;
 
   // Slot activo: el que envuelve al cursor. Como cada slot empieza colapsado
   // en `{}`, usamos heurística por rangos: cursor entre slot[i].start y

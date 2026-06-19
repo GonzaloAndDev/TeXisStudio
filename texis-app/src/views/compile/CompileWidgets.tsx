@@ -333,7 +333,9 @@ export function PdfViewer({ pdfPath }: { pdfPath: string }) {
     // convertFileSrc convierte una ruta nativa a una URL asset:// que el webview
     // puede cargar aunque el archivo esté fuera del recurso bundle.
     try {
-      setAssetUrl(convertFileSrc(pdfPath));
+      // "" (navegador sin Tauri) → null para que caiga al placeholder en vez
+      // de poner un src vacío que recargaría la página en el iframe/embed.
+      setAssetUrl(convertFileSrc(pdfPath) || null);
     } catch {
       setAssetUrl(null);
     }

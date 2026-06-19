@@ -31,6 +31,10 @@ function PluginFigurePdfPreview({
 
     const path = `${projectPath}/texisstudio-assets/figures/${block.figureId}/preview.pdf`;
     const url = convertFileSrc(path);
+    // Sin runtime Tauri (dev en navegador) no hay asset:// servible: convertir
+    // devuelve "" y evitamos el sondeo HEAD (10 reintentos contra el origen del
+    // dev server) que de otro modo llenaría la consola de errores.
+    if (!url) return;
 
     // Poll briefly so a just-triggered background compile can finish.
     let attempt = 0;

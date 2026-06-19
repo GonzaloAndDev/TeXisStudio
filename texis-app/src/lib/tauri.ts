@@ -219,16 +219,20 @@ export async function invokeTauri<T>(cmd: string, args?: Record<string, unknown>
 /**
  * Safe wrapper sobre convertFileSrc. La función real de Tauri lee
  * `window.__TAURI_INTERNALS__`, que NO existe en desarrollo en navegador, así
- * que llamarla ahí lanza "Cannot read properties of undefined". En navegador
- * devolvemos la ruta cruda (el `fetch` posterior simplemente fallará en HEAD y
- * el preview se queda vacío, sin tumbar la app). En Tauri delega normal.
+ * que llamarla ahí lanza "Cannot read properties of undefined".
+ *
+ * En navegador devolvemos cadena vacía — un CENTINELA de "no hay asset". Los
+ * consumidores deben tratar "" como "sin URL" y SALTARSE el fetch/render, en
+ * vez de sondear una ruta cruda contra el origen del dev server (que provoca
+ * reintentos HEAD fallidos y mete la ruta local absoluta en el DOM). En Tauri
+ * delega normal.
  */
 export function safeConvertFileSrc(path: string): string {
-  if (!isTauri()) return path;
+  if (!isTauri()) return "";
   try {
     return convertFileSrc(path);
   } catch {
-    return path;
+    return "";
   }
 }
 
