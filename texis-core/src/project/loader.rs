@@ -9,8 +9,30 @@ pub struct ProjectLoader;
 
 impl ProjectLoader {
     pub fn load_from_file(&self, path: &Path) -> CoreResult<ProjectModel> {
-        let content = std::fs::read_to_string(path).map_err(CoreError::Io)?;
-        self.load_from_str(&content, &path.to_string_lossy())
+        match std::fs::read_to_string(path) {
+            Ok(content) => self.load_from_str(&content, &path.to_string_lossy()),
+            // Recuperación ante crash en la ventana del save atómico (ver
+            // ProjectSaver::save_to_file): si el proceso murió tras renombrar el
+            // original a `.bak` y antes de mover el `.tmp` a su lugar, el `.yaml`
+            // principal falta, pero el `.tmp` (versión nueva completa) y el
+            // `.bak` (última buena) siguen en disco. Preferimos `.tmp` (más
+            // reciente) y luego `.bak`; restauramos al nombre principal para
+            // dejar el estado consistente. Sin esto, un crash en esa ventana
+            // dejaba la tesis "perdida" pese a estar recuperable en disco.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                for ext in ["yaml.tmp", "yaml.bak"] {
+                    let sidecar = path.with_extension(ext);
+                    if let Ok(content) = std::fs::read_to_string(&sidecar) {
+                        if let Ok(model) = self.load_from_str(&content, &sidecar.to_string_lossy()) {
+                            let _ = std::fs::rename(&sidecar, path);
+                            return Ok(model);
+                        }
+                    }
+                }
+                Err(CoreError::Io(e))
+            }
+            Err(e) => Err(CoreError::Io(e)),
+        }
     }
 
     pub fn load_from_str(&self, content: &str, source: &str) -> CoreResult<ProjectModel> {

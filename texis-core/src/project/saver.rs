@@ -138,6 +138,43 @@ mod tests {
             .unwrap();
         assert_eq!(bak.metadata.title, "v2");
     }
+
+    #[test]
+    fn recupera_de_tmp_si_el_yaml_principal_falta() {
+        // Simula un crash en la ventana del save atómico: el .yaml principal no
+        // existe, pero el .tmp (nueva versión completa) sí. El loader debe
+        // recuperarlo y restaurarlo al nombre principal.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tesis.project.yaml");
+        let saver = ProjectSaver;
+        saver.save_to_file(&dummy_model("v1"), &path).unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        std::fs::write(path.with_extension("yaml.tmp"), &content).unwrap();
+
+        let loader = ProjectLoader;
+        let model = loader.load_from_file(&path).unwrap();
+        assert_eq!(model.metadata.title, "v1");
+        assert!(path.exists(), "el loader debe restaurar el .yaml principal");
+    }
+
+    #[test]
+    fn recupera_de_bak_si_faltan_principal_y_tmp() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tesis.project.yaml");
+        let saver = ProjectSaver;
+        saver.save_to_file(&dummy_model("buena"), &path).unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        std::fs::write(path.with_extension("yaml.bak"), &content).unwrap();
+
+        let loader = ProjectLoader;
+        let model = loader.load_from_file(&path).unwrap();
+        assert_eq!(model.metadata.title, "buena");
+        assert!(path.exists(), "el loader debe restaurar el .yaml principal");
+    }
 }
 
 use super::model::ProjectModel;
