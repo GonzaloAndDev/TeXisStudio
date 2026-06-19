@@ -2112,6 +2112,7 @@
     "alias_placeholder": "Alias (ej: mi-lab-terminos)",
     "adding": "Añadiendo…",
     "catalog_error": "No se pudo cargar el catálogo de vocabularios. Revisa tu conexión e inténtalo de nuevo.",
+    "install_error": "No se pudo instalar el pack",
     "repo_sync_error": "No se pudo sincronizar este repositorio.",
     "repo_add_error": "No se pudo añadir el repositorio. Revisa su dirección e inténtalo de nuevo."
   },

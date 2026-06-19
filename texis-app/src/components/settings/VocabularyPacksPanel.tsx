@@ -9,9 +9,9 @@ export function VocabularyPacksPanel() {
   const { t } = useTranslation();
   const {
     officialPacks, catalogLoading, catalogError,
-    installed, installing,
+    installed, installing, installError,
     customRepos, repoLoading,
-    loadOfficialCatalog, install, uninstall, isInstalled,
+    loadOfficialCatalog, install, uninstall, clearInstallError, isInstalled,
     addRepo, removeRepo, syncRepo,
   } = useVocabPacksStore();
 
@@ -102,6 +102,13 @@ export function VocabularyPacksPanel() {
       {catalogError && (
         <div style={{ color: "var(--build-err)", fontSize: "var(--fs-xs)", marginBottom: 10 }}>
           {t("vocabulary.catalog_error")}
+        </div>
+      )}
+
+      {installError && (
+        <div style={{ color: "var(--build-err)", fontSize: "var(--fs-xs)", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ flex: 1 }}>{t("vocabulary.install_error")}: {installError}</span>
+          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={clearInstallError}>{t("common.dismiss", "OK")}</button>
         </div>
       )}
 
@@ -204,7 +211,7 @@ export function VocabularyPacksPanel() {
                   {t("vocabulary.remove")}
                 </button>
               ) : (
-                <button className="btn btn-sm btn-accent" style={{ fontSize: 11 }} disabled={installingPack} onClick={() => install(pack).catch(() => {})}>
+                <button className="btn btn-sm btn-accent" style={{ fontSize: 11 }} disabled={installingPack} onClick={() => void install(pack)}>
                   {installingPack ? "…" : <><IconDownload size={11} /> {t("vocabulary.install")}</>}
                 </button>
               )}

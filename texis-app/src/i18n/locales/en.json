@@ -2112,6 +2112,7 @@
     "alias_placeholder": "Alias (e.g. my-lab-terms)",
     "adding": "Adding…",
     "catalog_error": "Could not load the vocabulary catalog. Check your connection and try again.",
+    "install_error": "The pack could not be installed",
     "repo_sync_error": "Could not synchronize this repository.",
     "repo_add_error": "Could not add the repository. Check its address and try again."
   },

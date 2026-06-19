@@ -21,6 +21,10 @@ interface VocabPacksState {
   installed: InstalledVocabPack[];
   installing: Set<string>;
   uninstalling: Set<string>;
+  /** Último error de instalación (red, pack inválido, cuota). null = sin error.
+   *  Antes un fallo de install se tragaba silenciosamente: el spinner paraba y
+   *  el usuario no veía nada. Ahora se surface en el panel. */
+  installError: string | null;
 
   // Custom repos
   customRepos: CustomVocabRepo[];
@@ -30,6 +34,7 @@ interface VocabPacksState {
   loadOfficialCatalog: () => Promise<void>;
   install: (entry: VocabPackEntry) => Promise<void>;
   uninstall: (id: string) => void;
+  clearInstallError: () => void;
   isInstalled: (id: string) => boolean;
   addRepo: (alias: string, url: string) => Promise<void>;
   removeRepo: (id: string) => void;
@@ -44,6 +49,7 @@ export const useVocabPacksStore = create<VocabPacksState>((set, get) => ({
   installed: loadInstalledVocabPacks(),
   installing: new Set(),
   uninstalling: new Set(),
+  installError: null,
   customRepos: loadCustomRepos(),
   repoLoading: false,
 
@@ -61,7 +67,7 @@ export const useVocabPacksStore = create<VocabPacksState>((set, get) => ({
   install: async (entry) => {
     const { installing } = get();
     if (installing.has(entry.id)) return;
-    set((s) => ({ installing: new Set([...s.installing, entry.id]) }));
+    set((s) => ({ installing: new Set([...s.installing, entry.id]), installError: null }));
     try {
       await installVocabPack(entry);
       set((s) => {
@@ -70,14 +76,16 @@ export const useVocabPacksStore = create<VocabPacksState>((set, get) => ({
         return { installing: next, installed: loadInstalledVocabPacks() };
       });
     } catch (e) {
+      // Surface el error en estado (el panel lo muestra) en vez de tragarlo.
       set((s) => {
         const next = new Set(s.installing);
         next.delete(entry.id);
-        return { installing: next };
+        return { installing: next, installError: String(e) };
       });
-      throw e;
     }
   },
+
+  clearInstallError: () => set({ installError: null }),
 
   uninstall: (id) => {
     set((s) => ({ uninstalling: new Set([...s.uninstalling, id]) }));
