@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import type { ChemEngineDocument, ChemElement, ChemFormula, ChemReaction } from "../../types-engines";
+import type { ChemEngineDocument, ChemElement, ChemFormula, ChemReaction, ChemStructure, ChemStructureTemplate } from "../../types-engines";
 
 interface Props {
   doc: ChemEngineDocument;
@@ -9,6 +9,13 @@ interface Props {
 
 const ARROW_OPTIONS = ["->", "<->", "<=>", "->[above][below]"] as const;
 const STATE_OPTIONS = ["", "s", "l", "g", "aq"] as const;
+// Plantillas chemfig integradas (todas verificadas como compilables en el
+// motor). Deben coincidir con ChemStructureTemplate.
+const STRUCTURE_TEMPLATES: ChemStructureTemplate[] = [
+  "benzene", "cyclohexane", "cyclopentane", "naphthalene",
+  "phenol", "toluene", "aniline", "benzoic-acid",
+  "methane", "ethanol", "acetic-acid", "glucose-chain",
+];
 
 function newFormula(): ChemFormula {
   return { type: "formula", text: "H2O" };
@@ -21,6 +28,10 @@ function newReaction(): ChemReaction {
     products: [{ type: "formula", text: "B" }],
     arrow: "->",
   };
+}
+
+function newStructure(): ChemStructure {
+  return { type: "structure", template: "benzene" };
 }
 
 export function ChemistryEditor({ doc, onChange }: Props) {
@@ -41,6 +52,10 @@ export function ChemistryEditor({ doc, onChange }: Props) {
 
   const addReaction = useCallback(() => {
     onChange({ ...doc, elements: [...doc.elements, newReaction()] });
+  }, [doc, onChange]);
+
+  const addStructure = useCallback(() => {
+    onChange({ ...doc, elements: [...doc.elements, newStructure()] });
   }, [doc, onChange]);
 
   const updateReactant = useCallback((elIdx: number, rIdx: number, text: string) => {
@@ -87,7 +102,9 @@ export function ChemistryEditor({ doc, onChange }: Props) {
         <div key={idx} style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span style={badgeStyle}>
-              {el.type === "formula" ? t("chem.formula", "Fórmula") : t("chem.reaction", "Reacción")}
+              {el.type === "formula" ? t("chem.formula", "Fórmula")
+                : el.type === "reaction" ? t("chem.reaction", "Reacción")
+                : t("chem.structure", "Estructura")}
             </span>
             <button onClick={() => deleteElement(idx)} style={deleteBtnStyle} title={t("visual_editor.delete")}>✕</button>
           </div>
@@ -195,12 +212,46 @@ export function ChemistryEditor({ doc, onChange }: Props) {
               </div>
             </div>
           )}
+
+          {el.type === "structure" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <label style={labelStyle}>{t("chem.template", "Plantilla")}</label>
+                <select
+                  value={el.template ?? ""}
+                  onChange={(e) => updateElement(idx, { ...el, template: (e.target.value || undefined) as ChemStructureTemplate | undefined })}
+                  style={selectStyle}
+                >
+                  <option value="">{t("chem.template_custom", "— personalizada (chemfig) —")}</option>
+                  {STRUCTURE_TEMPLATES.map((tpl) => (
+                    <option key={tpl} value={tpl}>{t(`chem.tpl_${tpl}`, tpl)}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Escape hatch: chemfig crudo. Tiene prioridad sobre la plantilla. */}
+              <label style={labelStyle}>{t("chem.chemfig_source", "chemfig crudo (avanzado, opcional)")}</label>
+              <textarea
+                value={el.chemfigSource ?? ""}
+                onChange={(e) => updateElement(idx, { ...el, chemfigSource: e.target.value || undefined })}
+                placeholder={"\\chemfig{*6(=-=-=-)}"}
+                spellCheck={false}
+                rows={2}
+                style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 12, width: "100%", boxSizing: "border-box", resize: "vertical" }}
+              />
+              <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>
+                {el.chemfigSource?.trim()
+                  ? t("chem.chemfig_overrides", "El chemfig crudo se usará en vez de la plantilla.")
+                  : t("chem.template_hint", "Elige una plantilla; o escribe chemfig crudo para estructuras a medida.")}
+              </span>
+            </div>
+          )}
         </div>
       ))}
 
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={addFormula} style={addBtnStyle}>+ {t("chem.add_formula", "Fórmula")}</button>
         <button onClick={addReaction} style={addBtnStyle}>+ {t("chem.add_reaction", "Reacción")}</button>
+        <button onClick={addStructure} style={addBtnStyle}>+ {t("chem.add_structure", "Estructura")}</button>
       </div>
 
       {doc.elements.length === 0 && (

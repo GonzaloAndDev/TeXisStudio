@@ -8,6 +8,8 @@ import type { TableDataDocument, DataColumn } from "../../types-engines";
 import { nextColId } from "./transforms";
 
 const COL_TYPES = ["number", "text", "label", "category"] as const;
+// "auto" = sin override (se infiere del tipo). "decimal" = columna S de siunitx.
+const COL_ALIGNS = ["auto", "left", "center", "right", "decimal"] as const;
 
 interface Props {
   doc: TableDataDocument;
@@ -77,6 +79,17 @@ export function TableDataEditor({ doc, onChange }: Props) {
                         style={{ ...cellInputStyle, fontSize: 9, padding: "2px 4px" }}
                       >
                         {COL_TYPES.map((ct) => <option key={ct} value={ct}>{ct}</option>)}
+                      </select>
+                      <select
+                        value={col.align ?? "auto"}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          updateColumn(col.id, { align: v === "auto" ? undefined : (v as NonNullable<DataColumn["align"]>) });
+                        }}
+                        title={t("visual_editor.col_align_hint")}
+                        style={{ ...cellInputStyle, fontSize: 9, padding: "2px 4px" }}
+                      >
+                        {COL_ALIGNS.map((a) => <option key={a} value={a}>{t(`visual_editor.align_${a}`)}</option>)}
                       </select>
                       <button onClick={() => deleteColumn(col.id)} style={{ fontSize: 9, border: "none", background: "transparent", color: "var(--fg-faint)", cursor: "pointer" }}>✕ {t("visual_editor.delete_col")}</button>
                     </div>
