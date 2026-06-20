@@ -72,7 +72,7 @@ pub async fn compile_project(
     // ── Paso 1: generar LaTeX (síncrono, rápido) ──────────────────
     let _ = app.emit("compile://log", "→ Generando archivos LaTeX…");
     let loader = ProjectLoader;
-    let model = loader.load_from_file(&yaml_path).map_err(err)?;
+    let mut model = loader.load_from_file(&yaml_path).map_err(err)?;
 
     use texis_core::project::model::LatexEngine;
     let engine_flag = match model.latex_config.engine {
@@ -106,6 +106,28 @@ pub async fn compile_project(
             None
         }
     };
+
+    // ── Reconciliar el backend de bibliografía con el compilador activo ──
+    // biber con suite (latexmk); bibtex con Tectonic salvo estilos que exijan
+    // biber. Así el `\usepackage[backend=…]{biblatex}` que se genera casa con
+    // lo que de verdad se ejecutará (evita el desajuste biber/biblatex bajo
+    // Tectonic). Se hace ANTES del sync para que main.tex salga consistente.
+    {
+        use texis_core::bibliography::backend_policy;
+        let compiler_kind = compiler_kind_for(&backend_name);
+        let style = model.latex_config.bibliography_style.clone();
+        model.latex_config.bibliography_backend = backend_policy::resolve_backend(
+            &style,
+            model.latex_config.bibliography_backend.clone(),
+            compiler_kind.clone(),
+        );
+        if backend_policy::needs_full_suite(&style, compiler_kind) {
+            let _ = app.emit(
+                "compile://log",
+                format!("⚠ El estilo «{style}» usa biber; con Tectonic la versión de biber puede no coincidir. Para máxima estabilidad, usa una suite completa (TeX Live/MiKTeX)."),
+            );
+        }
+    }
 
     let mut document_engine = DocumentEngine::load(&path).map_err(err)?;
     document_engine
@@ -228,6 +250,25 @@ pub fn cancel_compile(state: tauri::State<'_, CompileState>) {
 }
 
 // ── Lógica interna ────────────────────────────────────────────────
+
+/// Determina, de forma TOLERANTE (sin error), qué compilador se usará — solo
+/// para la política de bibliografía. No falla si no hay compilador: en ese
+/// caso el preflight más adelante dará la guía de instalación. "auto" prefiere
+/// latexmk (suite) si está disponible, igual que `resolve_backend`.
+fn compiler_kind_for(name: &str) -> texis_core::project::model::CompilerKind {
+    use std::process::Command;
+    use texis_core::compiler::detector::resolve_latex_command;
+    use texis_core::project::model::CompilerKind;
+    match name {
+        "tectonic" => CompilerKind::Tectonic,
+        "latexmk" => CompilerKind::Latexmk,
+        _ => {
+            let latexmk_cmd = resolve_latex_command("latexmk");
+            let latexmk_ok = Command::new(&latexmk_cmd).arg("--version").output().is_ok();
+            if latexmk_ok { CompilerKind::Latexmk } else { CompilerKind::Tectonic }
+        }
+    }
+}
 
 /// Elige el backend disponible: devuelve el nombre del binario a usar.
 fn resolve_backend(name: &str) -> Result<&'static str, String> {

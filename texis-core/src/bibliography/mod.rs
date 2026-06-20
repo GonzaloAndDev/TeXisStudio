@@ -1,3 +1,4 @@
+pub mod backend_policy;
 pub mod exporters;
 pub mod formatter;
 pub mod manager;
