@@ -28,7 +28,8 @@
     "working": "处理中…",
     "language_picker_title": "语言",
     "collapse": "崩溃",
-    "expand": "展开"
+    "expand": "展开",
+    "dismiss": "关闭"
   },
   "lang": {
     "picker_label": "界面语言",
@@ -2073,7 +2074,8 @@
     "all_areas": "所有区域",
     "catalog_error": "无法加载词汇目录。检查您的连接并重试。",
     "repo_sync_error": "无法同步此存储库。",
-    "repo_add_error": "无法添加存储库。检查其地址并重试。"
+    "repo_add_error": "无法添加存储库。检查其地址并重试。",
+    "install_error": "该包无法安装"
   },
   "profile_wizard": {
     "step_of": "{{total}}的步骤{{current}}",
@@ -2553,7 +2555,8 @@
           ]
         }
       }
-    }
+    },
+    "how_to_update": "如何保持更新"
   },
   "figure_picker": {
     "title": "插入生成的图形",
@@ -2887,7 +2890,13 @@
       "timeline_gantt": {
         "description": "包含组、任务和依赖关系的甘特图和时间线。"
       }
-    }
+    },
+    "col_align_hint": "列对齐。 'decimal' 按小数点对齐数字（siunitx S 列）。",
+    "align_auto": "汽车",
+    "align_left": "左",
+    "align_center": "中心",
+    "align_right": "对",
+    "align_decimal": "小数"
   },
   "help": {
     "title": "帮助中心",
@@ -3011,7 +3020,26 @@
     "add_reaction": "反应",
     "add_reactant": "反应物",
     "add_product": "生成物",
-    "empty_hint": "请添加化学式或反应以开始。"
+    "empty_hint": "请添加化学式或反应以开始。",
+    "add_structure": "结构",
+    "structure": "结构",
+    "template": "模板",
+    "template_custom": "— 定制 (chemfig) —",
+    "chemfig_source": "原始 chemfig（高级，可选）",
+    "chemfig_overrides": "将使用原始 chemfig 代替模板。",
+    "template_hint": "选择一个模板，或输入原始 chemfig 以获得自定义结构。",
+    "tpl_benzene": "苯",
+    "tpl_cyclohexane": "环己烷",
+    "tpl_cyclopentane": "环戊烷",
+    "tpl_naphthalene": "萘",
+    "tpl_phenol": "苯酚",
+    "tpl_toluene": "甲苯",
+    "tpl_aniline": "苯胺",
+    "tpl_benzoic-acid": "苯甲酸",
+    "tpl_methane": "甲烷",
+    "tpl_ethanol": "乙醇",
+    "tpl_acetic-acid": "醋酸",
+    "tpl_glucose-chain": "葡萄糖（开链）"
   },
   "circuit": {
     "components": "元件",
@@ -3248,6 +3276,14 @@
     "add_case": "添加案例",
     "case_if": "如果",
     "case_expr_placeholder": "表达",
-    "case_cond_placeholder": "\\text{如果} x > 0"
+    "case_cond_placeholder": "\\text{如果} x > 0",
+    "palette_no_target": "单击上面的字段可在其中插入符号。",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
+    "variables_placeholder": "x_1, x_2, x_3"
+  },
+  "plot_preview": {
+    "title": "实时预览（大约）",
+    "empty": "添加数据或函数来预览绘图。",
+    "unsupported": "实时预览不适用于：{{types}}。编译看看具体的结果。"
   }
 }

@@ -28,7 +28,8 @@
     "working": "処理中…",
     "language_picker_title": "言語",
     "collapse": "崩壊する",
-    "expand": "拡大する"
+    "expand": "拡大する",
+    "dismiss": "閉じる"
   },
   "lang": {
     "picker_label": "インターフェース言語",
@@ -2073,7 +2074,8 @@
     "adding": "追加中…",
     "catalog_error": "語彙カタログをロードできませんでした。接続を確認して、もう一度試してください。",
     "repo_sync_error": "このリポジトリを同期できませんでした。",
-    "repo_add_error": "リポジトリを追加できませんでした。アドレスを確認して、再試行してください。"
+    "repo_add_error": "リポジトリを追加できませんでした。アドレスを確認して、再試行してください。",
+    "install_error": "パックをインストールできませんでした"
   },
   "profile_wizard": {
     "step_of": "{{total}} の {{current}} をステップ",
@@ -2690,7 +2692,8 @@
           ]
         }
       }
-    }
+    },
+    "how_to_update": "常に最新の状態に保つ方法"
   },
   "readiness": {
     "panel_title": "プロジェクト進捗",
@@ -2887,7 +2890,13 @@
       "timeline_gantt": {
         "description": "グループ、タスク、依存関係を含むガント チャートとタイムライン。"
       }
-    }
+    },
+    "col_align_hint": "列の配置。 '10 進数' は、数値を小数点で揃えます (siunitx S 列)。",
+    "align_auto": "自動",
+    "align_left": "左",
+    "align_center": "センター",
+    "align_right": "そうだよ",
+    "align_decimal": "10進数"
   },
   "help": {
     "title": "ヘルプセンター",
@@ -3011,7 +3020,26 @@
     "add_reaction": "反応",
     "add_reactant": "反応物",
     "add_product": "生成物",
-    "empty_hint": "化学式または反応を追加してください。"
+    "empty_hint": "化学式または反応を追加してください。",
+    "add_structure": "構造",
+    "structure": "構造",
+    "template": "テンプレート",
+    "template_custom": "— カスタム (ケムフィグ) —",
+    "chemfig_source": "生の chemfig (詳細、オプション)",
+    "chemfig_overrides": "テンプレートの代わりに生の chemfig が使用されます。",
+    "template_hint": "テンプレートを選択するか、カスタム構造の raw chemfig を入力します。",
+    "tpl_benzene": "ベンゼン",
+    "tpl_cyclohexane": "シクロヘキサン",
+    "tpl_cyclopentane": "シクロペンタン",
+    "tpl_naphthalene": "ナフタレン",
+    "tpl_phenol": "フェノール",
+    "tpl_toluene": "トルエン",
+    "tpl_aniline": "アニリン",
+    "tpl_benzoic-acid": "安息香酸",
+    "tpl_methane": "メタン",
+    "tpl_ethanol": "エタノール",
+    "tpl_acetic-acid": "酢酸",
+    "tpl_glucose-chain": "グルコース (開鎖)"
   },
   "circuit": {
     "components": "部品",
@@ -3248,6 +3276,14 @@
     "add_case": "ケースを追加",
     "case_if": "もし",
     "case_expr_placeholder": "表現",
-    "case_cond_placeholder": "\\text{if } x > 0"
+    "case_cond_placeholder": "\\text{if } x > 0",
+    "palette_no_target": "上のフィールドをクリックして、そこに記号を挿入します。",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
+    "variables_placeholder": "x_1, x_2, x_3"
+  },
+  "plot_preview": {
+    "title": "ライブプレビュー (おおよそ)",
+    "empty": "データまたは関数を追加してプロットをプレビューします。",
+    "unsupported": "ライブ プレビューは {{types}} では利用できません。コンパイルして正確な結果を確認します。"
   }
 }

@@ -283,7 +283,8 @@
     "technical_detail_body": "TeXisStudio escolhe o backend automaticamente com base no que está instalado. No modo avançado você pode escolher o motor manualmente na tela de compilação.",
     "status_ready": "Pronto para gerar PDF",
     "status_missing": "A configuração da geração PDF está faltando",
-    "status_system": "Sistema: {{platform}}"
+    "status_system": "Sistema: {{platform}}",
+    "how_to_update": "Como mantê-lo atualizado"
   },
   "common": {
     "save": "Salvar",
@@ -314,7 +315,8 @@
     "working": "Processando…",
     "language_picker_title": "Idioma",
     "collapse": "Recolher",
-    "expand": "Expandir"
+    "expand": "Expandir",
+    "dismiss": "Fechar"
   },
   "lang": {
     "picker_label": "Idioma da interface",
@@ -2359,7 +2361,8 @@
     "adding": "Adicionando…",
     "catalog_error": "Não foi possível carregar o catálogo de vocabulário. Verifique sua conexão e tente novamente.",
     "repo_sync_error": "Não foi possível sincronizar este repositório.",
-    "repo_add_error": "Não foi possível adicionar o repositório. Verifique seu endereço e tente novamente."
+    "repo_add_error": "Não foi possível adicionar o repositório. Verifique seu endereço e tente novamente.",
+    "install_error": "O pacote não pôde ser instalado"
   },
   "profile_wizard": {
     "step_of": "Etapa {{current}} de {{total}}",
@@ -2887,7 +2890,13 @@
       "timeline_gantt": {
         "description": "Gráficos de Gantt e cronogramas com grupos, tarefas e dependências."
       }
-    }
+    },
+    "col_align_hint": "Alinhamento de coluna. 'decimal' alinha os números pela vírgula decimal (coluna siunitx S).",
+    "align_auto": "automático",
+    "align_left": "esquerda",
+    "align_center": "centro",
+    "align_right": "certo",
+    "align_decimal": "decimal"
   },
   "help": {
     "title": "Central de Ajuda",
@@ -3011,7 +3020,26 @@
     "add_reaction": "Reação",
     "add_reactant": "Reagente",
     "add_product": "Produto",
-    "empty_hint": "Adicione uma fórmula ou reação para começar."
+    "empty_hint": "Adicione uma fórmula ou reação para começar.",
+    "add_structure": "Estrutura",
+    "structure": "Estrutura",
+    "template": "Modelo",
+    "template_custom": "— personalizado (chemfig) —",
+    "chemfig_source": "Chemfig bruto (avançado, opcional)",
+    "chemfig_overrides": "O chemfig bruto será usado em vez do modelo.",
+    "template_hint": "Escolha um modelo ou digite chemfig bruto para estruturas personalizadas.",
+    "tpl_benzene": "Benzeno",
+    "tpl_cyclohexane": "Ciclohexano",
+    "tpl_cyclopentane": "Ciclopentano",
+    "tpl_naphthalene": "Naftaleno",
+    "tpl_phenol": "Fenol",
+    "tpl_toluene": "Tolueno",
+    "tpl_aniline": "Anilina",
+    "tpl_benzoic-acid": "Ácido benzóico",
+    "tpl_methane": "Metano",
+    "tpl_ethanol": "Etanol",
+    "tpl_acetic-acid": "Ácido acético",
+    "tpl_glucose-chain": "Glicose (cadeia aberta)"
   },
   "circuit": {
     "components": "Componentes",
@@ -3248,6 +3276,14 @@
     "add_case": "Adicionar caso",
     "case_if": "se",
     "case_expr_placeholder": "expressão",
-    "case_cond_placeholder": "\\text{se } x > 0"
+    "case_cond_placeholder": "\\text{se } x > 0",
+    "palette_no_target": "Clique em um campo acima para inserir símbolos nele.",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
+    "variables_placeholder": "x_1, x_2, x_3"
+  },
+  "plot_preview": {
+    "title": "Visualização ao vivo (aproximada)",
+    "empty": "Adicione dados ou uma função para visualizar o gráfico.",
+    "unsupported": "Visualização ao vivo não disponível para: {{types}}. Compile para ver o resultado exato."
   }
 }

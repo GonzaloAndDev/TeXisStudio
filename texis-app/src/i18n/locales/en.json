@@ -24,6 +24,7 @@
     "retry": "Retry",
     "apply": "Apply",
     "export": "Export",
+    "dismiss": "Dismiss",
     "confirm": "Confirm",
     "working": "Working…",
     "language_picker_title": "Language",
@@ -2894,11 +2895,21 @@
       }
     },
     "engines": {
-      "graph_node": { "description": "Directed and undirected graphs with nodes, edges, shapes, and arc styles." },
-      "pgfplots": { "description": "Plots, histograms, bar charts, scatter plots, and heat maps with PGFPlots." },
-      "tree_forest": { "description": "Hierarchical syntax, taxonomic, phylogenetic, decision, and probability trees." },
-      "table_data": { "description": "Data tables exportable to booktabs, longtable, or PGFPlots data." },
-      "timeline_gantt": { "description": "Gantt charts and timelines with groups, tasks, and dependencies." }
+      "graph_node": {
+        "description": "Directed and undirected graphs with nodes, edges, shapes, and arc styles."
+      },
+      "pgfplots": {
+        "description": "Plots, histograms, bar charts, scatter plots, and heat maps with PGFPlots."
+      },
+      "tree_forest": {
+        "description": "Hierarchical syntax, taxonomic, phylogenetic, decision, and probability trees."
+      },
+      "table_data": {
+        "description": "Data tables exportable to booktabs, longtable, or PGFPlots data."
+      },
+      "timeline_gantt": {
+        "description": "Gantt charts and timelines with groups, tasks, and dependencies."
+      }
     }
   },
   "help": {
@@ -3265,7 +3276,9 @@
     "remove_row": "Remove row",
     "equations": "Equations",
     "add_equation": "Add equation",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
     "variables": "Variables",
+    "variables_placeholder": "x_1, x_2, x_3",
     "variables_hint": "Comma-separated, e.g. x_1, x_2, x_3",
     "add_case": "Add case",
     "case_if": "if",

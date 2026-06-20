@@ -253,7 +253,7 @@ function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: Syst
           value={eq}
           onChange={(v) => setEquation(i, v)}
           onRemove={() => removeEquation(i)}
-          placeholder="x_1 + 2 x_2 &= 3"
+          placeholder={t("math_editor.align_placeholder")}
           rowLabel={t("math_editor.row_n", { n: i + 1 })}
           autoFocusOnMount={focusLastRef.current && i === doc.equations.length - 1}
         />
@@ -267,7 +267,7 @@ function SystemBody({ doc, onChange }: { doc: SystemDocument; onChange: (d: Syst
         <input
           value={doc.variables.join(", ")}
           onChange={(e) => setVariables(e.target.value)}
-          placeholder="x_1, x_2, x_3"
+          placeholder={t("math_editor.variables_placeholder")}
           spellCheck={false}
           style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
         />

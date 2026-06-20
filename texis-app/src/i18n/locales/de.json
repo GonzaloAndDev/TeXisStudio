@@ -28,7 +28,8 @@
     "working": "Wird verarbeitet…",
     "language_picker_title": "Sprache",
     "collapse": "Zusammenbruch",
-    "expand": "Erweitern"
+    "expand": "Erweitern",
+    "dismiss": "Schließen"
   },
   "lang": {
     "picker_label": "Sprache der Benutzeroberfläche",
@@ -2073,7 +2074,8 @@
     "all_areas": "Alle Bereiche",
     "catalog_error": "Der Vokabelkatalog konnte nicht geladen werden. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     "repo_sync_error": "Dieses Repository konnte nicht synchronisiert werden.",
-    "repo_add_error": "Das Repository konnte nicht hinzugefügt werden. Überprüfen Sie die Adresse und versuchen Sie es erneut."
+    "repo_add_error": "Das Repository konnte nicht hinzugefügt werden. Überprüfen Sie die Adresse und versuchen Sie es erneut.",
+    "install_error": "Das Paket konnte nicht installiert werden"
   },
   "profile_wizard": {
     "step_of": "Schritt {{current}} von {{total}}",
@@ -2553,7 +2555,8 @@
           ]
         }
       }
-    }
+    },
+    "how_to_update": "So halten Sie es auf dem neuesten Stand"
   },
   "figure_picker": {
     "title": "Generierte Figur einfügen",
@@ -2887,7 +2890,13 @@
       "timeline_gantt": {
         "description": "Gantt-Diagramme und Zeitleisten mit Gruppen, Aufgaben und Abhängigkeiten."
       }
-    }
+    },
+    "col_align_hint": "Spaltenausrichtung. „decimal“ richtet Zahlen nach dem Dezimalpunkt aus (Spalte siunitx).",
+    "align_auto": "auto",
+    "align_left": "links",
+    "align_center": "Zentrum",
+    "align_right": "richtig",
+    "align_decimal": "dezimal"
   },
   "help": {
     "title": "Hilfe-Center",
@@ -3011,7 +3020,26 @@
     "add_reaction": "Reaktion",
     "add_reactant": "Edukt",
     "add_product": "Produkt",
-    "empty_hint": "Fügen Sie zunächst eine Formel oder eine Reaktion hinzu."
+    "empty_hint": "Fügen Sie zunächst eine Formel oder eine Reaktion hinzu.",
+    "add_structure": "Struktur",
+    "structure": "Struktur",
+    "template": "Vorlage",
+    "template_custom": "– Brauch (chemfig) –",
+    "chemfig_source": "Rohkost (für Fortgeschrittene, optional)",
+    "chemfig_overrides": "Anstelle der Vorlage wird die rohe Chemfig verwendet.",
+    "template_hint": "Wählen Sie eine Vorlage oder geben Sie „raw chemfig“ für benutzerdefinierte Strukturen ein.",
+    "tpl_benzene": "Benzol",
+    "tpl_cyclohexane": "Cyclohexan",
+    "tpl_cyclopentane": "Cyclopentan",
+    "tpl_naphthalene": "Naphthalin",
+    "tpl_phenol": "Phenol",
+    "tpl_toluene": "Toluol",
+    "tpl_aniline": "Anilin",
+    "tpl_benzoic-acid": "Benzoesäure",
+    "tpl_methane": "Methan",
+    "tpl_ethanol": "Ethanol",
+    "tpl_acetic-acid": "Essigsäure",
+    "tpl_glucose-chain": "Glukose (offene Kette)"
   },
   "circuit": {
     "components": "Bauteile",
@@ -3248,6 +3276,14 @@
     "add_case": "Fall hinzufügen",
     "case_if": "wenn",
     "case_expr_placeholder": "Ausdruck",
-    "case_cond_placeholder": "\\text{if } x > 0"
+    "case_cond_placeholder": "\\text{if } x > 0",
+    "palette_no_target": "Klicken Sie oben auf ein Feld, um dort Symbole einzufügen.",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
+    "variables_placeholder": "x_1, x_2, x_3"
+  },
+  "plot_preview": {
+    "title": "Live-Vorschau (ungefähr)",
+    "empty": "Fügen Sie Daten oder eine Funktion hinzu, um eine Vorschau des Diagramms anzuzeigen.",
+    "unsupported": "Live-Vorschau nicht verfügbar für: {{types}}. Kompilieren Sie, um das genaue Ergebnis zu sehen."
   }
 }

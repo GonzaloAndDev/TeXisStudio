@@ -28,7 +28,8 @@
     "working": "En cours…",
     "language_picker_title": "Langue",
     "collapse": "Réduire",
-    "expand": "Développer"
+    "expand": "Développer",
+    "dismiss": "Fermer"
   },
   "lang": {
     "picker_label": "Langue de l'interface",
@@ -2073,7 +2074,8 @@
     "all_areas": "Toutes les zones",
     "catalog_error": "Impossible de charger le catalogue de vocabulaire. Vérifiez votre connexion et réessayez.",
     "repo_sync_error": "Impossible de synchroniser ce référentiel.",
-    "repo_add_error": "Impossible d'ajouter le référentiel. Vérifiez son adresse et réessayez."
+    "repo_add_error": "Impossible d'ajouter le référentiel. Vérifiez son adresse et réessayez.",
+    "install_error": "Le pack n'a pas pu être installé"
   },
   "profile_wizard": {
     "step_of": "Étape {{current}} sur {{total}}",
@@ -2553,7 +2555,8 @@
           ]
         }
       }
-    }
+    },
+    "how_to_update": "Comment le maintenir à jour"
   },
   "figure_picker": {
     "title": "Insérer une figure générée",
@@ -2887,7 +2890,13 @@
       "timeline_gantt": {
         "description": "Diagrammes de Gantt et chronologies avec groupes, tâches et dépendances."
       }
-    }
+    },
+    "col_align_hint": "Alignement des colonnes. 'decimal' aligne les nombres par le point décimal (colonne siunitx S).",
+    "align_auto": "automobile",
+    "align_left": "à gauche",
+    "align_center": "centre",
+    "align_right": "à droite",
+    "align_decimal": "décimal"
   },
   "help": {
     "title": "Centre d'aide",
@@ -3011,7 +3020,26 @@
     "add_reaction": "Réaction",
     "add_reactant": "Réactif",
     "add_product": "Produit",
-    "empty_hint": "Ajoutez une formule ou une réaction pour commencer."
+    "empty_hint": "Ajoutez une formule ou une réaction pour commencer.",
+    "add_structure": "Structure",
+    "structure": "Structure",
+    "template": "Modèle",
+    "template_custom": "— personnalisé (chemfig) —",
+    "chemfig_source": "Chemfig brut (avancé, facultatif)",
+    "chemfig_overrides": "Le chemfig brut sera utilisé à la place du modèle.",
+    "template_hint": "Choisissez un modèle ou tapez chemfig brut pour des structures personnalisées.",
+    "tpl_benzene": "Benzène",
+    "tpl_cyclohexane": "Cyclohexane",
+    "tpl_cyclopentane": "Cyclopentane",
+    "tpl_naphthalene": "Naphtalène",
+    "tpl_phenol": "Phénol",
+    "tpl_toluene": "Toluène",
+    "tpl_aniline": "Aniline",
+    "tpl_benzoic-acid": "Acide benzoïque",
+    "tpl_methane": "Méthane",
+    "tpl_ethanol": "Éthanol",
+    "tpl_acetic-acid": "Acide acétique",
+    "tpl_glucose-chain": "Glucose (chaîne ouverte)"
   },
   "circuit": {
     "components": "Composants",
@@ -3248,6 +3276,14 @@
     "add_case": "Ajouter un cas",
     "case_if": "si",
     "case_expr_placeholder": "expressions",
-    "case_cond_placeholder": "\\text{si } x > 0"
+    "case_cond_placeholder": "\\text{si } x > 0",
+    "palette_no_target": "Cliquez sur un champ ci-dessus pour y insérer des symboles.",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
+    "variables_placeholder": "x_1, x_2, x_3"
+  },
+  "plot_preview": {
+    "title": "Aperçu en direct (approximatif)",
+    "empty": "Ajoutez des données ou une fonction pour prévisualiser le tracé.",
+    "unsupported": "L'aperçu en direct n'est pas disponible pour : {{types}}. Compilez pour voir le résultat exact."
   }
 }

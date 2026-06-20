@@ -24,6 +24,7 @@
     "retry": "Reintentar",
     "apply": "Aplicar",
     "export": "Exportar",
+    "dismiss": "Descartar",
     "confirm": "Confirmar",
     "working": "Trabajando…",
     "language_picker_title": "Idioma",
@@ -2894,11 +2895,21 @@
       }
     },
     "engines": {
-      "graph_node": { "description": "Grafos dirigidos y no dirigidos con nodos, aristas, formas y estilos de arco." },
-      "pgfplots": { "description": "Gráficas, histogramas, barras, dispersión y mapas de calor con PGFPlots." },
-      "tree_forest": { "description": "Árboles jerárquicos sintácticos, taxonómicos, filogenéticos, de decisión y probabilidad." },
-      "table_data": { "description": "Tablas de datos exportables a booktabs, longtable o datos de PGFPlots." },
-      "timeline_gantt": { "description": "Diagramas de Gantt y cronologías con grupos, tareas y dependencias." }
+      "graph_node": {
+        "description": "Grafos dirigidos y no dirigidos con nodos, aristas, formas y estilos de arco."
+      },
+      "pgfplots": {
+        "description": "Gráficas, histogramas, barras, dispersión y mapas de calor con PGFPlots."
+      },
+      "tree_forest": {
+        "description": "Árboles jerárquicos sintácticos, taxonómicos, filogenéticos, de decisión y probabilidad."
+      },
+      "table_data": {
+        "description": "Tablas de datos exportables a booktabs, longtable o datos de PGFPlots."
+      },
+      "timeline_gantt": {
+        "description": "Diagramas de Gantt y cronologías con grupos, tareas y dependencias."
+      }
     }
   },
   "help": {
@@ -3265,7 +3276,9 @@
     "remove_row": "Eliminar fila",
     "equations": "Ecuaciones",
     "add_equation": "Agregar ecuación",
+    "align_placeholder": "x_1 + 2 x_2 &= 3",
     "variables": "Variables",
+    "variables_placeholder": "x_1, x_2, x_3",
     "variables_hint": "Separadas por coma, p. ej. x_1, x_2, x_3",
     "add_case": "Agregar caso",
     "case_if": "si",
