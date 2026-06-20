@@ -2447,6 +2447,11 @@
       "custom": "custom"
     }
   },
+  "plot_preview": {
+    "title": "Live preview (approximate)",
+    "empty": "Add data or a function to preview the plot.",
+    "unsupported": "Live preview not available for: {{types}}. Compile to see the exact result."
+  },
   "setup_latex": {
     "nav_title": "Prepare PDF generation",
     "heading_prefix": "Prepare",

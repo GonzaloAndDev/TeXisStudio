@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import type { PGFPlotsDocument, DataSeries } from "../../types-engines";
 import { applyPlotTypeChange, parseFiniteNumberDraft, EXTRA_COL_FOR_TYPE } from "./transforms";
+import { PlotPreview } from "./PlotPreview";
 
 const AXIS_SCALES = ["linear", "log", "semilogx", "semilogy"] as const;
 const PLOT_TYPES  = ["function2d", "scatter", "bar", "histogram", "boxplot", "errorbar", "heatmap"] as const;
@@ -49,6 +50,8 @@ export function PGFPlotsEditor({ doc, onChange }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Vista previa en vivo (aproximada, desde los datos — no compila LaTeX) */}
+      <PlotPreview doc={doc} />
       {/* Axis settings */}
       <div style={{ background: "var(--bg-app)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-sm)", padding: "8px 10px" }}>
         <div style={sectionTitle}>{t("visual_editor.axes")}</div>

@@ -2447,6 +2447,11 @@
       "custom": "personalizado"
     }
   },
+  "plot_preview": {
+    "title": "Vista previa en vivo (aproximada)",
+    "empty": "Agrega datos o una función para previsualizar la gráfica.",
+    "unsupported": "Vista previa no disponible para: {{types}}. Compila para ver el resultado exacto."
+  },
   "setup_latex": {
     "nav_title": "Preparar generación de PDF",
     "heading_prefix": "Preparar la generación de",
