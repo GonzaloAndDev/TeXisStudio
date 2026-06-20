@@ -408,7 +408,12 @@ export function SectionTree({ activeProjectPath, localBlocks, localizedTitle, us
             <div style={{
               position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 200,
               background: "var(--bg-panel)", border: "1px solid var(--border-firm)",
-              borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", minWidth: 200, padding: 4,
+              borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", padding: 4,
+              // La columna del árbol mide como mínimo 200px (clamp en tokens.css).
+              // Anclado a la derecha, un ancho fijo de 200px se desbordaba por la
+              // izquierda y un ancestro lo recortaba. Lo dimensionamos al contenido
+              // con un tope que SIEMPRE cabe en la columna mínima (200px − offset).
+              width: "max-content", minWidth: 176, maxWidth: 184,
               maxHeight: 320, overflowY: "auto",
             }}>
               {/* Smart suggestions */}
