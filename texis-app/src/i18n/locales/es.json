@@ -2476,6 +2476,7 @@
     "options_for_platform": "Opciones disponibles en {{platform}}",
     "guided_steps": "Pasos guiados — {{name}} en {{platform}}",
     "official_site": "Sitio oficial de {{name}}",
+    "how_to_update": "Cómo mantenerlo actualizado",
     "technical_detail": "Detalle técnico",
     "technical_detail_body": "TeXisStudio elige el backend automáticamente según lo instalado. En modo avanzado puedes elegir el motor manualmente en la pantalla de compilación.",
     "status_ready": "Listo para generar PDF",

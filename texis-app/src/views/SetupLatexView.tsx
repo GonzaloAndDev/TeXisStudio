@@ -37,6 +37,8 @@ interface InstallOption {
   steps: InstallStep[];
   download_url: string;
   color: string;
+  /** Cómo mantener la instalación al día (comando + nota). */
+  update?: { code: string | null; note: string };
 }
 
 // ── Opciones por sistema operativo ────────────────────────────────
@@ -90,6 +92,10 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       ],
       download_url: "https://www.tug.org/mactex/",
       color: "#3AA396",
+      update: {
+        code: "sudo tlmgr update --self --all",
+        note: "Mantiene los paquetes al día dentro del año de TeX Live. Para la versión anual nueva, reinstala con: brew upgrade --cask mactex (o descarga el .pkg). También puedes usar la app «TeX Live Utility».",
+      },
     },
     {
       id: "tectonic",
@@ -187,6 +193,10 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       ],
       download_url: "https://www.tug.org/texlive/",
       color: "#3AA396",
+      update: {
+        code: "sudo tlmgr update --self --all",
+        note: "Si instalaste TeX Live con el gestor de tu distro (apt/dnf/pacman), actualiza con él: p. ej. sudo apt update && sudo apt upgrade. Para la versión anual nueva, reinstala el paquete texlive-full.",
+      },
     },
     {
       id: "tectonic",
@@ -273,6 +283,10 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       ],
       download_url: "https://miktex.org/download",
       color: "#3AA396",
+      update: {
+        code: "miktex packages update",
+        note: "Lo más simple: abre «MiKTeX Console» → pestaña Updates → Check for updates → Update now. MiKTeX también suele avisarte de actualizaciones automáticamente.",
+      },
     },
     {
       id: "tectonic",
@@ -357,6 +371,10 @@ const OPTIONS_BY_OS: Record<string, InstallOption[]> = {
       ],
       download_url: "https://www.tug.org/texlive/acquire-netinstall.html",
       color: "#4A6FA5",
+      update: {
+        code: "tlmgr update --self --all",
+        note: "Ejecútalo en «Command Prompt» (cmd). Mantiene los paquetes al día dentro del año de TeX Live. Para la versión anual nueva, vuelve a correr el instalador install-tl-windows.exe.",
+      },
     },
   ],
 };
@@ -553,6 +571,25 @@ function InstructionsPanel({ option }: { option: InstallOption }) {
       >
         {t("setup_latex.official_site", { name: option.name })} <IconChevronR size={12} />
       </a>
+      {option.update && (
+        <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)" }}>
+          <div style={{ fontSize: "var(--fs-sm)", fontWeight: 500, color: "var(--fg-strong)", marginBottom: 6 }}>
+            {t("setup_latex.how_to_update")}
+          </div>
+          {option.update.code && (
+            <div style={{
+              fontFamily: "var(--font-mono)", fontSize: 12,
+              background: "var(--ink-900)", color: "#A8D49C",
+              padding: "8px 12px", borderRadius: "var(--r-sm)", marginBottom: 6, userSelect: "all",
+            }}>
+              {option.update.code}
+            </div>
+          )}
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+            {option.update.note}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
