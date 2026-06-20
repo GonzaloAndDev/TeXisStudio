@@ -6,7 +6,7 @@
 //   apa              → APA 7ª ed.
 //   ieee             → IEEE
 //   vancouver        → Vancouver / ICMJE
-//   verbose-note     → Chicago Notes-Bibliography 17 / MHRA
+//   verbose-note / chicago-notes → Chicago Notes-Bibliography 17
 //   chicago-authordate → Chicago Author-Date 17
 //   mla              → MLA 9ª ed.
 //   abnt             → ABNT NBR 6023:2018
@@ -23,7 +23,11 @@ pub fn format_entry(entry: &BibEntry, style: &str) -> String {
         "apa" => format_apa7(entry),
         "ieee" => format_ieee(entry),
         "vancouver" => format_vancouver(entry),
-        "verbose-note" => format_chicago_notes(entry),
+        // "chicago-notes" es el nombre real del estilo biblatex-chicago que se
+        // inyecta en \usepackage[style=...]; "verbose-note" se mantiene como
+        // alias heredado. Ambos previsualizan como Chicago Notes-Bibliography,
+        // de modo que el preview coincide con lo que de verdad se compila.
+        "verbose-note" | "chicago-notes" => format_chicago_notes(entry),
         "chicago-authordate" => format_chicago_authordate(entry),
         "mla" => format_mla9(entry),
         "abnt" => format_abnt(entry),
@@ -1068,6 +1072,16 @@ mod tests {
     fn chicago_authordate_year_after_author() {
         let result = format_entry(&sample_article(), "chicago-authordate");
         assert!(result.contains("2024"), "debe contener año");
+    }
+
+    #[test]
+    fn chicago_notes_alias_matches_verbose_note() {
+        // El nombre real del estilo biblatex ("chicago-notes") y el alias
+        // heredado ("verbose-note") deben previsualizar idéntico.
+        let a = format_entry(&sample_article(), "chicago-notes");
+        let b = format_entry(&sample_article(), "verbose-note");
+        assert_eq!(a, b);
+        assert_ne!(a, format_entry(&sample_article(), "apa"), "no debe caer a genérico/otro");
     }
 
     #[test]
