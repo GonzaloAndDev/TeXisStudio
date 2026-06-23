@@ -181,21 +181,8 @@ fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) ->
         out.push_str(&format!("{}\n", input));
     }
 
-    if has_appendix || has_glossary || has_bib {
-        out.push_str("\n%% Back matter\n");
-        if matches!(
-            template.document_type,
-            DocumentTypeHint::Thesis | DocumentTypeHint::Book
-        ) {
-            out.push_str("\\backmatter\n");
-        }
-    }
-
-    if has_bib {
-        out.push_str("\\printbibliography[heading=bibintoc]\n");
-    }
-
     if has_appendix {
+        out.push_str("\n%% Appendices\n");
         out.push_str("\\appendix\n");
         for f in template.required_files.iter().filter(|f| {
             let p = f.relative_path.to_string_lossy();
@@ -208,9 +195,23 @@ fn generate_main_tex(template: &ProjectTemplate, _metadata: &ProjectMetadata) ->
         }
     }
 
+    if has_glossary || has_bib {
+        out.push_str("\n%% Back matter\n");
+        if matches!(
+            template.document_type,
+            DocumentTypeHint::Thesis | DocumentTypeHint::Book
+        ) {
+            out.push_str("\\backmatter\n");
+        }
+    }
+
     if has_glossary {
         out.push_str("\\printglossary[title=Glosario]\n");
         out.push_str("\\printglossary[type=\\acronymtype,title=Acrónimos]\n");
+    }
+
+    if has_bib {
+        out.push_str("\\printbibliography[heading=bibintoc]\n");
     }
 
     out.push_str("\n\\end{document}\n");
@@ -352,6 +353,15 @@ mod tests {
         assert!(main.contains("\\documentclass"));
         assert!(main.contains("\\input{preamble}"));
         assert!(main.contains("\\printbibliography"));
+        let appendix_pos = main.find("\\appendix").expect("debe tener appendix");
+        let backmatter_pos = main.find("\\backmatter").expect("debe tener backmatter");
+        let bibliography_pos = main
+            .find("\\printbibliography")
+            .expect("debe tener bibliografía");
+        assert!(
+            appendix_pos < backmatter_pos && backmatter_pos < bibliography_pos,
+            "los anexos deben emitirse antes de backmatter/bibliografía"
+        );
     }
 
     #[test]

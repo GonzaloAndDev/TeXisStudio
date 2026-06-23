@@ -1,6 +1,7 @@
 use super::model::{
     FontCheck, PdfIssue, PdfIssueSeverity, PdfMetadata, PdfPostflightResult, PdfaCheck,
 };
+use regex::Regex;
 use std::path::Path;
 use std::process::Command;
 
@@ -52,6 +53,20 @@ impl PdfChecker {
             });
             (vec![], true, vec![])
         };
+
+        // ── Texto extraído: señales editoriales que pdfinfo/pdffonts no ven ──
+        if tool_available("pdftotext") {
+            tools_available.push("pdftotext".to_string());
+            run_text_quality_checks(pdf_path, &mut issues);
+        } else {
+            tools_missing.push("pdftotext".to_string());
+            issues.push(PdfIssue {
+                severity: PdfIssueSeverity::Info,
+                code: "PF_MISSING_PDFTOTEXT".to_string(),
+                message: "pdftotext no está disponible — se omiten chequeos editoriales de texto extraído.".to_string(),
+                suggestion: Some("Instala poppler-utils para detectar numeración rota, títulos partidos y portadas sospechosas.".to_string()),
+            });
+        }
 
         // ── Reglas sobre metadatos ────────────────────────────────
         if metadata.is_encrypted {
@@ -293,6 +308,112 @@ fn run_pdffonts(
 
     let all_embedded = non_embedded.is_empty();
     (fonts, all_embedded, non_embedded)
+}
+
+fn run_text_quality_checks(pdf_path: &Path, issues: &mut Vec<PdfIssue>) {
+    let out = match Command::new("pdftotext")
+        .args(["-layout", "-enc", "UTF-8"])
+        .arg(pdf_path)
+        .arg("-")
+        .output()
+    {
+        Ok(o) => o,
+        Err(e) => {
+            issues.push(PdfIssue {
+                severity: PdfIssueSeverity::Info,
+                code: "PF_PDFTOTEXT_FAILED".to_string(),
+                message: format!("pdftotext no pudo extraer texto: {e}"),
+                suggestion: None,
+            });
+            return;
+        }
+    };
+
+    if !out.status.success() {
+        issues.push(PdfIssue {
+            severity: PdfIssueSeverity::Info,
+            code: "PF_PDFTOTEXT_FAILED".to_string(),
+            message: "pdftotext no pudo extraer texto del PDF.".to_string(),
+            suggestion: None,
+        });
+        return;
+    }
+
+    let text = String::from_utf8_lossy(&out.stdout);
+    if text.trim().is_empty() {
+        issues.push(PdfIssue {
+            severity: PdfIssueSeverity::Warning,
+            code: "PF_TEXT_EXTRACTION_EMPTY".to_string(),
+            message: "El texto extraído del PDF está vacío.".to_string(),
+            suggestion: Some(
+                "Verifica que el PDF no sea una imagen escaneada o que tenga texto seleccionable."
+                    .to_string(),
+            ),
+        });
+        return;
+    }
+
+    push_text_quality_issues(&text, issues);
+}
+
+fn push_text_quality_issues(text: &str, issues: &mut Vec<PdfIssue>) {
+    let broken_appendix = Regex::new(r"(?m)^\s*\.\d+(?:\.\d+)?\s+\S").unwrap();
+    if broken_appendix.is_match(&text) {
+        issues.push(PdfIssue {
+            severity: PdfIssueSeverity::Warning,
+            code: "PF_BROKEN_APPENDIX_NUMBERING".to_string(),
+            message: "El texto extraído sugiere numeración rota en anexos o secciones (por ejemplo `.1.1`).".to_string(),
+            suggestion: Some("Revisa el orden LaTeX: los anexos deben emitirse antes de \\backmatter o restaurar numeración de capítulos.".to_string()),
+        });
+    }
+
+    let broken_caps_word = Regex::new(r"\b[A-ZÁÉÍÓÚÜÑ]{4,}\s+[A-ZÁÉÍÓÚÜÑ]{1,2}\b").unwrap();
+    if broken_caps_word.is_match(&text) {
+        issues.push(PdfIssue {
+            severity: PdfIssueSeverity::Warning,
+            code: "PF_SUSPECT_BROKEN_HEADING_WORD".to_string(),
+            message: "Se detectó una palabra en mayúsculas posiblemente partida dentro de un encabezado.".to_string(),
+            suggestion: Some("Revisa headers/marks y títulos largos; el caso típico es una palabra extraída como `ALTERNATIV AS`.".to_string()),
+        });
+    }
+
+    let pages: Vec<&str> = text.split('\u{000c}').collect();
+    if pages.len() >= 2 {
+        let page2_words = pages[1].split_whitespace().count();
+        let page2_lower = pages[1].to_lowercase();
+        let looks_like_title_tail = page2_words <= 18
+            && (page2_lower.contains("ciudad")
+                || page2_lower.contains("director")
+                || page2_lower.contains("asesor"));
+        if looks_like_title_tail {
+            issues.push(PdfIssue {
+                severity: PdfIssueSeverity::Warning,
+                code: "PF_SUSPECT_SPLIT_TITLE_PAGE".to_string(),
+                message: "La segunda página parece contener sólo el remate de la portada.".to_string(),
+                suggestion: Some("Compacta la plantilla de portada o mueve comité/firmas a una hoja formal separada.".to_string()),
+            });
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_quality_detecta_numeracion_y_portada_sospechosas() {
+        let text = "Titulo\nAutor\n\u{000c}Dr. Persona\nCiudad de Mexico, 2026\n\u{000c}.1.1 Analisis roto\n";
+        let mut issues = Vec::new();
+
+        push_text_quality_issues(text, &mut issues);
+
+        assert!(issues
+            .iter()
+            .any(|i| i.code == "PF_BROKEN_APPENDIX_NUMBERING"));
+        assert!(issues
+            .iter()
+            .any(|i| i.code == "PF_SUSPECT_SPLIT_TITLE_PAGE"));
+    }
 }
 
 fn run_verapdf(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfaCheck {

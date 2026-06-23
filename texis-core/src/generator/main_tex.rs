@@ -159,8 +159,8 @@ pub fn render_to_string(
     let mut body_idx = 0usize;
     let mut in_frontmatter = false;
     let mut in_mainmatter = false;
-    let mut in_backmatter = false;
     let mut appendix_started = false;
+    let mut pending_backmatter = Vec::new();
 
     for section in &model.sections {
         if !section.enabled {
@@ -209,21 +209,7 @@ pub fn render_to_string(
             }
 
             SectionPlacement::BackMatter => {
-                if !in_backmatter {
-                    out.push_str("\n\\backmatter\n");
-                    in_backmatter = true;
-                }
-                match section.element_id.as_str() {
-                    // biblatex siempre usa \printbibliography, independientemente del backend
-                    "references" => {
-                        out.push_str("\n\\printbibliography[heading=bibintoc]\n");
-                    }
-                    // Sección de glosario explícita → emitir \printglossaries
-                    "glossary" | "list_glossary" | "glossary_section" => {
-                        out.push_str("\n\\printglossaries\n");
-                    }
-                    _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
-                }
+                pending_backmatter.push(section);
             }
 
             SectionPlacement::Appendix => {
@@ -232,6 +218,23 @@ pub fn render_to_string(
                     appendix_started = true;
                 }
                 out.push_str(&format!("\\input{{anexos/{}}}\n", section.id));
+            }
+        }
+    }
+
+    if !pending_backmatter.is_empty() {
+        out.push_str("\n\\backmatter\n");
+        for section in pending_backmatter {
+            match section.element_id.as_str() {
+                // biblatex siempre usa \printbibliography, independientemente del backend
+                "references" => {
+                    out.push_str("\n\\printbibliography[heading=bibintoc]\n");
+                }
+                // Sección de glosario explícita → emitir \printglossaries
+                "glossary" | "list_glossary" | "glossary_section" => {
+                    out.push_str("\n\\printglossaries\n");
+                }
+                _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
             }
         }
     }

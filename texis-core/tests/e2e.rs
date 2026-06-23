@@ -139,6 +139,25 @@ fn rich_thesis_model() -> ProjectModel {
         children: vec![],
     });
 
+    m.sections.push(ProjectSection {
+        id: "appendix_a".to_string(),
+        element_id: "appendix".to_string(),
+        title: Some("Apéndice A: Evidencia".to_string()),
+        label: None,
+        placement: SectionPlacement::Appendix,
+        required: false,
+        enabled: true,
+        status: Default::default(),
+        notes: None,
+        blocks: vec![ContentBlock::Paragraph(ParagraphBlock {
+            id: "app-p1".to_string(),
+            content: "Material complementario para verificar anexos.".to_string(),
+            verbatim: false,
+        })],
+        fields: HashMap::new(),
+        children: vec![],
+    });
+
     m
 }
 
@@ -201,6 +220,15 @@ fn e2e_main_tex_tiene_estructura_correcta() {
     assert!(
         main.contains("\\printbibliography"),
         "debe imprimir bibliografía"
+    );
+    let appendix_pos = main.find("\\appendix").expect("debe tener appendix");
+    let backmatter_pos = main.find("\\backmatter").expect("debe tener backmatter");
+    let bibliography_pos = main
+        .find("\\printbibliography")
+        .expect("debe tener bibliografía");
+    assert!(
+        appendix_pos < backmatter_pos && backmatter_pos < bibliography_pos,
+        "los anexos deben salir antes de backmatter/bibliografía para conservar numeración"
     );
 }
 

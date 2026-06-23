@@ -10,6 +10,7 @@ use crate::project::model::{
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
 use minijinja::Value as JinjaValue;
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -151,7 +152,8 @@ fn render_section(
 
     if let Some(title) = &section.title {
         let cmd = chapter_command(section);
-        let escaped_title = latex_escape(title);
+        let title = display_title_for_section(section, title);
+        let escaped_title = latex_escape(&title);
         out.push_str(&format!("\\{}{{{}}}\n", cmd, escaped_title));
         // Capítulos sin numeración (chapter*) no se añaden automáticamente al
         // índice de contenidos. Lo añadimos explícitamente para que resumen,
@@ -168,6 +170,16 @@ fn render_section(
     out.push_str(&render_blocks(&section.blocks));
 
     Ok(out)
+}
+
+fn display_title_for_section(section: &ProjectSection, title: &str) -> String {
+    if !matches!(section.placement, SectionPlacement::Appendix) {
+        return title.to_string();
+    }
+
+    let prefix =
+        Regex::new(r"(?i)^\s*(ap[eé]ndice|appendix)\s+[a-z0-9ivxlcdm]+\.?\s*[:.\-–—]\s*").unwrap();
+    prefix.replace(title, "").trim().to_string()
 }
 
 fn chapter_command(section: &ProjectSection) -> &'static str {
@@ -842,45 +854,47 @@ fn render_title_page(model: &ProjectModel) -> String {
     out.push_str("\\thispagestyle{empty}\n");
     out.push_str("\\begin{titlepage}\n");
     out.push_str("  \\centering\n");
-    out.push_str("  \\vspace*{1cm}\n");
+    out.push_str("  \\begingroup\n");
+    out.push_str("  \\setstretch{1.05}\n");
+    out.push_str("  \\vspace*{0.35cm}\n");
     out.push_str(&format!(
-        "  {{\\scshape\\Large {}\\par}}\n",
+        "  {{\\scshape\\large {}\\par}}\n",
         latex_escape(&model.institution.name)
     ));
     if let Some(fac) = &model.institution.faculty {
-        out.push_str("  \\vspace{0.3cm}\n");
-        out.push_str(&format!("  {{\\large {}\\par}}\n", latex_escape(fac)));
+        out.push_str("  \\vspace{0.18cm}\n");
+        out.push_str(&format!("  {{\\normalsize {}\\par}}\n", latex_escape(fac)));
     }
     if let Some(dep) = &model.institution.department {
-        out.push_str("  \\vspace{0.2cm}\n");
-        out.push_str(&format!("  {{\\normalsize {}\\par}}\n", latex_escape(dep)));
+        out.push_str("  \\vspace{0.12cm}\n");
+        out.push_str(&format!("  {{\\small {}\\par}}\n", latex_escape(dep)));
     }
-    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str("  \\vspace{0.85cm}\n");
     out.push_str(&format!(
-        "  {{\\huge\\bfseries {}\\par}}\n",
+        "  {{\\LARGE\\bfseries {}\\par}}\n",
         latex_escape(&model.metadata.title)
     ));
-    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str("  \\vspace{0.85cm}\n");
     let kind_label = doc_kind_label(
         &model.metadata.document_kind,
         &model.metadata.academic_level,
     );
     let level_label = academic_level_label(&model.metadata.academic_level);
     out.push_str(&format!("  {{\\large {}\\par}}\n", kind_label));
-    out.push_str("  \\vspace{0.3cm}\n");
+    out.push_str("  \\vspace{0.18cm}\n");
     out.push_str("  {\\normalsize que para obtener el grado de\\par}\n");
     out.push_str(&format!(
         "  {{\\normalsize\\bfseries {}\\par}}\n",
         level_label
     ));
-    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str("  \\vspace{0.85cm}\n");
     out.push_str("  {\\normalsize Presenta:\\par}\n");
-    out.push_str("  \\vspace{0.3cm}\n");
+    out.push_str("  \\vspace{0.18cm}\n");
     out.push_str(&format!(
         "  {{\\large\\bfseries {}\\par}}\n",
         latex_escape(&model.student.full_name)
     ));
-    out.push_str("  \\vspace{1.5cm}\n");
+    out.push_str("  \\vspace{0.85cm}\n");
 
     let all_advisors: Vec<&str> = if !model.student.advisors.is_empty() {
         model.student.advisors.iter().map(|s| s.as_str()).collect()
@@ -894,11 +908,11 @@ fn render_title_page(model: &ProjectModel) -> String {
             "Director de tesis:"
         };
         out.push_str(&format!("  {{\\normalsize {}\\par}}\n", label));
-        out.push_str("  \\vspace{0.3cm}\n");
+        out.push_str("  \\vspace{0.18cm}\n");
         for a in &all_advisors {
-            out.push_str(&format!("  {{\\normalsize {}\\par}}\n", latex_escape(a)));
+            out.push_str(&format!("  {{\\small {}\\par}}\n", latex_escape(a)));
         }
-        out.push_str("  \\vspace{1cm}\n");
+        out.push_str("  \\vspace{0.45cm}\n");
     }
 
     out.push_str("  \\vfill\n");
@@ -907,6 +921,7 @@ fn render_title_page(model: &ProjectModel) -> String {
         latex_escape(&model.metadata.city),
         model.metadata.year
     ));
+    out.push_str("  \\endgroup\n");
     out.push_str("\\end{titlepage}\n");
     out
 }
@@ -1497,5 +1512,20 @@ mod tests {
             !out.contains("\\addcontentsline"),
             "body chapter NO añade addcontentsline"
         );
+    }
+
+    #[test]
+    fn appendix_limpia_prefijo_duplicado_en_titulo() {
+        let engine = TemplateEngine::new().expect("TemplateEngine::new no debe fallar");
+        let model = bare_model_for_toc();
+        let section = make_section_with_placement(
+            SectionPlacement::Appendix,
+            Some("Apéndice B: Configuraciones alternativas"),
+        );
+
+        let out = render_section(&section, &engine, &model, None).unwrap();
+
+        assert!(out.contains("\\chapter{Configuraciones alternativas}"));
+        assert!(!out.contains("\\chapter{Apéndice B:"));
     }
 }
