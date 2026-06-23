@@ -10,6 +10,7 @@
 // Ambos son obligatorios.
 
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use super::model::{Profile, ProfileStatus};
 
@@ -128,6 +129,21 @@ fn check_reviewed(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
             ),
             field: Some("verification.source_urls".to_string()),
         });
+    }
+    if let Some(ver) = ver {
+        for source_url in &ver.source_urls {
+            if let Err(reason) = validate_official_https_url(source_url) {
+                issues.push(PolicyIssue {
+                    severity: PolicySeverity::Error,
+                    code: "POL_REVIEWED_INVALID_SOURCE_URL".to_string(),
+                    message: format!(
+                        "La fuente '{}' del perfil '{}' no es una URL HTTPS oficial válida: {}.",
+                        source_url, profile.id, reason
+                    ),
+                    field: Some("verification.source_urls".to_string()),
+                });
+            }
+        }
     }
 
     // POL_REVIEWED_NO_DATE — fecha de revisión obligatoria
@@ -249,7 +265,52 @@ fn check_verified(profile: &Profile, issues: &mut Vec<PolicyIssue>) {
             ),
             field: Some("verification.ci_evidence".to_string()),
         });
+    } else if let Some(ci_evidence) = ver.and_then(|v| v.ci_evidence.as_deref()) {
+        if let Err(reason) = validate_https_url(ci_evidence) {
+            issues.push(PolicyIssue {
+                severity: PolicySeverity::Error,
+                code: "POL_VERIFIED_INVALID_CI_EVIDENCE_URL".to_string(),
+                message: format!(
+                    "La evidencia CI '{}' del perfil '{}' no es una URL HTTPS válida: {}.",
+                    ci_evidence, profile.id, reason
+                ),
+                field: Some("verification.ci_evidence".to_string()),
+            });
+        }
     }
+}
+
+fn validate_https_url(raw: &str) -> Result<Url, &'static str> {
+    let url = Url::parse(raw.trim()).map_err(|_| "no se pudo parsear")?;
+    if url.scheme() != "https" {
+        return Err("debe usar https");
+    }
+    let Some(host) = url.host_str() else {
+        return Err("no tiene host");
+    };
+    let host = host.to_ascii_lowercase();
+    if host == "localhost" || host.ends_with(".localhost") {
+        return Err("no puede apuntar a localhost");
+    }
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return Err("no puede apuntar directamente a una IP");
+    }
+    if !host.contains('.') {
+        return Err("el host debe ser un dominio completo");
+    }
+    Ok(url)
+}
+
+fn validate_official_https_url(raw: &str) -> Result<Url, &'static str> {
+    let url = validate_https_url(raw)?;
+    let host = url.host_str().unwrap_or_default().to_ascii_lowercase();
+    if matches!(
+        host.as_str(),
+        "github.com" | "gist.github.com" | "raw.githubusercontent.com" | "localhost"
+    ) {
+        return Err("debe apuntar a una fuente institucional, no a un repositorio genérico");
+    }
+    Ok(url)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -385,6 +446,27 @@ mod tests {
         );
     }
 
+    #[test]
+    fn reviewed_source_url_debe_ser_https_institucional() {
+        let mut p = reviewed_profile_complete("test.reviewed.bad-url");
+        if let Some(v) = &mut p.verification {
+            v.source_urls = vec![
+                "http://example.edu/thesis-guide".to_string(),
+                "https://localhost/guide".to_string(),
+                "https://127.0.0.1/guide".to_string(),
+                "https://github.com/org/repo/blob/main/guide.md".to_string(),
+            ];
+        }
+        let report = ProfilePolicyValidator::validate(&p);
+        let invalid_count = report
+            .issues
+            .iter()
+            .filter(|i| i.code == "POL_REVIEWED_INVALID_SOURCE_URL")
+            .count();
+        assert_eq!(invalid_count, 4);
+        assert!(report.has_errors());
+    }
+
     fn verified_profile_complete(id: &str) -> Profile {
         let mut p = reviewed_profile_complete(id);
         p.status = ProfileStatus::Verified;
@@ -423,6 +505,23 @@ mod tests {
                 .iter()
                 .any(|i| i.code == "POL_VERIFIED_NO_CI_EVIDENCE"),
             "verified sin ci_evidence debe producir POL_VERIFIED_NO_CI_EVIDENCE"
+        );
+        assert!(report.has_errors());
+    }
+
+    #[test]
+    fn verified_ci_evidence_debe_ser_https() {
+        let mut p = verified_profile_complete("test.verified.bad-ci-url");
+        if let Some(v) = &mut p.verification {
+            v.ci_evidence = Some("http://github.com/org/repo/actions/runs/1".to_string());
+        }
+        let report = ProfilePolicyValidator::validate(&p);
+        assert!(
+            report
+                .issues
+                .iter()
+                .any(|i| i.code == "POL_VERIFIED_INVALID_CI_EVIDENCE_URL"),
+            "CI evidence con http debe producir POL_VERIFIED_INVALID_CI_EVIDENCE_URL"
         );
         assert!(report.has_errors());
     }

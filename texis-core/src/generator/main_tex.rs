@@ -307,6 +307,16 @@ pub fn render_paquetes_pub(model: &ProjectModel, lang_config: Option<&Value>) ->
     render_paquetes(model, lang_config)
 }
 
+/// Versión pública de render_estilo para uso desde el DriftReport generator.
+pub fn render_estilo_pub(model: &ProjectModel) -> String {
+    render_estilo(model)
+}
+
+/// Versión pública de render_datos_tesis para uso desde el DriftReport generator.
+pub fn render_datos_tesis_pub(model: &ProjectModel) -> String {
+    render_datos_tesis(model)
+}
+
 fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String {
     let mut out = String::from("% Paquetes LaTeX — generado automáticamente\n\n");
     let pc = &model.latex_config.preamble_config;

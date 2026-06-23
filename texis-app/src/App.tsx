@@ -236,7 +236,6 @@ const router = createBrowserRouter(
       <Route path="/project/:id/progress" element={<ProgressView />} />
       <Route path="/library" element={<LibraryView />} />
       <Route path="/new-profile" element={<ProfileWizardView />} />
-      <Route path="/new-profile/:id" element={<ProfileWizardView />} />
       <Route path="/about" element={<AboutView />} />
       <Route path="/setup-latex" element={<SetupLatexView />} />
       <Route path="/settings" element={<SettingsView />} />

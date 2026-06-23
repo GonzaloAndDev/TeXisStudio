@@ -479,6 +479,18 @@ fn e2e_drift_report_sin_manuales_genera_todo() {
         report.generated.contains(&"main.tex".to_string()),
         "main.tex debe estar en generated"
     );
+    assert!(
+        report
+            .generated
+            .contains(&"configuracion/estilo.tex".to_string()),
+        "estilo.tex debe generarse porque main.tex lo incluye"
+    );
+    assert!(
+        report
+            .generated
+            .contains(&"configuracion/datos_tesis.tex".to_string()),
+        "datos_tesis.tex debe generarse porque main.tex lo incluye"
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

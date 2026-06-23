@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import {
@@ -20,21 +20,21 @@ import type { ProfileSectionInfo, ProfileUpdatePayload } from "../types";
 
 // ── Catálogo de secciones predefinidas ────────────────────────────
 
-const SECTION_CATALOG: { id: string; label: string; placement: string; required: boolean }[] = [
-  { id: "title_page",           label: "Portada",                placement: "front_matter", required: true  },
-  { id: "abstract",             label: "Resumen / Abstract",     placement: "front_matter", required: false },
-  { id: "acknowledgements",     label: "Agradecimientos",        placement: "front_matter", required: false },
-  { id: "table_of_contents",    label: "Tabla de contenidos",    placement: "front_matter", required: false },
-  { id: "list_of_figures",      label: "Lista de figuras",       placement: "front_matter", required: false },
-  { id: "list_of_tables",       label: "Lista de tablas",        placement: "front_matter", required: false },
-  { id: "introduction",         label: "Introducción",           placement: "body",         required: true  },
-  { id: "theoretical_framework",label: "Marco teórico",          placement: "body",         required: false },
-  { id: "methodology",          label: "Metodología",            placement: "body",         required: false },
-  { id: "results",              label: "Resultados",             placement: "body",         required: false },
-  { id: "discussion",           label: "Discusión",              placement: "body",         required: false },
-  { id: "conclusions",          label: "Conclusiones",           placement: "body",         required: true  },
-  { id: "references",           label: "Referencias",            placement: "back_matter",  required: true  },
-  { id: "appendix_a",           label: "Apéndice A",             placement: "appendix",     required: false },
+const SECTION_CATALOG: { id: string; placement: string; required: boolean }[] = [
+  { id: "title_page",            placement: "front_matter", required: true  },
+  { id: "abstract",              placement: "front_matter", required: false },
+  { id: "acknowledgements",      placement: "front_matter", required: false },
+  { id: "table_of_contents",     placement: "front_matter", required: false },
+  { id: "list_of_figures",       placement: "front_matter", required: false },
+  { id: "list_of_tables",        placement: "front_matter", required: false },
+  { id: "introduction",          placement: "body",         required: true  },
+  { id: "theoretical_framework", placement: "body",         required: false },
+  { id: "methodology",           placement: "body",         required: false },
+  { id: "results",               placement: "body",         required: false },
+  { id: "discussion",            placement: "body",         required: false },
+  { id: "conclusions",           placement: "body",         required: true  },
+  { id: "references",            placement: "back_matter",  required: true  },
+  { id: "appendix_a",            placement: "appendix",     required: false },
 ];
 
 // PLACEMENT_LABEL is built dynamically inside the component using i18n
@@ -46,6 +46,14 @@ const PLACEMENT_COLOR: Record<string, string> = {
   appendix:     "var(--fg-muted)",
 };
 
+const BIBTEX_SAFE_STYLES = new Set([
+  "numeric", "numeric-comp", "numeric-verb",
+  "alphabetic", "alphabetic-verb",
+  "authoryear", "authoryear-comp", "authoryear-ibid", "authoryear-icomp",
+  "authortitle", "authortitle-comp", "authortitle-ibid", "authortitle-icomp",
+  "authortitle-terse", "authortitle-tcomp", "authortitle-ticomp",
+]);
+
 // ── Helpers ───────────────────────────────────────────────────────
 
 function slugify(text: string): string {
@@ -56,6 +64,24 @@ function slugify(text: string): string {
     .replace(/\.{2,}/g, ".")
     .replace(/^[^a-z0-9]+/, "")
     .slice(0, 60);
+}
+
+function recommendedBibliographyBackend(style: string): string {
+  return BIBTEX_SAFE_STYLES.has(style) ? "bibtex" : "biber";
+}
+
+function splitLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+function optionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 // ── Componentes de paso ───────────────────────────────────────────
@@ -138,8 +164,6 @@ export default function ProfileWizardView() {
     appendix:     t("profile_wizard.placement_appendix"),
   }), [t]);
   const navigate = useNavigate();
-  const { id: editId } = useParams<{ id?: string }>();
-  const isEditing = !!editId;
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -162,13 +186,33 @@ export default function ProfileWizardView() {
 
   const [sections, setSections] = useState<ProfileSectionInfo[]>([
     { id: "title_page",    element_id: "title_page",    placement: "front_matter", required: true,  title: undefined, label: undefined },
-    { id: "introduction",  element_id: "introduction",  placement: "body",         required: true,  title: "Introducción", label: undefined },
-    { id: "conclusions",   element_id: "conclusions",   placement: "body",         required: true,  title: "Conclusiones", label: undefined },
+    { id: "introduction",  element_id: "introduction",  placement: "body",         required: true,  title: t("library.section_element.introduction"), label: undefined },
+    { id: "conclusions",   element_id: "conclusions",   placement: "body",         required: true,  title: t("library.section_element.conclusions"), label: undefined },
     { id: "references",    element_id: "references",    placement: "back_matter",  required: true,  title: undefined, label: undefined },
   ]);
 
   const [showCatalog, setShowCatalog] = useState(false);
   const [customSection, setCustomSection] = useState({ id: "", title: "", placement: "body" as string });
+  const [sourceUrls, setSourceUrls] = useState("");
+  const [reviewIntervalDays, setReviewIntervalDays] = useState("180");
+  const [paper, setPaper] = useState("letterpaper");
+  const [marginTop, setMarginTop] = useState("");
+  const [marginBottom, setMarginBottom] = useState("");
+  const [marginLeft, setMarginLeft] = useState("");
+  const [marginRight, setMarginRight] = useState("");
+  const [lineSpacing, setLineSpacing] = useState("1.5");
+  const [maxWords, setMaxWords] = useState("");
+  const [maxAbstractWords, setMaxAbstractWords] = useState("");
+  const [pdfaRequired, setPdfaRequired] = useState(false);
+  const [pdfaLevel, setPdfaLevel] = useState("PDF/A-1b");
+  const [qualityChecks, setQualityChecks] = useState({
+    sources: false,
+    titlePage: false,
+    layout: false,
+    bibliography: false,
+    compileSample: false,
+    externalAssets: false,
+  });
 
   // ── Derivados ─────────────────────────────────────────────────
 
@@ -179,12 +223,26 @@ export default function ProfileWizardView() {
     }
   }
 
-  const steps = [t("profile_wizard.step_info"), t("profile_wizard.step_latex"), t("profile_wizard.step_sections"), t("profile_wizard.step_review")];
+  const steps = [
+    t("profile_wizard.step_info"),
+    t("profile_wizard.step_latex"),
+    t("profile_wizard.step_sections"),
+    t("profile_wizard.step_quality"),
+    t("profile_wizard.step_review"),
+  ];
+  const qualityDone = Object.values(qualityChecks).filter(Boolean).length;
+  const qualityTotal = Object.keys(qualityChecks).length;
+
+  function handleBibStyleChange(style: string) {
+    setBibStyle(style);
+    setBibBackend(recommendedBibliographyBackend(style));
+  }
 
   const canNext = [
     name.trim().length > 0 && profileId.trim().length > 0,
     true,
     sections.length > 0,
+    true,
     true,
   ];
 
@@ -197,7 +255,7 @@ export default function ProfileWizardView() {
       element_id: entry.id,
       placement: entry.placement,
       required: entry.required,
-      title: entry.label,
+      title: t(`library.section_element.${entry.id}`),
       label: undefined,
     }]);
   }
@@ -252,6 +310,23 @@ export default function ProfileWizardView() {
         bibliography_style: bibStyle,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         sections,
+        source_urls: splitLines(sourceUrls),
+        review_interval_days: optionalNumber(reviewIntervalDays),
+        page_layout: {
+          paper: paper.trim() || undefined,
+          margins: {
+            top: marginTop.trim() || undefined,
+            bottom: marginBottom.trim() || undefined,
+            left: marginLeft.trim() || undefined,
+            right: marginRight.trim() || undefined,
+          },
+          line_spacing: optionalNumber(lineSpacing),
+        },
+        max_words: optionalNumber(maxWords),
+        max_abstract_words: optionalNumber(maxAbstractWords),
+        pdf_requirements: pdfaRequired ? {
+          pdfa: { required: true, level: pdfaLevel.trim() || undefined },
+        } : undefined,
       };
       await api.createProfile(profileId.trim(), payload);
       navigate("/library");
@@ -270,7 +345,7 @@ export default function ProfileWizardView() {
         left={
           <>
             <TxLogo />
-            <TxBreadcrumb parts={[t("library.title"), isEditing ? t("profile_wizard.editing_profile") : t("profile_wizard.new_profile")]} />
+            <TxBreadcrumb parts={[t("library.title"), t("profile_wizard.new_profile")]} />
           </>
         }
         right={
@@ -382,13 +457,17 @@ export default function ProfileWizardView() {
               <Field label={t("profile_wizard.bib_style_label")}>
                 <SelectField
                   value={bibStyle}
-                  onChange={setBibStyle}
+                  onChange={handleBibStyleChange}
                   options={[
                     { value: "apa",       label: t("profile_wizard.bib_apa") },
                     { value: "ieee",      label: t("profile_wizard.bib_ieee") },
                     { value: "vancouver", label: t("profile_wizard.bib_vancouver") },
-                    { value: "chicago",   label: t("profile_wizard.bib_chicago") },
+                    { value: "chicago-notes", label: t("library.bib_style_chicago_notes") },
+                    { value: "chicago-authordate", label: t("library.bib_style_chicago_authordate") },
                     { value: "mla",       label: t("profile_wizard.bib_mla") },
+                    { value: "mhra",      label: "MHRA" },
+                    { value: "abnt",      label: "ABNT NBR 6023:2018" },
+                    { value: "gb7714-2015", label: t("styles.builtins.gb7714.full_name") },
                     { value: "numeric",   label: t("profile_wizard.bib_numeric") },
                   ]}
                 />
@@ -499,7 +578,7 @@ export default function ProfileWizardView() {
                             background: PLACEMENT_COLOR[entry.placement] ?? "var(--fg-faint)",
                           }}
                         />
-                        {t(`library.section_element.${entry.id}`, { defaultValue: entry.label })}
+                        {t(`library.section_element.${entry.id}`)}
                         {alreadyAdded && <IconCheck size={10} style={{ marginLeft: "auto", opacity: 0.5 }} />}
                       </button>
                     );
@@ -541,8 +620,91 @@ export default function ProfileWizardView() {
             </div>
           )}
 
-          {/* ── Paso 3: Revisar y crear ───────────────────────── */}
+          {/* ── Paso 3: Calidad profesional ───────────────────── */}
           {step === 3 && (
+            <div>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", marginTop: 0 }}>
+                {t("profile_wizard.quality_intro")}
+              </p>
+
+              <div style={{
+                padding: 12, background: "var(--bg-panel)", borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border-subtle)", marginBottom: 16,
+              }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 8 }}>
+                  {t("profile_wizard.source_urls_label")}
+                </div>
+                <textarea
+                  style={{ ...inputStyle, resize: "vertical", minHeight: 76, fontFamily: "var(--font-mono)", fontSize: 12 }}
+                  value={sourceUrls}
+                  onChange={(e) => setSourceUrls(e.target.value)}
+                  placeholder={t("profile_wizard.source_urls_placeholder")}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)" }}>{t("profile_wizard.review_interval_label")}</span>
+                  <input
+                    style={{ ...inputStyle, width: 96 }}
+                    value={reviewIntervalDays}
+                    onChange={(e) => setReviewIntervalDays(e.target.value)}
+                    inputMode="numeric"
+                  />
+                </div>
+              </div>
+
+              <div style={{
+                padding: 12, background: "var(--bg-panel)", borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border-subtle)", marginBottom: 16,
+              }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 8 }}>
+                  {t("profile_wizard.layout_requirements")}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+                  <input style={inputStyle} value={paper} onChange={(e) => setPaper(e.target.value)} placeholder={t("profile_wizard.paper_placeholder")} />
+                  <input style={inputStyle} value={lineSpacing} onChange={(e) => setLineSpacing(e.target.value)} placeholder={t("profile_wizard.line_spacing_placeholder")} />
+                  <input style={inputStyle} value={maxAbstractWords} onChange={(e) => setMaxAbstractWords(e.target.value)} placeholder={t("profile_wizard.abstract_words_placeholder")} inputMode="numeric" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 8 }}>
+                  <input style={inputStyle} value={marginTop} onChange={(e) => setMarginTop(e.target.value)} placeholder={t("profile_wizard.margin_top_placeholder")} />
+                  <input style={inputStyle} value={marginBottom} onChange={(e) => setMarginBottom(e.target.value)} placeholder={t("profile_wizard.margin_bottom_placeholder")} />
+                  <input style={inputStyle} value={marginLeft} onChange={(e) => setMarginLeft(e.target.value)} placeholder={t("profile_wizard.margin_left_placeholder")} />
+                  <input style={inputStyle} value={marginRight} onChange={(e) => setMarginRight(e.target.value)} placeholder={t("profile_wizard.margin_right_placeholder")} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <input style={inputStyle} value={maxWords} onChange={(e) => setMaxWords(e.target.value)} placeholder={t("profile_wizard.max_words_placeholder")} inputMode="numeric" />
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-sm)", color: "var(--fg-muted)" }}>
+                    <input type="checkbox" checked={pdfaRequired} onChange={(e) => setPdfaRequired(e.target.checked)} />
+                    {t("profile_wizard.pdfa_required")}
+                    {pdfaRequired && (
+                      <input style={{ ...inputStyle, width: 120 }} value={pdfaLevel} onChange={(e) => setPdfaLevel(e.target.value)} />
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              <div style={{
+                padding: 12, background: "var(--bg-panel)", borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border-subtle)",
+              }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-faint)", marginBottom: 8 }}>
+                  {t("profile_wizard.quality_checklist", { done: qualityDone, total: qualityTotal })}
+                </div>
+                {(["sources", "titlePage", "layout", "bibliography", "compileSample", "externalAssets"] as const).map((key) => (
+                  <label key={key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "var(--fs-sm)", color: "var(--fg-default)", marginBottom: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={qualityChecks[key]}
+                      onChange={(e) => setQualityChecks((prev) => ({ ...prev, [key]: e.target.checked }))}
+                      style={{ marginTop: 2 }}
+                    />
+                    <span>{t(`profile_wizard.quality_${key}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Paso 4: Revisar y crear ───────────────────────── */}
+          {step === 4 && (
             <div>
               <div style={{
                 background: "var(--bg-panel)", borderRadius: "var(--r-md)",
@@ -564,6 +726,7 @@ export default function ProfileWizardView() {
                   <span>📄 {docClass}</span>
                   <span>📚 {bibStyle.toUpperCase()} · {bibBackend}</span>
                   <span>📋 {t("profile_wizard.sections_count", { count: sections.length })}</span>
+                  <span>{t("profile_wizard.quality_summary", { done: qualityDone, total: qualityTotal })}</span>
                   {author && <span>✍ {author}</span>}
                   <span>🏷 v{version}</span>
                 </div>
@@ -634,7 +797,7 @@ export default function ProfileWizardView() {
       </div>
 
       <TxStatusbar items={[
-        { text: isEditing ? t("profile_wizard.editing_profile") : t("profile_wizard.new_profile") },
+        { text: t("profile_wizard.new_profile") },
         { text: `${t("profile_wizard.step_of", { current: step + 1, total: steps.length })}: ${steps[step]}` },
       ]} />
     </>

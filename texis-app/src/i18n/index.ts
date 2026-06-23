@@ -3,24 +3,26 @@ import { initReactI18next } from "react-i18next";
 
 import es from "./locales/es.json";
 import en from "./locales/en.json";
-import fr from "./locales/fr.json";
-import de from "./locales/de.json";
-import ja from "./locales/ja.json";
-import zh from "./locales/zh.json";
-import ptBR from "./locales/pt-BR.json";
 
 import { getInstalledLocales } from "../services/languagePacks";
 import { persistUiLanguage, readStoredUiLanguage } from "./languageState";
 
-// Build initial resources from bundled + already-installed language packs
+type LocaleModule = { default: Record<string, unknown> };
+
+const UI_LOCALE_LOADERS: Record<string, () => Promise<LocaleModule>> = {
+  de: () => import("./locales/de.json"),
+  fr: () => import("./locales/fr.json"),
+  ja: () => import("./locales/ja.json"),
+  zh: () => import("./locales/zh.json"),
+  "pt-BR": () => import("./locales/pt-BR.json"),
+};
+
+const loadingLocales: Record<string, Promise<boolean> | undefined> = {};
+
+// Build initial resources from the core fallback locales + already-installed language packs.
 const bundled: Record<string, { t: Record<string, unknown> }> = {
   es: { t: es as Record<string, unknown> },
   en: { t: en as Record<string, unknown> },
-  fr: { t: fr as Record<string, unknown> },
-  de: { t: de as Record<string, unknown> },
-  ja: { t: ja as Record<string, unknown> },
-  zh: { t: zh as Record<string, unknown> },
-  "pt-BR": { t: ptBR as Record<string, unknown> },
 };
 
 const installed = getInstalledLocales();
@@ -28,11 +30,13 @@ for (const { id, data } of installed) {
   bundled[id] = { t: data };
 }
 
+const initialLanguage = persistUiLanguage(readStoredUiLanguage());
+
 i18n
   .use(initReactI18next)
   .init({
     resources: bundled,
-    lng: persistUiLanguage(readStoredUiLanguage()),
+    lng: initialLanguage,
     ns: ["t"],
     defaultNS: "t",
     fallbackLng: ["es", "en"],
@@ -51,8 +55,19 @@ export function registerDynamicLocale(id: string, data: Record<string, unknown>)
 }
 
 /** Register an installed remote locale from localStorage before switching to it. */
-export function ensureDynamicLocale(id: string): boolean {
+export async function ensureDynamicLocale(id: string): Promise<boolean> {
   if (i18n.hasResourceBundle(id, "t")) return true;
+
+  const bundledLoader = UI_LOCALE_LOADERS[id];
+  if (bundledLoader) {
+    loadingLocales[id] ??= bundledLoader()
+      .then((mod) => {
+        registerDynamicLocale(id, mod.default);
+        return true;
+      })
+      .catch(() => false);
+    return loadingLocales[id] ?? false;
+  }
 
   const raw = localStorage.getItem(`tx-lang-pack-ui:${id}`);
   if (!raw) return false;
@@ -63,6 +78,14 @@ export function ensureDynamicLocale(id: string): boolean {
   } catch {
     return false;
   }
+}
+
+if (!i18n.hasResourceBundle(initialLanguage, "t")) {
+  void ensureDynamicLocale(initialLanguage).then((loaded) => {
+    if (loaded && i18n.language === initialLanguage) {
+      void i18n.changeLanguage(initialLanguage);
+    }
+  });
 }
 
 // ── Bundled language catalogue ───────────────────────────────────

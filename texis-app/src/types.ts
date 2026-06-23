@@ -525,6 +525,19 @@ export interface PdfRequirements {
   pdfa?: PdfaRequirement;
 }
 
+export interface ProfileMargins {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+}
+
+export interface ProfilePageLayout {
+  paper?: string;
+  margins?: ProfileMargins;
+  line_spacing?: number;
+}
+
 export interface ProfileInfo {
   id: string;
   name: string;
@@ -541,6 +554,7 @@ export interface ProfileInfo {
   latex_engine?: string;
   status: ProfileStatus;
   verification?: ProfileVerification;
+  page_layout?: ProfilePageLayout;
   max_words?: number;
   max_abstract_words?: number;
   pdf_requirements?: PdfRequirements;
@@ -602,12 +616,24 @@ export interface ProfileUpdatePayload {
   author?: string;
   version?: string;
   license?: string;
+  status?: ProfileStatus;
   latex_engine: string;
   document_class: string;
   bibliography_style: string;
   bibliography_backend: string;
   tags: string[];
   sections: ProfileSectionInfo[];
+  source_urls?: string[];
+  reviewed_at?: string;
+  reviewed_by?: string;
+  verified_at?: string;
+  verified_by?: string;
+  review_interval_days?: number;
+  ci_evidence?: string;
+  page_layout?: ProfilePageLayout;
+  max_words?: number;
+  max_abstract_words?: number;
+  pdf_requirements?: PdfRequirements;
 }
 
 // ── Language packs ──────────────────────────────────────────────

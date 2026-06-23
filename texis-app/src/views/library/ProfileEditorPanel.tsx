@@ -7,6 +7,32 @@ import { KNOWN_SECTION_ELEMENTS, PLACEMENT_COLOR } from "./constants";
 
 // ── ProfileEditorPanel ────────────────────────────────────────────────────────
 
+const BIBTEX_SAFE_STYLES = new Set([
+  "numeric", "numeric-comp", "numeric-verb",
+  "alphabetic", "alphabetic-verb",
+  "authoryear", "authoryear-comp", "authoryear-ibid", "authoryear-icomp",
+  "authortitle", "authortitle-comp", "authortitle-ibid", "authortitle-icomp",
+  "authortitle-terse", "authortitle-tcomp", "authortitle-ticomp",
+]);
+
+function recommendedBibliographyBackend(style: string): string {
+  return BIBTEX_SAFE_STYLES.has(style) ? "bibtex" : "biber";
+}
+
+function splitLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+function optionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export function ProfileEditorPanel({ profile, onSave, onCancel }: {
   profile: ProfileInfo; onSave: (updated: ProfileInfo) => void; onCancel: () => void;
 }) {
@@ -16,11 +42,29 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
   const [author, setAuthor]           = useState(profile.author ?? "");
   const [version, setVersion]         = useState(profile.version ?? "0.1.0");
   const [license, setLicense]         = useState(profile.license ?? "");
+  const [status, setStatus]           = useState(profile.status ?? "draft");
   const [latexEngine, setLatexEngine] = useState(profile.latex_engine ?? "xelatex");
   const [docClass, setDocClass]       = useState(profile.document_class ?? "book");
   const [bibStyle, setBibStyle]       = useState(profile.bibliography_style ?? "apa");
   const [tagsRaw, setTagsRaw]         = useState((profile.tags ?? []).join(", "));
   const [sections, setSections]       = useState<ProfileSectionInfo[]>(profile.sections ?? []);
+  const [sourceUrls, setSourceUrls]   = useState((profile.verification?.source_urls ?? []).join("\n"));
+  const [reviewedAt, setReviewedAt]   = useState(profile.verification?.reviewed_at ?? "");
+  const [reviewedBy, setReviewedBy]   = useState(profile.verification?.reviewed_by ?? "");
+  const [verifiedAt, setVerifiedAt]   = useState(profile.verification?.verified_at ?? "");
+  const [verifiedBy, setVerifiedBy]   = useState(profile.verification?.verified_by ?? "");
+  const [reviewIntervalDays, setReviewIntervalDays] = useState(profile.verification?.review_interval_days ? String(profile.verification.review_interval_days) : "");
+  const [ciEvidence, setCiEvidence]   = useState(profile.verification?.ci_evidence ?? "");
+  const [paper, setPaper]             = useState(profile.page_layout?.paper ?? "");
+  const [marginTop, setMarginTop]     = useState(profile.page_layout?.margins?.top ?? "");
+  const [marginBottom, setMarginBottom] = useState(profile.page_layout?.margins?.bottom ?? "");
+  const [marginLeft, setMarginLeft]   = useState(profile.page_layout?.margins?.left ?? "");
+  const [marginRight, setMarginRight] = useState(profile.page_layout?.margins?.right ?? "");
+  const [lineSpacing, setLineSpacing] = useState(profile.page_layout?.line_spacing ? String(profile.page_layout.line_spacing) : "");
+  const [maxWords, setMaxWords]       = useState(profile.max_words ? String(profile.max_words) : "");
+  const [maxAbstractWords, setMaxAbstractWords] = useState(profile.max_abstract_words ? String(profile.max_abstract_words) : "");
+  const [pdfaRequired, setPdfaRequired] = useState(!!profile.pdf_requirements?.pdfa?.required);
+  const [pdfaLevel, setPdfaLevel]     = useState(profile.pdf_requirements?.pdfa?.level ?? "PDF/A-1b");
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false);
@@ -52,9 +96,30 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
     const payload: ProfileUpdatePayload = {
       name: name.trim(), description: description.trim() || undefined, author: author.trim() || undefined,
       version: version.trim() || undefined, license: license.trim() || undefined,
+      status: status as ProfileInfo["status"],
       latex_engine: latexEngine, document_class: docClass, bibliography_style: bibStyle,
-      bibliography_backend: bibStyle === "vancouver" ? "bibtex" : "biber",
+      bibliography_backend: recommendedBibliographyBackend(bibStyle),
       tags: tagsRaw.split(",").map((t) => t.trim()).filter(Boolean), sections,
+      source_urls: splitLines(sourceUrls),
+      reviewed_at: reviewedAt.trim() || undefined,
+      reviewed_by: reviewedBy.trim() || undefined,
+      verified_at: verifiedAt.trim() || undefined,
+      verified_by: verifiedBy.trim() || undefined,
+      review_interval_days: optionalNumber(reviewIntervalDays),
+      ci_evidence: ciEvidence.trim() || undefined,
+      page_layout: {
+        paper: paper.trim() || undefined,
+        margins: {
+          top: marginTop.trim() || undefined,
+          bottom: marginBottom.trim() || undefined,
+          left: marginLeft.trim() || undefined,
+          right: marginRight.trim() || undefined,
+        },
+        line_spacing: optionalNumber(lineSpacing),
+      },
+      max_words: optionalNumber(maxWords),
+      max_abstract_words: optionalNumber(maxAbstractWords),
+      pdf_requirements: pdfaRequired ? { pdfa: { required: true, level: pdfaLevel.trim() || undefined } } : undefined,
     };
     try { const updated = await api.updateProfile(profile.id, payload); onSave(updated); }
     catch (e) { setError(String(e)); }
@@ -95,6 +160,17 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
             <div><label style={labelStyle}>{t("library.version")}</label><input value={version} onChange={(e) => setVersion(e.target.value)} style={fieldStyle} /></div>
           </div>
           <div style={{ marginBottom: 10 }}><label style={labelStyle}>{t("library.license")}</label><input value={license} onChange={(e) => setLicense(e.target.value)} placeholder={t("library.license_placeholder")} style={fieldStyle} /></div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>{t("profile_wizard.status_label")}</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value as ProfileInfo["status"])} style={fieldStyle}>
+              {["draft", "reviewed", "verified", "experimental", "stale", "deprecated"].map((s) => (
+                <option key={s} value={s}>{t(`profile_status.${s}`, s)}</option>
+              ))}
+            </select>
+            <div style={{ fontSize: 10, color: "var(--fg-faint)", lineHeight: 1.45, marginTop: 4 }}>
+              {t("profile_wizard.status_promotion_hint")}
+            </div>
+          </div>
           <div><label style={labelStyle}>{t("library.tags_comma")}</label><input value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} placeholder={t("library.tags_placeholder")} style={fieldStyle} /></div>
         </div>
 
@@ -130,8 +206,54 @@ export function ProfileEditorPanel({ profile, onSave, onCancel }: {
               <option value="mla">MLA 9</option>
               <option value="mhra">MHRA</option>
               <option value="abnt">ABNT</option>
-              <option value="gb7714">GB/T 7714</option>
+              <option value="gb7714-2015">{t("styles.builtins.gb7714.full_name")}</option>
             </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={sectionLabel}>{t("profile_wizard.step_quality")}</div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>{t("profile_wizard.source_urls_label")}</label>
+            <textarea
+              value={sourceUrls}
+              onChange={(e) => setSourceUrls(e.target.value)}
+              rows={3}
+              placeholder={t("profile_wizard.source_urls_placeholder")}
+              style={{ ...fieldStyle, resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 11 }}
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div><label style={labelStyle}>{t("profile_wizard.review_interval_label")}</label><input value={reviewIntervalDays} onChange={(e) => setReviewIntervalDays(e.target.value)} style={fieldStyle} inputMode="numeric" /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.paper_placeholder")}</label><input value={paper} onChange={(e) => setPaper(e.target.value)} style={fieldStyle} /></div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div><label style={labelStyle}>{t("profile_wizard.reviewed_at_label")}</label><input value={reviewedAt} onChange={(e) => setReviewedAt(e.target.value)} placeholder="YYYY-MM-DD" style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.reviewed_by_label")}</label><input value={reviewedBy} onChange={(e) => setReviewedBy(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.verified_at_label")}</label><input value={verifiedAt} onChange={(e) => setVerifiedAt(e.target.value)} placeholder="YYYY-MM-DD" style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.verified_by_label")}</label><input value={verifiedBy} onChange={(e) => setVerifiedBy(e.target.value)} style={fieldStyle} /></div>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={labelStyle}>{t("profile_wizard.ci_evidence_label")}</label>
+            <input value={ciEvidence} onChange={(e) => setCiEvidence(e.target.value)} placeholder={t("profile_wizard.ci_evidence_placeholder")} style={fieldStyle} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div><label style={labelStyle}>{t("profile_wizard.line_spacing_placeholder")}</label><input value={lineSpacing} onChange={(e) => setLineSpacing(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.abstract_words_placeholder")}</label><input value={maxAbstractWords} onChange={(e) => setMaxAbstractWords(e.target.value)} style={fieldStyle} inputMode="numeric" /></div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <div><label style={labelStyle}>{t("profile_wizard.margin_top_placeholder")}</label><input value={marginTop} onChange={(e) => setMarginTop(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.margin_bottom_placeholder")}</label><input value={marginBottom} onChange={(e) => setMarginBottom(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.margin_left_placeholder")}</label><input value={marginLeft} onChange={(e) => setMarginLeft(e.target.value)} style={fieldStyle} /></div>
+            <div><label style={labelStyle}>{t("profile_wizard.margin_right_placeholder")}</label><input value={marginRight} onChange={(e) => setMarginRight(e.target.value)} style={fieldStyle} /></div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div><label style={labelStyle}>{t("profile_wizard.max_words_placeholder")}</label><input value={maxWords} onChange={(e) => setMaxWords(e.target.value)} style={fieldStyle} inputMode="numeric" /></div>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--fg-muted)", paddingTop: 18 }}>
+              <input type="checkbox" checked={pdfaRequired} onChange={(e) => setPdfaRequired(e.target.checked)} />
+              {t("profile_wizard.pdfa_required")}
+              {pdfaRequired && <input value={pdfaLevel} onChange={(e) => setPdfaLevel(e.target.value)} style={{ ...fieldStyle, width: 92, padding: "3px 6px" }} />}
+            </label>
           </div>
         </div>
 

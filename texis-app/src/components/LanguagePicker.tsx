@@ -46,10 +46,10 @@ export function LanguagePicker() {
 
   const current = allEntries.find((l) => l.code === activeLanguage) ?? allEntries[0];
 
-  function pick(code: string) {
-    ensureDynamicLocale(code);
+  async function pick(code: string) {
+    await ensureDynamicLocale(code);
     setLang(code);
-    i18n.changeLanguage(code);
+    void i18n.changeLanguage(code);
     const spellCode = SPELL_CHECK_LANGS[code];
     const installedPack = installed.find((p) => p.id === code);
     if (spellCode !== undefined) {

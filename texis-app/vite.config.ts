@@ -67,6 +67,11 @@ export default defineConfig(async () => ({
           if (/node_modules\/(i18next|react-i18next)\//.test(id)) return "vendor-i18n";
           if (/node_modules\/zustand\//.test(id)) return "vendor-state";
           if (/node_modules\/katex\//.test(id)) return "vendor-katex";
+          if (/node_modules\/pdfjs-dist\//.test(id)) return "vendor-pdfjs";
+          const uiLocale = id.match(/src\/i18n\/locales\/([^/?]+)\.json(?:$|\?)/);
+          if (uiLocale) return `ui-i18n-${uiLocale[1]}`;
+          const profileLocale = id.match(/TeXisStudio-Profiles\/i18n\/([^/?]+)\.json(?:$|\?)/);
+          if (profileLocale) return `profile-i18n-${profileLocale[1]}`;
         },
       },
     },

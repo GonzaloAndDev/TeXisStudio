@@ -133,6 +133,24 @@ impl LaTeXGenerator {
             &mut report,
         )?;
 
+        let estilo = crate::generator::main_tex::render_estilo_pub(model);
+        safe_write(
+            build_dir,
+            "configuracion/estilo.tex",
+            estilo.as_bytes(),
+            model,
+            &mut report,
+        )?;
+
+        let datos = crate::generator::main_tex::render_datos_tesis_pub(model);
+        safe_write(
+            build_dir,
+            "configuracion/datos_tesis.tex",
+            datos.as_bytes(),
+            model,
+            &mut report,
+        )?;
+
         // Secciones
         sections::generate_all_respecting_manual(
             model,

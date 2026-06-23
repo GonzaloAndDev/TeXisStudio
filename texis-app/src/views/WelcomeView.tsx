@@ -40,9 +40,9 @@ export default function WelcomeView() {
         return;
       }
     }
-    ensureDynamicLocale(code);
+    await ensureDynamicLocale(code);
     setLang(code);
-    i18n.changeLanguage(code);
+    void i18n.changeLanguage(code);
     const bundledSpellCode = SPELL_CHECK_LANGS[code];
     if (bundledSpellCode !== undefined) {
       setSpellLang(bundledSpellCode);

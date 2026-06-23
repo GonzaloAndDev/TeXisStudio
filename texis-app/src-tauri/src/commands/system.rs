@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 use texis_core::build_engine::preflight::{EnvContext, Platform, PreflightChecker};
 use texis_core::compiler::detector::LatexInstallation;
-use texis_core::profile::{ProfileLoader, ProfileRegistry};
+use texis_core::profile::{ProfileLoader, ProfilePolicyValidator, ProfileRegistry, ProfileStatus};
 use texis_core::project::loader::ProjectLoader;
 
 /// Payload de actualización de perfil enviado desde el frontend.
@@ -16,12 +16,71 @@ pub struct ProfileUpdatePayload {
     pub author: Option<String>,
     pub version: Option<String>,
     pub license: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
     pub latex_engine: String,
     pub document_class: String,
     pub bibliography_style: String,
     pub bibliography_backend: String,
     pub tags: Vec<String>,
     pub sections: Vec<SectionUpdateEntry>,
+    #[serde(default)]
+    pub source_urls: Vec<String>,
+    #[serde(default)]
+    pub reviewed_at: Option<String>,
+    #[serde(default)]
+    pub reviewed_by: Option<String>,
+    #[serde(default)]
+    pub verified_at: Option<String>,
+    #[serde(default)]
+    pub verified_by: Option<String>,
+    #[serde(default)]
+    pub review_interval_days: Option<u32>,
+    #[serde(default)]
+    pub ci_evidence: Option<String>,
+    #[serde(default)]
+    pub page_layout: Option<ProfilePageLayoutUpdate>,
+    #[serde(default)]
+    pub max_words: Option<u32>,
+    #[serde(default)]
+    pub max_abstract_words: Option<u32>,
+    #[serde(default)]
+    pub pdf_requirements: Option<PdfRequirementsUpdate>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ProfilePageLayoutUpdate {
+    #[serde(default)]
+    pub paper: Option<String>,
+    #[serde(default)]
+    pub margins: Option<ProfileMarginsUpdate>,
+    #[serde(default)]
+    pub line_spacing: Option<f32>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ProfileMarginsUpdate {
+    #[serde(default)]
+    pub top: Option<String>,
+    #[serde(default)]
+    pub bottom: Option<String>,
+    #[serde(default)]
+    pub left: Option<String>,
+    #[serde(default)]
+    pub right: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PdfRequirementsUpdate {
+    #[serde(default)]
+    pub pdfa: Option<PdfaRequirementUpdate>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PdfaRequirementUpdate {
+    pub required: bool,
+    #[serde(default)]
+    pub level: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -38,6 +97,112 @@ pub struct SectionUpdateEntry {
 
 fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
+}
+
+fn normalize_optional_text(value: Option<String>) -> Option<String> {
+    value.and_then(|v| {
+        let trimmed = v.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn parse_profile_status(status: Option<String>) -> Result<Option<ProfileStatus>, String> {
+    let Some(status) = normalize_optional_text(status) else {
+        return Ok(None);
+    };
+    match status.as_str() {
+        "experimental" => Ok(Some(ProfileStatus::Experimental)),
+        "draft" => Ok(Some(ProfileStatus::Draft)),
+        "reviewed" => Ok(Some(ProfileStatus::Reviewed)),
+        "verified" => Ok(Some(ProfileStatus::Verified)),
+        "stale" => Ok(Some(ProfileStatus::Stale)),
+        "deprecated" => Ok(Some(ProfileStatus::Deprecated)),
+        _ => Err(format!("Status de perfil inválido: '{}'.", status)),
+    }
+}
+
+fn policy_error_message(profile: &texis_core::profile::Profile) -> Option<String> {
+    let report = ProfilePolicyValidator::validate(profile);
+    if !report.has_errors() {
+        return None;
+    }
+    let errors = report
+        .issues
+        .into_iter()
+        .filter(|issue| issue.severity == texis_core::profile::PolicySeverity::Error)
+        .map(|issue| format!("{}: {}", issue.code, issue.message))
+        .collect::<Vec<_>>()
+        .join("\n");
+    Some(format!(
+        "No se puede guardar el perfil con status '{}':\n{}",
+        match profile.status {
+            ProfileStatus::Experimental => "experimental",
+            ProfileStatus::Draft => "draft",
+            ProfileStatus::Reviewed => "reviewed",
+            ProfileStatus::Verified => "verified",
+            ProfileStatus::Stale => "stale",
+            ProfileStatus::Deprecated => "deprecated",
+        },
+        errors
+    ))
+}
+
+fn page_layout_from_payload(
+    layout: Option<ProfilePageLayoutUpdate>,
+) -> Option<texis_core::profile::model::ProfilePageLayout> {
+    use texis_core::profile::model::{ProfileMargins, ProfilePageLayout};
+
+    layout.and_then(|l| {
+        let margins = l.margins.and_then(|m| {
+            let margins = ProfileMargins {
+                top: normalize_optional_text(m.top),
+                bottom: normalize_optional_text(m.bottom),
+                left: normalize_optional_text(m.left),
+                right: normalize_optional_text(m.right),
+            };
+            if margins.top.is_some()
+                || margins.bottom.is_some()
+                || margins.left.is_some()
+                || margins.right.is_some()
+            {
+                Some(margins)
+            } else {
+                None
+            }
+        });
+        let page_layout = ProfilePageLayout {
+            paper: normalize_optional_text(l.paper),
+            margins,
+            line_spacing: l.line_spacing,
+        };
+        if page_layout.paper.is_some()
+            || page_layout.margins.is_some()
+            || page_layout.line_spacing.is_some()
+        {
+            Some(page_layout)
+        } else {
+            None
+        }
+    })
+}
+
+fn pdf_requirements_from_payload(
+    requirements: Option<PdfRequirementsUpdate>,
+) -> Option<texis_core::profile::model::PdfRequirements> {
+    use texis_core::profile::model::{PdfRequirements, PdfaRequirement};
+
+    requirements.and_then(|r| {
+        r.pdfa.map(|pdfa| PdfRequirements {
+            pdfa: Some(PdfaRequirement {
+                required: pdfa.required,
+                level: normalize_optional_text(pdfa.level),
+            }),
+        })
+    })
 }
 
 /// Localiza el directorio de perfiles.
@@ -228,10 +393,43 @@ pub fn update_profile(
     profile.author = payload.author;
     profile.version = payload.version;
     profile.license = payload.license;
+    if let Some(status) = parse_profile_status(payload.status)? {
+        profile.status = status;
+    }
     profile.latex_engine = payload.latex_engine;
     profile.bibliography_style = payload.bibliography_style;
     profile.bibliography_backend = payload.bibliography_backend;
     profile.tags = payload.tags;
+    let source_urls: Vec<String> = payload
+        .source_urls
+        .iter()
+        .map(|u| u.trim().to_string())
+        .filter(|u| !u.is_empty())
+        .collect();
+    let has_verification_payload = !source_urls.is_empty()
+        || payload.review_interval_days.is_some()
+        || normalize_optional_text(payload.reviewed_at.clone()).is_some()
+        || normalize_optional_text(payload.reviewed_by.clone()).is_some()
+        || normalize_optional_text(payload.verified_at.clone()).is_some()
+        || normalize_optional_text(payload.verified_by.clone()).is_some()
+        || normalize_optional_text(payload.ci_evidence.clone()).is_some();
+    if has_verification_payload {
+        let mut verification = profile.verification.unwrap_or_default();
+        verification.source_urls = source_urls;
+        verification.reviewed_at = normalize_optional_text(payload.reviewed_at);
+        verification.reviewed_by = normalize_optional_text(payload.reviewed_by);
+        verification.verified_at = normalize_optional_text(payload.verified_at);
+        verification.verified_by = normalize_optional_text(payload.verified_by);
+        verification.review_interval_days = payload.review_interval_days;
+        verification.ci_evidence = normalize_optional_text(payload.ci_evidence);
+        profile.verification = Some(verification);
+    } else if profile.status == ProfileStatus::Draft {
+        profile.verification = None;
+    }
+    profile.page_layout = page_layout_from_payload(payload.page_layout);
+    profile.max_words = payload.max_words;
+    profile.max_abstract_words = payload.max_abstract_words;
+    profile.pdf_requirements = pdf_requirements_from_payload(payload.pdf_requirements);
     profile.document_class = ProfileDocumentClass {
         name: payload.document_class,
         options: profile.document_class.options.clone(), // conservar opciones existentes
@@ -249,6 +447,10 @@ pub fn update_profile(
             guidance: s.guidance.clone(),
         })
         .collect();
+
+    if let Some(message) = policy_error_message(&profile) {
+        return Err(message);
+    }
 
     loader.save_to_file(&profile, &yaml_path).map_err(err)?;
 
@@ -310,7 +512,9 @@ pub fn create_profile(
     profile_id: String,
     payload: ProfileUpdatePayload,
 ) -> Result<Value, String> {
-    use texis_core::profile::model::{Profile, ProfileDocumentClass, ProfileSectionDef};
+    use texis_core::profile::model::{
+        Profile, ProfileDocumentClass, ProfileSectionDef, ProfileVerification,
+    };
 
     // Validar profile_id (mismas reglas que delete_profile)
     let id_invalid = profile_id.is_empty()
@@ -363,7 +567,38 @@ pub fn create_profile(
     profile.author = payload.author;
     profile.version = Some(payload.version.unwrap_or_else(|| "0.1.0".to_string()));
     profile.license = payload.license;
+    if let Some(status) = parse_profile_status(payload.status)? {
+        profile.status = status;
+    }
     profile.tags = payload.tags;
+    let source_urls: Vec<String> = payload
+        .source_urls
+        .iter()
+        .map(|u| u.trim().to_string())
+        .filter(|u| !u.is_empty())
+        .collect();
+    let has_verification_payload = !source_urls.is_empty()
+        || payload.review_interval_days.is_some()
+        || normalize_optional_text(payload.reviewed_at.clone()).is_some()
+        || normalize_optional_text(payload.reviewed_by.clone()).is_some()
+        || normalize_optional_text(payload.verified_at.clone()).is_some()
+        || normalize_optional_text(payload.verified_by.clone()).is_some()
+        || normalize_optional_text(payload.ci_evidence.clone()).is_some();
+    if has_verification_payload {
+        profile.verification = Some(ProfileVerification {
+            reviewed_at: normalize_optional_text(payload.reviewed_at),
+            reviewed_by: normalize_optional_text(payload.reviewed_by),
+            verified_at: normalize_optional_text(payload.verified_at),
+            verified_by: normalize_optional_text(payload.verified_by),
+            source_urls,
+            review_interval_days: payload.review_interval_days,
+            ci_evidence: normalize_optional_text(payload.ci_evidence),
+        });
+    }
+    profile.page_layout = page_layout_from_payload(payload.page_layout);
+    profile.max_words = payload.max_words;
+    profile.max_abstract_words = payload.max_abstract_words;
+    profile.pdf_requirements = pdf_requirements_from_payload(payload.pdf_requirements);
     profile.sections = payload
         .sections
         .iter()
@@ -377,6 +612,10 @@ pub fn create_profile(
             guidance: s.guidance.clone(),
         })
         .collect();
+
+    if let Some(message) = policy_error_message(&profile) {
+        return Err(message);
+    }
 
     let yaml_path = profile_dir.join("profile.yaml");
     let loader = ProfileLoader;
@@ -441,6 +680,19 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         })
     });
 
+    let page_layout = p.page_layout.as_ref().map(|l| {
+        serde_json::json!({
+            "paper": l.paper,
+            "margins": l.margins.as_ref().map(|m| serde_json::json!({
+                "top": m.top,
+                "bottom": m.bottom,
+                "left": m.left,
+                "right": m.right,
+            })),
+            "line_spacing": l.line_spacing,
+        })
+    });
+
     serde_json::json!({
         "id": p.id,
         "name": p.name,
@@ -457,6 +709,7 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
         "latex_engine": p.latex_engine,
         "status": status_str,
         "verification": verification,
+        "page_layout": page_layout,
         "max_words": p.max_words,
         "max_abstract_words": p.max_abstract_words,
         "pdf_requirements": pdf_requirements,

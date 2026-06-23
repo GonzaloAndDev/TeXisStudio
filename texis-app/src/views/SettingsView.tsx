@@ -156,11 +156,11 @@ export default function SettingsView() {
     }
   }
 
-  function pickLang(code: string) {
+  async function pickLang(code: string) {
     const normalized = normalizeUiLanguage(code);
-    ensureDynamicLocale(normalized);
+    await ensureDynamicLocale(normalized);
     setLang(normalized);
-    i18n.changeLanguage(normalized);
+    void i18n.changeLanguage(normalized);
     const spellCode = SPELL_CHECK_LANGS[normalized];
     const installedPack = installedPacks.find((p) => p.id === normalized);
     if (spellCode !== undefined) {
