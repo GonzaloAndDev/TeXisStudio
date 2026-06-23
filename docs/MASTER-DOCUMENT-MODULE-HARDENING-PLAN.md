@@ -1,608 +1,1150 @@
-# TeXisStudio: Master Plan for Document Module Hardening
+# Plan Maestro de Reconstrucción del Núcleo Documental de TeXisStudio
 
-Status: execution plan  
-Audience: implementation agent and maintainers  
-Scope: TeXisStudio, TeXisStudio-Profiles, TeXisStudio-Languages, TeXisStudio-Plugins
+Estado: arquitectura objetivo y programa de ejecución
+Alcance: TeXisStudio, TeXisStudio-Profiles, TeXisStudio-Languages y TeXisStudio-Plugins
+Decisión: reconstrucción integral del núcleo documental, no refactor cosmético
 
-## 1. Objective
+## 1. Propósito
 
-Turn the universal parts of an academic thesis into independently maintainable,
-professionally tested document modules:
+TeXisStudio debe convertirse en una plataforma profesional para diseñar, escribir,
+validar, compilar y entregar documentos académicos complejos sin exigir que el
+usuario conozca LaTeX.
 
-1. Cover and institutional title pages
-2. Preliminary matter and generated indexes
-3. Main body
-4. Bibliography and references
-5. Appendices
-6. Final document assembly
+Para lograrlo, los componentes universales de una tesis serán dominios independientes:
 
-Each module must own its domain model, normalization, validation, LaTeX rendering,
-PDF checks, UI capabilities, and fixtures. The application shell must assemble
-modules through stable contracts instead of duplicating document-order rules.
+1. Portada e identidad institucional
+2. Preliminares
+3. Índices y listas
+4. Cuerpo académico
+5. Bibliografía y referencias
+6. Anexos
+7. Ensamblado, compilación y verificación final
 
-This is a modular monolith, not a microservice conversion. Modules are isolated by
-Rust and TypeScript APIs, dependency rules, schemas, and tests while remaining in
-one application and one build pipeline.
+Cada dominio funcionará como una miniaplicación dentro de una plataforma común. Será
+responsable de sus datos, reglas, validación, edición, renderizado, pruebas y
+diagnósticos. Ningún módulo podrá modificar internamente a otro.
 
-## 2. Current Findings
+La plataforma general resolverá configuración, coordinará los módulos, ensamblará el
+documento y verificará el resultado.
 
-The implementation must begin from these observed constraints:
+## 2. Decisión Arquitectónica
 
-- `project::ProjectModel` is the active YAML model used by the editor, generator,
-  validators, importer, exporter, CLI, and Tauri project commands.
-- `texis_project::TexisProject` is a second model used by `build_engine` and
-  `template_engine`.
-- `generator` and `template_engine` can both decide document order and emit
-  `main.tex`. They have already diverged in the past.
-- `main_tex.rs` currently owns assembly, package inference, language setup,
-  typography, document metadata, indexes, bibliography, glossary, and ordering.
-- `sections.rs` renders the cover, every section type, and all content blocks.
-- Profiles contain historical aliases such as `cover`, `toc`, `bibliography`, and
-  sometimes declare appendices as `back_matter`.
-- Language packs provide LaTeX configuration, but document labels and generated
-  headings are also hardcoded in core renderers.
-- Visual plugins export raw LaTeX blocks and required packages. The document core
-  must validate and normalize those contributions before assembly.
-- Postflight checks inspect the final PDF, but they do not receive the resolved
-  document contract, expected language, profile requirements, or module ownership.
+La arquitectura objetivo es:
 
-Therefore, moving functions into new files is insufficient. The first architectural
-goal is one canonical document plan and one assembly pipeline.
+> **Monolito modular orientado al dominio, con arquitectura hexagonal en cada
+> módulo y una canalización documental dirigida por un modelo intermedio canónico.**
 
-## 3. Non-Negotiable Invariants
+No se usarán microservicios. Los dominios comparten proceso, distribución y versión,
+pero mantienen fronteras de código y contratos verificables.
 
-1. A project has one persisted source of truth during this migration:
-   `project::ProjectModel`.
-2. A build has one normalized, immutable source of truth:
-   `ResolvedDocument`.
-3. Only `DocumentAssembler` may decide global ordering or emit `main.tex`.
-4. A document module may emit fragments and requirements, never reorder another
-   module or write another module's files.
-5. Profiles declare policy and institutional requirements; they do not execute
-   arbitrary Rust, TypeScript, shell, or unrestricted LaTeX generation.
-6. Language packs supply localized document vocabulary and language configuration;
-   UI translations remain separate from document translations.
-7. Plugins contribute typed content/artifacts and package requirements; they do not
-   mutate the preamble or final document directly.
-8. Existing projects must load and compile throughout the migration.
-9. Generated stress projects and PDFs stay outside repositories.
-10. Every phase ends with clean worktrees and focused commits in each affected repo.
+### 2.1 Por qué esta arquitectura
 
-## 4. Target Architecture
+- Una tesis es una unidad transaccional y debe compilarse como un todo.
+- Los módulos tienen reglas complejas, pero necesitan coordinación determinista.
+- Los perfiles, idiomas y plugins cambian independientemente del núcleo.
+- LaTeX es un backend de renderizado, no el modelo del producto.
+- React, Tauri, YAML, JSON, MiniJinja, GitHub y los compiladores son mecanismos
+  reemplazables; las reglas documentales no lo son.
+- Un modelo intermedio permite validar el documento antes de producir LaTeX.
+- Las fronteras modulares reducen regresiones sin introducir operaciones distribuidas.
+
+### 2.2 Principio rector
+
+El núcleo no será “un generador de archivos LaTeX”. Será un **compilador documental**:
 
 ```text
-ProjectModel + Profile + DocumentLocale + PluginContributions
-                              |
-                              v
-                    DocumentResolver
-          aliases, defaults, policy, compatibility
-                              |
-                              v
-                     ResolvedDocument
-             immutable canonical build contract
-                              |
-             +----------------+----------------+
-             |                |                |
-             v                v                v
-        CoverModule     FrontMatterModule   BodyModule
-             |                |                |
-             +----------+-----+-----+----------+
-                        |           |
-                        v           v
-              BibliographyModule  AppendixModule
-                        \           /
-                         \         /
-                          v       v
-                    DocumentAssembler
-            package plan, file plan, main.tex
-                              |
-                              v
-                  Compiler -> Module Postflight
+Proyecto editable
+    + Perfil institucional
+    + Idioma documental
+    + Contribuciones de plugins
+    + Preferencias del usuario
+                    |
+                    v
+             Resolución semántica
+                    |
+                    v
+      Modelo Documental Intermedio (MDI)
+                    |
+                    v
+     Validación y planificación por módulos
+                    |
+                    v
+          Plan de Documento Inmutable
+                    |
+                    v
+     Backend LaTeX -> Compilador -> PDF
+                    |
+                    v
+       Verificación estructural y visual
 ```
 
-### 4.1 Canonical build contract
+LaTeX deja de decidir la estructura. La estructura se decide antes, dentro del
+dominio, y LaTeX sólo la representa.
 
-Create `texis-core/src/document_model/` with:
+## 3. Diagnóstico De La Arquitectura Actual
 
-- `ResolvedDocument`
-- `ResolvedMetadata`
-- `ResolvedSection`
-- `DocumentPhase`
-- `DocumentLocale`
-- `DocumentCapabilities`
-- `PackageRequirement`
-- `AssetRequirement`
-- `RenderFragment`
-- `ModuleDiagnostic`
-- `ModuleId`
+Actualmente existen buenas piezas, pero no una autoridad arquitectónica única:
 
-`DocumentPhase` must be explicit and ordered:
+- `project::ProjectModel` gobierna el editor, el generador, validadores, importación,
+  exportación, CLI y comandos Tauri.
+- `texis_project::TexisProject` gobierna partes del motor de build y plantillas.
+- `generator` y `template_engine` pueden producir estructura y `main.tex`.
+- `main_tex.rs` mezcla ensamblado, paquetes, idioma, tipografía, metadatos, índices,
+  glosario, bibliografía y orden.
+- `sections.rs` mezcla portada, capítulos y renderizado de todos los bloques.
+- Validadores externos vuelven a interpretar reglas que el generador ya interpretó.
+- Los perfiles usan aliases y placements históricos que cambian de significado al
+  cargarse.
+- Parte del vocabulario del documento está en packs de idioma y parte está
+  hardcodeado en Rust.
+- Los plugins entregan fragmentos LaTeX y paquetes, pero no existe una frontera
+  documental común suficientemente estricta.
+- El postflight inspecciona un PDF sin conocer plenamente el contrato que debía
+  cumplir.
+
+El problema central es la **autoridad duplicada**. Modularizar el código actual sin
+reconstruir esa autoridad únicamente trasladaría las inconsistencias.
+
+## 4. Estructura General Del Sistema
+
+```text
+┌──────────────────────────────── Experiencia ────────────────────────────────┐
+│ React UI | CLI | API Tauri | Automatización | Vista avanzada                │
+└───────────────────────────────────┬──────────────────────────────────────────┘
+                                    │ comandos / consultas
+┌──────────────────────────── Aplicación ─────────────────────────────────────┐
+│ ProjectService | ProfileService | DocumentBuildService | ExportService      │
+│ casos de uso, transacciones, permisos, progreso, cancelación                 │
+└───────────────────────────────────┬──────────────────────────────────────────┘
+                                    │
+┌──────────────────────────── Dominio documental ─────────────────────────────┐
+│ DocumentResolver -> DocumentIR -> ModulePlans -> DocumentPlan               │
+│                                                                             │
+│ Cover | Preliminaries | Indexes | Body | Bibliography | Appendices          │
+│                                                                             │
+│ Shared Kernel mínimo: IDs, diagnósticos, idioma, assets, medidas, provenance │
+└───────────────────────────────────┬──────────────────────────────────────────┘
+                                    │ puertos
+┌──────────────────────────── Infraestructura ────────────────────────────────┐
+│ YAML/JSON | perfiles | packs | plugins | filesystem | LaTeX | PDF tools     │
+│ GitHub catalogs | importadores | exportadores | caché                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.1 Capas
+
+#### Experiencia
+
+Presenta y edita el dominio. No interpreta reglas LaTeX ni perfiles directamente.
+
+#### Aplicación
+
+Implementa casos de uso:
+
+- crear y abrir proyecto;
+- resolver configuración;
+- editar un módulo;
+- validar;
+- generar vista previa;
+- compilar;
+- exportar;
+- importar;
+- migrar;
+- revisar preparación para entrega.
+
+No contiene reglas tipográficas ni académicas.
+
+#### Dominio
+
+Contiene el significado del documento y todas sus invariantes. No depende de React,
+Tauri, sistema de archivos, YAML, GitHub ni procesos de compilación.
+
+#### Infraestructura
+
+Implementa puertos del dominio y aplicación. Aquí viven serialización, filesystem,
+MiniJinja, herramientas PDF, compiladores y catálogos remotos.
+
+## 5. Modelo Documental Intermedio
+
+El nuevo centro del sistema será `DocumentIR`, una representación semántica,
+normalizada, versionada e independiente de LaTeX.
+
+```rust
+pub struct DocumentIR {
+    pub schema: DocumentSchemaVersion,
+    pub identity: DocumentIdentity,
+    pub metadata: ResolvedMetadata,
+    pub locale: DocumentLocale,
+    pub profile: ResolvedProfile,
+    pub cover: CoverDocument,
+    pub preliminaries: PreliminariesDocument,
+    pub indexes: IndexesDocument,
+    pub body: BodyDocument,
+    pub bibliography: BibliographyDocument,
+    pub appendices: AppendicesDocument,
+    pub resources: ResourceGraph,
+    pub provenance: ResolutionProvenance,
+}
+```
+
+### 5.1 Propiedades obligatorias
+
+- Es inmutable después de la resolución.
+- No contiene aliases.
+- No contiene placements como strings libres.
+- No contiene rutas absolutas.
+- No contiene configuración contradictoria sin diagnosticar.
+- Conserva provenance para explicar de dónde salió cada valor.
+- Puede serializarse para depuración y CI.
+- Puede validarse sin tener LaTeX instalado.
+
+### 5.2 Fases canónicas
 
 ```rust
 pub enum DocumentPhase {
     Cover,
-    FrontMatter,
+    Preliminaries,
+    Indexes,
     MainMatter,
     Appendices,
     BackMatter,
 }
 ```
 
-Do not infer phase from directory names or arbitrary strings after resolution.
+El orden global lo define el modelo. Los perfiles pueden configurar elementos dentro
+de las fases y ciertas relaciones permitidas, pero no inventar fases arbitrarias.
 
-### 4.2 Shared module contract
+### 5.3 Precedencia de configuración
 
-Create `texis-core/src/document_modules/contract.rs`:
+La resolución usará una política explícita:
+
+```text
+invariantes del núcleo
+    > requisitos obligatorios del perfil
+    > configuración explícita del proyecto
+    > recomendaciones del perfil
+    > defaults del tipo documental
+    > defaults seguros del núcleo
+```
+
+Cada valor resuelto registrará:
+
+- valor final;
+- fuente;
+- regla aplicada;
+- si puede ser modificado;
+- diagnóstico asociado;
+- evidencia institucional cuando corresponda.
+
+## 6. Cápsula Estándar De Un Módulo
+
+Cada módulo tendrá la misma organización conceptual:
+
+```text
+document_modules/<module>/
+  domain/          entidades, value objects, invariantes
+  application/     casos de uso específicos
+  ports/           interfaces requeridas
+  adapters/        perfil, locale, LaTeX, PDF, persistencia
+  diagnostics/     códigos y reglas
+  fixtures/        ejemplos mínimos, límites y casos reales
+  tests/           unidad, contrato, integración, snapshot, PDF
+  ui-contract/     DTOs y capacidades para la aplicación
+```
+
+No es obligatorio crear una carpeta por cada palabra desde el primer commit, pero
+las dependencias deberán respetar esta frontera.
+
+### 6.1 Contrato común
 
 ```rust
 pub trait DocumentModule {
-    fn id(&self) -> ModuleId;
-    fn supports(&self, document: &ResolvedDocument) -> bool;
-    fn validate(&self, context: &ModuleContext) -> Vec<ModuleDiagnostic>;
-    fn requirements(&self, context: &ModuleContext) -> ModuleRequirements;
-    fn render(&self, context: &ModuleContext) -> CoreResult<ModuleOutput>;
-    fn postflight(&self, context: &PostflightContext) -> Vec<ModuleDiagnostic>;
+    type Input;
+    type Model;
+    type Plan;
+
+    fn resolve(&self, input: Self::Input) -> Resolution<Self::Model>;
+    fn validate(&self, model: &Self::Model) -> Vec<Diagnostic>;
+    fn plan(&self, model: &Self::Model) -> Result<Self::Plan, ModuleError>;
+    fn render(
+        &self,
+        plan: &Self::Plan,
+        backend: &dyn RenderBackend,
+    ) -> Result<ModuleArtifact, ModuleError>;
+    fn verify(
+        &self,
+        plan: &Self::Plan,
+        artifact: &CompiledArtifact,
+    ) -> Vec<Diagnostic>;
 }
 ```
 
-`ModuleOutput` contains only owned files, ordered fragments, and declared
-requirements. It cannot write to disk. A shared writer applies the file plan and
-respects `FileState::Manual`.
+Un módulo:
 
-### 4.3 Dependency rule
+- no escribe directamente en disco;
+- no inicia compiladores;
+- no modifica modelos ajenos;
+- no decide el orden global;
+- no carga perfiles o idiomas por su cuenta;
+- no acepta LaTeX crudo como sustituto silencioso de datos estructurados.
 
-Allowed:
+## 7. Módulos Del Dominio
 
-```text
-modules -> document_model, rendering primitives, diagnostics
-assembler -> module contract, resolved outputs
-resolver -> ProjectModel, Profile, locale/plugin DTOs
-UI/Tauri/CLI -> application services
+## 7.1 Portada E Identidad Institucional
+
+Responsable de:
+
+- portada principal y portadas secundarias explícitas;
+- institución, facultad, programa y grado;
+- título, subtítulo, autoría y ORCID;
+- asesores, comité, jurado y roles;
+- ciudad, fecha, convocatoria y modalidad;
+- logotipos, escudos y sellos;
+- páginas de firmas y declaraciones institucionales asociadas;
+- metadatos PDF de título y autor.
+
+Modelo propio:
+
+- `CoverDocument`
+- `CoverPage`
+- `CoverBlock`
+- `InstitutionIdentity`
+- `AcademicAuthority`
+- `SignatureRequirement`
+- `CoverOverflowPolicy`
+- `InstitutionalAsset`
+
+Capacidades profesionales:
+
+- layouts estructurados y previsualizables;
+- restricciones de tamaño y alineación;
+- zonas reservadas;
+- variantes por grado o programa;
+- portada de una o varias páginas declaradas;
+- reducción tipográfica dentro de límites;
+- traslado formal de comité o firmas;
+- fallback sin logo que no rompa la composición;
+- plantilla avanzada validada para casos extraordinarios.
+
+Prohibido:
+
+- depender únicamente de una cadena MiniJinja sin esquema;
+- partir accidentalmente la portada;
+- esconder contenido por overflow;
+- usar assets sin provenance o licencia;
+- prometer reproducción exacta cuando el perfil no aporta evidencia.
+
+## 7.2 Preliminares
+
+Responsable de:
+
+- dedicatoria;
+- agradecimientos;
+- declaración de originalidad;
+- autorizaciones;
+- resumen y abstracts multilingües;
+- palabras clave;
+- epígrafe;
+- nomenclatura, símbolos, abreviaturas y glosario editorial;
+- numeración romana y páginas sin número visible.
+
+El perfil declara:
+
+- elementos requeridos;
+- orden permitido;
+- idiomas exigidos;
+- límites de palabras;
+- visibilidad en el índice;
+- política de numeración;
+- textos institucionales obligatorios y su fuente.
+
+El módulo diferencia contenido proporcionado por el usuario, contenido institucional
+verificado y texto de ejemplo. Nunca presentará un ejemplo como requisito oficial.
+
+## 7.3 Índices Y Listas
+
+Será un módulo separado de preliminares porque tiene comportamiento generado,
+dependencias cruzadas y verificación propia.
+
+Responsable de:
+
+- índice general;
+- lista de figuras;
+- lista de tablas;
+- lista de algoritmos;
+- lista de código;
+- listas personalizadas permitidas;
+- profundidad, títulos, entradas y páginas;
+- política para listas vacías.
+
+Consumirá un índice semántico producido por cuerpo, bibliografía y anexos. No
+inspeccionará texto LaTeX para reconstruir significado.
+
+Verificará:
+
+- entradas y números de página;
+- títulos localizados;
+- ausencia de listas vacías accidentales;
+- profundidad institucional;
+- consistencia con figuras, tablas, capítulos y anexos reales.
+
+## 7.4 Cuerpo Académico
+
+Responsable de:
+
+- capítulos, secciones y subsecciones;
+- párrafos y estructura narrativa;
+- figuras, tablas, ecuaciones, teoremas y código;
+- notas, citas, referencias cruzadas y labels;
+- contribuciones de plugins;
+- assets y requisitos de paquetes derivados del contenido;
+- estados editoriales y métricas de progreso.
+
+El cuerpo expondrá nodos semánticos, no fragmentos LaTeX como formato principal:
+
+```rust
+pub enum BodyNode {
+    Paragraph(Paragraph),
+    Heading(Heading),
+    Figure(Figure),
+    Table(Table),
+    Equation(Equation),
+    Theorem(Theorem),
+    CodeListing(CodeListing),
+    Citation(Citation),
+    CrossReference(CrossReference),
+    PluginContribution(PluginContribution),
+    TrustedRawLatex(TrustedRawLatex),
+}
 ```
 
-Forbidden:
+`TrustedRawLatex` será explícito, auditable y diagnosticable. No será el camino
+normal para implementar funciones que la app debería modelar.
+
+## 7.5 Bibliografía Y Referencias
+
+Responsable de extremo a extremo:
+
+- fuentes bibliográficas;
+- parseo;
+- normalización de nombres, fechas, DOI, URL e identificadores;
+- detección de duplicados;
+- claves de cita;
+- tipos de cita;
+- compatibilidad entre estilo, backend y motor;
+- ordenamiento;
+- notas y bibliografía;
+- compilación Biber/BibTeX;
+- ubicación y encabezado final;
+- calidad del resultado.
+
+Integrará detrás de una API única las capacidades actualmente repartidas entre
+manager, registry, parser, formatter, normalizer, validator, backend policy y
+exporters.
+
+La validación profesional incluirá fixtures reales para:
+
+- APA 7;
+- Vancouver;
+- IEEE;
+- Chicago 17 notes;
+- MHRA;
+- ABNT;
+- GB/T 7714.
+
+Compilar no será suficiente. Se comprobarán autores, campos obligatorios, enlaces,
+orden, citas sin resolver, duplicados y estructura esperada por estilo.
+
+## 7.6 Anexos
+
+Responsable de:
+
+- grupos de anexos;
+- títulos y numeración;
+- secciones internas;
+- figuras, tablas y ecuaciones propias;
+- referencias hacia y desde el cuerpo;
+- inclusión controlada de PDF u otros documentos externos;
+- entradas en índice;
+- transición hacia back matter.
+
+Los anexos nunca se representarán como `back_matter`. Serán una fase canónica con
+modelo y reglas propias.
+
+Verificará:
+
+- numeración alfabética o institucional;
+- ausencia de prefijos duplicados;
+- labels y referencias;
+- orden de bibliografía;
+- seguridad y existencia de archivos externos;
+- páginas rotadas, tamaños y legibilidad.
+
+## 8. Ensamblador Y Backends
+
+`DocumentAssembler` será la única autoridad que crea el plan final.
+
+Responsable de:
+
+- ordenar fases y artefactos;
+- combinar requisitos de módulos;
+- resolver paquetes y conflictos;
+- producir un grafo de archivos;
+- asignar ownership;
+- generar `main.tex`;
+- producir manifiesto de build;
+- aplicar escritura atómica;
+- respetar archivos manuales mediante una política explícita.
+
+No contendrá reglas de portada, bibliografía, anexos, idiomas ni bloques.
+
+### 8.1 Plan inmutable
+
+```rust
+pub struct DocumentPlan {
+    pub phases: Vec<PhasePlan>,
+    pub files: FileGraph,
+    pub packages: PackagePlan,
+    pub assets: AssetPlan,
+    pub toolchain: ToolchainPlan,
+    pub expectations: VerificationPlan,
+    pub diagnostics: Vec<Diagnostic>,
+}
+```
+
+### 8.2 Backend LaTeX
+
+El primer backend será LaTeX, pero implementará un puerto:
+
+```rust
+pub trait RenderBackend {
+    fn capabilities(&self) -> BackendCapabilities;
+    fn render_module(&self, artifact: &ModuleArtifact) -> RenderResult;
+    fn render_document(&self, plan: &DocumentPlan) -> RenderResult;
+}
+```
+
+Esto no obliga a crear otro backend ahora. Evita que el dominio se diseñe alrededor
+de comandos LaTeX específicos.
+
+### 8.3 Capacidades Y Límites
+
+Cada backend declara capacidades. Si una solicitud no puede resolverse fielmente:
+
+1. se explica el límite;
+2. se ofrecen alternativas compatibles;
+3. se permite integrar un resultado externo con provenance;
+4. no se simula que LaTeX puede hacerlo.
+
+## 9. Contratos Entre Repositorios
+
+## 9.1 TeXisStudio-Profiles
+
+El perfil será una política declarativa versionada, no un paquete de código.
+
+Nuevo esquema:
 
 ```text
-cover -> bibliography
-bibliography -> appendices
+Profile 2.x
+  identity
+  evidence
+  applicability
+  document_policy
+  modules
+    cover
+    preliminaries
+    indexes
+    body
+    bibliography
+    appendices
+  rendering_constraints
+  delivery_requirements
+```
+
+Reglas:
+
+- IDs y fases canónicas;
+- sin aliases en perfiles 2.x;
+- requisitos separados de recomendaciones;
+- evidencia oficial por regla;
+- vigencia y fecha de revisión;
+- capacidades requeridas declaradas;
+- assets con rol, hash, fuente y licencia;
+- templates avanzados aislados y validados;
+- `verified` exige fixture, compilación, postflight y evidencia CI.
+
+El creador de perfiles editará estos conceptos mediante formularios profesionales,
+vista previa, recomendaciones y validación. YAML será una vista avanzada, no la UX
+principal.
+
+## 9.2 TeXisStudio-Languages
+
+Separar tres responsabilidades:
+
+```text
+ui.json          interfaz de la aplicación
+document.json    vocabulario generado dentro del documento
+latex.json       configuración técnica del backend LaTeX
+```
+
+`document.json` incluirá:
+
+- títulos de índices;
+- nombres de figuras y tablas;
+- capítulos, anexos y bibliografía;
+- glosario, acrónimos y nomenclatura;
+- etiquetas académicas;
+- formatos de fecha;
+- reglas de pluralización necesarias.
+
+Las lenguas nativas mexicanas pueden declarar fallback documental al español cuando
+no exista terminología verificada. El fallback será explícito y visible, nunca una
+mezcla silenciosa.
+
+## 9.3 TeXisStudio-Plugins
+
+Los plugins aportarán contribuciones semánticas mediante un contrato versionado:
+
+```typescript
+interface DocumentContribution {
+  contractVersion: string;
+  contributionId: string;
+  semanticKind: string;
+  editableSource: EditableSource;
+  artifact: OutputArtifact;
+  caption?: LocalizedText;
+  label?: string;
+  requiredPackages: PackageRequirement[];
+  assets: AssetRequirement[];
+  capabilities: string[];
+  warnings: Diagnostic[];
+  provenance: ContributionProvenance;
+}
+```
+
+El núcleo:
+
+- valida el contrato;
+- sanitiza rutas y labels;
+- resuelve paquetes;
+- comprueba artefactos;
+- conserva fuente editable;
+- impide escritura fuera del directorio asignado;
+- ofrece integración externa cuando LaTeX no es suficiente.
+
+El plugin no modifica el preámbulo ni `main.tex`.
+
+## 10. Modelo De Errores Y Diagnósticos
+
+Todos los módulos usarán diagnósticos estructurados:
+
+```rust
+pub struct Diagnostic {
+    pub code: DiagnosticCode,
+    pub module: ModuleId,
+    pub severity: Severity,
+    pub stage: DiagnosticStage,
+    pub message_key: String,
+    pub location: Option<DocumentLocation>,
+    pub evidence: Vec<Evidence>,
+    pub remediation: Vec<Remediation>,
+    pub blocking: bool,
+}
+```
+
+Los mensajes se localizan en la experiencia; el dominio emite códigos y parámetros.
+
+Etapas:
+
+- importación;
+- resolución;
+- edición;
+- validación;
+- planificación;
+- render;
+- compilación;
+- postflight;
+- entrega.
+
+Un error puede rastrearse hasta módulo, elemento, perfil, fuente y acción correctiva.
+
+## 11. Persistencia Y Compatibilidad
+
+El nuevo formato de proyecto será semántico y modular:
+
+```text
+project.texis/
+  project.yaml
+  modules/
+    cover.yaml
+    preliminaries.yaml
+    indexes.yaml
+    body/
+    bibliography.yaml
+    appendices/
+  assets/
+  plugins/
+  .texisstudio/
+    state/
+    cache/
+    migrations/
+```
+
+### 11.1 Política de legado
+
+El legado no define la arquitectura nueva.
+
+Se construirán:
+
+- importador `ProjectModel 1.x -> DocumentIR`;
+- importador de perfiles 1.x;
+- adaptador de packs actuales;
+- adaptador de plugins actuales;
+- exportador de emergencia cuando sea técnicamente posible;
+- reporte de migración con cambios, pérdidas y acciones manuales.
+
+Después de migrar, el proyecto se guarda en el modelo nuevo. La compatibilidad vive
+en adaptadores de entrada y puede retirarse sin tocar los módulos.
+
+### 11.2 Corte arquitectónico
+
+No se considerará completa la reconstrucción mientras existan dos autoridades
+productivas para:
+
+- modelo de proyecto;
+- orden documental;
+- generación de `main.tex`;
+- resolución de perfiles;
+- planificación de compilación.
+
+## 12. Programa De Ejecución
+
+La reconstrucción será grande, pero se implementará mediante cortes verticales que
+siempre convergen en la arquitectura final. No se crearán soluciones temporales que
+se conviertan en una tercera arquitectura.
+
+### Etapa A: Cimientos Del Nuevo Núcleo
+
+Entregables:
+
+- ADR de arquitectura;
+- crates/módulos para dominio, aplicación e infraestructura;
+- Shared Kernel mínimo;
+- `DocumentIR`;
+- `DocumentResolver`;
+- `DocumentPlan`;
+- diagnósticos estructurados;
+- serialización de depuración;
+- pruebas de arquitectura;
+- importador del proyecto actual.
+
+Criterio de salida:
+
+- una tesis actual puede importarse y producir un `DocumentIR` válido;
+- ningún renderer interpreta aliases o perfiles crudos.
+
+### Etapa B: Plataforma De Módulos Y Ensamblador
+
+Entregables:
+
+- contrato `DocumentModule`;
+- registro estático de módulos oficiales;
+- `DocumentAssembler`;
+- `FileGraph`;
+- `PackagePlan`;
+- `AssetPlan`;
+- `VerificationPlan`;
+- backend LaTeX;
+- manifiesto reproducible de build;
+- servicio único de generación.
+
+Criterio de salida:
+
+- sólo el ensamblador nuevo produce `main.tex`;
+- app y CLI llaman al mismo caso de uso;
+- builds deterministas con inputs idénticos.
+
+### Etapa C: Portada Completa
+
+Entregables:
+
+- dominio y editor de portada;
+- `cover_spec` de perfiles 2.x;
+- assets y firmas;
+- overflow;
+- metadatos PDF;
+- preview rápida;
+- verificación visual.
+
+Criterio de salida:
+
+- fixtures con títulos largos, múltiples asesores, comité, logos y portadas
+  multipágina explícitas sin cortes accidentales.
+
+### Etapa D: Preliminares E Índices
+
+Entregables:
+
+- ambos módulos separados;
+- vocabulario `document.json`;
+- abstracts multilingües;
+- numeración y ToC;
+- listas generadas desde el índice semántico;
+- políticas para listas vacías.
+
+Criterio de salida:
+
+- textos generados en el idioma documental;
+- numeración y entradas verificadas contra el PDF.
+
+### Etapa E: Cuerpo Y Contrato De Plugins
+
+Entregables:
+
+- árbol semántico del cuerpo;
+- renderers por nodo;
+- labels y referencias centralizados;
+- assets;
+- contribuciones de plugins;
+- escape hatch de LaTeX confiable;
+- edición, persistencia y round trip.
+
+Criterio de salida:
+
+- todos los plugins `official-core` pasan creación, edición, guardado, reapertura,
+  compilación y exportación mediante el contrato nuevo.
+
+### Etapa F: Bibliografía Profesional
+
+Entregables:
+
+- dominio bibliográfico unificado;
+- fuentes y normalización;
+- estilos y backends;
+- planificación de herramientas;
+- validación profesional;
+- fixtures reales;
+- integración con índices y cuerpo.
+
+Criterio de salida:
+
+- siete estilos objetivo compilan y pasan validaciones específicas;
+- ninguna cita o entrada queda sin resolver en fixtures de entrega.
+
+### Etapa G: Anexos
+
+Entregables:
+
+- dominio de anexos;
+- numeración;
+- referencias cruzadas;
+- documentos externos;
+- entradas de índice;
+- orden configurable dentro de límites seguros;
+- postflight.
+
+Criterio de salida:
+
+- no existen numeraciones rotas, prefijos duplicados ni bibliografías dentro del
+  contexto de anexos.
+
+### Etapa H: Perfiles 2.x Y Creador Profesional
+
+Entregables:
+
+- schema y validación;
+- migrador 1.x;
+- editor guiado por módulos;
+- evidencia y confianza;
+- preview;
+- import/export;
+- recomendaciones por país, institución y tipo documental;
+- CI de perfiles.
+
+Criterio de salida:
+
+- un usuario puede diseñar un perfil completo sin editar YAML;
+- el sistema distingue claramente requisito oficial, recomendación y ejemplo.
+
+### Etapa I: Sustitución Del Legado
+
+Entregables:
+
+- migración de consumidores restantes;
+- eliminación de generación duplicada;
+- eliminación o redefinición de `TexisProject`;
+- retirada de aliases internos;
+- retirada de `template_engine` como generador paralelo;
+- actualización de importadores, exportadores y build engine.
+
+Criterio de salida:
+
+- una autoridad por cada decisión arquitectónica;
+- ningún flujo productivo utiliza el generador anterior.
+
+### Etapa J: Certificación De Producción
+
+Entregables:
+
+- 10 tesis largas externas al repo;
+- matriz de perfiles, idiomas, estilos y plugins;
+- compilación en entornos limpios;
+- regresión visual;
+- PDF/A cuando aplique;
+- accesibilidad y metadatos;
+- rendimiento y límites de memoria;
+- fuzzing de schemas, importadores y labels;
+- seguridad de rutas, templates y plugins;
+- rollback y migración documentados.
+
+Criterio de salida:
+
+- todos los gates de producción aprobados;
+- cero defectos críticos conocidos en la matriz de entrega.
+
+## 13. Estrategia De Pruebas
+
+Cada módulo debe incluir:
+
+1. Pruebas unitarias del dominio.
+2. Pruebas de propiedades e invariantes.
+3. Pruebas de contrato.
+4. Snapshots del modelo y LaTeX.
+5. Pruebas de serialización y migración.
+6. Pruebas de compilación.
+7. Pruebas de texto PDF.
+8. Regresión visual PDF.
+9. Round trip de importación/exportación.
+10. Fixtures reales y casos límite.
+
+### 13.1 Matriz profesional
+
+Como mínimo:
+
+- XeLaTeX como backend principal;
+- LuaLaTeX para fixtures seleccionados;
+- PdfLaTeX sólo donde las capacidades lo permitan;
+- español, inglés, portugués, francés, alemán, chino y japonés;
+- fallback declarado para lenguas nativas mexicanas;
+- APA, Vancouver, IEEE, Chicago, MHRA, ABNT y GB/T 7714;
+- perfiles genéricos e institucionales;
+- plugins core, extended y bridges externos;
+- tesis de 50, 100 y 250 páginas.
+
+### 13.2 Bloqueadores de release
+
+- fallo de compilación;
+- estructura o numeración incorrecta;
+- portada partida fuera de política;
+- referencias sin resolver;
+- bibliografía duplicada o incompleta;
+- texto generado en idioma incorrecto;
+- fuentes requeridas no incrustadas;
+- asset perdido o sin autorización;
+- perfil `verified` sin evidencia;
+- plugin con rutas o paquetes no declarados;
+- pérdida de datos en migración;
+- diferencias no explicadas entre app y CLI;
+- build no determinista sin causa documentada.
+
+## 14. Rendimiento Y Observabilidad
+
+El pipeline medirá por etapa:
+
+- tiempo de resolución;
+- validación;
+- planificación;
+- render por módulo;
+- compilación;
+- postflight;
+- tamaño y cantidad de artefactos;
+- cache hits;
+- diagnósticos por módulo.
+
+Se establecerán presupuestos:
+
+- edición y validación incremental sin recompilar todo;
+- preview de módulo independiente;
+- recompilación por grafo de dependencias;
+- carga diferida de UI y plugins;
+- cancelación segura;
+- ausencia de trabajo duplicado entre app y core.
+
+La observabilidad será local y respetuosa de privacidad. La telemetría remota será
+opt-in y no incluirá contenido académico.
+
+## 15. Seguridad
+
+Superficies de riesgo:
+
+- LaTeX crudo;
+- shell escape;
+- templates de perfiles;
+- plugins;
+- assets externos;
+- rutas;
+- archivos importados;
+- compiladores;
+- PDFs incluidos.
+
+Reglas:
+
+- `shell_escape` desactivado por defecto y sujeto a consentimiento;
+- rutas normalizadas dentro de raíces permitidas;
+- templates con funciones limitadas;
+- plugins sin escritura arbitraria;
+- hashes de assets;
+- límites de tamaño y tiempo;
+- análisis de paquetes peligrosos;
+- provenance en contenido externo;
+- compilación aislada cuando la plataforma lo permita.
+
+## 16. Gobierno Del Código
+
+### 16.1 Reglas de dependencia
+
+Permitido:
+
+```text
+experience -> application
+application -> domain
+infrastructure -> application/domain ports
+module -> shared kernel
+assembler -> module public contracts
+```
+
+Prohibido:
+
+```text
+domain -> React/Tauri/filesystem/YAML/LaTeX process
+cover -> bibliography internals
+body -> appendix internals
 plugin -> assembler internals
 profile -> renderer internals
+module -> main.tex
 module -> filesystem writer
-module -> compiler process
 ```
 
-Add an architecture test that rejects forbidden imports and direct `main.tex`
-generation outside the assembler.
-
-## 5. Module Responsibilities
-
-### 5.1 Cover module
-
-Owns:
-
-- Institutional identity, logos, title, subtitle, author, degree, advisors,
-  committee, city, date, signatures, legal notices, and optional secondary cover.
-- Layout variants and overflow strategy.
-- Accessible fallback when assets or fonts are unavailable.
-- PDF metadata derived from the same normalized cover metadata.
-
-Profile contract:
-
-- Replace unrestricted single-template behavior with a versioned
-  `cover_spec`, while preserving `title_page_template` as a legacy adapter.
-- Support ordered blocks, required fields, asset roles, spacing bounds,
-  committee placement, signature pages, and overflow policy.
-- Allow an advanced trusted template only when explicitly marked and validated.
-
-Required checks:
-
-- Required data and official assets.
-- No cover spill unless the profile explicitly defines multiple cover pages.
-- No clipped blocks, orphaned advisor/city lines, missing logo, or placeholder data.
-- PDF title and author metadata match normalized project metadata.
-
-### 5.2 Front matter and indexes module
-
-Owns:
-
-- Dedication, acknowledgements, declarations, abstracts, keywords, epigraph,
-  nomenclature, glossary/acronym presentation, table of contents, and lists of
-  figures, tables, algorithms, and listings.
-- Roman numbering policy, ToC inclusion, heading visibility, ordering, and blank
-  page policy.
-
-Profile contract:
-
-- `front_matter.order`
-- required/optional item rules
-- numbering and ToC policy
-- abstract languages and word limits
-- enabled generated lists and empty-list behavior
-
-Language contract:
-
-- Localized generated labels such as contents, figures, tables, glossary,
-  acronyms, declaration labels, and abstract names.
-- No hardcoded Spanish headings in renderers.
-
-Required checks:
-
-- Stable order regardless of YAML section order.
-- No empty generated index unless profile/user explicitly allows it.
-- Correct language and numbering transition into main matter.
-
-### 5.3 Body module
-
-Owns:
-
-- Chapters and sections, content block rendering, labels, cross-references,
-  figures, tables, equations, theorems, code, citations, and plugin blocks.
-- Chapter file naming and stable ordering.
-- Block-level package and asset requirements.
-
-Plugin contract:
-
-- Introduce a versioned `DocumentContribution` DTO.
-- Contributions declare semantic kind, source, editable payload reference,
-  output artifact, required packages, labels, caption, language, and warnings.
-- Core sanitizes paths, labels, package requests, and LaTeX before accepting the
-  contribution.
-- Raw LaTeX remains an explicit advanced escape hatch with trust state.
-
-Required checks:
-
-- Unique and valid labels.
-- All references, citations, assets, and plugin outputs resolve.
-- Plugin artifacts survive save/load/export/import.
-- Package conflicts are diagnosed before compilation.
-
-### 5.4 Bibliography module
-
-Owns:
-
-- Bibliography source discovery, parsing, normalization, duplicate resolution,
-  citation validation, backend/style compatibility, build requirements, and final
-  bibliography placement.
-- Biber/BibTeX command plan and bibliography-specific diagnostics.
-
-Profile contract:
-
-- Canonical style ID, backend constraints, heading policy, sorting, locale, URL/DOI
-  requirements, and optional institutional bibliography rules.
-
-Required checks:
-
-- Realistic fixtures for APA, Vancouver, IEEE, Chicago notes, MHRA, ABNT, and
-  GB/T 7714.
-- Missing fields, malformed names, fake placeholder authors, unresolved citation
-  keys, duplicate entries, and incompatible backend/style pairs.
-- Bibliography appears once and only in the declared phase.
-
-### 5.5 Appendix module
-
-Owns:
-
-- Appendix groups, numbering, titles, per-appendix labels, tables/figures/equations,
-  included external documents, and appendix-specific ToC behavior.
-- Transition from main matter to appendices and from appendices to back matter.
-
-Profile contract:
-
-- `appendices.allowed`, `required`, title style, numbering style, ToC depth,
-  placement relative to bibliography, and external-PDF policy.
-
-Required checks:
-
-- Canonical `DocumentPhase::Appendices`; never represent appendices as back matter.
-- No `.1.1` numbering, duplicate “Appendix A” prefixes, or bibliography inside an
-  appendix counter context.
-- Empty appendices and unsafe external files are diagnosed.
-
-### 5.6 Assembler
-
-Owns only:
-
-- Calling modules in canonical phase order.
-- Merging and resolving package requirements.
-- Building a deterministic file plan.
-- Emitting readable `main.tex`, preamble/config files, and module inputs.
-- Applying atomic writes and manual-file preservation.
-- Producing a machine-readable `build-manifest.json` with module ownership,
-  versions, files, packages, assets, warnings, and hashes.
-
-The assembler contains no institution-specific layouts, bibliography parsing,
-content-block rendering, or localized labels.
-
-## 6. Cross-Repository Contracts
-
-### TeXisStudio-Profiles
-
-- Introduce profile schema 2.x only after core can read both 1.x and 2.x.
-- Add canonical phases and module-specific configuration.
-- Migrate aliases on load first, then migrate repository YAML in a separate commit.
-- Correct existing semantic errors, including appendices stored as `back_matter`
-  and repeated/misidentified list elements.
-- Validate every profile against JSON Schema and semantic policy.
-- Compile a representative sample and attach CI evidence before `verified`.
-
-### TeXisStudio-Languages
-
-- Add `document.json` per language pack; do not overload `ui.json`.
-- Define a base schema for generated document labels and LaTeX language metadata.
-- Require complete keys for supported document locales.
-- Mexican Indigenous language packs may use Spanish document labels when native
-  terminology is unavailable, but must declare the fallback explicitly.
-- Add parity, placeholder, locale-tag, and LaTeX-command validation in CI.
-
-### TeXisStudio-Plugins
-
-- Version the contribution contract independently from plugin catalog metadata.
-- Add contract fixtures consumed by both TypeScript tests and Rust core tests.
-- Require semantic output, package declarations, deterministic serialization,
-  editable source, and export/import round trips.
-- Keep external-tool bridges explicit when LaTeX cannot faithfully model the task.
-
-## 7. Migration Strategy
-
-Use a strangler migration. Do not replace the generator in one large change.
-
-### Phase 0: Baseline and characterization
-
-Deliverables:
-
-- Freeze representative `main.tex`, config, section, and PDF text snapshots.
-- Build 8-10 external stress fixtures covering languages, profiles, bibliography
-  styles, plugins, long tables, figures, appendices, and committee covers.
-- Record current compiler time, output hashes, warnings, and known defects.
-- Add a command that emits the resolved project/profile/language inputs for tests.
-
-Exit gate:
-
-- Current behavior is reproducible and failures are classified.
-
-### Phase 1: Canonical resolver and document contract
-
-Deliverables:
-
-- Add `ResolvedDocument` and `DocumentResolver`.
-- Normalize aliases exactly once.
-- Convert string placements into `DocumentPhase`.
-- Resolve profile, project overrides, locale, and plugin requirements with explicit
-  precedence and provenance.
-- Add compatibility adapters for current profiles and projects.
-
-Exit gate:
-
-- Generator output remains unchanged for legacy fixtures.
-- No renderer consumes raw profile aliases.
-
-### Phase 2: Pure assembler and file plan
-
-Deliverables:
-
-- Extract ordering and filesystem writes from `main_tex.rs`/`sections.rs`.
-- Add `DocumentAssembler`, `FilePlan`, atomic writer, and build manifest.
-- Route `DocumentEngine`, exporter, CLI, and Tauri through one application service.
-- Mark the second template-generation path deprecated; make it call the canonical
-  resolver/assembler or limit it to scaffolding with no independent `main.tex`.
-
-Exit gate:
-
-- Exactly one production function emits `main.tex`.
-- Both app and CLI produce byte-equivalent builds from the same input.
-
-### Phase 3: Cover module
-
-Deliverables:
-
-- Implement typed cover spec, legacy adapter, overflow policies, assets, signatures,
-  and PDF metadata.
-- Add cover preview and profile-editor validation.
-- Add one-page, two-page institutional, long-title, multi-advisor, committee, and
-  missing-asset fixtures.
-
-Exit gate:
-
-- No accidental split cover in the fixture matrix.
-- Trusted advanced templates are sandboxed and clearly identified.
-
-### Phase 4: Front matter and indexes module
-
-Deliverables:
-
-- Move all preliminary rendering and list generation into the module.
-- Add document-localization catalog and fallback policy.
-- Make ordering, numbering, ToC behavior, and empty-list policy explicit.
-
-Exit gate:
-
-- All generated labels match the document language.
-- Numbering transitions and index contents pass structural and PDF checks.
-
-### Phase 5: Body and plugin boundary
-
-Deliverables:
-
-- Move block rendering and requirement collection into the body module.
-- Implement `DocumentContribution` adapters for existing plugins.
-- Centralize labels, asset paths, package requirements, and raw-LaTeX trust.
-
-Exit gate:
-
-- Every official-core plugin passes save/load, edit, compile, export/import, and
-  package-conflict tests through the application contract.
-
-### Phase 6: Bibliography module
-
-Deliverables:
-
-- Consolidate current bibliography manager, registry, normalizer, formatter,
-  validator, backend policy, and exporter behind one service.
-- Move command planning and final placement to the module contract.
-- Add professional reference fixtures instead of synthetic numeric authors.
-
-Exit gate:
-
-- Seven target styles compile and pass style-specific structural checks.
-- No unresolved citation or duplicate bibliography emission in release fixtures.
-
-### Phase 7: Appendix module
-
-Deliverables:
-
-- Migrate appendices to their canonical phase.
-- Add numbering/title policies, external-document support, and PDF checks.
-- Update profile repository data after compatibility support ships.
-
-Exit gate:
-
-- Appendix numbering, ToC entries, labels, bibliography order, and external assets
-  pass all fixtures.
-
-### Phase 8: UI module workspaces
-
-Deliverables:
-
-- Give each module a focused editor/configuration panel and readiness summary.
-- Profile creator exposes module capabilities and constraints instead of raw YAML
-  first; YAML preview/import/export remains visible for advanced users.
-- Show source provenance, profile confidence, unsupported requests, and alternatives.
-
-Exit gate:
-
-- A non-LaTeX user can configure a professional document without editing source.
-- An advanced user can inspect the resolved contract and generated LaTeX.
-
-### Phase 9: Remove duplicate architecture
-
-Deliverables:
-
-- Migrate remaining `TexisProject`/`template_engine` consumers.
-- Keep one canonical project domain or rename the secondary type to its limited
-  workspace/build role.
-- Delete deprecated generator branches and compatibility code only after telemetry,
-  fixtures, and migrations prove they are unused.
-
-Exit gate:
-
-- One project model boundary, one build service, one assembler.
-
-### Phase 10: Release hardening
-
-Deliverables:
-
-- Full matrix in CI across engines, profiles, languages, bibliography styles, and
-  plugin tiers.
-- PDF visual/text postflight receives `ResolvedDocument` and module expectations.
-- Performance budgets, deterministic builds, fuzz/property tests, and security tests.
-- Migration and rollback documentation.
-
-Exit gate:
-
-- Release candidate passes all quality gates below on clean machines.
-
-## 8. Test Pyramid and Quality Gates
-
-Every module requires:
-
-1. Unit tests for normalization, validation, requirements, and rendering.
-2. Golden LaTeX snapshots for stable output.
-3. Property tests for ordering, IDs, paths, and serialization round trips.
-4. Contract tests against profile, language, and plugin schemas.
-5. Compile tests with XeLaTeX; selected fixtures also with LuaLaTeX/PdfLaTeX.
-6. PDF text checks for numbering, labels, language, metadata, and ordering.
-7. Visual PDF checks for cover overflow, clipping, blank pages, tables, and figures.
-8. Import/export round trips.
-9. Backward-compatibility tests for real legacy projects.
-
-Release blockers:
-
-- Any compile failure in the required matrix.
-- Missing/non-embedded fonts when the profile requires them.
-- Missing bibliography entries or unresolved citations.
-- Broken numbering, duplicate labels, or wrong phase order.
-- Generated text in the wrong document language.
-- Cover overflow outside an explicit multi-page policy.
-- Profile marked `verified` without sources, sample, and CI evidence.
-- Plugin writing outside its owned asset directory or requiring undeclared packages.
-
-## 9. CI Matrix
-
-Use layered CI to control cost:
-
-- Per commit: Rust/TypeScript unit tests, schemas, contract tests, snapshots.
-- Per pull request: core LaTeX fixtures and one fixture per changed module.
-- Nightly: full profile/language/plugin compatibility matrix.
-- Release: 8-10 long theses, all supported bibliography styles, PDF postflight,
-  visual regression, clean-machine compilation, and delivery export.
-
-Cache TeX dependencies, but run at least one uncached clean build in release CI.
-
-## 10. Commit and PR Discipline
-
-Do not create one cross-repository mega-commit. Use small dependency-ordered PRs.
-
-Recommended sequence:
-
-1. `TeXisStudio`: characterization tests and architecture decision record.
-2. `TeXisStudio`: resolved document contract and legacy adapters.
-3. `TeXisStudio-Languages`: `document.json` schema and initial catalogs.
-4. `TeXisStudio-Plugins`: contribution contract and shared fixtures.
-5. `TeXisStudio`: assembler/file plan and integration adapters.
-6. One PR per document module.
-7. `TeXisStudio-Profiles`: schema 2.x and data migration after core compatibility.
-8. `TeXisStudio`: UI workspaces, duplicate-path removal, release hardening.
-
-Each commit must:
-
-- Represent one reviewable concern.
-- Include tests with the behavior change.
-- Avoid generated PDFs/build directories.
-- Leave all affected repositories clean.
-- State migration impact and rollback path in the commit/PR description.
-
-## 11. Execution Rules for the Implementing Agent
-
-Before each phase:
-
-1. Re-read this plan and inspect the current worktree.
-2. Create or update an ADR for any changed architectural decision.
-3. Add characterization tests before moving behavior.
-4. Keep compatibility adapters until all consumers and external repos have migrated.
-
-During each phase:
-
-1. Make pure extraction commits before behavioral changes where practical.
-2. Never add a second ordering rule or renderer as a temporary shortcut.
-3. Do not silently reinterpret unknown profile or language fields.
-4. Emit diagnostics with stable codes and module ownership.
-5. Store stress outputs only under a temporary external directory.
-
-At phase completion, report:
-
-- Files and contracts changed.
-- Tests and fixtures added.
-- Commands run and exact pass/fail totals.
-- Compatibility impact.
-- Remaining risks.
-- Commit hashes in every affected repository.
-
-## 12. Final Definition of Done
-
-The hardening program is complete when:
-
-- Cover, front matter/indexes, body, bibliography, and appendices are independent
-  modules implementing the same stable contract.
-- The assembler is the sole authority for ordering and final LaTeX structure.
-- Profiles, language packs, and plugins integrate through versioned schemas with CI
-  contract tests.
-- Existing projects migrate without data loss and compile equivalently or with
-  documented intentional improvements.
-- Professional long-thesis fixtures compile, export, and pass structural, textual,
-  visual, bibliographic, localization, and PDF checks.
-- The profile creator can express professional requirements without promising
-  capabilities LaTeX cannot provide, and offers explicit external-tool integration
-  where appropriate.
-- Maintenance inside one document module does not require changes in unrelated
-  modules unless a versioned shared contract changes.
-
+Las reglas se comprobarán automáticamente.
+
+### 16.2 Shared Kernel
+
+Sólo contendrá conceptos realmente universales:
+
+- IDs;
+- diagnósticos;
+- idioma;
+- provenance;
+- assets;
+- medidas;
+- capacidades;
+- versiones de contrato.
+
+No se usarán utilidades compartidas como lugar para esconder lógica de módulos.
+
+### 16.3 Versionado
+
+Versionar independientemente:
+
+- schema de proyecto;
+- Profile Contract;
+- Language Pack Contract;
+- Plugin Contribution Contract;
+- DocumentIR;
+- build manifest.
+
+Los cambios incompatibles requieren migrador y fixture de compatibilidad.
+
+## 17. Organización De PRs Y Commits
+
+El programa es arquitectónicamente grande, pero los commits seguirán siendo
+revisables.
+
+Orden recomendado:
+
+1. ADR, pruebas de arquitectura y fixtures de referencia.
+2. Shared Kernel, diagnósticos y `DocumentIR`.
+3. Resolver e importadores legacy.
+4. Plataforma de módulos y ensamblador.
+5. Backend LaTeX y servicio único de build.
+6. Portada.
+7. Preliminares.
+8. Índices.
+9. Cuerpo y contrato de plugins.
+10. Bibliografía.
+11. Anexos.
+12. Perfiles 2.x.
+13. Packs documentales.
+14. UI profesional por módulos.
+15. Retirada del legado.
+16. Certificación de producción.
+
+Cada PR debe declarar:
+
+- frontera arquitectónica afectada;
+- contratos añadidos o cambiados;
+- migración;
+- compatibilidad;
+- fixtures;
+- pruebas;
+- rendimiento;
+- riesgos;
+- rollback.
+
+Los artefactos generados, tesis de estrés, builds y PDFs no se guardan en los repos.
+
+## 18. Reglas Para El Agente Ejecutor
+
+1. Construir siempre hacia esta arquitectura, nunca hacia una solución intermedia
+   incompatible.
+2. Añadir pruebas de comportamiento antes de sustituir código existente.
+3. Implementar cortes verticales completos: dominio, aplicación, backend, UI mínima,
+   pruebas y migración.
+4. No mantener dos autoridades productivas al terminar una etapa.
+5. No mover código defectuoso sin redefinir su contrato.
+6. No introducir frameworks de DI o buses de eventos si interfaces y composición
+   explícita son suficientes.
+7. No generalizar antes de tener al menos dos usos reales.
+8. Mantener el dominio libre de infraestructura.
+9. Emitir códigos de diagnóstico estables.
+10. Conservar provenance y explicar toda degradación o fallback.
+11. Ejecutar pruebas completas al cerrar cada etapa.
+12. Entregar commits intencionales y worktrees limpios en todos los repos.
+
+## 19. Definición Final De Terminado
+
+La reconstrucción estará completa cuando:
+
+- exista un único modelo documental canónico;
+- cada componente universal sea un módulo vertical independiente;
+- cada módulo controle su dominio, validación, planificación, render y verificación;
+- exista un único ensamblador y un único servicio productivo de build;
+- LaTeX sea un backend y no el modelo de negocio;
+- perfiles, idiomas y plugins usen contratos versionados;
+- el creador de perfiles permita diseños profesionales sin exigir YAML o LaTeX;
+- los límites de LaTeX sean claros y existan bridges externos trazables;
+- los proyectos anteriores migren sin pérdida silenciosa;
+- app y CLI produzcan resultados equivalentes;
+- las tesis largas superen validación estructural, bibliográfica, lingüística,
+  visual y PDF;
+- modificar portada, bibliografía o anexos no requiera alterar módulos no
+  relacionados;
+- el código legado de generación haya sido retirado.
+
+## 20. Resultado Esperado
+
+Al terminar, TeXisStudio no será una colección de formularios que producen LaTeX.
+Será una plataforma documental académica con:
+
+- dominio explícito;
+- configuración institucional verificable;
+- edición visual profesional;
+- extensibilidad controlada;
+- resultados reproducibles;
+- diagnósticos comprensibles;
+- compilación robusta;
+- validación antes y después del PDF;
+- mantenimiento independiente por módulo.
+
+Ésta es la base sobre la que deben construirse todas las siguientes funciones del
+producto.
