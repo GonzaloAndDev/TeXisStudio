@@ -13,6 +13,7 @@ pub mod hasher;
 pub mod json_serializer;
 pub mod latex_backend;
 pub mod legacy_importer;
+pub mod profile_migrator;
 
 pub use hasher::Sha256Hasher;
 pub use json_serializer::JsonIrSerializer;
