@@ -19,13 +19,11 @@
 pub mod compile_gate;
 
 use texis_document_application::AssembleDocumentUseCase;
+use texis_document_domain::ir::DocumentIR;
 use texis_document_domain::phase::DocumentPhase;
 use texis_document_domain::validation::validate_document;
 use texis_document_infra::fixtures;
-use texis_document_infra::{
-    import_project, JsonIrSerializer, LatexRenderBackend, Sha256Hasher,
-};
-use texis_core::project::model::ProjectModel;
+use texis_document_infra::{JsonIrSerializer, LatexRenderBackend, Sha256Hasher};
 
 /// Resultado de un gate individual.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,21 +96,21 @@ impl CertificationReport {
     }
 }
 
-/// Un caso de la matriz: nombre + constructor del proyecto.
+/// Un caso de la matriz: nombre + constructor del IR (con bibliografía real).
 struct MatrixCase {
     name: &'static str,
-    build: fn() -> ProjectModel,
+    build: fn() -> DocumentIR,
 }
 
 fn matrix() -> Vec<MatrixCase> {
     vec![
         MatrixCase {
             name: "sample_thesis",
-            build: fixtures::sample_thesis,
+            build: fixtures::sample_thesis_ir,
         },
         MatrixCase {
             name: "stress_cover",
-            build: fixtures::stress_cover_thesis,
+            build: fixtures::stress_cover_ir,
         },
     ]
 }
@@ -134,8 +132,7 @@ pub fn run_certification(include_compile: bool) -> CertificationReport {
 
 fn run_compile_case() -> CaseResult {
     let mut gates = Vec::new();
-    let model = fixtures::compilable_thesis();
-    let ir = import_project(&model).value.expect("IR del fixture compilable");
+    let ir = fixtures::compilable_thesis_ir();
     match compile_gate::compile(&ir) {
         Ok(o) if !o.attempted => {
             gates.push(GateResult::fail(
@@ -155,23 +152,10 @@ fn run_compile_case() -> CaseResult {
 
 fn run_case(case: MatrixCase) -> CaseResult {
     let mut gates = Vec::new();
-    let model = (case.build)();
 
-    // Gate 1: importación produce IR.
-    let resolution = import_project(&model);
-    let ir = match resolution.value {
-        Some(ir) => {
-            gates.push(GateResult::pass("import"));
-            ir
-        }
-        None => {
-            gates.push(GateResult::fail("import", "no se produjo DocumentIR"));
-            return CaseResult {
-                name: case.name.to_string(),
-                gates,
-            };
-        }
-    };
+    // Gate 1: IR construido (importado + bibliografía real adjunta).
+    let ir = (case.build)();
+    gates.push(GateResult::pass("import"));
 
     // Gate 2: validación de dominio sin errores bloqueantes.
     let diags = validate_document(&ir);

@@ -9,5 +9,4 @@ texis-document-contracts   = { workspace = true }
 texis-document-domain      = { workspace = true }
 texis-document-application = { workspace = true }
 texis-document-infra       = { path = "../texis-document-infra" }
-texis-core                 = { path = "../texis-core" }
 tempfile                   = { workspace = true }

@@ -2,7 +2,7 @@
 
 use texis_document_domain::ir::modules::CoverOverflowPolicy;
 use texis_document_domain::validation::{cover, validate_document};
-use texis_document_infra::fixtures::{sample_thesis, stress_cover_thesis};
+use texis_document_infra::fixtures::{sample_thesis, stress_cover_ir};
 use texis_document_infra::{import_project, LatexRenderBackend};
 use texis_document_domain::backend::RenderBackend;
 use texis_document_domain::plan_builder::PlanBuilder;
@@ -24,7 +24,8 @@ fn committee_becomes_signatures() {
 
 #[test]
 fn stress_cover_warns_overflow_but_not_blocking() {
-    let ir = import_project(&stress_cover_thesis()).value.unwrap();
+    // IR con bibliografía real (citas resueltas) para aislar el caso de portada.
+    let ir = stress_cover_ir();
     let d = validate_document(&ir);
     // Política por defecto: advertencia, no bloqueo.
     assert!(d.iter().any(|x| x.code.as_str() == "COVER-010"));
@@ -35,10 +36,11 @@ fn stress_cover_warns_overflow_but_not_blocking() {
 
 #[test]
 fn fail_loud_policy_blocks_overflow() {
-    let mut ir = import_project(&stress_cover_thesis()).value.unwrap();
+    let mut ir = stress_cover_ir();
     ir.cover.overflow_policy = CoverOverflowPolicy::FailLoud;
     let d = validate_document(&ir);
     assert!(d.has_blocking());
+    assert!(d.iter().any(|x| x.code.as_str() == "COVER-010" && x.blocking));
 }
 
 #[test]

@@ -85,25 +85,24 @@ pub fn validate(ir: &DocumentIR) -> Diagnostics {
         }
     }
 
-    // BIB-001: citas del cuerpo sin entrada bibliográfica (solo si hay entradas
-    // cargadas; sin entradas, la resolución se difiere a la compilación).
-    if !bib.entries.is_empty() {
-        let keys: BTreeSet<&str> = bib.entries.iter().map(|e| e.key.as_str()).collect();
-        let reg = LabelRegistry::build(ir);
-        let mut reported = BTreeSet::new();
-        for (cite, owner) in &reg.citations {
-            if !keys.contains(cite.as_str()) && reported.insert(cite.clone()) {
-                d.push(
-                    Diagnostic::error(
-                        "BIB-001",
-                        ModuleId::Bibliography,
-                        DiagnosticStage::Validation,
-                        "bibliography.unresolved_citation",
-                    )
-                    .with_param("key", cite)
-                    .with_param("node", owner),
-                );
-            }
+    // BIB-001: toda cita del cuerpo debe tener una entrada bibliográfica. Se
+    // comprueba SIEMPRE (también con entries vacío): una cita sin entrada es un
+    // error bloqueante, nunca se resuelve inventando una fuente.
+    let keys: BTreeSet<&str> = bib.entries.iter().map(|e| e.key.as_str()).collect();
+    let reg = LabelRegistry::build(ir);
+    let mut reported = BTreeSet::new();
+    for (cite, owner) in &reg.citations {
+        if !keys.contains(cite.as_str()) && reported.insert(cite.clone()) {
+            d.push(
+                Diagnostic::error(
+                    "BIB-001",
+                    ModuleId::Bibliography,
+                    DiagnosticStage::Validation,
+                    "bibliography.unresolved_citation",
+                )
+                .with_param("key", cite)
+                .with_param("node", owner),
+            );
         }
     }
 

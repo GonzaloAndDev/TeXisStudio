@@ -32,10 +32,19 @@ fn sample_thesis_imports_to_valid_ir() {
 }
 
 #[test]
-fn use_case_merges_invariant_diagnostics() {
+fn use_case_runs_full_validation() {
+    // El caso de uso corre validación completa: el fixture cita turing1936 sin
+    // entrada en el modelo legacy, así que debe surgir BIB-001 (cita sin
+    // resolver) y el resultado NO es usable para revisión/final. Las fuentes
+    // nunca se inventan.
     let use_case = ImportProjectUseCase::new(LegacyProjectImporter::new());
     let resolution = use_case.execute(sample_thesis());
-    assert!(resolution.is_usable());
+    assert!(resolution.value.is_some(), "el IR se produce igualmente");
+    assert!(resolution
+        .diagnostics
+        .iter()
+        .any(|d| d.code.as_str() == "BIB-001"));
+    assert!(!resolution.is_usable());
 }
 
 #[test]

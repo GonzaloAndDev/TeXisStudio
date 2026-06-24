@@ -91,25 +91,14 @@ impl RenderBackend for LatexRenderBackend {
             });
         }
 
-        // references.bib: entradas reales o marcadores para citas sin resolver,
-        // de modo que el documento compile y sea autocontenido (completa F).
-        let mut diagnostics = Vec::new();
+        // references.bib: SOLO entradas reales del IR. Nunca se sintetizan
+        // fuentes: una cita sin entrada es un error de validación (BIB-001), no
+        // una referencia inventada.
+        let diagnostics = Vec::new();
         if !ir.bibliography.style.is_empty() {
-            let (bib, synth) = render_bib_file(ir);
-            if synth > 0 {
-                diagnostics.push(
-                    texis_document_contracts::diagnostics::Diagnostic::warning(
-                        "BIB-100",
-                        texis_document_contracts::ids::ModuleId::Bibliography,
-                        texis_document_contracts::diagnostics::DiagnosticStage::Render,
-                        "bibliography.synthesized_placeholder_entries",
-                    )
-                    .with_param("count", synth.to_string()),
-                );
-            }
             files.push(RenderedFile {
                 relative_path: "references.bib".to_string(),
-                content: bib,
+                content: render_bib_file(ir),
             });
         }
 
@@ -597,10 +586,10 @@ fn render_node(node: &BodyNode, assets: &AssetLookup, out: &mut String) {
 
 // ── Bibliografía (.bib) ─────────────────────────────────────────────────────
 
-/// Renderiza `references.bib` desde las entradas del IR. Para claves citadas sin
-/// entrada, sintetiza un marcador `@misc` (y cuenta cuántos), de modo que el
-/// documento compile aunque falten fuentes. Devuelve (contenido, nº sintetizados).
-fn render_bib_file(ir: &DocumentIR) -> (String, usize) {
+/// Renderiza `references.bib` SOLO con las entradas reales del IR. Nunca crea
+/// entradas para citas sin resolver: eso es un error de validación (BIB-001), no
+/// una fuente inventada.
+fn render_bib_file(ir: &DocumentIR) -> String {
     use std::collections::BTreeSet;
     let mut out = String::from("% Generado por el núcleo documental. No editar a mano.\n");
     let mut written: BTreeSet<String> = BTreeSet::new();
@@ -614,25 +603,7 @@ fn render_bib_file(ir: &DocumentIR) -> (String, usize) {
             out.push_str("}\n");
         }
     }
-
-    // Marcadores para citas no resueltas.
-    let mut synth = 0;
-    let reg = texis_document_domain::labels::LabelRegistry::build(ir);
-    let mut cited: BTreeSet<String> = BTreeSet::new();
-    for (key, _) in &reg.citations {
-        cited.insert(key.clone());
-    }
-    for key in cited {
-        if written.insert(key.clone()) {
-            let _ = writeln!(
-                out,
-                "@misc{{{key},\n  title = {{[referencia pendiente: {key}]}},\n  author = {{N.N.}},\n  year = {{0000}},\n}}"
-            );
-            synth += 1;
-        }
-    }
-
-    (out, synth)
+    out
 }
 
 // ── Utilidades ─────────────────────────────────────────────────────────────

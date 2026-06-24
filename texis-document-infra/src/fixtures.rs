@@ -4,6 +4,48 @@
 
 use std::collections::HashMap;
 use texis_core::project::model::*;
+use texis_document_domain::ir::modules::BibEntry;
+use texis_document_domain::ir::DocumentIR;
+
+/// Entrada bibliográfica real usada por los fixtures que citan `turing1936`.
+/// No es un marcador: tiene todos los campos obligatorios de `article`.
+pub fn turing_entry() -> BibEntry {
+    let mut e = BibEntry::new("turing1936", "article");
+    e.fields.insert("author".into(), "Alan M. Turing".into());
+    e.fields
+        .insert("title".into(), "On Computable Numbers".into());
+    e.fields
+        .insert("journal".into(), "Proc. London Math. Soc.".into());
+    e.fields.insert("year".into(), "1936".into());
+    e
+}
+
+/// IR del fixture base con su bibliografía real adjunta (citas resueltas).
+pub fn sample_thesis_ir() -> DocumentIR {
+    let mut ir = crate::import_project(&sample_thesis())
+        .value
+        .expect("IR del fixture base");
+    ir.bibliography.entries = vec![turing_entry()];
+    ir
+}
+
+/// IR del fixture de estrés de portada con bibliografía real.
+pub fn stress_cover_ir() -> DocumentIR {
+    let mut ir = crate::import_project(&stress_cover_thesis())
+        .value
+        .expect("IR del fixture de estrés");
+    ir.bibliography.entries = vec![turing_entry()];
+    ir
+}
+
+/// IR del fixture compilable con bibliografía real (compila sin inventar nada).
+pub fn compilable_thesis_ir() -> DocumentIR {
+    let mut ir = crate::import_project(&compilable_thesis())
+        .value
+        .expect("IR del fixture compilable");
+    ir.bibliography.entries = vec![turing_entry()];
+    ir
+}
 
 /// Variante de estrés de portada (§ Etapa C): título muy largo, muchos asesores
 /// y comité amplio, para ejercitar la política de desbordamiento.
