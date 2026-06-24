@@ -16,6 +16,7 @@ pub mod labels;
 pub mod phase;
 pub mod plan;
 pub mod plan_builder;
+pub mod policy;
 pub mod precedence;
 pub mod resolver;
 pub mod validation;
