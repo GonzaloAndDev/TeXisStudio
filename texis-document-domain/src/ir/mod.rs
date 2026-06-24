@@ -21,8 +21,8 @@ use texis_document_contracts::version::DocumentSchemaVersion;
 use body_node::BodyNode;
 use meta::{DocumentIdentity, ResolvedMetadata, ResolvedProfile};
 use modules::{
-    AppendicesDocument, BibliographyDocument, BodyDocument, BodySection, CoverDocument,
-    IndexesDocument, PreliminariesDocument,
+    AppendicesDocument, BackMatterDocument, BibliographyDocument, BodyDocument, BodySection,
+    CoverDocument, IndexesDocument, PreliminariesDocument,
 };
 use resources::ResourceGraph;
 
@@ -41,6 +41,9 @@ pub struct DocumentIR {
     pub body: BodyDocument,
     pub bibliography: BibliographyDocument,
     pub appendices: AppendicesDocument,
+    /// Materia final no bibliográfica (glosario editorial, nomenclatura, cierre).
+    #[serde(default)]
+    pub back_matter: BackMatterDocument,
     pub resources: ResourceGraph,
     pub provenance: ResolutionProvenance,
 }
@@ -120,6 +123,9 @@ impl DocumentIR {
             for child in &appendix.children {
                 collect_section_nodes(child, &mut out);
             }
+        }
+        for section in &self.back_matter.sections {
+            collect_section_nodes(section, &mut out);
         }
         out
     }

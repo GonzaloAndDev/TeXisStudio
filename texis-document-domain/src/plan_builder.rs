@@ -95,7 +95,9 @@ impl PlanBuilder {
                 DocumentPhase::Indexes => ir.indexes.lists.iter().any(|l| l.enabled),
                 DocumentPhase::MainMatter => !ir.body.sections.is_empty(),
                 DocumentPhase::Appendices => !ir.appendices.appendices.is_empty(),
-                DocumentPhase::BackMatter => !ir.bibliography.style.is_empty(),
+                DocumentPhase::BackMatter => {
+                    !ir.bibliography.style.is_empty() || !ir.back_matter.sections.is_empty()
+                }
             };
             if has_content {
                 active.push(phase);

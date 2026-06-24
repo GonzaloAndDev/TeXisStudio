@@ -9,7 +9,7 @@
 
 use texis_core::project::model as legacy;
 use texis_document_contracts::assets::{is_absolute_path, AssetRef, AssetRole};
-use texis_document_contracts::diagnostics::{Diagnostic, DiagnosticStage, Diagnostics};
+use texis_document_contracts::diagnostics::{Diagnostic, DiagnosticStage, Diagnostics, Severity};
 use texis_document_contracts::ids::{AssetId, DocumentId, ModuleId, NodeId, ProfileId, SectionId};
 use texis_document_contracts::locale::{DocumentLocale, LanguageTag};
 use texis_document_contracts::measures::Length;
@@ -78,6 +78,7 @@ impl ImportCtx {
         let mut preliminaries = PreliminariesDocument::default();
         let mut body = BodyDocument::default();
         let mut appendices = AppendicesDocument::default();
+        let mut back_matter = BackMatterDocument::default();
 
         for section in &m.sections {
             if !section.enabled {
@@ -85,7 +86,16 @@ impl ImportCtx {
             }
             match section.placement {
                 legacy::SectionPlacement::FrontMatter => {
-                    preliminaries.items.push(self.preliminary(section));
+                    // La portada se construye desde datos estructurados: no se
+                    // duplica como preliminar. Los índices/listas son generados
+                    // por el módulo de índices: tampoco se duplican.
+                    if is_cover_element(&section.element_id) {
+                        self.skip_info("import.front_cover_skipped", section);
+                    } else if is_generated_index(&section.element_id) {
+                        self.skip_info("import.front_index_skipped", section);
+                    } else {
+                        preliminaries.items.push(self.preliminary(section));
+                    }
                 }
                 legacy::SectionPlacement::Body => {
                     body.sections.push(self.body_section(section));
@@ -94,20 +104,10 @@ impl ImportCtx {
                     appendices.appendices.push(self.appendix(section));
                 }
                 legacy::SectionPlacement::BackMatter => {
-                    // Back matter legacy (glosario, nomenclatura) se modela como
-                    // preliminar en el nuevo dominio; la bibliografía proviene de
-                    // la configuración, no de secciones. Se deja constancia.
-                    self.diags.push(
-                        Diagnostic::new(
-                            "IMPORT-010",
-                            ModuleId::Resolver,
-                            texis_document_contracts::diagnostics::Severity::Info,
-                            DiagnosticStage::Import,
-                            "import.back_matter_remapped",
-                        )
-                        .with_param("section", &section.id),
-                    );
-                    preliminaries.items.push(self.preliminary(section));
+                    // Materia final no bibliográfica: se conserva como fase
+                    // propia (glosario editorial, nomenclatura, cierre), sin
+                    // convertirla en preliminar (migración fiel).
+                    back_matter.sections.push(self.body_section(section));
                 }
             }
         }
@@ -139,6 +139,7 @@ impl ImportCtx {
             body,
             bibliography,
             appendices,
+            back_matter,
             resources: std::mem::take(&mut self.resources),
             provenance: std::mem::take(&mut self.provenance),
         }
@@ -601,6 +602,40 @@ impl ImportCtx {
         self.asset_counter += 1;
         self.asset_counter
     }
+
+    fn skip_info(&mut self, key: &str, section: &legacy::ProjectSection) {
+        self.diags.push(
+            Diagnostic::new(
+                "IMPORT-011",
+                ModuleId::Resolver,
+                Severity::Info,
+                DiagnosticStage::Import,
+                key,
+            )
+            .with_param("section", &section.id),
+        );
+    }
+}
+
+/// `true` si el `element_id` legacy corresponde a la portada (se construye desde
+/// datos estructurados; no se duplica como preliminar).
+fn is_cover_element(element_id: &str) -> bool {
+    let e = element_id.to_lowercase();
+    e.contains("portada") || e.contains("caratula") || e.contains("title_page") || e == "cover"
+}
+
+/// `true` si el `element_id` legacy es un índice/lista generado por el módulo de
+/// índices (no se duplica como preliminar).
+fn is_generated_index(element_id: &str) -> bool {
+    let e = element_id.to_lowercase();
+    e.contains("indice")
+        || e.contains("toc")
+        || e.contains("table_of_contents")
+        || e.contains("list_of")
+        || e.contains("lista_de_figuras")
+        || e.contains("lista_de_tablas")
+        || e == "lof"
+        || e == "lot"
 }
 
 // ── Mapeos de enums legacy → canónicos ─────────────────────────────────────

@@ -82,7 +82,7 @@ impl RenderBackend for LatexRenderBackend {
                 ),
                 DocumentPhase::BackMatter => (
                     "sections/bibliography.tex",
-                    render_bibliography(&ir.bibliography),
+                    render_back_matter(ir, &assets),
                 ),
             };
             files.push(RenderedFile {
@@ -405,8 +405,17 @@ fn render_appendices(doc: &AppendicesDocument, assets: &AssetLookup) -> String {
     s
 }
 
-fn render_bibliography(_doc: &BibliographyDocument) -> String {
-    "\\printbibliography\n".to_string()
+/// Materia final: secciones no bibliográficas (glosario editorial, nomenclatura,
+/// cierre) seguidas de la bibliografía.
+fn render_back_matter(ir: &DocumentIR, assets: &AssetLookup) -> String {
+    let mut s = String::new();
+    for section in &ir.back_matter.sections {
+        render_section(section, 0, "chapter", assets, &mut s);
+    }
+    if !ir.bibliography.style.is_empty() {
+        s.push_str("\\printbibliography\n");
+    }
+    s
 }
 
 // ── Secciones y nodos ──────────────────────────────────────────────────────

@@ -117,6 +117,68 @@ pub fn compilable_thesis() -> ProjectModel {
     m
 }
 
+/// Fixture para verificar **migración fiel**: incluye portada y ToC en front
+/// matter (que NO deben volverse preliminares) y un glosario en back matter (que
+/// debe conservarse como materia final, no como preliminar).
+pub fn migration_fixture() -> ProjectModel {
+    let mut m = sample_thesis();
+    let para = |id: &str, txt: &str| {
+        ContentBlock::Paragraph(ParagraphBlock {
+            id: id.into(),
+            content: txt.into(),
+            verbatim: false,
+        })
+    };
+    let front = |id: &str, el: &str, title: &str, blocks: Vec<ContentBlock>| ProjectSection {
+        id: id.into(),
+        element_id: el.into(),
+        title: Some(title.into()),
+        placement: SectionPlacement::FrontMatter,
+        required: false,
+        enabled: true,
+        label: None,
+        status: SectionStatus::Draft,
+        notes: None,
+        blocks,
+        fields: HashMap::new(),
+        children: vec![],
+    };
+    m.sections = vec![
+        front("sec-portada", "portada", "Portada", vec![]),
+        front("sec-toc", "indice_general", "Índice", vec![]),
+        front("sec-resumen", "resumen", "Resumen", vec![para("p-abs", "Resumen.")]),
+        ProjectSection {
+            id: "sec-body".into(),
+            element_id: "introduccion".into(),
+            title: Some("Introducción".into()),
+            placement: SectionPlacement::Body,
+            required: true,
+            enabled: true,
+            label: Some("cap:intro".into()),
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![para("p1", "Cuerpo.")],
+            fields: HashMap::new(),
+            children: vec![],
+        },
+        ProjectSection {
+            id: "sec-glosario".into(),
+            element_id: "glosario".into(),
+            title: Some("Glosario".into()),
+            placement: SectionPlacement::BackMatter,
+            required: false,
+            enabled: true,
+            label: None,
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![para("p-glo", "Términos.")],
+            fields: HashMap::new(),
+            children: vec![],
+        },
+    ];
+    m
+}
+
 /// Construye un `ProjectModel` legacy representativo (no toca disco).
 pub fn sample_thesis() -> ProjectModel {
     ProjectModel {

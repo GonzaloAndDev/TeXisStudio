@@ -253,3 +253,13 @@ pub struct Appendix {
 pub struct AppendicesDocument {
     pub appendices: Vec<Appendix>,
 }
+
+// ── Materia final (back matter no bibliográfica) ───────────────────────────
+
+/// Materia final que NO es bibliografía: glosario editorial, nomenclatura,
+/// colofón u otras secciones de cierre. Se conserva como fase, sin convertirla
+/// en preliminares (§ migración fiel). La bibliografía es un documento aparte.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BackMatterDocument {
+    pub sections: Vec<BodySection>,
+}
