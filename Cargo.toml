@@ -10,6 +10,7 @@ members = [
     "texis-document-domain",
     "texis-document-application",
     "texis-document-infra",
+    "texis-certification",
 ]
 resolver = "2"
 

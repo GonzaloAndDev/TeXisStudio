@@ -12,6 +12,7 @@ path = "src/main.rs"
 texis-core  = { path = "../texis-core" }
 texis-document-application = { workspace = true }
 texis-document-infra      = { path = "../texis-document-infra" }
+texis-certification       = { path = "../texis-certification" }
 clap        = { workspace = true }
 anyhow      = { workspace = true }
 chrono      = { workspace = true }

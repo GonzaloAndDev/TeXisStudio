@@ -1,0 +1,12 @@
+[package]
+name = "texis-certification"
+version = "0.1.0"
+edition.workspace = true
+description = "Certificación del núcleo documental: matriz de fixtures y gates profesionales (paso 16). Los gates de compilación PDF requieren un toolchain LaTeX externo."
+
+[dependencies]
+texis-document-contracts   = { workspace = true }
+texis-document-domain      = { workspace = true }
+texis-document-application = { workspace = true }
+texis-document-infra       = { path = "../texis-document-infra" }
+texis-core                 = { path = "../texis-core" }

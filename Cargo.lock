@@ -4434,6 +4434,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "texis-certification"
+version = "0.1.0"
+dependencies = [
+ "texis-core",
+ "texis-document-application",
+ "texis-document-contracts",
+ "texis-document-domain",
+ "texis-document-infra",
+]
+
+[[package]]
 name = "texis-cli"
 version = "1.2.0"
 dependencies = [
@@ -4441,6 +4452,7 @@ dependencies = [
  "chrono",
  "clap",
  "serde_json",
+ "texis-certification",
  "texis-core",
  "texis-document-application",
  "texis-document-infra",
