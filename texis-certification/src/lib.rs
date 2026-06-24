@@ -16,6 +16,8 @@
 //! incrustadas) requieren la máquina del usuario y se ejecutan aparte; este crate
 //! deja el contrato listo (`CompilationGate`) pero no los corre.
 
+pub mod compile_gate;
+
 use texis_document_application::AssembleDocumentUseCase;
 use texis_document_domain::phase::DocumentPhase;
 use texis_document_domain::validation::validate_document;
@@ -117,8 +119,38 @@ fn matrix() -> Vec<MatrixCase> {
 
 /// Ejecuta la certificación estructural sobre toda la matriz.
 pub fn run_structural_certification() -> CertificationReport {
-    let cases = matrix().into_iter().map(run_case).collect();
+    run_certification(false)
+}
+
+/// Ejecuta la certificación. Con `include_compile`, añade un caso que compila un
+/// fixture mínimo a PDF real (Etapa J) si hay toolchain LaTeX disponible.
+pub fn run_certification(include_compile: bool) -> CertificationReport {
+    let mut cases: Vec<CaseResult> = matrix().into_iter().map(run_case).collect();
+    if include_compile {
+        cases.push(run_compile_case());
+    }
     CertificationReport { cases }
+}
+
+fn run_compile_case() -> CaseResult {
+    let mut gates = Vec::new();
+    let model = fixtures::compilable_thesis();
+    let ir = import_project(&model).value.expect("IR del fixture compilable");
+    match compile_gate::compile(&ir) {
+        Ok(o) if !o.attempted => {
+            gates.push(GateResult::fail(
+                "compile_pdf",
+                "omitido: toolchain LaTeX no disponible (ejecutar en máquina con LaTeX)",
+            ));
+        }
+        Ok(o) if o.produced_pdf => gates.push(GateResult::pass("compile_pdf")),
+        Ok(o) => gates.push(GateResult::fail("compile_pdf", o.log_tail)),
+        Err(e) => gates.push(GateResult::fail("compile_pdf", e.to_string())),
+    }
+    CaseResult {
+        name: "compilable_thesis (PDF)".to_string(),
+        gates,
+    }
 }
 
 fn run_case(case: MatrixCase) -> CaseResult {

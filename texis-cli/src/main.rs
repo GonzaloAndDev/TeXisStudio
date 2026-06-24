@@ -45,8 +45,12 @@ enum Commands {
         #[arg(long)]
         manifest: bool,
     },
-    /// Certificación estructural del núcleo nuevo sobre la matriz de fixtures (Etapa J)
-    Certify,
+    /// Certificación del núcleo nuevo sobre la matriz de fixtures (Etapa J)
+    Certify {
+        /// Incluir el gate de compilación a PDF real (requiere LaTeX instalado)
+        #[arg(long)]
+        compile: bool,
+    },
     /// Compilar un proyecto a PDF
     Compile {
         project_dir: PathBuf,
@@ -94,7 +98,7 @@ fn main() {
             demo,
             manifest,
         } => commands::build_plan::run(&project_dir, demo, manifest),
-        Commands::Certify => commands::certify::run(),
+        Commands::Certify { compile } => commands::certify::run(compile),
         Commands::Compile {
             project_dir,
             backend,

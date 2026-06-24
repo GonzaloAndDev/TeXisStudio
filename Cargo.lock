@@ -4437,6 +4437,7 @@ dependencies = [
 name = "texis-certification"
 version = "0.1.0"
 dependencies = [
+ "tempfile",
  "texis-core",
  "texis-document-application",
  "texis-document-contracts",

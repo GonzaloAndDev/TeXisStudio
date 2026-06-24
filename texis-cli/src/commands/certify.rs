@@ -5,10 +5,10 @@
 //! visual) requieren la máquina del usuario y se ejecutan aparte.
 
 use anyhow::Result;
-use texis_certification::run_structural_certification;
+use texis_certification::run_certification;
 
-pub fn run() -> Result<()> {
-    let report = run_structural_certification();
+pub fn run(compile: bool) -> Result<()> {
+    let report = run_certification(compile);
     print!("{}", report.summary());
     if report.passed() {
         Ok(())

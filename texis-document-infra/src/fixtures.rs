@@ -25,6 +25,56 @@ pub fn stress_cover_thesis() -> ProjectModel {
     m
 }
 
+/// Fixture mínimo y **autocompilable**: sin assets externos (no figuras con
+/// archivos en disco), estilo bibliográfico integrado de biblatex (numeric) y
+/// fuentes TeX Gyre. Pensado para el gate de compilación real de la Etapa J.
+pub fn compilable_thesis() -> ProjectModel {
+    let mut m = sample_thesis();
+    m.institution.logo_path = None;
+    m.latex_config.bibliography_style = "numeric".to_string();
+    // Sin fuentes personalizadas: usa la fuente por defecto del motor (evita
+    // dependencias de fuentes del sistema en el gate de compilación).
+    m.latex_config.preamble_config.main_font = None;
+    m.latex_config.preamble_config.sans_font = None;
+    m.latex_config.preamble_config.mono_font = None;
+    // Cuerpo sin figuras/tablas (evita includegraphics de archivos inexistentes).
+    m.sections = vec![ProjectSection {
+        id: "sec-intro".into(),
+        element_id: "introduccion".into(),
+        title: Some("Introducción".into()),
+        placement: SectionPlacement::Body,
+        required: true,
+        enabled: true,
+        label: Some("cap:intro".into()),
+        status: SectionStatus::Draft,
+        notes: None,
+        blocks: vec![
+            ContentBlock::Paragraph(ParagraphBlock {
+                id: "p1".into(),
+                content: "Texto de prueba para compilación real.".into(),
+                verbatim: false,
+            }),
+            ContentBlock::Equation(EquationBlock {
+                id: "eq1".into(),
+                latex_content: "E = mc^2".into(),
+                label: Some("eq:emc2".into()),
+                numbered: true,
+            }),
+            ContentBlock::Citation(CitationBlock {
+                id: "cit1".into(),
+                citation_key: "turing1936".into(),
+                citation_type: CitationType::Parenthetical,
+                page: None,
+                prefix: None,
+                suffix: None,
+            }),
+        ],
+        fields: HashMap::new(),
+        children: vec![],
+    }];
+    m
+}
+
 /// Construye un `ProjectModel` legacy representativo (no toca disco).
 pub fn sample_thesis() -> ProjectModel {
     ProjectModel {
