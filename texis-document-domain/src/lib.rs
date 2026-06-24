@@ -11,6 +11,7 @@
 
 pub mod backend;
 pub mod ir;
+pub mod labels;
 pub mod phase;
 pub mod plan;
 pub mod plan_builder;
