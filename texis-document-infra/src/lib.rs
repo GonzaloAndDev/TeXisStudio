@@ -7,6 +7,7 @@
 //! Convive con `texis-core` (congelado) hasta la Etapa I, donde se retira la
 //! dependencia legacy.
 
+pub mod bibtex_parser;
 pub mod fixtures;
 pub mod hasher;
 pub mod json_serializer;

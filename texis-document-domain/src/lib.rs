@@ -10,6 +10,7 @@
 //! `DocumentResolver`.
 
 pub mod backend;
+pub mod bib_styles;
 pub mod ir;
 pub mod labels;
 pub mod phase;

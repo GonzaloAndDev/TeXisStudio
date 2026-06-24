@@ -198,6 +198,30 @@ pub enum BibliographyBackend {
     Bibtex,
 }
 
+/// Entrada bibliográfica normalizada (independiente del formato .bib).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BibEntry {
+    pub key: String,
+    /// Tipo canónico en minúsculas ("article", "book", "inproceedings", ...).
+    pub entry_type: String,
+    /// Campos normalizados (author, title, year, doi, ...).
+    pub fields: std::collections::BTreeMap<String, String>,
+}
+
+impl BibEntry {
+    pub fn new(key: impl Into<String>, entry_type: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            entry_type: entry_type.into(),
+            fields: std::collections::BTreeMap::new(),
+        }
+    }
+
+    pub fn field(&self, name: &str) -> Option<&str> {
+        self.fields.get(name).map(String::as_str)
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BibliographyDocument {
     /// Estilo bibliográfico canónico ("apa7", "ieee", "vancouver", ...).
@@ -206,6 +230,9 @@ pub struct BibliographyDocument {
     pub backend: Option<BibliographyBackend>,
     /// Fuentes .bib referenciadas (rutas relativas).
     pub sources: Vec<String>,
+    /// Entradas normalizadas (parseadas desde las fuentes por infraestructura).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub entries: Vec<BibEntry>,
 }
 
 // ── 7.6 Anexos ─────────────────────────────────────────────────────────────

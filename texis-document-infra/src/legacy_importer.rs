@@ -411,6 +411,7 @@ impl ImportCtx {
                 legacy::BibliographyBackend::Bibtex => BibliographyBackend::Bibtex,
             }),
             sources: Vec::new(),
+            entries: Vec::new(),
         }
     }
 
