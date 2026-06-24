@@ -292,6 +292,22 @@ impl ImportCtx {
             });
         }
 
+        // Las autoridades (asesores + comité) firman la portada/acta.
+        let signatures = authorities
+            .iter()
+            .map(|a| SignatureRequirement {
+                full_name: a.full_name.clone(),
+                role: a
+                    .committee_role
+                    .clone()
+                    .unwrap_or_else(|| match a.role {
+                        AuthorityRole::Advisor => "Asesor".to_string(),
+                        AuthorityRole::CoAdvisor => "Co-asesor".to_string(),
+                        AuthorityRole::CommitteeMember => "Sinodal".to_string(),
+                    }),
+            })
+            .collect();
+
         CoverDocument {
             institution,
             title: m.metadata.title.clone(),
@@ -300,6 +316,8 @@ impl ImportCtx {
             authorities,
             city: m.metadata.city.clone(),
             year: m.metadata.year,
+            signatures,
+            overflow_policy: CoverOverflowPolicy::default(),
         }
     }
 

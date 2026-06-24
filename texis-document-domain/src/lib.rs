@@ -16,6 +16,7 @@ pub mod plan;
 pub mod plan_builder;
 pub mod precedence;
 pub mod resolver;
+pub mod validation;
 
 pub use backend::{BackendCapabilities, RenderBackend, RenderedDocument, RenderedFile};
 pub use ir::DocumentIR;
@@ -23,3 +24,4 @@ pub use phase::DocumentPhase;
 pub use plan::DocumentPlan;
 pub use plan_builder::PlanBuilder;
 pub use resolver::{DocumentResolver, Resolution};
+pub use validation::validate_document;

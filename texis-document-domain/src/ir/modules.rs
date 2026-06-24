@@ -65,6 +65,33 @@ pub struct CoverDocument {
     pub authorities: Vec<AcademicAuthority>,
     pub city: String,
     pub year: u32,
+    /// Página de firmas requerida (jurado/comité). Vacío = sin firmas.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub signatures: Vec<SignatureRequirement>,
+    /// Política ante exceso de contenido en la portada (§7.1).
+    #[serde(default)]
+    pub overflow_policy: CoverOverflowPolicy,
+}
+
+/// Requisito de firma en la página de firmas/declaraciones.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SignatureRequirement {
+    pub full_name: String,
+    /// Rol mostrado junto a la línea de firma ("Asesor", "Presidente", ...).
+    pub role: String,
+}
+
+/// Política ante portada que excede una página (§7.1: nunca esconder contenido).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CoverOverflowPolicy {
+    /// Reducir tipografía dentro de límites seguros.
+    #[default]
+    ShrinkWithinLimits,
+    /// Trasladar formalmente comité/firmas a una página propia.
+    MoveAuthoritiesToPage,
+    /// Fallar de forma visible (no esconder) y diagnosticar.
+    FailLoud,
 }
 
 // ── 7.2 Preliminares ───────────────────────────────────────────────────────

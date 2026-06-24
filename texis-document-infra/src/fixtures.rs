@@ -5,6 +5,26 @@
 use std::collections::HashMap;
 use texis_core::project::model::*;
 
+/// Variante de estrés de portada (§ Etapa C): título muy largo, muchos asesores
+/// y comité amplio, para ejercitar la política de desbordamiento.
+pub fn stress_cover_thesis() -> ProjectModel {
+    let mut m = sample_thesis();
+    m.metadata.title = "Un título deliberadamente extenso para verificar el \
+        comportamiento de la portada ante desbordamiento tipográfico, con \
+        cláusulas subordinadas, dos puntos: y una enumeración de conceptos que \
+        no cabe cómodamente en una sola línea ni en dos"
+        .to_string();
+    m.student.advisors = (1..=4).map(|i| format!("Dr. Asesor Número {i}")).collect();
+    m.student.committee = (1..=7)
+        .map(|i| CommitteeMember {
+            full_name: format!("Dra. Sinodal {i}"),
+            role: Some(format!("Vocal {i}")),
+            institution: None,
+        })
+        .collect();
+    m
+}
+
 /// Construye un `ProjectModel` legacy representativo (no toca disco).
 pub fn sample_thesis() -> ProjectModel {
     ProjectModel {

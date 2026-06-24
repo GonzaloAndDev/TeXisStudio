@@ -314,6 +314,22 @@ fn render_cover(c: &CoverDocument) -> String {
     }
     let _ = writeln!(s, "\\vfill\n{} --- {}\n", escape(&c.city), c.year);
     s.push_str("\\end{titlepage}\n");
+
+    // Página de firmas (acta) si el documento la requiere (§7.1).
+    if !c.signatures.is_empty() {
+        s.push_str("\\thispagestyle{empty}\n\\begin{center}\n");
+        s.push_str("{\\large Acta de aprobación}\\\\[2cm]\n");
+        s.push_str("\\end{center}\n");
+        for sig in &c.signatures {
+            let _ = writeln!(
+                s,
+                "\\vspace{{1.5cm}}\\noindent\\rule{{6cm}}{{0.4pt}}\\\\\n{} \\textit{{({})}}\\\\\n",
+                escape(&sig.full_name),
+                escape(&sig.role)
+            );
+        }
+        s.push_str("\\clearpage\n");
+    }
     s
 }
 

@@ -23,8 +23,9 @@ impl<R: DocumentResolver> ImportProjectUseCase<R> {
         let mut resolution = self.resolver.resolve(input);
 
         if let Some(ir) = &resolution.value {
-            let invariant_diags = ir.check_invariants();
-            resolution.diagnostics.extend(invariant_diags);
+            // Validación completa de dominio (invariantes + validadores por módulo).
+            let diags = texis_document_domain::validation::validate_document(ir);
+            resolution.diagnostics.extend(diags);
         }
 
         resolution
