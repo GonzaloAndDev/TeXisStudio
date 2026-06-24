@@ -122,15 +122,27 @@ Núcleo (Rust) completo y verificado por módulo, sin tocar producción:
 
 58 pruebas verdes en los crates nuevos; `clippy --all-targets -D warnings` limpio.
 
-## Pendiente (gated por entorno, otros repos o estrategia)
+## Estado de implementación (J real + plataformas plan 2)
 
-- **Etapa J — gates de compilación**: compilar a PDF (XeLaTeX/LuaLaTeX/PdfLaTeX),
-  corpus real 50/100/250 pág., regresión visual, PDF/A, fuentes incrustadas.
-  Requiere el toolchain y los activos del usuario; el harness ya está listo.
-- **Etapa I — corte del legado**: deliberadamente diferida hasta que J esté verde
-  y exista rollback (estrategia acordada: sin sustitución parcial en producción).
-- **Otros repos**: `TeXisStudio-Profiles` (YAML 2.x + creador sin YAML + CI),
-  `TeXisStudio-Languages` (ui/document/latex 2.x), `TeXisStudio-Plugins`
-  (Contribution 2.x + sandbox).
-- **UI modular** (React, `texis-app`) y plataformas transversales restantes del
-  plan 2: `CapabilityRegistry` completo y grafo incremental.
+- **J — compilación PDF real**: `compile_gate` escribe artefactos a temp y compila
+  con latexmk/tectonic. `texis certify --compile` → 3/3 (incluye un PDF real
+  generado con XeLaTeX+Biber en esta máquina). Completa el render de `.bib` de F.
+- **H repo-side**: migrador `Profile` 1.x → `Profile2` en infra (confianza,
+  evidencia, políticas derivadas de secciones).
+- **Plan 2 — Capacidades**: `capability_registry` (requeridas vs. backend,
+  CAP-001 no soportado, CAP-010 incompatibilidad pdflatex+fuente).
+- **Plan 2 — Grafo incremental**: `graph::DependencyGraph` con `invalidation_set`.
+- **Plan 2 — Entrega reproducible**: `BuildManifest` con hashes (Etapa B).
+
+67 pruebas verdes en los crates nuevos; `clippy --all-targets -D warnings` limpio.
+
+## Pendiente (gated por estrategia, otros repos o frontend)
+
+- **Etapa I — corte del legado**: diferida a propósito hasta certificación completa
+  con corpus real + rollback (estrategia acordada: sin sustitución parcial).
+- **Corpus real de certificación**: tesis 50/100/250 pág. externas + regresión
+  visual + PDF/A. El harness está listo; faltan los activos del usuario.
+- **Otros repos**: `TeXisStudio-Profiles` (YAML 2.x + creador sin YAML + CI;
+  el migrador ya existe), `TeXisStudio-Languages` (split ui/document/latex 2.x),
+  `TeXisStudio-Plugins` (Contribution 2.x + sandbox, en TypeScript).
+- **UI modular** (React, `texis-app`).
