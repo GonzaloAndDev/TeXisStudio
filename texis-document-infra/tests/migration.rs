@@ -31,7 +31,10 @@ fn back_matter_is_preserved_as_phase() {
     let ir = import_project(&migration_fixture()).value.unwrap();
     // El glosario back matter NO se vuelve preliminar: vive en back_matter.
     assert_eq!(ir.back_matter.sections.len(), 1);
-    assert_eq!(ir.back_matter.sections[0].title.as_deref(), Some("Glosario"));
+    assert_eq!(
+        ir.back_matter.sections[0].title.as_deref(),
+        Some("Glosario")
+    );
     // Y no se duplicó en preliminares.
     assert!(!ir
         .preliminaries

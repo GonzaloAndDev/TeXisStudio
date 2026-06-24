@@ -18,4 +18,4 @@ pub mod profile_migrator;
 pub use hasher::Sha256Hasher;
 pub use json_serializer::JsonIrSerializer;
 pub use latex_backend::LatexRenderBackend;
-pub use legacy_importer::{import_project, LegacyProjectImporter};
+pub use legacy_importer::{import_project, import_project_from_root, LegacyProjectImporter};

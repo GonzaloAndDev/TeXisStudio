@@ -41,7 +41,11 @@ pub fn validate(ir: &DocumentIR) -> Diagnostics {
         let loc = || DocumentLocation::module(ModuleId::Appendices).with_path(a.id.as_str());
 
         // APX-001: anexo sin título.
-        if a.title.as_ref().map(|t| t.trim().is_empty()).unwrap_or(true) {
+        if a.title
+            .as_ref()
+            .map(|t| t.trim().is_empty())
+            .unwrap_or(true)
+        {
             d.push(
                 Diagnostic::warning(
                     "APX-001",
@@ -67,7 +71,11 @@ pub fn validate(ir: &DocumentIR) -> Diagnostics {
         }
 
         // APX-004: anexo sin label (recomendado para referencias cruzadas).
-        if a.label.as_ref().map(|l| l.trim().is_empty()).unwrap_or(true) {
+        if a.label
+            .as_ref()
+            .map(|l| l.trim().is_empty())
+            .unwrap_or(true)
+        {
             d.push(
                 Diagnostic::warning(
                     "APX-004",

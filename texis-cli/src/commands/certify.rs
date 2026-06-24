@@ -7,12 +7,12 @@
 use anyhow::Result;
 use texis_certification::run_certification;
 
-pub fn run(compile: bool) -> Result<()> {
-    let report = run_certification(compile);
+pub fn run(compile: bool, strict: bool) -> Result<()> {
+    let report = run_certification(compile || strict, strict);
     print!("{}", report.summary());
     if report.passed() {
         Ok(())
     } else {
-        anyhow::bail!("la certificación estructural falló")
+        anyhow::bail!("la certificación falló")
     }
 }

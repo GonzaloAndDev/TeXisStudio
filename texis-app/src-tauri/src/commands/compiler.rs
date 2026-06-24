@@ -265,7 +265,11 @@ fn compiler_kind_for(name: &str) -> texis_core::project::model::CompilerKind {
         _ => {
             let latexmk_cmd = resolve_latex_command("latexmk");
             let latexmk_ok = Command::new(&latexmk_cmd).arg("--version").output().is_ok();
-            if latexmk_ok { CompilerKind::Latexmk } else { CompilerKind::Tectonic }
+            if latexmk_ok {
+                CompilerKind::Latexmk
+            } else {
+                CompilerKind::Tectonic
+            }
         }
     }
 }

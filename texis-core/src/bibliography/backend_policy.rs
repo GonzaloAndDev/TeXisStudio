@@ -21,12 +21,25 @@ use crate::project::model::{BibliographyBackend, CompilerKind};
 /// demás (los estilos "fancy": apa, ieee, vancouver, chicago, abnt, gb7714,
 /// mhra, mla…) requiere biber, así que por defecto se asume que SÍ lo requiere.
 const BIBTEX_SAFE_STYLES: &[&str] = &[
-    "numeric", "numeric-comp", "numeric-verb",
-    "alphabetic", "alphabetic-verb",
-    "authoryear", "authoryear-comp", "authoryear-ibid", "authoryear-icomp",
-    "authortitle", "authortitle-comp", "authortitle-ibid", "authortitle-icomp",
-    "authortitle-terse", "authortitle-tcomp", "authortitle-ticomp",
-    "draft", "debug", "reading",
+    "numeric",
+    "numeric-comp",
+    "numeric-verb",
+    "alphabetic",
+    "alphabetic-verb",
+    "authoryear",
+    "authoryear-comp",
+    "authoryear-ibid",
+    "authoryear-icomp",
+    "authortitle",
+    "authortitle-comp",
+    "authortitle-ibid",
+    "authortitle-icomp",
+    "authortitle-terse",
+    "authortitle-tcomp",
+    "authortitle-ticomp",
+    "draft",
+    "debug",
+    "reading",
 ];
 
 /// ¿El estilo biblatex exige biber (no funciona con `backend=bibtex`)?
@@ -75,30 +88,64 @@ mod tests {
 
     #[test]
     fn estilos_fancy_requieren_biber() {
-        for s in ["apa", "ieee", "vancouver", "abnt", "gb7714-2015", "mhra", "chicago-authordate", "chicago-notes", "mla"] {
+        for s in [
+            "apa",
+            "ieee",
+            "vancouver",
+            "abnt",
+            "gb7714-2015",
+            "mhra",
+            "chicago-authordate",
+            "chicago-notes",
+            "mla",
+        ] {
             assert!(requires_biber(s), "{s} debe requerir biber");
         }
     }
 
-    fn is_biber(b: BibliographyBackend) -> bool { matches!(b, BibliographyBackend::Biber) }
-    fn is_bibtex(b: BibliographyBackend) -> bool { matches!(b, BibliographyBackend::Bibtex) }
+    fn is_biber(b: BibliographyBackend) -> bool {
+        matches!(b, BibliographyBackend::Biber)
+    }
+    fn is_bibtex(b: BibliographyBackend) -> bool {
+        matches!(b, BibliographyBackend::Bibtex)
+    }
 
     #[test]
     fn latexmk_respeta_el_backend_declarado() {
-        assert!(is_biber(resolve_backend("apa", BibliographyBackend::Biber, CompilerKind::Latexmk)));
-        assert!(is_bibtex(resolve_backend("numeric", BibliographyBackend::Bibtex, CompilerKind::Latexmk)));
+        assert!(is_biber(resolve_backend(
+            "apa",
+            BibliographyBackend::Biber,
+            CompilerKind::Latexmk
+        )));
+        assert!(is_bibtex(resolve_backend(
+            "numeric",
+            BibliographyBackend::Bibtex,
+            CompilerKind::Latexmk
+        )));
     }
 
     #[test]
     fn tectonic_usa_bibtex_para_estilos_core() {
         // estable: bibtex interno, sin herramienta externa
-        assert!(is_bibtex(resolve_backend("numeric", BibliographyBackend::Biber, CompilerKind::Tectonic)));
-        assert!(is_bibtex(resolve_backend("authoryear", BibliographyBackend::Biber, CompilerKind::Tectonic)));
+        assert!(is_bibtex(resolve_backend(
+            "numeric",
+            BibliographyBackend::Biber,
+            CompilerKind::Tectonic
+        )));
+        assert!(is_bibtex(resolve_backend(
+            "authoryear",
+            BibliographyBackend::Biber,
+            CompilerKind::Tectonic
+        )));
     }
 
     #[test]
     fn tectonic_mantiene_biber_para_estilos_que_lo_exigen() {
-        assert!(is_biber(resolve_backend("apa", BibliographyBackend::Biber, CompilerKind::Tectonic)));
+        assert!(is_biber(resolve_backend(
+            "apa",
+            BibliographyBackend::Biber,
+            CompilerKind::Tectonic
+        )));
         assert!(needs_full_suite("apa", CompilerKind::Tectonic));
         assert!(!needs_full_suite("numeric", CompilerKind::Tectonic));
         assert!(!needs_full_suite("apa", CompilerKind::Latexmk));

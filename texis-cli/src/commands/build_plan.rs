@@ -11,7 +11,7 @@ use texis_core::project::loader::ProjectLoader;
 use texis_document_application::{AssembleDocumentUseCase, BuildMode};
 use texis_document_infra::fixtures::sample_thesis;
 use texis_document_infra::{
-    import_project, JsonIrSerializer, LatexRenderBackend, Sha256Hasher,
+    import_project, import_project_from_root, JsonIrSerializer, LatexRenderBackend, Sha256Hasher,
 };
 
 pub fn run(project_dir: &Path, demo: bool, manifest: bool) -> Result<()> {
@@ -21,7 +21,11 @@ pub fn run(project_dir: &Path, demo: bool, manifest: bool) -> Result<()> {
         ProjectLoader.load_from_file(&project_dir.join("tesis.project.yaml"))?
     };
 
-    let resolution = import_project(&model);
+    let resolution = if demo {
+        import_project(&model)
+    } else {
+        import_project_from_root(&model, project_dir)
+    };
     let ir = resolution
         .value
         .ok_or_else(|| anyhow::anyhow!("la importación no produjo un DocumentIR"))?;

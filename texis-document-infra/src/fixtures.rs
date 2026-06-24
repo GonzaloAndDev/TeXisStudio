@@ -146,7 +146,12 @@ pub fn migration_fixture() -> ProjectModel {
     m.sections = vec![
         front("sec-portada", "portada", "Portada", vec![]),
         front("sec-toc", "indice_general", "Índice", vec![]),
-        front("sec-resumen", "resumen", "Resumen", vec![para("p-abs", "Resumen.")]),
+        front(
+            "sec-resumen",
+            "resumen",
+            "Resumen",
+            vec![para("p-abs", "Resumen.")],
+        ),
         ProjectSection {
             id: "sec-body".into(),
             element_id: "introduccion".into(),
@@ -187,8 +192,7 @@ pub fn sample_thesis() -> ProjectModel {
         created_at: "2026-01-01T00:00:00Z".to_string(),
         updated_at: "2026-06-23T00:00:00Z".to_string(),
         metadata: ProjectMetadata {
-            title: "Métodos formales para la verificación de sistemas concurrentes"
-                .to_string(),
+            title: "Métodos formales para la verificación de sistemas concurrentes".to_string(),
             subtitle: Some("Un enfoque modular".to_string()),
             document_kind: DocumentKind::TesisPosgrado,
             academic_level: AcademicLevel::Doctorado,

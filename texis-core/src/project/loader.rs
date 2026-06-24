@@ -23,7 +23,8 @@ impl ProjectLoader {
                 for ext in ["yaml.tmp", "yaml.bak"] {
                     let sidecar = path.with_extension(ext);
                     if let Ok(content) = std::fs::read_to_string(&sidecar) {
-                        if let Ok(model) = self.load_from_str(&content, &sidecar.to_string_lossy()) {
+                        if let Ok(model) = self.load_from_str(&content, &sidecar.to_string_lossy())
+                        {
                             let _ = std::fs::rename(&sidecar, path);
                             return Ok(model);
                         }

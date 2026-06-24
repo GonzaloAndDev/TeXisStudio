@@ -70,20 +70,15 @@ impl RenderBackend for LatexRenderBackend {
                     "sections/preliminaries.tex",
                     render_preliminaries(&ir.preliminaries, &assets),
                 ),
-                DocumentPhase::Indexes => {
-                    ("sections/indexes.tex", render_indexes(&ir.indexes))
-                }
-                DocumentPhase::MainMatter => {
-                    ("sections/body.tex", render_body(&ir.body, &assets))
-                }
+                DocumentPhase::Indexes => ("sections/indexes.tex", render_indexes(&ir.indexes)),
+                DocumentPhase::MainMatter => ("sections/body.tex", render_body(&ir.body, &assets)),
                 DocumentPhase::Appendices => (
                     "sections/appendices.tex",
                     render_appendices(&ir.appendices, &assets),
                 ),
-                DocumentPhase::BackMatter => (
-                    "sections/bibliography.tex",
-                    render_back_matter(ir, &assets),
-                ),
+                DocumentPhase::BackMatter => {
+                    ("sections/bibliography.tex", render_back_matter(ir, &assets))
+                }
             };
             files.push(RenderedFile {
                 relative_path: path.to_string(),
@@ -159,12 +154,7 @@ fn render_preamble(ir: &DocumentIR, plan: &DocumentPlan) -> String {
                 if pkg.options.is_empty() {
                     let _ = writeln!(s, "\\usepackage{{{}}}", pkg.name);
                 } else {
-                    let _ = writeln!(
-                        s,
-                        "\\usepackage[{}]{{{}}}",
-                        pkg.options.join(","),
-                        pkg.name
-                    );
+                    let _ = writeln!(s, "\\usepackage[{}]{{{}}}", pkg.options.join(","), pkg.name);
                 }
             }
         }
@@ -213,11 +203,10 @@ fn render_preamble(ir: &DocumentIR, plan: &DocumentPlan) -> String {
             map_bib_style(&ir.bibliography.style),
             backend
         );
-        // Recurso bibliográfico generado (autocontenido) + fuentes externas.
+        // Recurso bibliográfico normalizado y generado de forma autocontenida.
+        // `sources` conserva provenance; no se vuelve a incluir para evitar
+        // duplicar claves ni depender de rutas externas durante la entrega.
         let _ = writeln!(s, "\\addbibresource{{references.bib}}");
-        for src in &ir.bibliography.sources {
-            let _ = writeln!(s, "\\addbibresource{{{src}}}");
-        }
     }
 
     // Metadatos PDF.
@@ -243,10 +232,11 @@ fn map_bib_style(style: &str) -> &str {
         "apa7" | "apa" => "apa",
         "ieee" => "ieee",
         "vancouver" => "vancouver",
-        "chicago" => "chicago-notes",
-        "mhra" => "mla",
+        "chicago" | "chicago17_notes" | "chicago-notes" | "verbose-note" => "chicago-notes",
+        "chicago17_authordate" | "chicago-authordate" => "chicago-authordate",
+        "mhra" => "mhra",
         "abnt" => "abnt",
-        "gbt7714" => "gb7714-2015",
+        "gbt7714" | "gb7714" => "gb7714-2015",
         other => other,
     }
 }
@@ -352,7 +342,10 @@ fn render_preliminaries(doc: &PreliminariesDocument, assets: &AssetLookup) -> St
             .title
             .languages()
             .next()
-            .and_then(|l| item.title.get(&texis_document_contracts::locale::LanguageTag::new(l)))
+            .and_then(|l| {
+                item.title
+                    .get(&texis_document_contracts::locale::LanguageTag::new(l))
+            })
             .unwrap_or("");
         if !title.is_empty() {
             let _ = writeln!(s, "\\chapter*{{{}}}", escape(title));
@@ -508,7 +501,11 @@ fn render_node(node: &BodyNode, assets: &AssetLookup, out: &mut String) {
                     .as_ref()
                     .map(|l| format!("\\label{{{l}}}"))
                     .unwrap_or_default();
-                let _ = writeln!(out, "\\begin{{equation}}{}\n{}\n\\end{{equation}}", label, e.latex);
+                let _ = writeln!(
+                    out,
+                    "\\begin{{equation}}{}\n{}\n\\end{{equation}}",
+                    label, e.latex
+                );
             } else {
                 let _ = writeln!(out, "\\[\n{}\n\\]", e.latex);
             }
@@ -527,7 +524,11 @@ fn render_node(node: &BodyNode, assets: &AssetLookup, out: &mut String) {
         }
         BodyNode::Theorem(t) => {
             let env = format!("{:?}", t.kind).to_lowercase();
-            let _ = writeln!(out, "\\begin{{{env}}}\n{}\n\\end{{{env}}}", text(&t.content));
+            let _ = writeln!(
+                out,
+                "\\begin{{{env}}}\n{}\n\\end{{{env}}}",
+                text(&t.content)
+            );
         }
         BodyNode::CodeListing(c) => {
             let _ = writeln!(
@@ -569,9 +570,24 @@ fn render_node(node: &BodyNode, assets: &AssetLookup, out: &mut String) {
             );
         }
         BodyNode::PluginContribution(p) => {
-            // El artefacto del plugin es LaTeX confiable producido por el contrato.
-            out.push_str(&p.artifact_latex);
-            out.push('\n');
+            // Frontera de seguridad: el artefacto SOLO se inserta si está saneado.
+            // Si contiene \usepackage o un constructo prohibido, se rechaza con un
+            // marcador visible (la validación ya emitió PLUGIN-003/004 bloqueante).
+            let unsafe_construct =
+                texis_document_domain::validation::body::plugin_artifact_violation(
+                    &p.artifact_latex,
+                )
+                .is_some();
+            if unsafe_construct {
+                let _ = writeln!(
+                    out,
+                    "% [plugin:{}] artefacto rechazado por la frontera de seguridad",
+                    p.plugin_id
+                );
+            } else {
+                out.push_str(&p.artifact_latex);
+                out.push('\n');
+            }
         }
         BodyNode::Visual(v) => {
             if let Some(ov) = &v.advanced_override {

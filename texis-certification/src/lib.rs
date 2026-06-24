@@ -117,20 +117,20 @@ fn matrix() -> Vec<MatrixCase> {
 
 /// Ejecuta la certificación estructural sobre toda la matriz.
 pub fn run_structural_certification() -> CertificationReport {
-    run_certification(false)
+    run_certification(false, false)
 }
 
 /// Ejecuta la certificación. Con `include_compile`, añade un caso que compila un
 /// fixture mínimo a PDF real (Etapa J) si hay toolchain LaTeX disponible.
-pub fn run_certification(include_compile: bool) -> CertificationReport {
+pub fn run_certification(include_compile: bool, strict: bool) -> CertificationReport {
     let mut cases: Vec<CaseResult> = matrix().into_iter().map(run_case).collect();
     if include_compile {
-        cases.push(run_compile_case());
+        cases.push(run_compile_case(strict));
     }
     CertificationReport { cases }
 }
 
-fn run_compile_case() -> CaseResult {
+fn run_compile_case(strict: bool) -> CaseResult {
     let mut gates = Vec::new();
     let ir = fixtures::compilable_thesis_ir();
     match compile_gate::compile(&ir) {
@@ -140,7 +140,73 @@ fn run_compile_case() -> CaseResult {
                 "omitido: toolchain LaTeX no disponible (ejecutar en máquina con LaTeX)",
             ));
         }
-        Ok(o) if o.produced_pdf => gates.push(GateResult::pass("compile_pdf")),
+        Ok(o) if o.produced_pdf && o.compiler_success => {
+            gates.push(GateResult::pass("compile_pdf"));
+            match o.postflight {
+                Some(postflight) => {
+                    if postflight.passed {
+                        gates.push(GateResult::pass("postflight"));
+                    } else {
+                        let codes = postflight
+                            .issues
+                            .iter()
+                            .filter(|issue| {
+                                issue.severity == texis_core::postflight::PdfIssueSeverity::Error
+                            })
+                            .map(|issue| issue.code.as_str())
+                            .collect::<Vec<_>>();
+                        gates.push(GateResult::fail(
+                            "postflight",
+                            format!("errores: {codes:?}"),
+                        ));
+                    }
+                    if postflight.all_fonts_embedded {
+                        gates.push(GateResult::pass("fonts_embedded"));
+                    } else {
+                        gates.push(GateResult::fail(
+                            "fonts_embedded",
+                            format!("{:?}", postflight.non_embedded_fonts),
+                        ));
+                    }
+                    if strict {
+                        let essential = ["pdfinfo", "pdffonts", "pdftotext"];
+                        let missing = essential
+                            .iter()
+                            .filter(|tool| {
+                                postflight
+                                    .tools_missing
+                                    .iter()
+                                    .any(|missing| missing == **tool)
+                            })
+                            .copied()
+                            .collect::<Vec<_>>();
+                        if missing.is_empty() {
+                            gates.push(GateResult::pass("postflight_tools"));
+                        } else {
+                            gates.push(GateResult::fail(
+                                "postflight_tools",
+                                format!("faltan: {missing:?}"),
+                            ));
+                        }
+                        if ir.profile.policy.delivery.require_pdfa {
+                            match postflight.pdfa {
+                                Some(check) if check.compliant => {
+                                    gates.push(GateResult::pass("pdfa"))
+                                }
+                                Some(check) => gates.push(GateResult::fail("pdfa", check.summary)),
+                                None => {
+                                    gates.push(GateResult::fail("pdfa", "veraPDF no disponible"))
+                                }
+                            }
+                        }
+                    }
+                }
+                None => gates.push(GateResult::fail(
+                    "postflight",
+                    "no se produjo resultado de postflight",
+                )),
+            }
+        }
         Ok(o) => gates.push(GateResult::fail("compile_pdf", o.log_tail)),
         Err(e) => gates.push(GateResult::fail("compile_pdf", e.to_string())),
     }
@@ -160,11 +226,11 @@ fn run_case(case: MatrixCase) -> CaseResult {
     // Gate 2: validación de dominio sin errores bloqueantes.
     let diags = validate_document(&ir);
     if diags.has_blocking() {
-        let codes: Vec<&str> = diags
-            .errors()
-            .map(|d| d.code.as_str())
-            .collect();
-        gates.push(GateResult::fail("validation", format!("bloqueantes: {codes:?}")));
+        let codes: Vec<&str> = diags.errors().map(|d| d.code.as_str()).collect();
+        gates.push(GateResult::fail(
+            "validation",
+            format!("bloqueantes: {codes:?}"),
+        ));
     } else {
         gates.push(GateResult::pass("validation"));
     }
@@ -182,7 +248,10 @@ fn run_case(case: MatrixCase) -> CaseResult {
         }
         Err(e) => {
             let codes: Vec<&str> = e.diagnostics.errors().map(|d| d.code.as_str()).collect();
-            gates.push(GateResult::fail("pipeline_final", format!("bloqueado: {codes:?}")));
+            gates.push(GateResult::fail(
+                "pipeline_final",
+                format!("bloqueado: {codes:?}"),
+            ));
             return CaseResult {
                 name: case.name.to_string(),
                 gates,
@@ -203,18 +272,28 @@ fn run_case(case: MatrixCase) -> CaseResult {
     if phases == canonical {
         gates.push(GateResult::pass("phase_order_canonical"));
     } else {
-        gates.push(GateResult::fail("phase_order_canonical", format!("{phases:?}")));
+        gates.push(GateResult::fail(
+            "phase_order_canonical",
+            format!("{phases:?}"),
+        ));
     }
 
     // Gate 4: build determinista.
     if let Ok(again) = use_case.execute(&ir, BuildMode::Final) {
-        if again.manifest == assembled.manifest && again.rendered.files == assembled.rendered.files {
+        if again.manifest == assembled.manifest && again.rendered.files == assembled.rendered.files
+        {
             gates.push(GateResult::pass("deterministic_build"));
         } else {
-            gates.push(GateResult::fail("deterministic_build", "manifiesto/artefactos divergen"));
+            gates.push(GateResult::fail(
+                "deterministic_build",
+                "manifiesto/artefactos divergen",
+            ));
         }
     } else {
-        gates.push(GateResult::fail("deterministic_build", "segundo build falló"));
+        gates.push(GateResult::fail(
+            "deterministic_build",
+            "segundo build falló",
+        ));
     }
 
     CaseResult {
@@ -230,7 +309,11 @@ mod tests {
     #[test]
     fn structural_certification_passes() {
         let report = run_structural_certification();
-        assert!(report.passed(), "certificación estructural falló:\n{}", report.summary());
+        assert!(
+            report.passed(),
+            "certificación estructural falló:\n{}",
+            report.summary()
+        );
         assert_eq!(report.cases.len(), 2);
     }
 }

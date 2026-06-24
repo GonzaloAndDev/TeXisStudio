@@ -11,7 +11,7 @@ pub mod resources;
 
 use serde::{Deserialize, Serialize};
 use texis_document_contracts::diagnostics::{
-    Diagnostic, DiagnosticStage, DocumentLocation, Diagnostics,
+    Diagnostic, DiagnosticStage, Diagnostics, DocumentLocation,
 };
 use texis_document_contracts::ids::ModuleId;
 use texis_document_contracts::locale::DocumentLocale;

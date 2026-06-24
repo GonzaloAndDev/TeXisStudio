@@ -6,6 +6,8 @@
 //! participó y si el build es determinista.
 
 use crate::diagnostics::Diagnostic;
+use crate::profile::ProfilePolicy;
+use crate::provenance::ResolutionProvenance;
 use crate::version::{ContractVersion, DocumentSchemaVersion};
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +59,17 @@ pub struct BuildManifest {
     pub build_mode: String,
     /// Perfil institucional aplicado.
     pub profile_id: String,
+    /// Idioma documental y fallback resueltos.
+    pub document_locale: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document_locale_fallback: Option<String>,
+    /// Política efectivamente aplicada por el pipeline.
+    pub profile_policy: ProfilePolicy,
+    /// Trazabilidad de las decisiones de resolución.
+    pub provenance: ResolutionProvenance,
+    /// Plugins presentes en el documento, ordenados y sin duplicados.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub plugin_ids: Vec<String>,
     pub toolchain: ToolchainStamp,
     /// Hashes de las entradas relevantes (ordenados).
     pub inputs: Vec<ResourceHash>,
@@ -78,5 +91,7 @@ impl BuildManifest {
         self.artifacts.sort();
         self.resolved_capabilities.sort();
         self.required_capabilities.sort();
+        self.plugin_ids.sort();
+        self.plugin_ids.dedup();
     }
 }

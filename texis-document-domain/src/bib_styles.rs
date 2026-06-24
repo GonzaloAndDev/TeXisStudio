@@ -44,13 +44,16 @@ const GBT7714: BibStyleSpec = BibStyleSpec {
 };
 
 /// Todos los estilos soportados.
-pub const STYLES: &[&BibStyleSpec] = &[
-    &APA7, &IEEE, &VANCOUVER, &CHICAGO, &MHRA, &ABNT, &GBT7714,
-];
+pub const STYLES: &[&BibStyleSpec] = &[&APA7, &IEEE, &VANCOUVER, &CHICAGO, &MHRA, &ABNT, &GBT7714];
 
-/// Busca un estilo por su clave canónica (acepta el alias "apa").
+/// Busca un estilo por su clave canónica y aliases comunes de perfiles.
 pub fn lookup(style: &str) -> Option<&'static BibStyleSpec> {
-    let key = if style == "apa" { "apa7" } else { style };
+    let key = match style {
+        "apa" => "apa7",
+        "chicago17_notes" | "chicago-notes" | "verbose-note" => "chicago",
+        "gb7714" | "gb7714-2015" => "gbt7714",
+        other => other,
+    };
     STYLES.iter().copied().find(|s| s.key == key)
 }
 

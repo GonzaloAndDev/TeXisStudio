@@ -54,19 +54,31 @@ impl DependencyGraph {
         // La bibliografía (citas) depende del cuerpo y los anexos.
         if !ir.bibliography.style.is_empty() {
             if active.contains(&DocumentPhase::MainMatter) {
-                g.add(BuildNode::Bibliography, BuildNode::Phase(DocumentPhase::MainMatter));
+                g.add(
+                    BuildNode::Bibliography,
+                    BuildNode::Phase(DocumentPhase::MainMatter),
+                );
             }
             if active.contains(&DocumentPhase::Appendices) {
-                g.add(BuildNode::Bibliography, BuildNode::Phase(DocumentPhase::Appendices));
+                g.add(
+                    BuildNode::Bibliography,
+                    BuildNode::Phase(DocumentPhase::Appendices),
+                );
             }
-            g.add(BuildNode::Phase(DocumentPhase::BackMatter), BuildNode::Bibliography);
+            g.add(
+                BuildNode::Phase(DocumentPhase::BackMatter),
+                BuildNode::Bibliography,
+            );
         }
 
         // Los índices/listas dependen del cuerpo y los anexos (entradas y páginas).
         if active.contains(&DocumentPhase::Indexes) {
             for src in [DocumentPhase::MainMatter, DocumentPhase::Appendices] {
                 if active.contains(&src) {
-                    g.add(BuildNode::Phase(DocumentPhase::Indexes), BuildNode::Phase(src));
+                    g.add(
+                        BuildNode::Phase(DocumentPhase::Indexes),
+                        BuildNode::Phase(src),
+                    );
                 }
             }
         }

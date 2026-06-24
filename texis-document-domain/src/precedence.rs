@@ -66,7 +66,11 @@ mod tests {
             "page.paper",
             vec![
                 Candidate::new("letter", ValueSource::ProjectExplicit, "project.typography"),
-                Candidate::new("a4", ValueSource::ProfileRequirement, "profile.mandatory_paper"),
+                Candidate::new(
+                    "a4",
+                    ValueSource::ProfileRequirement,
+                    "profile.mandatory_paper",
+                ),
             ],
         )
         .unwrap();
@@ -82,7 +86,11 @@ mod tests {
             vec![
                 Candidate::new("a4", ValueSource::CoreSafeDefault, "core.default"),
                 Candidate::new("letter", ValueSource::ProjectExplicit, "project.typography"),
-                Candidate::new("a4", ValueSource::ProfileRecommendation, "profile.suggested"),
+                Candidate::new(
+                    "a4",
+                    ValueSource::ProfileRecommendation,
+                    "profile.suggested",
+                ),
             ],
         )
         .unwrap();

@@ -27,7 +27,10 @@ pub enum ValueSource {
 impl ValueSource {
     /// `true` si un valor de esta fuente puede ser modificado por el usuario.
     pub fn is_mutable(self) -> bool {
-        !matches!(self, ValueSource::CoreInvariant | ValueSource::ProfileRequirement)
+        !matches!(
+            self,
+            ValueSource::CoreInvariant | ValueSource::ProfileRequirement
+        )
     }
 }
 

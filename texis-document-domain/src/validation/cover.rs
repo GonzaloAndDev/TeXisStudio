@@ -21,34 +21,59 @@ pub fn validate(cover: &CoverDocument) -> Diagnostics {
     // Campos obligatorios.
     if cover.title.trim().is_empty() {
         d.push(
-            Diagnostic::error("COVER-001", ModuleId::Cover, DiagnosticStage::Validation, "cover.title_missing")
-                .with_location(loc()),
+            Diagnostic::error(
+                "COVER-001",
+                ModuleId::Cover,
+                DiagnosticStage::Validation,
+                "cover.title_missing",
+            )
+            .with_location(loc()),
         );
     }
     if cover.institution.name.trim().is_empty() {
         d.push(
-            Diagnostic::error("COVER-002", ModuleId::Cover, DiagnosticStage::Validation, "cover.institution_missing")
-                .with_location(loc()),
+            Diagnostic::error(
+                "COVER-002",
+                ModuleId::Cover,
+                DiagnosticStage::Validation,
+                "cover.institution_missing",
+            )
+            .with_location(loc()),
         );
     }
     if cover.authors.is_empty() {
         d.push(
-            Diagnostic::error("COVER-003", ModuleId::Cover, DiagnosticStage::Validation, "cover.authors_missing")
-                .with_location(loc()),
+            Diagnostic::error(
+                "COVER-003",
+                ModuleId::Cover,
+                DiagnosticStage::Validation,
+                "cover.authors_missing",
+            )
+            .with_location(loc()),
         );
     }
     for (i, a) in cover.authors.iter().enumerate() {
         if a.full_name.trim().is_empty() {
             d.push(
-                Diagnostic::error("COVER-004", ModuleId::Cover, DiagnosticStage::Validation, "cover.author_name_empty")
-                    .with_param("index", i.to_string()),
+                Diagnostic::error(
+                    "COVER-004",
+                    ModuleId::Cover,
+                    DiagnosticStage::Validation,
+                    "cover.author_name_empty",
+                )
+                .with_param("index", i.to_string()),
             );
         }
         if let Some(orcid) = &a.orcid {
             if !is_valid_orcid(orcid) {
                 d.push(
-                    Diagnostic::warning("COVER-005", ModuleId::Cover, DiagnosticStage::Validation, "cover.orcid_malformed")
-                        .with_param("orcid", orcid),
+                    Diagnostic::warning(
+                        "COVER-005",
+                        ModuleId::Cover,
+                        DiagnosticStage::Validation,
+                        "cover.orcid_malformed",
+                    )
+                    .with_param("orcid", orcid),
                 );
             }
         }
@@ -57,15 +82,20 @@ pub fn validate(cover: &CoverDocument) -> Diagnostics {
     // Año plausible.
     if cover.year < 1900 || cover.year > 2100 {
         d.push(
-            Diagnostic::warning("COVER-006", ModuleId::Cover, DiagnosticStage::Validation, "cover.year_implausible")
-                .with_param("year", cover.year.to_string()),
+            Diagnostic::warning(
+                "COVER-006",
+                ModuleId::Cover,
+                DiagnosticStage::Validation,
+                "cover.year_implausible",
+            )
+            .with_param("year", cover.year.to_string()),
         );
     }
 
     // Riesgo de desbordamiento según política.
     let title_len = cover.title.chars().count();
-    let crowded = title_len > TITLE_OVERFLOW_CHARS
-        || cover.authorities.len() > AUTHORITIES_OVERFLOW;
+    let crowded =
+        title_len > TITLE_OVERFLOW_CHARS || cover.authorities.len() > AUTHORITIES_OVERFLOW;
     if crowded {
         let sev = match cover.overflow_policy {
             // Con FailLoud, el exceso es bloqueante (no se esconde nada).

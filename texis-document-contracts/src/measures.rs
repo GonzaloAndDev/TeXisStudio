@@ -79,10 +79,19 @@ mod tests {
 
     #[test]
     fn parses_common_units() {
-        assert_eq!(Length::parse("38.1mm"), Some(Length::new(38.1, LengthUnit::Mm)));
-        assert_eq!(Length::parse(" 2.54 cm "), Some(Length::new(2.54, LengthUnit::Cm)));
+        assert_eq!(
+            Length::parse("38.1mm"),
+            Some(Length::new(38.1, LengthUnit::Mm))
+        );
+        assert_eq!(
+            Length::parse(" 2.54 cm "),
+            Some(Length::new(2.54, LengthUnit::Cm))
+        );
         assert_eq!(Length::parse("1in"), Some(Length::new(1.0, LengthUnit::In)));
-        assert_eq!(Length::parse("12pt"), Some(Length::new(12.0, LengthUnit::Pt)));
+        assert_eq!(
+            Length::parse("12pt"),
+            Some(Length::new(12.0, LengthUnit::Pt))
+        );
     }
 
     #[test]

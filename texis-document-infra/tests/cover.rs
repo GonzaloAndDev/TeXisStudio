@@ -1,11 +1,11 @@
 //! Etapa C — Portada: validación de campos, firmas, overflow y render.
 
+use texis_document_domain::backend::RenderBackend;
 use texis_document_domain::ir::modules::CoverOverflowPolicy;
+use texis_document_domain::plan_builder::PlanBuilder;
 use texis_document_domain::validation::{cover, validate_document};
 use texis_document_infra::fixtures::{sample_thesis, stress_cover_ir};
 use texis_document_infra::{import_project, LatexRenderBackend};
-use texis_document_domain::backend::RenderBackend;
-use texis_document_domain::plan_builder::PlanBuilder;
 
 #[test]
 fn sample_cover_validates_clean() {
@@ -40,7 +40,9 @@ fn fail_loud_policy_blocks_overflow() {
     ir.cover.overflow_policy = CoverOverflowPolicy::FailLoud;
     let d = validate_document(&ir);
     assert!(d.has_blocking());
-    assert!(d.iter().any(|x| x.code.as_str() == "COVER-010" && x.blocking));
+    assert!(d
+        .iter()
+        .any(|x| x.code.as_str() == "COVER-010" && x.blocking));
 }
 
 #[test]

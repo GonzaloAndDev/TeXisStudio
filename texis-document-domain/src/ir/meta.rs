@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use texis_document_contracts::ids::{DocumentId, ProfileId};
 use texis_document_contracts::measures::Length;
+use texis_document_contracts::profile::ProfilePolicy;
 use texis_document_contracts::version::ContractVersion;
 
 /// Tipo de documento académico (canónico, sin aliases).
@@ -97,4 +98,8 @@ pub struct ResolvedProfile {
     pub engine: String,
     /// Compilador ("latexmk", "tectonic").
     pub compiler: String,
+    /// Política institucional ya resuelta. Siempre viaja con el IR para que
+    /// ningún caller pueda omitirla al construir un documento.
+    #[serde(default)]
+    pub policy: ProfilePolicy,
 }

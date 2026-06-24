@@ -89,6 +89,17 @@ pub fn migrate(p: &legacy::Profile) -> Profile2 {
         },
         delivery: DeliveryPolicy {
             require_pdf_metadata: p.pdf_requirements.is_some(),
+            require_pdfa: p
+                .pdf_requirements
+                .as_ref()
+                .and_then(|req| req.pdfa.as_ref())
+                .map(|pdfa| pdfa.required)
+                .unwrap_or(false),
+            pdfa_level: p
+                .pdf_requirements
+                .as_ref()
+                .and_then(|req| req.pdfa.as_ref())
+                .and_then(|pdfa| pdfa.level.clone()),
             required_abstract_languages: Vec::new(),
         },
     };
@@ -198,7 +209,11 @@ mod tests {
         let p2 = migrate(&legacy_profile());
         assert_eq!(p2.identity.trust, TrustLevel::Verified);
         assert_eq!(p2.identity.revised_at.as_deref(), Some("2026-02-01"));
-        assert!(p2.identity.evidence.iter().any(|e| e.contains("reglamento")));
+        assert!(p2
+            .identity
+            .evidence
+            .iter()
+            .any(|e| e.contains("reglamento")));
         assert!(p2.identity.evidence.iter().any(|e| e.contains("ci/run")));
         // Verified migrado tiene fecha + evidencia ⇒ coherente.
         assert!(p2.self_consistency_errors().is_empty());
@@ -213,6 +228,9 @@ mod tests {
             .contains(&RequiredPreliminary::Abstract));
         assert!(p2.policy.indexes.require_toc);
         assert_eq!(p2.policy.bibliography.allowed_styles, vec!["apa7"]);
-        assert_eq!(p2.policy.bibliography.required_backend.as_deref(), Some("biber"));
+        assert_eq!(
+            p2.policy.bibliography.required_backend.as_deref(),
+            Some("biber")
+        );
     }
 }

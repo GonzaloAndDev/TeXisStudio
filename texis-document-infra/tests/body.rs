@@ -5,7 +5,7 @@ use texis_document_domain::ir::body_node::{
     BodyNode, CrossReference, PluginContribution, TrustedRawLatex,
 };
 use texis_document_domain::labels::LabelRegistry;
-use texis_document_domain::validation::body;
+use texis_document_domain::validation::{body, validate_document};
 use texis_document_infra::fixtures::sample_thesis;
 use texis_document_infra::import_project;
 
@@ -53,10 +53,12 @@ fn duplicate_label_is_blocking() {
 #[test]
 fn dangling_cross_reference_is_error() {
     let mut ir = ir();
-    ir.body.sections[0].nodes.push(BodyNode::CrossReference(CrossReference {
-        id: "xref-1".into(),
-        target_label: "no-existe".into(),
-    }));
+    ir.body.sections[0]
+        .nodes
+        .push(BodyNode::CrossReference(CrossReference {
+            id: "xref-1".into(),
+            target_label: "no-existe".into(),
+        }));
     let d = body::validate(&ir);
     assert!(d.iter().any(|x| x.code.as_str() == "BODY-002"));
 }
@@ -64,10 +66,12 @@ fn dangling_cross_reference_is_error() {
 #[test]
 fn valid_cross_reference_passes() {
     let mut ir = ir();
-    ir.body.sections[0].nodes.push(BodyNode::CrossReference(CrossReference {
-        id: "xref-1".into(),
-        target_label: "fig:arch".into(),
-    }));
+    ir.body.sections[0]
+        .nodes
+        .push(BodyNode::CrossReference(CrossReference {
+            id: "xref-1".into(),
+            target_label: "fig:arch".into(),
+        }));
     let d = body::validate(&ir);
     assert!(!d.iter().any(|x| x.code.as_str() == "BODY-002"));
 }
@@ -75,11 +79,13 @@ fn valid_cross_reference_passes() {
 #[test]
 fn unconfirmed_raw_latex_warns() {
     let mut ir = ir();
-    ir.body.sections[0].nodes.push(BodyNode::TrustedRawLatex(TrustedRawLatex {
-        id: "raw-1".into(),
-        content: "\\dangerous".into(),
-        user_confirmed: false,
-    }));
+    ir.body.sections[0]
+        .nodes
+        .push(BodyNode::TrustedRawLatex(TrustedRawLatex {
+            id: "raw-1".into(),
+            content: "\\dangerous".into(),
+            user_confirmed: false,
+        }));
     let d = body::validate(&ir);
     assert!(d.iter().any(|x| x.code.as_str() == "BODY-010"));
 }
@@ -87,17 +93,63 @@ fn unconfirmed_raw_latex_warns() {
 #[test]
 fn plugin_without_editable_source_warns() {
     let mut ir = ir();
-    ir.body.sections[0].nodes.push(BodyNode::PluginContribution(PluginContribution {
-        id: "plug-1".into(),
-        plugin_id: "demo".into(),
-        figure_id: "f".into(),
-        caption: "c".into(),
-        label: "fig:plug".into(),
-        artifact_latex: "\\begin{figure}\\end{figure}".into(),
-        required_packages: vec![],
-        editable_source: String::new(),
-        warnings: vec![],
-    }));
+    ir.body.sections[0]
+        .nodes
+        .push(BodyNode::PluginContribution(PluginContribution {
+            id: "plug-1".into(),
+            plugin_id: "demo".into(),
+            figure_id: "f".into(),
+            caption: "c".into(),
+            label: "fig:plug".into(),
+            artifact_latex: "\\begin{figure}\\end{figure}".into(),
+            required_packages: vec![],
+            editable_source: String::new(),
+            warnings: vec![],
+        }));
     let d = body::validate(&ir);
     assert!(d.iter().any(|x| x.code.as_str() == "PLUGIN-002"));
+}
+
+#[test]
+fn plugin_rejects_preamble_and_unsafe_paths() {
+    let mut doc = ir();
+    let base = PluginContribution {
+        id: "plugin-unsafe".into(),
+        plugin_id: "demo".into(),
+        figure_id: "fig-unsafe".into(),
+        caption: "Demo".into(),
+        label: "fig:unsafe".into(),
+        artifact_latex: "\\usepackage{shellesc}".into(),
+        required_packages: vec![],
+        editable_source: "{}".into(),
+        warnings: vec![],
+    };
+    doc.body.sections[0]
+        .nodes
+        .push(BodyNode::PluginContribution(base.clone()));
+    let mut traversal = base;
+    traversal.id = "plugin-traversal".into();
+    traversal.figure_id = "fig-traversal".into();
+    traversal.label = "fig:traversal".into();
+    traversal.artifact_latex = "\\includegraphics [width=1cm] {../secret}".into();
+    doc.body.sections[0]
+        .nodes
+        .push(BodyNode::PluginContribution(traversal));
+
+    let d = validate_document(&doc);
+    assert!(d.iter().any(|x| x.code.as_str() == "PLUGIN-003"));
+    assert!(d.iter().any(|x| x.code.as_str() == "PLUGIN-004"));
+    assert!(d.has_blocking());
+}
+
+#[test]
+fn plugin_allows_decimal_text_and_owned_relative_input() {
+    use texis_document_domain::validation::body::plugin_artifact_violation;
+
+    assert_eq!(
+        plugin_artifact_violation(
+            "\\begin{figure}Version 1.2...\\input{texisstudio-assets/figures/f1/output.tex}\\end{figure}"
+        ),
+        None
+    );
 }

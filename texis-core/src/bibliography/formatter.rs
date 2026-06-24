@@ -1081,7 +1081,11 @@ mod tests {
         let a = format_entry(&sample_article(), "chicago-notes");
         let b = format_entry(&sample_article(), "verbose-note");
         assert_eq!(a, b);
-        assert_ne!(a, format_entry(&sample_article(), "apa"), "no debe caer a genérico/otro");
+        assert_ne!(
+            a,
+            format_entry(&sample_article(), "apa"),
+            "no debe caer a genérico/otro"
+        );
     }
 
     #[test]

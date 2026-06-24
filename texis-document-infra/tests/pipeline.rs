@@ -14,7 +14,9 @@ fn assemble() -> texis_document_application::AssembledDocument {
         Sha256Hasher,
     );
     // Final: el fixture con bibliografía real no tiene bloqueantes.
-    use_case.execute(&ir, BuildMode::Final).expect("pipeline Final")
+    use_case
+        .execute(&ir, BuildMode::Final)
+        .expect("pipeline Final")
 }
 
 #[test]
@@ -66,10 +68,15 @@ fn preamble_resolves_packages_and_geometry() {
 
 #[test]
 fn manifest_lists_inputs_and_artifacts() {
+    let expected_policy = sample_thesis_ir().profile.policy;
     let assembled = assemble();
     let m = &assembled.manifest;
 
     assert_eq!(m.document_id, "demo-thesis-001");
+    assert_eq!(m.document_locale, "es");
+    assert_eq!(m.profile_id, "generic-thesis");
+    assert_eq!(m.profile_policy, expected_policy);
+    assert!(m.plugin_ids.is_empty());
     assert_eq!(m.toolchain.engine, "xelatex");
     assert!(m.inputs.iter().any(|h| h.name == "document_ir"));
     // Un artefacto por cada archivo renderizado (preamble + fases + main).
@@ -117,7 +124,10 @@ fn final_mode_blocks_unresolved_citation_draft_proceeds() {
     let draft = use_case
         .execute(&ir, BuildMode::Draft)
         .expect("Draft procede pese a diagnósticos");
-    assert!(draft.diagnostics.iter().any(|d| d.code.as_str() == "BIB-001"));
+    assert!(draft
+        .diagnostics
+        .iter()
+        .any(|d| d.code.as_str() == "BIB-001"));
     assert_eq!(draft.manifest.build_mode, "draft");
 }
 
@@ -131,6 +141,14 @@ fn plan_carries_capabilities() {
         .iter()
         .any(|c| c == "render.body"));
     assert!(!assembled.manifest.required_capabilities.is_empty());
+    assert!(assembled
+        .manifest
+        .resolved_capabilities
+        .iter()
+        .all(|capability| assembled
+            .manifest
+            .required_capabilities
+            .contains(capability)));
 }
 
 #[test]
@@ -151,4 +169,60 @@ fn plan_packages_are_sorted_and_deduped() {
     assert!(names.contains(&"graphicx"));
     assert!(names.contains(&"amsmath"));
     assert!(names.contains(&"listings"));
+}
+
+#[test]
+fn embedded_profile_policy_is_always_enforced() {
+    let mut ir = sample_thesis_ir();
+    ir.profile.policy.indexes.require_toc = true;
+    ir.indexes.lists.clear();
+
+    let use_case = AssembleDocumentUseCase::new(
+        LatexRenderBackend::new(),
+        JsonIrSerializer::compact(),
+        Sha256Hasher,
+    );
+    let error = match use_case.execute(&ir, BuildMode::Final) {
+        Ok(_) => panic!("la política embebida debe bloquear un Final inválido"),
+        Err(error) => error,
+    };
+
+    assert!(error
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code.as_str() == "POLICY-030"));
+}
+
+#[test]
+fn manifest_records_used_plugins() {
+    use texis_document_domain::ir::body_node::{BodyNode, PluginContribution};
+
+    let mut ir = sample_thesis_ir();
+    ir.body.sections[0]
+        .nodes
+        .push(BodyNode::PluginContribution(PluginContribution {
+            id: "plugin-node".into(),
+            plugin_id: "professional-chart".into(),
+            figure_id: "plugin-figure".into(),
+            caption: "Resultados".into(),
+            label: "fig:plugin-results".into(),
+            artifact_latex: "\\begin{figure}\\caption{Resultados}\\end{figure}".into(),
+            required_packages: vec![],
+            editable_source: "{}".into(),
+            warnings: vec![],
+        }));
+
+    let use_case = AssembleDocumentUseCase::new(
+        LatexRenderBackend::new(),
+        JsonIrSerializer::compact(),
+        Sha256Hasher,
+    );
+    let assembled = use_case
+        .execute(&ir, BuildMode::Final)
+        .expect("plugin seguro y trazable");
+
+    assert_eq!(
+        assembled.manifest.plugin_ids,
+        vec!["professional-chart".to_string()]
+    );
 }

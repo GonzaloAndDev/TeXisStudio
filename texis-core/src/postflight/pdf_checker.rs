@@ -396,7 +396,6 @@ fn push_text_quality_issues(text: &str, issues: &mut Vec<PdfIssue>) {
     }
 }
 
-
 fn run_verapdf(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfaCheck {
     // Obtener la versión de veraPDF para el informe
     let verapdf_version = Command::new("verapdf")

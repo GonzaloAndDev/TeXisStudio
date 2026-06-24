@@ -21,10 +21,10 @@ use texis_document_contracts::diagnostics::{Diagnostic, Diagnostics};
 use texis_document_contracts::manifest::{
     BuildManifest, ResourceHash, ToolchainStamp, BUILD_MANIFEST_VERSION,
 };
-use texis_document_contracts::profile::ProfilePolicy;
 use texis_document_contracts::version::DocumentSchemaVersion;
 use texis_document_domain::backend::{RenderBackend, RenderedDocument};
 use texis_document_domain::capability_registry;
+use texis_document_domain::ir::body_node::BodyNode;
 use texis_document_domain::ir::DocumentIR;
 use texis_document_domain::plan::DocumentPlan;
 use texis_document_domain::plan_builder::PlanBuilder;
@@ -88,7 +88,6 @@ where
     backend: B,
     serializer: S,
     hasher: H,
-    policy: Option<ProfilePolicy>,
 }
 
 impl<B, S, H> AssembleDocumentUseCase<B, S, H>
@@ -102,14 +101,7 @@ where
             backend,
             serializer,
             hasher,
-            policy: None,
         }
-    }
-
-    /// Adjunta una política institucional que se evaluará en cada build.
-    pub fn with_policy(mut self, policy: ProfilePolicy) -> Self {
-        self.policy = Some(policy);
-        self
     }
 
     /// Ejecuta el pipeline completo y bloqueante.
@@ -121,10 +113,9 @@ where
         // 1) Validación de dominio (invariantes + validadores por módulo).
         let mut diagnostics = validation::validate_document(ir);
 
-        // 2) Políticas institucionales (si hay perfil con política).
-        if let Some(pol) = &self.policy {
-            diagnostics.extend(policy::evaluate(pol, ir));
-        }
+        // 2) Política institucional resuelta dentro del IR. No es opcional en
+        // el pipeline: una política vacía representa explícitamente "sin reglas".
+        diagnostics.extend(policy::evaluate(&ir.profile.policy, ir));
 
         // 3) Resolución de capacidades contra el backend.
         let caps = capability_registry::resolve(ir, &self.backend.capabilities());
@@ -185,12 +176,17 @@ where
             })
             .collect();
 
-        let resolved_capabilities = self
-            .backend
-            .capabilities()
+        let backend_caps = self.backend.capabilities();
+        let resolved_capabilities = plan
             .capabilities
             .iter()
-            .map(|c| c.as_str().to_string())
+            .filter(|required| {
+                backend_caps
+                    .capabilities
+                    .iter()
+                    .any(|available| available.as_str() == required.as_str())
+            })
+            .cloned()
             .collect();
 
         let mut diagnostics: Vec<Diagnostic> = plan.diagnostics.clone();
@@ -201,6 +197,22 @@ where
             document_id: ir.identity.id.as_str().to_string(),
             build_mode: format!("{mode:?}").to_lowercase(),
             profile_id: ir.profile.id.as_str().to_string(),
+            document_locale: ir.locale.primary.as_str().to_string(),
+            document_locale_fallback: ir
+                .locale
+                .document_fallback
+                .as_ref()
+                .map(|tag| tag.as_str().to_string()),
+            profile_policy: ir.profile.policy.clone(),
+            provenance: ir.provenance.clone(),
+            plugin_ids: ir
+                .all_body_nodes()
+                .into_iter()
+                .filter_map(|node| match node {
+                    BodyNode::PluginContribution(plugin) => Some(plugin.plugin_id.clone()),
+                    _ => None,
+                })
+                .collect(),
             toolchain: ToolchainStamp {
                 document_schema: DocumentSchemaVersion::CURRENT,
                 manifest_version: BUILD_MANIFEST_VERSION,

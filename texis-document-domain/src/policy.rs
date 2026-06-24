@@ -30,12 +30,7 @@ fn has_preliminary(ir: &DocumentIR, kind: PreliminaryKind) -> bool {
     ir.preliminaries.items.iter().any(|i| i.kind == kind)
 }
 
-fn diag(
-    code: &str,
-    module: ModuleId,
-    sev: Severity,
-    key: &str,
-) -> Diagnostic {
+fn diag(code: &str, module: ModuleId, sev: Severity, key: &str) -> Diagnostic {
     Diagnostic::new(code, module, sev, DiagnosticStage::Validation, key)
 }
 
@@ -45,8 +40,16 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
 
     // Preliminares obligatorios (error) y recomendados (warning).
     for (list, sev, code) in [
-        (&policy.required_preliminaries, Severity::Error, "POLICY-001"),
-        (&policy.recommended_preliminaries, Severity::Warning, "POLICY-002"),
+        (
+            &policy.required_preliminaries,
+            Severity::Error,
+            "POLICY-001",
+        ),
+        (
+            &policy.recommended_preliminaries,
+            Severity::Warning,
+            "POLICY-002",
+        ),
     ] {
         for req in list {
             let satisfied = match req {
@@ -57,24 +60,44 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
             };
             if !satisfied {
                 d.push(
-                    diag(code, ModuleId::Preliminaries, sev, "policy.preliminary_required")
-                        .with_param("element", format!("{req:?}")),
+                    diag(
+                        code,
+                        ModuleId::Preliminaries,
+                        sev,
+                        "policy.preliminary_required",
+                    )
+                    .with_param("element", format!("{req:?}")),
                 );
             }
         }
     }
 
     if policy.require_keywords && ir.metadata.keywords.is_empty() {
-        d.push(diag("POLICY-003", ModuleId::Preliminaries, Severity::Error, "policy.keywords_required"));
+        d.push(diag(
+            "POLICY-003",
+            ModuleId::Preliminaries,
+            Severity::Error,
+            "policy.keywords_required",
+        ));
     }
 
     // Portada.
     let c = &policy.cover;
     if c.require_logo && ir.cover.institution.logo.is_none() {
-        d.push(diag("POLICY-010", ModuleId::Cover, Severity::Error, "policy.cover_logo_required"));
+        d.push(diag(
+            "POLICY-010",
+            ModuleId::Cover,
+            Severity::Error,
+            "policy.cover_logo_required",
+        ));
     }
     if c.require_signatures && ir.cover.signatures.is_empty() {
-        d.push(diag("POLICY-011", ModuleId::Cover, Severity::Error, "policy.cover_signatures_required"));
+        d.push(diag(
+            "POLICY-011",
+            ModuleId::Cover,
+            Severity::Error,
+            "policy.cover_signatures_required",
+        ));
     }
     if c.require_orcid
         && !ir
@@ -84,14 +107,24 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
             .map(|a| a.orcid.is_some())
             .unwrap_or(false)
     {
-        d.push(diag("POLICY-012", ModuleId::Cover, Severity::Error, "policy.cover_orcid_required"));
+        d.push(diag(
+            "POLICY-012",
+            ModuleId::Cover,
+            Severity::Error,
+            "policy.cover_orcid_required",
+        ));
     }
     if let Some(max) = c.max_title_chars {
         if ir.cover.title.chars().count() > max {
             d.push(
-                diag("POLICY-013", ModuleId::Cover, Severity::Error, "policy.cover_title_too_long")
-                    .with_param("max", max.to_string())
-                    .with_param("len", ir.cover.title.chars().count().to_string()),
+                diag(
+                    "POLICY-013",
+                    ModuleId::Cover,
+                    Severity::Error,
+                    "policy.cover_title_too_long",
+                )
+                .with_param("max", max.to_string())
+                .with_param("len", ir.cover.title.chars().count().to_string()),
             );
         }
     }
@@ -103,9 +136,14 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
         && !b.allowed_styles.iter().any(|s| s == &ir.bibliography.style)
     {
         d.push(
-            diag("POLICY-020", ModuleId::Bibliography, Severity::Error, "policy.bib_style_not_allowed")
-                .with_param("style", &ir.bibliography.style)
-                .with_param("allowed", b.allowed_styles.join(",")),
+            diag(
+                "POLICY-020",
+                ModuleId::Bibliography,
+                Severity::Error,
+                "policy.bib_style_not_allowed",
+            )
+            .with_param("style", &ir.bibliography.style)
+            .with_param("allowed", b.allowed_styles.join(",")),
         );
     }
     if let Some(req_backend) = &b.required_backend {
@@ -115,9 +153,14 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
             .map(|x| format!("{x:?}").to_lowercase());
         if actual.as_deref() != Some(req_backend.as_str()) {
             d.push(
-                diag("POLICY-021", ModuleId::Bibliography, Severity::Error, "policy.bib_backend_required")
-                    .with_param("required", req_backend)
-                    .with_param("actual", actual.unwrap_or_else(|| "none".into())),
+                diag(
+                    "POLICY-021",
+                    ModuleId::Bibliography,
+                    Severity::Error,
+                    "policy.bib_backend_required",
+                )
+                .with_param("required", req_backend)
+                .with_param("actual", actual.unwrap_or_else(|| "none".into())),
             );
         }
     }
@@ -125,11 +168,17 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
     // Índices.
     let idx = &policy.indexes;
     if idx.require_toc {
-        let has_toc = ir.indexes.lists.iter().any(|l| {
-            matches!(l.kind, crate::ir::modules::IndexKind::TableOfContents) && l.enabled
-        });
+        let has_toc =
+            ir.indexes.lists.iter().any(|l| {
+                matches!(l.kind, crate::ir::modules::IndexKind::TableOfContents) && l.enabled
+            });
         if !has_toc {
-            d.push(diag("POLICY-030", ModuleId::Indexes, Severity::Error, "policy.toc_required"));
+            d.push(diag(
+                "POLICY-030",
+                ModuleId::Indexes,
+                Severity::Error,
+                "policy.toc_required",
+            ));
         }
     }
     if let Some(maxd) = idx.max_toc_depth {
@@ -138,9 +187,14 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
                 if let Some(depth) = l.depth {
                     if depth > maxd {
                         d.push(
-                            diag("POLICY-031", ModuleId::Indexes, Severity::Error, "policy.toc_depth_exceeded")
-                                .with_param("max", maxd.to_string())
-                                .with_param("depth", depth.to_string()),
+                            diag(
+                                "POLICY-031",
+                                ModuleId::Indexes,
+                                Severity::Error,
+                                "policy.toc_depth_exceeded",
+                            )
+                            .with_param("max", maxd.to_string())
+                            .with_param("depth", depth.to_string()),
                         );
                     }
                 }
@@ -153,14 +207,24 @@ pub fn evaluate(policy: &ProfilePolicy, ir: &DocumentIR) -> Diagnostics {
     if del.require_pdf_metadata
         && (ir.metadata.title.trim().is_empty() || ir.cover.authors.is_empty())
     {
-        d.push(diag("POLICY-040", ModuleId::Assembler, Severity::Error, "policy.pdf_metadata_required"));
+        d.push(diag(
+            "POLICY-040",
+            ModuleId::Assembler,
+            Severity::Error,
+            "policy.pdf_metadata_required",
+        ));
     }
     if !del.required_abstract_languages.is_empty()
         && !has_preliminary(ir, PreliminaryKind::Abstract)
     {
         d.push(
-            diag("POLICY-041", ModuleId::Preliminaries, Severity::Error, "policy.abstract_languages_required")
-                .with_param("languages", del.required_abstract_languages.join(",")),
+            diag(
+                "POLICY-041",
+                ModuleId::Preliminaries,
+                Severity::Error,
+                "policy.abstract_languages_required",
+            )
+            .with_param("languages", del.required_abstract_languages.join(",")),
         );
     }
 

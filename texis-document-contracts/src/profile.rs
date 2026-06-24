@@ -89,6 +89,12 @@ pub struct IndexesPolicy {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeliveryPolicy {
     pub require_pdf_metadata: bool,
+    /// Si la entrega institucional exige conformidad PDF/A.
+    #[serde(default)]
+    pub require_pdfa: bool,
+    /// Nivel esperado, por ejemplo "PDF/A-1b" o "PDF/A-2b".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdfa_level: Option<String>,
     /// Idiomas de resumen exigidos (p. ej. ["es","en"]).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required_abstract_languages: Vec<String>,

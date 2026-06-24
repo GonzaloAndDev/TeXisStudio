@@ -29,7 +29,8 @@ fn resolved_citation_passes() {
 fn unresolved_citation_is_error() {
     let mut ir = import_project(&sample_thesis()).value.unwrap();
     // Entradas presentes pero sin la clave citada.
-    ir.bibliography.entries = bibtex_parser::parse("@book{otra, title={X}, author={Y}, publisher={Z}, year={2000}}");
+    ir.bibliography.entries =
+        bibtex_parser::parse("@book{otra, title={X}, author={Y}, publisher={Z}, year={2000}}");
     let d = bibliography::validate(&ir);
     assert!(d.iter().any(|x| x.code.as_str() == "BIB-001"));
     assert!(d.has_blocking());
@@ -42,9 +43,8 @@ fn missing_required_field_warns() {
     ir.bibliography.entries =
         bibtex_parser::parse("@article{x, author={A}, title={T}, year={2020}}");
     let d = bibliography::validate(&ir);
-    assert!(d
-        .iter()
-        .any(|x| x.code.as_str() == "BIB-003" && x.params.get("field").map(|s| s.as_str()) == Some("journal")));
+    assert!(d.iter().any(|x| x.code.as_str() == "BIB-003"
+        && x.params.get("field").map(|s| s.as_str()) == Some("journal")));
 }
 
 #[test]

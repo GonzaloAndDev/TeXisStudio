@@ -8,7 +8,9 @@ use texis_document_domain::ir::body_node::BodyNode;
 use texis_document_domain::ir::meta::{AcademicLevel, DocumentKind};
 use texis_document_domain::ir::DocumentIR;
 use texis_document_infra::fixtures::sample_thesis;
-use texis_document_infra::{import_project, JsonIrSerializer, LegacyProjectImporter};
+use texis_document_infra::{
+    import_project, import_project_from_root, JsonIrSerializer, LegacyProjectImporter,
+};
 
 #[test]
 fn sample_thesis_imports_to_valid_ir() {
@@ -123,4 +125,25 @@ fn absolute_logo_path_is_normalized_with_diagnostic() {
         .iter()
         .any(|d| d.code.as_str() == "IMPORT-001"));
     assert!(!resolution.diagnostics.has_blocking());
+}
+
+#[test]
+fn import_from_root_preserves_real_bibliography() {
+    let dir = tempfile::tempdir().unwrap();
+    let bib_dir = dir.path().join("content/bibliography");
+    std::fs::create_dir_all(&bib_dir).unwrap();
+    std::fs::write(
+        bib_dir.join("references.bib"),
+        "@article{turing1936,author={Alan Turing},title={On Computable Numbers},journal={Proceedings of the London Mathematical Society},year={1936}}",
+    )
+    .unwrap();
+
+    let resolution = import_project_from_root(&sample_thesis(), dir.path());
+    let ir = resolution.value.unwrap();
+    assert_eq!(ir.bibliography.entries.len(), 1);
+    assert_eq!(ir.bibliography.entries[0].key, "turing1936");
+    assert_eq!(
+        ir.bibliography.sources,
+        vec!["content/bibliography/references.bib"]
+    );
 }

@@ -33,12 +33,17 @@ fn satisfied_policy_has_no_blocking() {
         },
         delivery: DeliveryPolicy {
             require_pdf_metadata: true,
+            require_pdfa: false,
+            pdfa_level: None,
             required_abstract_languages: vec!["es".into()],
         },
         ..Default::default()
     };
     let d = policy::evaluate(&pol, &ir());
-    assert!(!d.has_blocking(), "política satisfecha no debe bloquear: {d:?}");
+    assert!(
+        !d.has_blocking(),
+        "política satisfecha no debe bloquear: {d:?}"
+    );
 }
 
 #[test]

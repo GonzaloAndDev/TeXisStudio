@@ -69,7 +69,10 @@ impl PlanBuilder {
         let toolchain = ToolchainPlan {
             engine: ir.profile.engine.clone(),
             compiler: ir.profile.compiler.clone(),
-            bibliography_backend: ir.bibliography.backend.map(|b| format!("{b:?}").to_lowercase()),
+            bibliography_backend: ir
+                .bibliography
+                .backend
+                .map(|b| format!("{b:?}").to_lowercase()),
         };
         let expectations = self.expectations(ir, &active, &mut diagnostics);
 
@@ -131,7 +134,10 @@ impl PlanBuilder {
         if nodes.iter().any(|n| matches!(n, BodyNode::Figure(_))) {
             add(PackageRequirement::new("graphicx"), &mut packages);
         }
-        if nodes.iter().any(|n| matches!(n, BodyNode::Equation(_) | BodyNode::Theorem(_))) {
+        if nodes
+            .iter()
+            .any(|n| matches!(n, BodyNode::Equation(_) | BodyNode::Theorem(_)))
+        {
             add(PackageRequirement::new("amsmath"), &mut packages);
             add(PackageRequirement::new("amsthm"), &mut packages);
         }
@@ -141,7 +147,10 @@ impl PlanBuilder {
         if nodes.iter().any(|n| matches!(n, BodyNode::Algorithm(_))) {
             add(PackageRequirement::new("algorithm2e"), &mut packages);
         }
-        if nodes.iter().any(|n| matches!(n, BodyNode::GlossaryEntry(_) | BodyNode::AcronymEntry(_))) {
+        if nodes
+            .iter()
+            .any(|n| matches!(n, BodyNode::GlossaryEntry(_) | BodyNode::AcronymEntry(_)))
+        {
             add(PackageRequirement::new("glossaries"), &mut packages);
         }
         if !ir.bibliography.style.is_empty() {
@@ -177,14 +186,12 @@ impl PlanBuilder {
         if has_citations {
             expectations.push("no_unresolved_citations".to_string());
             if ir.bibliography.style.is_empty() {
-                diagnostics.push(
-                    Diagnostic::warning(
-                        "PLAN-001",
-                        ModuleId::Bibliography,
-                        DiagnosticStage::Planning,
-                        "plan.citations_without_style",
-                    ),
-                );
+                diagnostics.push(Diagnostic::warning(
+                    "PLAN-001",
+                    ModuleId::Bibliography,
+                    DiagnosticStage::Planning,
+                    "plan.citations_without_style",
+                ));
             }
         }
 

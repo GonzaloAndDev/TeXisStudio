@@ -49,7 +49,11 @@ fn parse_entry(c: &[char], start: usize) -> Option<(BibEntry, usize)> {
     while i < c.len() && c[i] != ',' && c[i] != '}' {
         i += 1;
     }
-    let key: String = c[key_begin..i].iter().collect::<String>().trim().to_string();
+    let key: String = c[key_begin..i]
+        .iter()
+        .collect::<String>()
+        .trim()
+        .to_string();
     let mut entry = BibEntry::new(key, entry_type);
     if i < c.len() && c[i] == ',' {
         i += 1;

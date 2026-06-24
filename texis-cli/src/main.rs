@@ -50,6 +50,9 @@ enum Commands {
         /// Incluir el gate de compilación a PDF real (requiere LaTeX instalado)
         #[arg(long)]
         compile: bool,
+        /// Exigir compilación, postflight y herramientas PDF esenciales.
+        #[arg(long)]
+        strict: bool,
     },
     /// Compilar un proyecto a PDF
     Compile {
@@ -90,15 +93,13 @@ fn main() {
             output,
         } => commands::create::run(&profile, &name, &output),
         Commands::Validate { project_dir } => commands::validate::run_project(&project_dir),
-        Commands::ImportIr { project_dir, demo } => {
-            commands::import_ir::run(&project_dir, demo)
-        }
+        Commands::ImportIr { project_dir, demo } => commands::import_ir::run(&project_dir, demo),
         Commands::BuildPlan {
             project_dir,
             demo,
             manifest,
         } => commands::build_plan::run(&project_dir, demo, manifest),
-        Commands::Certify { compile } => commands::certify::run(compile),
+        Commands::Certify { compile, strict } => commands::certify::run(compile, strict),
         Commands::Compile {
             project_dir,
             backend,

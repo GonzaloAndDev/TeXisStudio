@@ -17,6 +17,7 @@ use texis_document_contracts::provenance::{ProvenanceEntry, ResolutionProvenance
 use texis_document_contracts::text::LocalizedText;
 use texis_document_contracts::version::{ContractVersion, DocumentSchemaVersion};
 
+use std::path::Path;
 use texis_document_domain::ir::body_node::*;
 use texis_document_domain::ir::meta::*;
 use texis_document_domain::ir::modules::*;
@@ -50,6 +51,46 @@ pub fn import_project(model: &legacy::ProjectModel) -> Resolution<DocumentIR> {
     let mut ctx = ImportCtx::default();
     let ir = ctx.import(model);
     Resolution::with_diagnostics(Some(ir), ctx.diags)
+}
+
+/// Importa un proyecto legacy con contexto de filesystem. Además del modelo
+/// YAML, carga la bibliografía real del proyecto para que la migración preserve
+/// citas y fuentes en vez de producir un IR bibliográficamente vacío.
+pub fn import_project_from_root(
+    model: &legacy::ProjectModel,
+    project_root: &Path,
+) -> Resolution<DocumentIR> {
+    let mut resolution = import_project(model);
+    let Some(ir) = resolution.value.as_mut() else {
+        return resolution;
+    };
+
+    let candidates = [
+        project_root.join("content/bibliography/references.bib"),
+        project_root.join("references.bib"),
+    ];
+    if let Some(path) = candidates.iter().find(|path| path.is_file()) {
+        match std::fs::read_to_string(path) {
+            Ok(content) => {
+                ir.bibliography.entries = crate::bibtex_parser::parse(&content);
+                if let Ok(relative) = path.strip_prefix(project_root) {
+                    ir.bibliography
+                        .sources
+                        .push(relative.to_string_lossy().replace('\\', "/"));
+                }
+            }
+            Err(error) => resolution.diagnostics.push(
+                Diagnostic::warning(
+                    "IMPORT-020",
+                    ModuleId::Bibliography,
+                    DiagnosticStage::Import,
+                    "import.bibliography_read_failed",
+                )
+                .with_param("error", error.to_string()),
+            ),
+        }
+    }
+    resolution
 }
 
 #[derive(Default)]
@@ -183,6 +224,7 @@ impl ImportCtx {
             },
             engine: map_engine(&m.latex_config.engine),
             compiler: map_compiler(&m.latex_config.compiler),
+            policy: legacy_project_policy(m),
         }
     }
 
@@ -197,11 +239,15 @@ impl ImportCtx {
             ));
             return PageGeometry {
                 paper: normalize_paper(layout.paper.as_deref()),
-                margin_top: margins.and_then(|x| x.top.as_deref()).and_then(Length::parse),
+                margin_top: margins
+                    .and_then(|x| x.top.as_deref())
+                    .and_then(Length::parse),
                 margin_bottom: margins
                     .and_then(|x| x.bottom.as_deref())
                     .and_then(Length::parse),
-                margin_left: margins.and_then(|x| x.left.as_deref()).and_then(Length::parse),
+                margin_left: margins
+                    .and_then(|x| x.left.as_deref())
+                    .and_then(Length::parse),
                 margin_right: margins
                     .and_then(|x| x.right.as_deref())
                     .and_then(Length::parse),
@@ -298,14 +344,11 @@ impl ImportCtx {
             .iter()
             .map(|a| SignatureRequirement {
                 full_name: a.full_name.clone(),
-                role: a
-                    .committee_role
-                    .clone()
-                    .unwrap_or_else(|| match a.role {
-                        AuthorityRole::Advisor => "Asesor".to_string(),
-                        AuthorityRole::CoAdvisor => "Co-asesor".to_string(),
-                        AuthorityRole::CommitteeMember => "Sinodal".to_string(),
-                    }),
+                role: a.committee_role.clone().unwrap_or_else(|| match a.role {
+                    AuthorityRole::Advisor => "Asesor".to_string(),
+                    AuthorityRole::CoAdvisor => "Co-asesor".to_string(),
+                    AuthorityRole::CommitteeMember => "Sinodal".to_string(),
+                }),
             })
             .collect();
 
@@ -366,7 +409,13 @@ impl ImportCtx {
         let mut has_code = false;
         let mut has_algo = false;
         for section in &m.sections {
-            scan_blocks(section, &mut has_fig, &mut has_tab, &mut has_code, &mut has_algo);
+            scan_blocks(
+                section,
+                &mut has_fig,
+                &mut has_tab,
+                &mut has_code,
+                &mut has_algo,
+            );
         }
         let mut lists = vec![IndexList {
             kind: IndexKind::TableOfContents,
@@ -471,8 +520,11 @@ impl ImportCtx {
             B::Figure(f) => {
                 let asset_id = AssetId::new(format!("fig-{}", self.next_asset_n()));
                 let relative = self.relativize(&f.file, "body.figure");
-                self.resources
-                    .add_asset(AssetRef::new(asset_id.clone(), AssetRole::Figure, relative));
+                self.resources.add_asset(AssetRef::new(
+                    asset_id.clone(),
+                    AssetRole::Figure,
+                    relative,
+                ));
                 BodyNode::Figure(Figure {
                     id: NodeId::new(&f.id),
                     asset: asset_id,
@@ -614,6 +666,50 @@ impl ImportCtx {
             )
             .with_param("section", &section.id),
         );
+    }
+}
+
+fn legacy_project_policy(
+    m: &legacy::ProjectModel,
+) -> texis_document_contracts::profile::ProfilePolicy {
+    use texis_document_contracts::profile::{BibliographyPolicy, IndexesPolicy, ProfilePolicy};
+
+    ProfilePolicy {
+        bibliography: BibliographyPolicy {
+            allowed_styles: if m.latex_config.bibliography_style.is_empty() {
+                Vec::new()
+            } else {
+                vec![normalize_bibliography_style(
+                    &m.latex_config.bibliography_style,
+                )]
+            },
+            required_backend: Some(match m.latex_config.bibliography_backend {
+                legacy::BibliographyBackend::Biber => "biber".to_string(),
+                legacy::BibliographyBackend::Bibtex => "bibtex".to_string(),
+            }),
+        },
+        indexes: IndexesPolicy {
+            require_toc: m.sections.iter().any(|s| {
+                s.enabled
+                    && matches!(s.placement, legacy::SectionPlacement::FrontMatter)
+                    && is_generated_index(&s.element_id)
+                    && {
+                        let id = s.element_id.to_lowercase();
+                        id.contains("toc")
+                            || id.contains("indice")
+                            || id.contains("table_of_contents")
+                    }
+            }),
+            max_toc_depth: None,
+        },
+        ..ProfilePolicy::default()
+    }
+}
+
+fn normalize_bibliography_style(style: &str) -> String {
+    match style.to_lowercase().as_str() {
+        "apa" => "apa7".to_string(),
+        other => other.to_string(),
     }
 }
 
