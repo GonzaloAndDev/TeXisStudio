@@ -1,0 +1,17 @@
+[package]
+name = "texis-document-infra"
+version = "0.1.0"
+edition.workspace = true
+description = "Infraestructura del núcleo documental: adaptadores (importador legacy, serialización). Implementa los puertos de la aplicación."
+
+# REGLA DE ARQUITECTURA (§16.1): infraestructura implementa puertos y puede
+# depender de `texis-core` (modelo legacy) para los adaptadores de entrada.
+# `texis-core` NO debe depender de este crate (evita ciclo). El corte de la
+# Etapa I retira la dependencia hacia texis-core.
+[dependencies]
+texis-document-contracts   = { workspace = true }
+texis-document-domain      = { workspace = true }
+texis-document-application = { workspace = true }
+texis-core                 = { path = "../texis-core" }
+serde      = { workspace = true }
+serde_json = { workspace = true }

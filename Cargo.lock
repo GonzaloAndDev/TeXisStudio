@@ -4441,6 +4441,8 @@ dependencies = [
  "chrono",
  "clap",
  "texis-core",
+ "texis-document-application",
+ "texis-document-infra",
 ]
 
 [[package]]
@@ -4464,6 +4466,41 @@ dependencies = [
  "uuid",
  "walkdir",
  "zip",
+]
+
+[[package]]
+name = "texis-document-application"
+version = "0.1.0"
+dependencies = [
+ "texis-document-contracts",
+ "texis-document-domain",
+]
+
+[[package]]
+name = "texis-document-contracts"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "texis-document-domain"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "texis-document-contracts",
+]
+
+[[package]]
+name = "texis-document-infra"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "texis-core",
+ "texis-document-application",
+ "texis-document-contracts",
+ "texis-document-domain",
 ]
 
 [[package]]

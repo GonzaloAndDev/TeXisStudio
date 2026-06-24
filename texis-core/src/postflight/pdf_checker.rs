@@ -358,7 +358,7 @@ fn run_text_quality_checks(pdf_path: &Path, issues: &mut Vec<PdfIssue>) {
 
 fn push_text_quality_issues(text: &str, issues: &mut Vec<PdfIssue>) {
     let broken_appendix = Regex::new(r"(?m)^\s*\.\d+(?:\.\d+)?\s+\S").unwrap();
-    if broken_appendix.is_match(&text) {
+    if broken_appendix.is_match(text) {
         issues.push(PdfIssue {
             severity: PdfIssueSeverity::Warning,
             code: "PF_BROKEN_APPENDIX_NUMBERING".to_string(),
@@ -368,7 +368,7 @@ fn push_text_quality_issues(text: &str, issues: &mut Vec<PdfIssue>) {
     }
 
     let broken_caps_word = Regex::new(r"\b[A-ZÁÉÍÓÚÜÑ]{4,}\s+[A-ZÁÉÍÓÚÜÑ]{1,2}\b").unwrap();
-    if broken_caps_word.is_match(&text) {
+    if broken_caps_word.is_match(text) {
         issues.push(PdfIssue {
             severity: PdfIssueSeverity::Warning,
             code: "PF_SUSPECT_BROKEN_HEADING_WORD".to_string(),

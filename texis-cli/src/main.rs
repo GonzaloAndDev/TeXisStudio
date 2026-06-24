@@ -26,6 +26,14 @@ enum Commands {
     },
     /// Validar un proyecto existente
     Validate { project_dir: PathBuf },
+    /// Importar un proyecto al nuevo DocumentIR y emitirlo como JSON (Etapa A)
+    ImportIr {
+        #[arg(default_value = ".")]
+        project_dir: PathBuf,
+        /// Usar el fixture de referencia en lugar de cargar de disco
+        #[arg(long)]
+        demo: bool,
+    },
     /// Compilar un proyecto a PDF
     Compile {
         project_dir: PathBuf,
@@ -65,6 +73,9 @@ fn main() {
             output,
         } => commands::create::run(&profile, &name, &output),
         Commands::Validate { project_dir } => commands::validate::run_project(&project_dir),
+        Commands::ImportIr { project_dir, demo } => {
+            commands::import_ir::run(&project_dir, demo)
+        }
         Commands::Compile {
             project_dir,
             backend,

@@ -1,0 +1,12 @@
+[package]
+name = "texis-document-application"
+version = "0.1.0"
+edition.workspace = true
+description = "Capa de aplicación del núcleo documental: puertos y casos de uso. Sin reglas tipográficas ni académicas."
+
+# REGLA DE ARQUITECTURA (§16.1): la aplicación orquesta casos de uso y depende
+# de `domain` + `contracts`. NO contiene reglas de dominio ni infraestructura
+# (filesystem, YAML, LaTeX). Esas viven en `texis-document-infra`.
+[dependencies]
+texis-document-contracts = { workspace = true }
+texis-document-domain    = { workspace = true }

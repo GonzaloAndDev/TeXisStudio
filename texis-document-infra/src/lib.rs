@@ -1,0 +1,15 @@
+//! # texis-document-infra
+//!
+//! Infraestructura del núcleo documental: adaptadores que implementan los
+//! puertos de la aplicación (§4.1). Aquí vive el acoplamiento con el modelo
+//! legacy (`texis-core`) y con formatos concretos (JSON).
+//!
+//! Convive con `texis-core` (congelado) hasta la Etapa I, donde se retira la
+//! dependencia legacy.
+
+pub mod fixtures;
+pub mod json_serializer;
+pub mod legacy_importer;
+
+pub use json_serializer::JsonIrSerializer;
+pub use legacy_importer::{import_project, LegacyProjectImporter};

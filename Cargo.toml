@@ -3,6 +3,13 @@ members = [
     "texis-core",
     "texis-cli",
     "texis-app/src-tauri",
+    # Núcleo documental nuevo (Plan Maestro A→J). Convive con texis-core
+    # (congelado) hasta la Etapa I. Grafo de deps: contracts <- domain <-
+    # application <- infra/adapters.
+    "texis-document-contracts",
+    "texis-document-domain",
+    "texis-document-application",
+    "texis-document-infra",
 ]
 resolver = "2"
 
@@ -29,3 +36,8 @@ clap         = { version = "4", features = ["derive"] }
 
 insta        = { version = "1", features = ["yaml"] }
 tempfile     = "3"
+
+# Crates internos del núcleo documental nuevo (rutas relativas).
+texis-document-contracts   = { path = "texis-document-contracts" }
+texis-document-domain      = { path = "texis-document-domain" }
+texis-document-application = { path = "texis-document-application" }
