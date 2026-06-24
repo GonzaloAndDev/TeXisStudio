@@ -6,6 +6,7 @@
 //! programa (C: cover; D: preliminares/índices; E: cuerpo; F: bibliografía;
 //! G: anexos).
 
+pub mod appendices;
 pub mod bibliography;
 pub mod body;
 pub mod cover;
@@ -24,5 +25,6 @@ pub fn validate_document(ir: &DocumentIR) -> Diagnostics {
     d.extend(indexes::validate(ir));
     d.extend(body::validate(ir));
     d.extend(bibliography::validate(ir));
+    d.extend(appendices::validate(ir));
     d
 }
