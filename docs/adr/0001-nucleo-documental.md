@@ -103,11 +103,34 @@ Implementado y verificado en este corte vertical (sin tocar el generador legacy)
   (test `build_is_deterministic`).
 - No se compila a PDF en esta etapa (LaTeX no es requisito) ni se altera producción.
 
-## Pendiente (siguientes etapas)
+## Estado de implementación (Etapas C–H + Certificación)
 
-- Etapas C–G: profundizar cada módulo (portada → anexos) con editor, validación,
-  render fiel y verificación PDF.
-- Etapa "capabilities/provenance/grafo incremental": `CapabilityRegistry`,
-  confianza, build incremental por grafo semántico.
-- `texis-certification`: matriz profesional (paso 16).
-- Etapa I: retirar el generador legacy y la dependencia hacia `texis-core`.
+Núcleo (Rust) completo y verificado por módulo, sin tocar producción:
+
+- **C Portada**: firmas + política de overflow; validador `COVER-*`; render de acta.
+- **D Preliminares/Índices**: validadores `PRELIM-*`/`IDX-*` (abstract/keywords,
+  listas vacías, profundidad, consistencia con contenido).
+- **E Cuerpo/Plugins**: `LabelRegistry` centralizado; validador `BODY-*`/`PLUGIN-*`
+  (labels duplicados, referencias rotas, raw LaTeX, contrato de plugin).
+- **F Bibliografía**: `BibEntry`, registro de 7 estilos, validador `BIB-*`; parser
+  `.bib` en infra.
+- **G Anexos**: validador `APX-*` (prefijos duplicados, vacíos, orden canónico).
+- **H Perfiles 2.x (núcleo)**: contrato `Profile2`/`ProfilePolicy` y motor de
+  políticas `POLICY-*`; gate `verified` (evidencia+fecha).
+- **Certificación (paso 16)**: crate `texis-certification` con gates estructurales
+  (import, validación, ensamblado, orden de fases, determinismo) + CLI `certify`.
+
+58 pruebas verdes en los crates nuevos; `clippy --all-targets -D warnings` limpio.
+
+## Pendiente (gated por entorno, otros repos o estrategia)
+
+- **Etapa J — gates de compilación**: compilar a PDF (XeLaTeX/LuaLaTeX/PdfLaTeX),
+  corpus real 50/100/250 pág., regresión visual, PDF/A, fuentes incrustadas.
+  Requiere el toolchain y los activos del usuario; el harness ya está listo.
+- **Etapa I — corte del legado**: deliberadamente diferida hasta que J esté verde
+  y exista rollback (estrategia acordada: sin sustitución parcial en producción).
+- **Otros repos**: `TeXisStudio-Profiles` (YAML 2.x + creador sin YAML + CI),
+  `TeXisStudio-Languages` (ui/document/latex 2.x), `TeXisStudio-Plugins`
+  (Contribution 2.x + sandbox).
+- **UI modular** (React, `texis-app`) y plataformas transversales restantes del
+  plan 2: `CapabilityRegistry` completo y grafo incremental.
