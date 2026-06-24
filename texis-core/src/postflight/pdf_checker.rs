@@ -396,25 +396,6 @@ fn push_text_quality_issues(text: &str, issues: &mut Vec<PdfIssue>) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn text_quality_detecta_numeracion_y_portada_sospechosas() {
-        let text = "Titulo\nAutor\n\u{000c}Dr. Persona\nCiudad de Mexico, 2026\n\u{000c}.1.1 Analisis roto\n";
-        let mut issues = Vec::new();
-
-        push_text_quality_issues(text, &mut issues);
-
-        assert!(issues
-            .iter()
-            .any(|i| i.code == "PF_BROKEN_APPENDIX_NUMBERING"));
-        assert!(issues
-            .iter()
-            .any(|i| i.code == "PF_SUSPECT_SPLIT_TITLE_PAGE"));
-    }
-}
 
 fn run_verapdf(pdf_path: &Path, issues: &mut Vec<PdfIssue>) -> PdfaCheck {
     // Obtener la versión de veraPDF para el informe
@@ -543,4 +524,24 @@ fn extract_pdfa_flavour(s: &str) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_quality_detecta_numeracion_y_portada_sospechosas() {
+        let text = "Titulo\nAutor\n\u{000c}Dr. Persona\nCiudad de Mexico, 2026\n\u{000c}.1.1 Analisis roto\n";
+        let mut issues = Vec::new();
+
+        push_text_quality_issues(text, &mut issues);
+
+        assert!(issues
+            .iter()
+            .any(|i| i.code == "PF_BROKEN_APPENDIX_NUMBERING"));
+        assert!(issues
+            .iter()
+            .any(|i| i.code == "PF_SUSPECT_SPLIT_TITLE_PAGE"));
+    }
 }
