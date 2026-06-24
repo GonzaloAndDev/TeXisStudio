@@ -11,6 +11,7 @@
 
 pub mod backend;
 pub mod bib_styles;
+pub mod capability_registry;
 pub mod ir;
 pub mod labels;
 pub mod phase;

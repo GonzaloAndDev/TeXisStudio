@@ -37,6 +37,8 @@ impl RenderBackend for LatexRenderBackend {
             "render.body",
             "render.appendices",
             "render.bibliography.biblatex",
+            "render.plugin_artifact",
+            "font.custom",
             "engine.xelatex",
             "engine.lualatex",
             "engine.pdflatex",
