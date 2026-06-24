@@ -57,8 +57,8 @@ fn import_preserves_semantics() {
     // Anexo presente (fase canónica propia, no back matter).
     assert_eq!(ir.appendices.appendices.len(), 1);
 
-    // Preliminar (agradecimientos) importado desde FrontMatter.
-    assert_eq!(ir.preliminaries.items.len(), 1);
+    // Preliminares (resumen + agradecimientos) importados desde FrontMatter.
+    assert_eq!(ir.preliminaries.items.len(), 2);
 
     // El papel se normaliza a canónico.
     assert_eq!(ir.profile.page_geometry.paper, "a4");

@@ -7,6 +7,8 @@
 //! G: anexos).
 
 pub mod cover;
+pub mod indexes;
+pub mod preliminaries;
 
 use crate::ir::DocumentIR;
 use texis_document_contracts::diagnostics::Diagnostics;
@@ -16,5 +18,7 @@ pub fn validate_document(ir: &DocumentIR) -> Diagnostics {
     let mut d = Diagnostics::new();
     d.extend(ir.check_invariants());
     d.extend(cover::validate(&ir.cover));
+    d.extend(preliminaries::validate(ir));
+    d.extend(indexes::validate(ir));
     d
 }

@@ -111,6 +111,24 @@ pub fn sample_thesis() -> ProjectModel {
         },
         sections: vec![
             ProjectSection {
+                id: "sec-abstract".into(),
+                element_id: "resumen".into(),
+                title: Some("Resumen".into()),
+                placement: SectionPlacement::FrontMatter,
+                required: true,
+                enabled: true,
+                label: None,
+                status: SectionStatus::Approved,
+                notes: None,
+                blocks: vec![ContentBlock::Paragraph(ParagraphBlock {
+                    id: "p-abs".into(),
+                    content: "Esta tesis estudia la verificación de sistemas concurrentes.".into(),
+                    verbatim: false,
+                })],
+                fields: HashMap::new(),
+                children: vec![],
+            },
+            ProjectSection {
                 id: "sec-ack".into(),
                 element_id: "agradecimientos".into(),
                 title: Some("Agradecimientos".into()),
