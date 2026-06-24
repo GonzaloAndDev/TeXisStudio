@@ -11,6 +11,16 @@ pub trait IrSerializer {
     fn serialize(&self, ir: &DocumentIR) -> Result<String, IrSerializeError>;
 }
 
+/// Calcula hashes deterministas de contenido para el manifiesto de build
+/// (§ "Entrega Reproducible"). La implementación concreta (sha256) vive en infra.
+pub trait ContentHasher {
+    /// Digest hexadecimal del contenido.
+    fn hash_hex(&self, bytes: &[u8]) -> String;
+
+    /// Nombre del algoritmo ("sha256").
+    fn algorithm(&self) -> &str;
+}
+
 #[derive(Debug)]
 pub struct IrSerializeError(pub String);
 

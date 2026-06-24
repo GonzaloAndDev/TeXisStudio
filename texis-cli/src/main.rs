@@ -34,6 +34,17 @@ enum Commands {
         #[arg(long)]
         demo: bool,
     },
+    /// Ensamblar el documento con el núcleo nuevo y emitir main.tex o el manifiesto (Etapa B)
+    BuildPlan {
+        #[arg(default_value = ".")]
+        project_dir: PathBuf,
+        /// Usar el fixture de referencia en lugar de cargar de disco
+        #[arg(long)]
+        demo: bool,
+        /// Emitir el manifiesto de build (JSON) en lugar de main.tex
+        #[arg(long)]
+        manifest: bool,
+    },
     /// Compilar un proyecto a PDF
     Compile {
         project_dir: PathBuf,
@@ -76,6 +87,11 @@ fn main() {
         Commands::ImportIr { project_dir, demo } => {
             commands::import_ir::run(&project_dir, demo)
         }
+        Commands::BuildPlan {
+            project_dir,
+            demo,
+            manifest,
+        } => commands::build_plan::run(&project_dir, demo, manifest),
         Commands::Compile {
             project_dir,
             backend,

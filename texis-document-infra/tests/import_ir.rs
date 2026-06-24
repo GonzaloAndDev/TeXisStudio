@@ -48,7 +48,7 @@ fn import_preserves_semantics() {
 
     // Portada: dos asesores + dos miembros de comité = 4 autoridades.
     assert_eq!(ir.cover.authorities.len(), 4);
-    assert_eq!(ir.cover.institution.logo.as_ref().map(|a| a.as_str()).is_some(), true);
+    assert!(ir.cover.institution.logo.is_some());
 
     // Cuerpo: un capítulo con una subsección.
     assert_eq!(ir.body.sections.len(), 1);

@@ -93,4 +93,8 @@ pub struct ResolvedProfile {
     pub document_class_options: Vec<String>,
     pub page_geometry: PageGeometry,
     pub typography: Typography,
+    /// Motor LaTeX objetivo canónico ("xelatex", "lualatex", "pdflatex").
+    pub engine: String,
+    /// Compilador ("latexmk", "tectonic").
+    pub compiler: String,
 }

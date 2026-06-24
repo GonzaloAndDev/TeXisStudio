@@ -8,8 +8,12 @@
 //! dependencia legacy.
 
 pub mod fixtures;
+pub mod hasher;
 pub mod json_serializer;
+pub mod latex_backend;
 pub mod legacy_importer;
 
+pub use hasher::Sha256Hasher;
 pub use json_serializer::JsonIrSerializer;
+pub use latex_backend::LatexRenderBackend;
 pub use legacy_importer::{import_project, LegacyProjectImporter};

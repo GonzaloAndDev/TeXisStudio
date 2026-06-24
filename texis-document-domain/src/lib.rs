@@ -9,13 +9,17 @@
 //! precedencia (§5.3), el `DocumentPlan` inmutable (§8.1) y el contrato
 //! `DocumentResolver`.
 
+pub mod backend;
 pub mod ir;
 pub mod phase;
 pub mod plan;
+pub mod plan_builder;
 pub mod precedence;
 pub mod resolver;
 
+pub use backend::{BackendCapabilities, RenderBackend, RenderedDocument, RenderedFile};
 pub use ir::DocumentIR;
 pub use phase::DocumentPhase;
 pub use plan::DocumentPlan;
+pub use plan_builder::PlanBuilder;
 pub use resolver::{DocumentResolver, Resolution};

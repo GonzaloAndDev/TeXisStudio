@@ -15,3 +15,4 @@ texis-document-infra      = { path = "../texis-document-infra" }
 clap        = { workspace = true }
 anyhow      = { workspace = true }
 chrono      = { workspace = true }
+serde_json  = { workspace = true }

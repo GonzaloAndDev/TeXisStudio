@@ -14,6 +14,7 @@ pub mod capabilities;
 pub mod diagnostics;
 pub mod ids;
 pub mod locale;
+pub mod manifest;
 pub mod measures;
 pub mod provenance;
 pub mod text;
@@ -28,6 +29,7 @@ pub use diagnostics::{
 };
 pub use ids::{AssetId, DocumentId, ModuleId, NodeId, ProfileId, SectionId};
 pub use locale::{DocumentLocale, LanguageTag};
+pub use manifest::{BuildManifest, ResourceHash, ToolchainStamp};
 pub use measures::{Length, LengthUnit};
 pub use provenance::{ProvenanceEntry, Resolved, ResolutionProvenance, ValueSource};
 pub use text::LocalizedText;

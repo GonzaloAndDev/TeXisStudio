@@ -180,6 +180,8 @@ impl ImportCtx {
                 sans_font: typo.sans_font.clone(),
                 mono_font: typo.mono_font.clone(),
             },
+            engine: map_engine(&m.latex_config.engine),
+            compiler: map_compiler(&m.latex_config.compiler),
         }
     }
 
@@ -647,6 +649,23 @@ fn map_theorem(t: &legacy::TheoremKind) -> TheoremKind {
         legacy::TheoremKind::Proof => TheoremKind::Proof,
         legacy::TheoremKind::Remark => TheoremKind::Remark,
     }
+}
+
+fn map_engine(e: &legacy::LatexEngine) -> String {
+    match e {
+        legacy::LatexEngine::Xelatex => "xelatex",
+        legacy::LatexEngine::Pdflatex => "pdflatex",
+        legacy::LatexEngine::Lualatex => "lualatex",
+    }
+    .to_string()
+}
+
+fn map_compiler(c: &legacy::CompilerKind) -> String {
+    match c {
+        legacy::CompilerKind::Latexmk => "latexmk",
+        legacy::CompilerKind::Tectonic => "tectonic",
+    }
+    .to_string()
 }
 
 fn map_status(s: &legacy::SectionStatus) -> EditorialStatus {

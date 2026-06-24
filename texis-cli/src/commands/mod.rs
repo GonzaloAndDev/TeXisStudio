@@ -1,3 +1,4 @@
+pub mod build_plan;
 pub mod compile;
 pub mod create;
 pub mod export;

@@ -78,10 +78,36 @@ Implementado y verificado en este corte vertical:
 - El único punto que interpreta el modelo legacy es el importador (infra); el
   dominio trabaja sobre un IR neutral, sin aliases ni perfiles crudos.
 
+## Estado de implementación (Etapa B — Pipeline)
+
+Implementado y verificado en este corte vertical (sin tocar el generador legacy):
+
+- `PlanBuilder` (dominio, puro y determinista): `DocumentIR → DocumentPlan`. Única
+  autoridad del orden global de fases; resuelve y deduplica paquetes (ordenados),
+  assets, toolchain y expectativas de verificación.
+- Puerto `RenderBackend` + `BackendCapabilities`/`RenderedDocument` (§8.2).
+- `LatexRenderBackend` (infra): primer backend. Ensambla preámbulo (clase,
+  paquetes, geometría, fuentes, biblatex con estilo/backend resueltos, metadatos
+  PDF) y `main.tex` con fases en orden canónico (`\frontmatter`/`\mainmatter`/
+  `\appendix`). Render básico-fiel de nodos; fidelidad profunda en C–G.
+- Manifiesto de build reproducible (`BuildManifest`, contrato versionado) con
+  hashes sha256 de entrada (IR) y artefactos, toolchain y capacidades resueltas.
+- Servicio único de build `AssembleDocumentUseCase` (aplicación): import → plan →
+  render → manifiesto. App y CLI llaman a este mismo caso de uso.
+- Comando CLI `texis build-plan [--demo] [--manifest]`.
+
+### Criterio de salida (cumplido)
+
+- Solo el ensamblador nuevo produce `main.tex` (vía el servicio único).
+- Build **determinista**: con entradas idénticas, manifiesto y artefactos idénticos
+  (test `build_is_deterministic`).
+- No se compila a PDF en esta etapa (LaTeX no es requisito) ni se altera producción.
+
 ## Pendiente (siguientes etapas)
 
-- Etapa B: `DocumentAssembler`, `FileGraph`/`PackagePlan`/`AssetPlan`/
-  `VerificationPlan` reales, backend LaTeX y servicio único de build.
 - Etapas C–G: profundizar cada módulo (portada → anexos) con editor, validación,
-  render y verificación.
+  render fiel y verificación PDF.
+- Etapa "capabilities/provenance/grafo incremental": `CapabilityRegistry`,
+  confianza, build incremental por grafo semántico.
+- `texis-certification`: matriz profesional (paso 16).
 - Etapa I: retirar el generador legacy y la dependencia hacia `texis-core`.

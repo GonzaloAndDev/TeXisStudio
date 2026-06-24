@@ -4440,6 +4440,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "serde_json",
  "texis-core",
  "texis-document-application",
  "texis-document-infra",
@@ -4497,6 +4498,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "sha2",
  "texis-core",
  "texis-document-application",
  "texis-document-contracts",
