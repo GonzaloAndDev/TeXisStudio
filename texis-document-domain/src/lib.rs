@@ -12,6 +12,7 @@
 pub mod backend;
 pub mod bib_styles;
 pub mod capability_registry;
+pub mod graph;
 pub mod ir;
 pub mod labels;
 pub mod phase;
