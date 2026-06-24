@@ -7,7 +7,7 @@
 use std::path::Path;
 use std::process::Command;
 
-use texis_document_application::AssembleDocumentUseCase;
+use texis_document_application::{AssembleDocumentUseCase, BuildMode};
 use texis_document_domain::ir::DocumentIR;
 use texis_document_infra::{JsonIrSerializer, LatexRenderBackend, Sha256Hasher};
 
@@ -53,7 +53,18 @@ pub fn compile(ir: &DocumentIR) -> std::io::Result<CompileOutcome> {
         JsonIrSerializer::compact(),
         Sha256Hasher,
     );
-    let assembled = use_case.execute(ir);
+    // El pipeline en modo Final debe pasar antes de compilar (sin bloqueantes).
+    let assembled = match use_case.execute(ir, BuildMode::Final) {
+        Ok(a) => a,
+        Err(e) => {
+            let codes: Vec<&str> = e.diagnostics.errors().map(|d| d.code.as_str()).collect();
+            return Ok(CompileOutcome {
+                attempted: true,
+                produced_pdf: false,
+                log_tail: format!("pipeline Final bloqueado antes de compilar: {codes:?}"),
+            });
+        }
+    };
 
     let dir = tempfile::tempdir()?;
     let root = dir.path();

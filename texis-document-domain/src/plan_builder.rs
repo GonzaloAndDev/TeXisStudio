@@ -80,6 +80,7 @@ impl PlanBuilder {
             assets,
             toolchain,
             expectations,
+            capabilities: Vec::new(),
             diagnostics,
         }
     }

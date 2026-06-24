@@ -18,7 +18,7 @@
 
 pub mod compile_gate;
 
-use texis_document_application::AssembleDocumentUseCase;
+use texis_document_application::{AssembleDocumentUseCase, BuildMode};
 use texis_document_domain::ir::DocumentIR;
 use texis_document_domain::phase::DocumentPhase;
 use texis_document_domain::validation::validate_document;
@@ -169,13 +169,27 @@ fn run_case(case: MatrixCase) -> CaseResult {
         gates.push(GateResult::pass("validation"));
     }
 
-    // Gate 3: ensamblado produce main.tex con fases canónicas.
+    // Gate 3: el pipeline bloqueante en modo Final produce el documento.
     let use_case = AssembleDocumentUseCase::new(
         LatexRenderBackend::new(),
         JsonIrSerializer::compact(),
         Sha256Hasher,
     );
-    let assembled = use_case.execute(&ir);
+    let assembled = match use_case.execute(&ir, BuildMode::Final) {
+        Ok(a) => {
+            gates.push(GateResult::pass("pipeline_final"));
+            a
+        }
+        Err(e) => {
+            let codes: Vec<&str> = e.diagnostics.errors().map(|d| d.code.as_str()).collect();
+            gates.push(GateResult::fail("pipeline_final", format!("bloqueado: {codes:?}")));
+            return CaseResult {
+                name: case.name.to_string(),
+                gates,
+            };
+        }
+    };
+
     match assembled.rendered.main_tex() {
         Some(_) => gates.push(GateResult::pass("assemble_main_tex")),
         None => gates.push(GateResult::fail("assemble_main_tex", "sin main.tex")),
@@ -193,11 +207,14 @@ fn run_case(case: MatrixCase) -> CaseResult {
     }
 
     // Gate 4: build determinista.
-    let again = use_case.execute(&ir);
-    if again.manifest == assembled.manifest && again.rendered.files == assembled.rendered.files {
-        gates.push(GateResult::pass("deterministic_build"));
+    if let Ok(again) = use_case.execute(&ir, BuildMode::Final) {
+        if again.manifest == assembled.manifest && again.rendered.files == assembled.rendered.files {
+            gates.push(GateResult::pass("deterministic_build"));
+        } else {
+            gates.push(GateResult::fail("deterministic_build", "manifiesto/artefactos divergen"));
+        }
     } else {
-        gates.push(GateResult::fail("deterministic_build", "manifiesto/artefactos divergen"));
+        gates.push(GateResult::fail("deterministic_build", "segundo build falló"));
     }
 
     CaseResult {

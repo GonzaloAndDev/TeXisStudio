@@ -8,7 +8,7 @@
 use anyhow::Result;
 use std::path::Path;
 use texis_core::project::loader::ProjectLoader;
-use texis_document_application::AssembleDocumentUseCase;
+use texis_document_application::{AssembleDocumentUseCase, BuildMode};
 use texis_document_infra::fixtures::sample_thesis;
 use texis_document_infra::{
     import_project, JsonIrSerializer, LatexRenderBackend, Sha256Hasher,
@@ -31,13 +31,17 @@ pub fn run(project_dir: &Path, demo: bool, manifest: bool) -> Result<()> {
         JsonIrSerializer::compact(),
         Sha256Hasher,
     );
-    let assembled = use_case.execute(&ir);
+    // Modo Draft: renderiza para inspección aunque haya diagnósticos (sin
+    // inventar nada). Para entrega real se usa Review/Final (bloqueantes).
+    let assembled = use_case
+        .execute(&ir, BuildMode::Draft)
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
-    // Diagnósticos (importación + plan + render) a stderr.
+    // Diagnósticos del pipeline (validación + políticas + capacidades) a stderr.
     for d in resolution.diagnostics.iter() {
         eprintln!("[{:?}] {} {}", d.severity, d.code.as_str(), d.message_key);
     }
-    for d in &assembled.manifest.diagnostics {
+    for d in assembled.diagnostics.iter() {
         eprintln!("[{:?}] {} {}", d.severity, d.code.as_str(), d.message_key);
     }
 

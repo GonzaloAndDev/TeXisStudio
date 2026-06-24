@@ -53,13 +53,20 @@ pub struct BuildManifest {
     pub manifest_version: ContractVersion,
     /// Id del documento construido.
     pub document_id: String,
+    /// Modo de build ("draft"/"review"/"final").
+    pub build_mode: String,
+    /// Perfil institucional aplicado.
+    pub profile_id: String,
     pub toolchain: ToolchainStamp,
     /// Hashes de las entradas relevantes (ordenados).
     pub inputs: Vec<ResourceHash>,
     /// Hashes de los artefactos producidos (ordenados).
     pub artifacts: Vec<ResourceHash>,
-    /// Capacidades resueltas que el backend declaró satisfacer.
+    /// Capacidades que el backend declaró satisfacer.
     pub resolved_capabilities: Vec<String>,
+    /// Capacidades que el documento requería (resueltas en planificación).
+    #[serde(default)]
+    pub required_capabilities: Vec<String>,
     /// Diagnósticos acumulados durante el build.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -70,5 +77,6 @@ impl BuildManifest {
         self.inputs.sort();
         self.artifacts.sort();
         self.resolved_capabilities.sort();
+        self.required_capabilities.sort();
     }
 }

@@ -2,20 +2,19 @@
 //! produce `main.tex` mediante el servicio único de build, el orden de fases es
 //! canónico y el build es **determinista** (mismas entradas → mismo manifiesto).
 
-use texis_document_application::AssembleDocumentUseCase;
-use texis_document_infra::fixtures::sample_thesis;
-use texis_document_infra::{
-    import_project, JsonIrSerializer, LatexRenderBackend, Sha256Hasher,
-};
+use texis_document_application::{AssembleDocumentUseCase, BuildMode};
+use texis_document_infra::fixtures::sample_thesis_ir;
+use texis_document_infra::{JsonIrSerializer, LatexRenderBackend, Sha256Hasher};
 
 fn assemble() -> texis_document_application::AssembledDocument {
-    let ir = import_project(&sample_thesis()).value.unwrap();
+    let ir = sample_thesis_ir();
     let use_case = AssembleDocumentUseCase::new(
         LatexRenderBackend::new(),
         JsonIrSerializer::compact(),
         Sha256Hasher,
     );
-    use_case.execute(&ir)
+    // Final: el fixture con bibliografía real no tiene bloqueantes.
+    use_case.execute(&ir, BuildMode::Final).expect("pipeline Final")
 }
 
 #[test]
@@ -93,6 +92,45 @@ fn build_is_deterministic() {
     // Plan idéntico.
     assert_eq!(a.plan.phases, b.plan.phases);
     assert_eq!(a.plan.packages, b.plan.packages);
+}
+
+#[test]
+fn final_mode_blocks_unresolved_citation_draft_proceeds() {
+    use texis_document_infra::import_project;
+    // Importación cruda: cita turing1936 SIN entrada bibliográfica.
+    let ir = import_project(&texis_document_infra::fixtures::sample_thesis())
+        .value
+        .unwrap();
+    let use_case = AssembleDocumentUseCase::new(
+        LatexRenderBackend::new(),
+        JsonIrSerializer::compact(),
+        Sha256Hasher,
+    );
+
+    // Final: bloquea (no inventa fuente).
+    let final_res = use_case.execute(&ir, BuildMode::Final);
+    assert!(final_res.is_err(), "Final debe bloquear cita sin resolver");
+    let err = final_res.err().unwrap();
+    assert!(err.diagnostics.iter().any(|d| d.code.as_str() == "BIB-001"));
+
+    // Draft: procede igualmente (para iterar), con el diagnóstico presente.
+    let draft = use_case
+        .execute(&ir, BuildMode::Draft)
+        .expect("Draft procede pese a diagnósticos");
+    assert!(draft.diagnostics.iter().any(|d| d.code.as_str() == "BIB-001"));
+    assert_eq!(draft.manifest.build_mode, "draft");
+}
+
+#[test]
+fn plan_carries_capabilities() {
+    let assembled = assemble();
+    assert!(!assembled.plan.capabilities.is_empty());
+    assert!(assembled
+        .plan
+        .capabilities
+        .iter()
+        .any(|c| c == "render.body"));
+    assert!(!assembled.manifest.required_capabilities.is_empty());
 }
 
 #[test]

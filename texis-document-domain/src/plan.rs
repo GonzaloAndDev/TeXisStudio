@@ -75,5 +75,9 @@ pub struct DocumentPlan {
     pub assets: AssetPlan,
     pub toolchain: ToolchainPlan,
     pub expectations: VerificationPlan,
+    /// Capacidades requeridas por el documento (resueltas contra el backend).
+    /// Las rellena el caso de uso de ensamblado (§8.3); el plan las transporta.
+    #[serde(default)]
+    pub capabilities: Vec<String>,
     pub diagnostics: Vec<Diagnostic>,
 }
