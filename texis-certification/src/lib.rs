@@ -144,22 +144,66 @@ fn matrix() -> Vec<MatrixCase> {
 
 /// Ejecuta la certificación estructural sobre toda la matriz.
 pub fn run_structural_certification() -> CertificationReport {
-    run_certification(false, false)
+    run_certification(false, false, false)
 }
 
 /// Ejecuta la certificación. Con `include_compile`, añade un caso que compila un
-/// fixture mínimo a PDF real (Etapa J) si hay toolchain LaTeX disponible.
-pub fn run_certification(include_compile: bool, strict: bool) -> CertificationReport {
+/// fixture mínimo a PDF real (Etapa J) si hay toolchain LaTeX disponible. Con
+/// `compile_matrix`, además compila los 7 estilos (XeLaTeX+Biber) y los 3 motores
+/// (XeLaTeX/LuaLaTeX/PdfLaTeX) a PDF real.
+pub fn run_certification(
+    include_compile: bool,
+    strict: bool,
+    compile_matrix: bool,
+) -> CertificationReport {
     let mut cases: Vec<CaseResult> = matrix().into_iter().map(run_case).collect();
     if include_compile {
         cases.push(run_compile_case(strict));
     }
+    if compile_matrix {
+        cases.extend(run_compile_matrix(strict));
+    }
     CertificationReport { cases }
 }
 
+/// Especificaciones de la matriz de compilación: nombre + IR a compilar.
+/// Construir el IR es barato (no compila); separar esto permite probar el cableado
+/// sin invocar el toolchain.
+fn compile_matrix_specs() -> Vec<(String, DocumentIR)> {
+    let mut specs = Vec::new();
+    for style in fixtures::TARGET_BIB_STYLES {
+        specs.push((
+            format!("compile_style_{style}"),
+            fixtures::compilable_styled_ir(style),
+        ));
+    }
+    for engine in ["xelatex", "lualatex", "pdflatex"] {
+        specs.push((
+            format!("compile_engine_{engine}"),
+            fixtures::compilable_with_engine_ir(engine),
+        ));
+    }
+    specs
+}
+
+/// Matriz de compilación real: 7 estilos bibliográficos + 3 motores (§13.1).
+fn run_compile_matrix(strict: bool) -> Vec<CaseResult> {
+    compile_matrix_specs()
+        .into_iter()
+        .map(|(name, ir)| compile_case(&name, ir, strict))
+        .collect()
+}
+
 fn run_compile_case(strict: bool) -> CaseResult {
+    compile_case("compilable_thesis (PDF)", fixtures::compilable_thesis_ir(), strict)
+}
+
+fn compile_case(
+    name: &str,
+    ir: texis_document_domain::ir::DocumentIR,
+    strict: bool,
+) -> CaseResult {
     let mut gates = Vec::new();
-    let ir = fixtures::compilable_thesis_ir();
     match compile_gate::compile(&ir) {
         Ok(o) if !o.attempted => {
             gates.push(GateResult::fail(
@@ -238,7 +282,7 @@ fn run_compile_case(strict: bool) -> CaseResult {
         Err(e) => gates.push(GateResult::fail("compile_pdf", e.to_string())),
     }
     CaseResult {
-        name: "compilable_thesis (PDF)".to_string(),
+        name: name.to_string(),
         gates,
     }
 }
@@ -345,5 +389,21 @@ mod tests {
         assert_eq!(report.cases.len(), 13);
         assert!(report.cases.iter().any(|c| c.name == "style_gbt7714"));
         assert!(report.cases.iter().any(|c| c.name == "large_250ch"));
+    }
+
+    #[test]
+    fn compile_matrix_wiring_cubre_estilos_y_motores() {
+        // Estructura de la matriz de compilación SIN invocar el toolchain.
+        let names: Vec<String> = compile_matrix_specs()
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect();
+        assert_eq!(names.len(), 10); // 7 estilos + 3 motores
+        for style in fixtures::TARGET_BIB_STYLES {
+            assert!(names.contains(&format!("compile_style_{style}")));
+        }
+        for engine in ["xelatex", "lualatex", "pdflatex"] {
+            assert!(names.contains(&format!("compile_engine_{engine}")));
+        }
     }
 }

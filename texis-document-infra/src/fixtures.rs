@@ -104,6 +104,27 @@ pub fn compilable_thesis_ir() -> DocumentIR {
     ir
 }
 
+/// IR compilable con un estilo bibliográfico concreto (XeLaTeX + Biber). Sin
+/// figuras ni fuentes del sistema → apto para compilación real por estilo.
+pub fn compilable_styled_ir(style: &str) -> DocumentIR {
+    use texis_document_domain::ir::modules::BibliographyBackend;
+    let mut ir = compilable_thesis_ir();
+    ir.bibliography.style = style.to_string();
+    ir.bibliography.backend = Some(BibliographyBackend::Biber);
+    ir.profile.policy.bibliography.allowed_styles = vec![style.to_string()];
+    ir.profile.policy.bibliography.required_backend = Some("biber".to_string());
+    ir
+}
+
+/// IR compilable forzando un motor concreto ("xelatex"/"lualatex"/"pdflatex").
+/// El fixture compilable no usa fuentes del sistema, así que es portable a los
+/// tres motores.
+pub fn compilable_with_engine_ir(engine: &str) -> DocumentIR {
+    let mut ir = compilable_thesis_ir();
+    ir.profile.engine = engine.to_string();
+    ir
+}
+
 /// Variante de estrés de portada (§ Etapa C): título muy largo, muchos asesores
 /// y comité amplio, para ejercitar la política de desbordamiento.
 pub fn stress_cover_thesis() -> ProjectModel {

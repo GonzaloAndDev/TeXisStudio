@@ -177,6 +177,11 @@ fn render_preamble(ir: &DocumentIR, plan: &DocumentPlan) -> String {
     }
     let _ = writeln!(s, "\\usepackage[{}]{{geometry}}", geo.join(","));
 
+    // `caption`: leyendas consistentes y compatible con el sistema de hooks del
+    // kernel LaTeX (necesario antes de biblatex para estilos como apa, que de lo
+    // contrario fallan al parchear \@makecaption).
+    let _ = writeln!(s, "\\usepackage{{caption}}");
+
     // Fuentes (solo motores Unicode).
     if uses_fontspec {
         if let Some(f) = &p.typography.main_font {

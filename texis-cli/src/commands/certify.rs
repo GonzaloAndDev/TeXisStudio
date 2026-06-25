@@ -7,8 +7,10 @@
 use anyhow::Result;
 use texis_certification::run_certification;
 
-pub fn run(compile: bool, strict: bool) -> Result<()> {
-    let report = run_certification(compile || strict, strict);
+pub fn run(compile: bool, strict: bool, compile_matrix: bool) -> Result<()> {
+    // La matriz de compilación implica compilar; --strict también.
+    let include_compile = compile || strict || compile_matrix;
+    let report = run_certification(include_compile, strict, compile_matrix);
     print!("{}", report.summary());
     if report.passed() {
         Ok(())

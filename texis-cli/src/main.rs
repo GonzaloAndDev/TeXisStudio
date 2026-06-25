@@ -53,6 +53,9 @@ enum Commands {
         /// Exigir compilación, postflight y herramientas PDF esenciales.
         #[arg(long)]
         strict: bool,
+        /// Compilar la matriz completa: 7 estilos + 3 motores a PDF real.
+        #[arg(long = "compile-matrix")]
+        compile_matrix: bool,
     },
     /// Compilar un proyecto a PDF
     Compile {
@@ -99,7 +102,11 @@ fn main() {
             demo,
             manifest,
         } => commands::build_plan::run(&project_dir, demo, manifest),
-        Commands::Certify { compile, strict } => commands::certify::run(compile, strict),
+        Commands::Certify {
+            compile,
+            strict,
+            compile_matrix,
+        } => commands::certify::run(compile, strict, compile_matrix),
         Commands::Compile {
             project_dir,
             backend,
