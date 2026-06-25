@@ -98,21 +98,48 @@ impl CertificationReport {
 
 /// Un caso de la matriz: nombre + constructor del IR (con bibliografía real).
 struct MatrixCase {
-    name: &'static str,
-    build: fn() -> DocumentIR,
+    name: String,
+    build: Box<dyn Fn() -> DocumentIR>,
+}
+
+impl MatrixCase {
+    fn new(name: impl Into<String>, build: impl Fn() -> DocumentIR + 'static) -> Self {
+        Self {
+            name: name.into(),
+            build: Box::new(build),
+        }
+    }
 }
 
 fn matrix() -> Vec<MatrixCase> {
-    vec![
-        MatrixCase {
-            name: "sample_thesis",
-            build: fixtures::sample_thesis_ir,
-        },
-        MatrixCase {
-            name: "stress_cover",
-            build: fixtures::stress_cover_ir,
-        },
-    ]
+    let mut cases = vec![
+        MatrixCase::new("sample_thesis", fixtures::sample_thesis_ir),
+        MatrixCase::new("stress_cover", fixtures::stress_cover_ir),
+        // Migración fiel: portada/ToC no degradadas, back matter preservado.
+        MatrixCase::new("migration_fixture", || {
+            texis_document_infra::import_project(&fixtures::migration_fixture())
+                .value
+                .expect("IR de migración")
+        }),
+    ];
+
+    // Los siete estilos bibliográficos objetivo (§7.5).
+    for style in fixtures::TARGET_BIB_STYLES {
+        cases.push(MatrixCase::new(
+            format!("style_{style}"),
+            move || fixtures::styled_thesis_ir(style),
+        ));
+    }
+
+    // Tamaños sintéticos (aprox. 50/100/250 páginas).
+    for chapters in [50usize, 100, 250] {
+        cases.push(MatrixCase::new(
+            format!("large_{chapters}ch"),
+            move || fixtures::large_thesis_ir(chapters),
+        ));
+    }
+
+    cases
 }
 
 /// Ejecuta la certificación estructural sobre toda la matriz.
@@ -314,6 +341,9 @@ mod tests {
             "certificación estructural falló:\n{}",
             report.summary()
         );
-        assert_eq!(report.cases.len(), 2);
+        // Base (2) + migración (1) + 7 estilos + 3 tamaños = 13 casos.
+        assert_eq!(report.cases.len(), 13);
+        assert!(report.cases.iter().any(|c| c.name == "style_gbt7714"));
+        assert!(report.cases.iter().any(|c| c.name == "large_250ch"));
     }
 }

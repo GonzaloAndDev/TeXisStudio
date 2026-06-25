@@ -29,6 +29,63 @@ pub fn sample_thesis_ir() -> DocumentIR {
     ir
 }
 
+/// Los siete estilos bibliográficos objetivo (§7.5, matriz de certificación).
+pub const TARGET_BIB_STYLES: &[&str] =
+    &["apa7", "ieee", "vancouver", "chicago", "mhra", "abnt", "gbt7714"];
+
+/// IR del fixture base con un estilo bibliográfico concreto (backend Biber, que
+/// es compatible con los siete estilos objetivo). Para la matriz por estilo.
+pub fn styled_thesis_ir(style: &str) -> DocumentIR {
+    use texis_document_domain::ir::modules::BibliographyBackend;
+    let mut ir = sample_thesis_ir();
+    ir.bibliography.style = style.to_string();
+    ir.bibliography.backend = Some(BibliographyBackend::Biber);
+    // Alinear la política del perfil con el estilo bajo prueba (de lo contrario
+    // la política del propio perfil — que solo permite apa7 — lo bloquearía).
+    ir.profile.policy.bibliography.allowed_styles = vec![style.to_string()];
+    ir.profile.policy.bibliography.required_backend = Some("biber".to_string());
+    ir
+}
+
+/// IR de una tesis "grande" sintética: `chapters` capítulos, cada uno con un
+/// encabezado y varios párrafos, para ejercitar tamaño (aprox. 50/100/250 pág.).
+/// No toca disco; bibliografía real adjunta.
+pub fn large_thesis_ir(chapters: usize) -> DocumentIR {
+    use texis_document_domain::ir::body_node::{BodyNode, Heading, HeadingLevel, Paragraph, RichText};
+    use texis_document_domain::ir::modules::{BodySection, EditorialStatus};
+    use texis_document_contracts::ids::{NodeId, SectionId};
+
+    let mut ir = sample_thesis_ir();
+    let mut sections = Vec::with_capacity(chapters);
+    for c in 0..chapters {
+        let mut nodes = Vec::new();
+        nodes.push(BodyNode::Heading(Heading {
+            id: NodeId::new(format!("h-{c}")),
+            level: HeadingLevel::Section,
+            text: format!("Sección {c}"),
+        }));
+        // ~6 párrafos por capítulo: densidad aproximada de página.
+        for p in 0..6 {
+            nodes.push(BodyNode::Paragraph(Paragraph {
+                id: NodeId::new(format!("p-{c}-{p}")),
+                content: RichText::plain(format!(
+                    "Contenido del capítulo {c}, párrafo {p}. Texto de relleno para densidad."
+                )),
+            }));
+        }
+        sections.push(BodySection {
+            id: SectionId::new(format!("cap-{c}")),
+            title: Some(format!("Capítulo {c}")),
+            label: Some(format!("cap:{c}")),
+            status: EditorialStatus::Draft,
+            nodes,
+            children: Vec::new(),
+        });
+    }
+    ir.body.sections = sections;
+    ir
+}
+
 /// IR del fixture de estrés de portada con bibliografía real.
 pub fn stress_cover_ir() -> DocumentIR {
     let mut ir = crate::import_project(&stress_cover_thesis())
