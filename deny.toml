@@ -1,0 +1,45 @@
+# Configuración de cargo-deny para TeXisStudio.
+# Ejecutar: cargo deny check
+# Cubre: avisos de seguridad (RustSec), licencias, fuentes y dependencias baneadas.
+
+[advisories]
+# Base de datos de avisos de RustSec.
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# Falla ante vulnerabilidades y dependencias sin mantenimiento.
+yanked = "deny"
+ignore = []
+
+[licenses]
+# El proyecto es AGPL-3.0 + Commons Clause; las DEPENDENCIAS deben usar licencias
+# permisivas compatibles. Lista explícita (sin comodines).
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+    "CC0-1.0",
+]
+confidence-threshold = 0.9
+# Excepciones puntuales por crate se documentan aquí si surgen.
+exceptions = []
+
+[bans]
+# Evita múltiples versiones del mismo crate cuando sea posible (solo aviso).
+multiple-versions = "warn"
+wildcards = "deny"
+# Crates explícitamente prohibidos (vacío por ahora).
+deny = []
+skip = []
+
+[sources]
+# Solo se permiten dependencias desde crates.io (sin fuentes git arbitrarias).
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

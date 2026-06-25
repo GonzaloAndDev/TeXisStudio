@@ -1,0 +1,21 @@
+# Propietarios de código de TeXisStudio.
+# Cada PR requiere revisión de los propietarios de las rutas afectadas.
+
+# Propietario por defecto de todo el repositorio.
+*                                   @GonzaloAndDev
+
+# Núcleo documental nuevo (arquitectura hexagonal A→J).
+/texis-document-contracts/          @GonzaloAndDev
+/texis-document-domain/             @GonzaloAndDev
+/texis-document-application/        @GonzaloAndDev
+/texis-document-infra/              @GonzaloAndDev
+/texis-certification/               @GonzaloAndDev
+
+# Legado congelado: cambios requieren justificación explícita (fix crítico).
+/texis-core/src/generator/          @GonzaloAndDev
+/texis-core/src/texis_project/      @GonzaloAndDev
+
+# Seguridad, CI y release.
+/SECURITY.md                        @GonzaloAndDev
+/deny.toml                          @GonzaloAndDev
+/.github/                           @GonzaloAndDev

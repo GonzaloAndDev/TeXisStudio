@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # Dependencias de Rust del workspace.
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(cargo)"
+    groups:
+      rust-dependencies:
+        patterns: ["*"]
+
+  # Dependencias de la app (npm / frontend).
+  - package-ecosystem: "npm"
+    directory: "/texis-app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(npm)"
+    groups:
+      npm-dependencies:
+        patterns: ["*"]
+
+  # Acciones de GitHub.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps(ci)"

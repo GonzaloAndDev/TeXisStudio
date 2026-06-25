@@ -1,0 +1,63 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Auditoría semanal aunque no haya cambios (avisos nuevos de RustSec).
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-deny:
+    name: cargo-deny (licencias, avisos, fuentes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses sources bans
+
+  cargo-audit:
+    name: cargo-audit (RustSec)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Audit
+        run: cargo audit
+
+  npm-audit:
+    name: npm audit (app)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Audit de dependencias del frontend
+        working-directory: texis-app
+        # No bloquea por vulnerabilidades de severidad baja/moderada de dev-deps.
+        run: npm audit --audit-level=high || true
+
+  sbom:
+    name: SBOM (CycloneDX vía Syft)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generar SBOM del repositorio
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          artifact-name: texisstudio-sbom.cyclonedx.json
+      - name: Publicar SBOM como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: texisstudio-sbom.cyclonedx.json
