@@ -30,7 +30,7 @@ pub use diagnostics::{
 };
 pub use ids::{AssetId, DocumentId, ModuleId, NodeId, ProfileId, SectionId};
 pub use locale::{DocumentLocale, LanguageTag};
-pub use manifest::{BuildManifest, ResourceHash, ToolchainStamp};
+pub use manifest::{BuildManifest, PostflightSummary, ResourceHash, ToolchainStamp};
 pub use measures::{Length, LengthUnit};
 pub use profile::{Profile2, ProfileIdentity, ProfilePolicy, TrustLevel};
 pub use provenance::{ProvenanceEntry, ResolutionProvenance, Resolved, ValueSource};

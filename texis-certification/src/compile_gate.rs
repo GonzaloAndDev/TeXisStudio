@@ -7,8 +7,10 @@
 use std::path::Path;
 use std::process::Command;
 
-use texis_core::postflight::{PdfChecker, PdfPostflightResult};
+use texis_core::postflight::{PdfChecker, PdfIssueSeverity, PdfPostflightResult};
+use texis_document_application::ports::ContentHasher;
 use texis_document_application::{AssembleDocumentUseCase, BuildMode};
+use texis_document_contracts::manifest::{BuildManifest, PostflightSummary};
 use texis_document_domain::ir::DocumentIR;
 use texis_document_infra::{JsonIrSerializer, LatexRenderBackend, Sha256Hasher};
 
@@ -38,6 +40,9 @@ pub struct CompileOutcome {
     pub compiler_success: bool,
     pub produced_pdf: bool,
     pub postflight: Option<PdfPostflightResult>,
+    /// Manifiesto de build con datos de entrega (hash del PDF + postflight)
+    /// cuando se produjo el PDF.
+    pub manifest: Option<BuildManifest>,
     pub log_tail: String,
 }
 
@@ -49,6 +54,7 @@ pub fn compile(ir: &DocumentIR) -> std::io::Result<CompileOutcome> {
             compiler_success: false,
             produced_pdf: false,
             postflight: None,
+            manifest: None,
             log_tail: "toolchain LaTeX no disponible".to_string(),
         });
     }
@@ -68,6 +74,7 @@ pub fn compile(ir: &DocumentIR) -> std::io::Result<CompileOutcome> {
                 compiler_success: false,
                 produced_pdf: false,
                 postflight: None,
+                manifest: None,
                 log_tail: format!("pipeline Final bloqueado antes de compilar: {codes:?}"),
             });
         }
@@ -90,18 +97,54 @@ pub fn compile(ir: &DocumentIR) -> std::io::Result<CompileOutcome> {
     let compiler_success = output.status.success();
     let postflight = produced_pdf.then(|| PdfChecker::check(&pdf));
 
+    // Manifiesto de entrega: hash del PDF + resumen de postflight (§ Entrega).
+    let mut manifest = assembled.manifest.clone();
+    if produced_pdf {
+        if let Ok(pdf_bytes) = std::fs::read(&pdf) {
+            let pdf_hash = Sha256Hasher.hash_hex(&pdf_bytes);
+            let summary = postflight
+                .as_ref()
+                .map(postflight_summary)
+                .unwrap_or(PostflightSummary {
+                    passed: false,
+                    all_fonts_embedded: false,
+                    error_codes: Vec::new(),
+                    pdfa_compliant: None,
+                });
+            manifest.attach_delivery(pdf_hash, summary);
+        }
+    }
+
     let log = read_log_tail(root);
     Ok(CompileOutcome {
         attempted: true,
         compiler_success,
         produced_pdf,
         postflight,
+        manifest: Some(manifest),
         log_tail: if produced_pdf && compiler_success {
             String::new()
         } else {
             format!("compilador status={:?}\n{}", output.status.code(), log)
         },
     })
+}
+
+/// Construye el resumen de postflight ligero para el manifiesto de entrega.
+fn postflight_summary(pf: &PdfPostflightResult) -> PostflightSummary {
+    let mut error_codes: Vec<String> = pf
+        .issues
+        .iter()
+        .filter(|i| i.severity == PdfIssueSeverity::Error)
+        .map(|i| i.code.clone())
+        .collect();
+    error_codes.sort();
+    PostflightSummary {
+        passed: pf.passed,
+        all_fonts_embedded: pf.all_fonts_embedded,
+        error_codes,
+        pdfa_compliant: pf.pdfa.as_ref().map(|c| c.compliant),
+    }
 }
 
 fn run_compiler(root: &Path, engine: &str) -> std::io::Result<std::process::Output> {
@@ -138,5 +181,27 @@ fn read_log_tail(root: &Path) -> String {
             .collect::<Vec<_>>()
             .join("\n"),
         Err(_) => "sin main.log".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use texis_document_infra::fixtures::compilable_thesis_ir;
+
+    #[test]
+    fn delivery_manifest_carries_pdf_hash_and_postflight() {
+        // Sólo se ejecuta de verdad si hay toolchain LaTeX (CI / máquina del
+        // usuario); si no, se omite sin fallar (no se simula un PDF).
+        if !Toolchain::available() {
+            eprintln!("omitido: sin toolchain LaTeX en PATH");
+            return;
+        }
+        let outcome = compile(&compilable_thesis_ir()).expect("compilación");
+        if outcome.produced_pdf {
+            let manifest = outcome.manifest.expect("manifiesto de entrega");
+            assert!(manifest.pdf_sha256.is_some(), "falta hash del PDF");
+            assert!(manifest.postflight.is_some(), "falta resumen de postflight");
+        }
     }
 }

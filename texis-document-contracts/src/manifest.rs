@@ -82,6 +82,25 @@ pub struct BuildManifest {
     pub required_capabilities: Vec<String>,
     /// Diagnósticos acumulados durante el build.
     pub diagnostics: Vec<Diagnostic>,
+    /// Hash sha256 del PDF final. Se rellena tras compilar (entrega).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdf_sha256: Option<String>,
+    /// Resumen de postflight del PDF. Se rellena tras compilar (entrega).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub postflight: Option<PostflightSummary>,
+}
+
+/// Resumen de postflight del PDF para el manifiesto de entrega. Tipo ligero en
+/// `contracts` para no acoplar el contrato a `texis-core`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PostflightSummary {
+    pub passed: bool,
+    pub all_fonts_embedded: bool,
+    /// Códigos de problema de severidad error (ordenados).
+    pub error_codes: Vec<String>,
+    /// Conformidad PDF/A cuando se evaluó.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pdfa_compliant: Option<bool>,
 }
 
 impl BuildManifest {
@@ -93,5 +112,11 @@ impl BuildManifest {
         self.required_capabilities.sort();
         self.plugin_ids.sort();
         self.plugin_ids.dedup();
+    }
+
+    /// Adjunta los datos de entrega tras compilar el PDF (hash + postflight).
+    pub fn attach_delivery(&mut self, pdf_sha256: String, postflight: PostflightSummary) {
+        self.pdf_sha256 = Some(pdf_sha256);
+        self.postflight = Some(postflight);
     }
 }

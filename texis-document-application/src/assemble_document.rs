@@ -225,6 +225,9 @@ where
             resolved_capabilities,
             required_capabilities: plan.capabilities.clone(),
             diagnostics,
+            // Datos de entrega: se rellenan tras compilar (compile_gate).
+            pdf_sha256: None,
+            postflight: None,
         };
         manifest.normalize();
         manifest
