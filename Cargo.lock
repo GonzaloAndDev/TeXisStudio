@@ -4427,6 +4427,7 @@ dependencies = [
  "texis-core",
  "texis-document-application",
  "texis-document-infra",
+ "texis-platform",
  "thiserror 1.0.69",
  "tokio",
  "urlencoding",

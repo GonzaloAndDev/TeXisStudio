@@ -39,6 +39,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::document_core::document_build,
+            commands::recovery::recovery_scan,
+            commands::recovery::recovery_list_snapshots,
+            commands::recovery::recovery_restore_snapshot,
+            commands::recovery::verify_integrity,
             commands::project::create_project,
             commands::project::import_tex_project,
             commands::project::get_project,

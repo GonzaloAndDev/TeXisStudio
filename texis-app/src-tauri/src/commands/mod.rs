@@ -15,6 +15,7 @@ pub mod import_project;
 pub mod openalex;
 pub mod package;
 pub mod project;
+pub mod recovery;
 pub mod remote;
 pub mod semantic_scholar;
 pub mod snippet_preview;

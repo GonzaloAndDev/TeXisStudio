@@ -18,6 +18,7 @@ walkdir     = { workspace = true }
 texis-core  = { path = "../../texis-core" }
 texis-document-application = { path = "../../texis-document-application" }
 texis-document-infra       = { path = "../../texis-document-infra" }
+texis-platform             = { path = "../../texis-platform" }
 tauri-plugin-dialog  = "2"
 tauri-plugin-log     = "2"
 log                  = "0.4"
