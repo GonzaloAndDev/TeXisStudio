@@ -158,7 +158,10 @@
 
 /* ─── Reset ─── */
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; min-width: 860px; }
+/* Sin min-width global: la app debe reflowar hasta 320px (WCAG 2.2 AA, 1.4.10).
+   El layout del editor ya es responsive (.editor-shell: clamp + minmax + media
+   queries). Un mínimo de ventana, si se desea, se fija en la ventana Tauri. */
+html, body { margin: 0; padding: 0; }
 body {
   font-family: var(--font-ui);
   font-size: var(--fs-base);
