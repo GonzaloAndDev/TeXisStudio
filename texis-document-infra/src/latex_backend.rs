@@ -200,7 +200,7 @@ fn render_preamble(ir: &DocumentIR, plan: &DocumentPlan) -> String {
         let _ = writeln!(
             s,
             "\\usepackage[style={},backend={}]{{biblatex}}",
-            map_bib_style(&ir.bibliography.style),
+            texis_document_domain::bib_styles::biblatex_style(&ir.bibliography.style),
             backend
         );
         // Recurso bibliográfico normalizado y generado de forma autocontenida.
@@ -224,21 +224,6 @@ fn render_preamble(ir: &DocumentIR, plan: &DocumentPlan) -> String {
     );
 
     s
-}
-
-/// Mapea el estilo canónico al estilo biblatex correspondiente.
-fn map_bib_style(style: &str) -> &str {
-    match style {
-        "apa7" | "apa" => "apa",
-        "ieee" => "ieee",
-        "vancouver" => "vancouver",
-        "chicago" | "chicago17_notes" | "chicago-notes" | "verbose-note" => "chicago-notes",
-        "chicago17_authordate" | "chicago-authordate" => "chicago-authordate",
-        "mhra" => "mhra",
-        "abnt" => "abnt",
-        "gbt7714" | "gb7714" => "gb7714-2015",
-        other => other,
-    }
 }
 
 // ── main.tex ───────────────────────────────────────────────────────────────
