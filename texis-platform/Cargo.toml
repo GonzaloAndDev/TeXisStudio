@@ -1,0 +1,15 @@
+[package]
+name = "texis-platform"
+version = "0.1.0"
+edition.workspace = true
+description = "Plataforma de producto: persistencia transaccional, locks, journal, snapshots y recuperación de proyectos. Independiente del modelo documental."
+
+# No depende del núcleo documental ni del legado: opera sobre directorios de
+# proyecto de forma genérica (protección de datos a nivel de filesystem).
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+sha2       = "0.10"
+
+[dev-dependencies]
+tempfile = { workspace = true }

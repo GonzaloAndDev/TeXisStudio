@@ -11,6 +11,9 @@ members = [
     "texis-document-application",
     "texis-document-infra",
     "texis-certification",
+    # Plataforma de producto/operación (Programa Industrial): persistencia
+    # transaccional, locks, journal, snapshots y recuperación. No toca el legado.
+    "texis-platform",
 ]
 resolver = "2"
 
