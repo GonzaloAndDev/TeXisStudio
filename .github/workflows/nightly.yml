@@ -1,0 +1,57 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # diario
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  # Matriz de los tres sistemas operativos (Tier 1, ADR-0003).
+  cross-os:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Tauri deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libssl-dev \
+            libxdo-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Clippy (núcleo + plataforma)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests (lib)
+        run: cargo test --workspace --lib
+
+  # Matriz de compilación documental a PDF real con LaTeX (núcleo nuevo).
+  document-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Instalar TeX Live (XeLaTeX/LuaLaTeX/PdfLaTeX + biber + biblatex-contrib)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-luatex texlive-bibtex-extra \
+            biber texlive-lang-spanish texlive-fonts-recommended
+      - name: Certificación con matriz de compilación (7 estilos × motores)
+        run: cargo run -p texis-cli -- certify --compile-matrix
+
+  # Protección de datos: el crate de plataforma (locks, journal, snapshots,
+  # recuperación, instalación transaccional) bajo prueba.
+  platform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Tests de plataforma
+        run: cargo test -p texis-platform

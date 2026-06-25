@@ -11,10 +11,12 @@ Industrial §10). Algunas viven en la raíz del repo por convención de GitHub.
 | Privacidad / local-first | [`docs/adr/0002-local-first-privacy.md`](../adr/0002-local-first-privacy.md) | ✅ (ADR) |
 | Plataformas Tier 1 | [`docs/adr/0003-tier1-platforms.md`](../adr/0003-tier1-platforms.md) | ✅ (ADR) |
 | Canales de release | [`docs/adr/0004-release-channels.md`](../adr/0004-release-channels.md) | ✅ (ADR) |
-| Deprecaciones | `docs/policies/deprecations.md` | ⏳ pendiente (Etapa 10) |
-| Recuperación de datos | `docs/policies/recovery.md` | ⏳ pendiente (Etapa 2: Recovery Center) |
+| Recuperación de datos | [`recovery.md`](recovery.md) | ✅ |
+| Runbooks de incidentes | [`runbooks/`](runbooks/README.md) | ✅ |
+| Threat model | [`../security/threat-model.md`](../security/threat-model.md) | ✅ |
+| Presupuestos de rendimiento | [`../performance/budgets.md`](../performance/budgets.md) | ✅ |
+| Deprecaciones | `docs/policies/deprecations.md` | ⏳ pendiente |
 | Límites de LaTeX y plugins | `docs/policies/limits.md` | ⏳ pendiente |
-| Runbooks de incidentes | `docs/policies/runbooks/` | ⏳ pendiente (Etapa 10) |
 
 ## Privacidad (resumen)
 
