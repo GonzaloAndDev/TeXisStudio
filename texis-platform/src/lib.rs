@@ -12,6 +12,7 @@
 //! - [`recovery`] backend del Recovery Center (reporta, nunca sobrescribe).
 
 pub mod atomic;
+pub mod ecosystem;
 pub mod integrity;
 pub mod journal;
 pub mod lifecycle;
@@ -22,6 +23,9 @@ pub mod recovery;
 pub mod safety;
 pub mod snapshot;
 
+pub use ecosystem::{
+    dir_digest, install_dir, InstallError, RevocationList, RevocationStatus,
+};
 pub use integrity::{IntegrityIssue, IntegrityIssueKind, IntegrityManifest};
 pub use lifecycle::{transactional_save, SaveOutcome};
 pub use observability::{redact_path, Event, EventLog, OpResult};
