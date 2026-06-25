@@ -14,12 +14,14 @@
 pub mod atomic;
 pub mod integrity;
 pub mod journal;
+pub mod lifecycle;
 pub mod lock;
 pub mod paths;
 pub mod recovery;
 pub mod snapshot;
 
 pub use integrity::{IntegrityIssue, IntegrityIssueKind, IntegrityManifest};
+pub use lifecycle::{transactional_save, SaveOutcome};
 pub use journal::{Journal, JournalEntry, OpStatus};
 pub use lock::{LockError, LockInfo, ProjectLock};
 pub use recovery::{scan as scan_recovery, RecoveryReport};
