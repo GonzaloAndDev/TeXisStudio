@@ -1,0 +1,35 @@
+{
+  "_comment": "Glosario de producto (Programa de Excelencia §8). Términos canónicos y variantes prohibidas. El linter (scripts/content-lint.mjs) verifica los archivos de locale. Coincidencia por palabra completa y sensible a mayúsculas: solo se listan variantes objetivamente incorrectas, no preferencias de estilo.",
+  "terms": [
+    {
+      "canonical": "TeXisStudio",
+      "forbidden": ["Texisstudio", "TexisStudio", "texisstudio", "Texis Studio", "TeXIsStudio"],
+      "note": "Nombre del producto; capitalización exacta."
+    },
+    {
+      "canonical": "LaTeX",
+      "forbidden": ["Latex", "LaTex", "LATEX"],
+      "note": "No flaggea 'latex' minúscula (aparece en ids técnicos como pdflatex/latexmk)."
+    },
+    {
+      "canonical": "XeLaTeX",
+      "forbidden": ["Xelatex", "XeLatex", "xeLaTeX"],
+      "note": "Motor; capitalización del nombre formal en texto de UI."
+    },
+    {
+      "canonical": "LuaLaTeX",
+      "forbidden": ["Lualatex", "LuaLatex"],
+      "note": "Motor."
+    },
+    {
+      "canonical": "BibTeX",
+      "forbidden": ["Bibtex", "BibTex"],
+      "note": "Backend bibliográfico."
+    },
+    {
+      "canonical": "PDF",
+      "forbidden": ["Pdf"],
+      "note": "No flaggea 'pdf' minúscula (extensiones de archivo .pdf)."
+    }
+  ]
+}

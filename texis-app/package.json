@@ -13,6 +13,7 @@
     "check:versions": "node ../scripts/check-versions.mjs",
     "i18n:pseudo": "node ../scripts/pseudo-localize.mjs",
     "i18n:pseudo:check": "node ../scripts/pseudo-localize.mjs --check",
+    "content:lint": "node ../scripts/content-lint.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

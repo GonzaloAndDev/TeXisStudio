@@ -59,6 +59,8 @@ jobs:
         run: node scripts/check-i18n.mjs
       - name: Pseudolocalización preserva placeholders
         run: node scripts/pseudo-localize.mjs --check
+      - name: Linter de contenido (consistencia de términos)
+        run: node scripts/content-lint.mjs
 
   # Protección de datos: el crate de plataforma (locks, journal, snapshots,
   # recuperación, instalación transaccional) bajo prueba.
