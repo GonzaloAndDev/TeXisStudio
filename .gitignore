@@ -41,3 +41,6 @@ texis-app/src-tauri/icons/ios/
 .codex/
 test-results/
 playwright-report/
+
+# Locale pseudo generado para pruebas visuales (derivado de en.json)
+texis-app/src/i18n/locales/pseudo.json

@@ -11,6 +11,8 @@
     "build": "tsc && vite build",
     "check:i18n": "node ../scripts/check-i18n.mjs",
     "check:versions": "node ../scripts/check-versions.mjs",
+    "i18n:pseudo": "node ../scripts/pseudo-localize.mjs",
+    "i18n:pseudo:check": "node ../scripts/pseudo-localize.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
