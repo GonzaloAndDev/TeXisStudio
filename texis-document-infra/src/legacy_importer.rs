@@ -93,6 +93,67 @@ pub fn import_project_from_root(
     resolution
 }
 
+/// Entrada estructurada de importación legacy (§ "Cambiar el importador a
+/// LegacyProjectInput"). Reúne el modelo, la raíz del proyecto (para leer
+/// `references.bib`), el perfil 2.x (cuya política institucional tiene
+/// precedencia) y el fallback de idioma documental.
+pub struct LegacyProjectInput<'a> {
+    model: &'a legacy::ProjectModel,
+    project_root: Option<&'a Path>,
+    profile: Option<&'a texis_document_contracts::profile::Profile2>,
+    document_fallback: Option<texis_document_contracts::locale::LanguageTag>,
+}
+
+impl<'a> LegacyProjectInput<'a> {
+    pub fn new(model: &'a legacy::ProjectModel) -> Self {
+        Self {
+            model,
+            project_root: None,
+            profile: None,
+            document_fallback: None,
+        }
+    }
+
+    pub fn with_root(mut self, root: &'a Path) -> Self {
+        self.project_root = Some(root);
+        self
+    }
+
+    pub fn with_profile(mut self, profile: &'a texis_document_contracts::profile::Profile2) -> Self {
+        self.profile = Some(profile);
+        self
+    }
+
+    pub fn with_document_fallback(
+        mut self,
+        tag: texis_document_contracts::locale::LanguageTag,
+    ) -> Self {
+        self.document_fallback = Some(tag);
+        self
+    }
+}
+
+/// Importa desde una entrada estructurada: bibliografía real del proyecto,
+/// política institucional del perfil 2.x (precedencia sobre la derivada) y
+/// fallback de idioma documental explícito.
+pub fn import_project_input(input: LegacyProjectInput) -> Resolution<DocumentIR> {
+    let mut resolution = match input.project_root {
+        Some(root) => import_project_from_root(input.model, root),
+        None => import_project(input.model),
+    };
+    if let Some(ir) = resolution.value.as_mut() {
+        if let Some(profile) = input.profile {
+            // La política del perfil 2.x es la autoridad institucional; sustituye
+            // a la política derivada del modelo legacy.
+            ir.profile.policy = profile.policy.clone();
+        }
+        if let Some(fallback) = input.document_fallback {
+            ir.locale.document_fallback = Some(fallback);
+        }
+    }
+    resolution
+}
+
 #[derive(Default)]
 struct ImportCtx {
     diags: Diagnostics,
