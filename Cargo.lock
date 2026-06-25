@@ -4425,6 +4425,8 @@ dependencies = [
  "tauri-plugin-log",
  "tempfile",
  "texis-core",
+ "texis-document-application",
+ "texis-document-infra",
  "thiserror 1.0.69",
  "tokio",
  "urlencoding",

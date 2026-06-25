@@ -6,6 +6,7 @@ pub mod bibliography_unified;
 pub mod build;
 pub mod compiler;
 pub mod datacite;
+pub mod document_core;
 pub mod doi;
 pub mod export_platform;
 pub mod figure_plugin;

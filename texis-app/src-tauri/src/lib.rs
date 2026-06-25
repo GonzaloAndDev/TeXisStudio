@@ -38,6 +38,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::document_core::document_build,
             commands::project::create_project,
             commands::project::import_tex_project,
             commands::project::get_project,
