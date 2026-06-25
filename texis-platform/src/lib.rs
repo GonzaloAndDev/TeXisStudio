@@ -20,6 +20,7 @@ pub mod lock;
 pub mod observability;
 pub mod paths;
 pub mod recovery;
+pub mod review;
 pub mod safety;
 pub mod snapshot;
 
@@ -32,5 +33,8 @@ pub use observability::{redact_path, Event, EventLog, OpResult};
 pub use journal::{Journal, JournalEntry, OpStatus};
 pub use lock::{LockError, LockInfo, ProjectLock};
 pub use recovery::{scan as scan_recovery, RecoveryReport};
+pub use review::{
+    build_review_package, compare_with_snapshot, ChangeKind, FileChange, ReviewPackage,
+};
 pub use safety::{is_within, resolve_within, PathSafetyError};
 pub use snapshot::SnapshotMeta;
