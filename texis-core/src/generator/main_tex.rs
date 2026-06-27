@@ -271,6 +271,44 @@ fn render_geometry(model: &ProjectModel) -> String {
     format!("\\usepackage[{paper},margin={margin}cm]{{geometry}}\n")
 }
 
+/// Reescribe los nombres de caption y de lista de los paquetes `listings`
+/// (código) y `algorithm`, que por defecto están en inglés y que ni babel ni
+/// polyglossia traducen. Devuelve cadena vacía para idiomas sin traducción
+/// curada (se conservan los nombres por defecto en inglés).
+fn caption_name_localization(language: &str) -> String {
+    let lang = language
+        .split(['-', '_'])
+        .next()
+        .unwrap_or(language)
+        .to_lowercase();
+    // (lstlistingname, lstlistlistingname, algorithm floatname, listalgorithmname)
+    let names = match lang.as_str() {
+        "es" => ("Código", "Índice de listados", "Algoritmo", "Índice de algoritmos"),
+        "pt" => ("Código", "Lista de listagens", "Algoritmo", "Lista de algoritmos"),
+        "fr" => (
+            "Listing",
+            "Liste des listings",
+            "Algorithme",
+            "Liste des algorithmes",
+        ),
+        "de" => (
+            "Listing",
+            "Listingverzeichnis",
+            "Algorithmus",
+            "Algorithmenverzeichnis",
+        ),
+        // en y cualquier otro: conservar los nombres por defecto del paquete.
+        _ => return String::new(),
+    };
+    let (listing, listing_list, algorithm, algorithm_list) = names;
+    format!(
+        "\\renewcommand{{\\lstlistingname}}{{{listing}}}\n\
+         \\renewcommand{{\\lstlistlistingname}}{{{listing_list}}}\n\
+         \\floatname{{algorithm}}{{{algorithm}}}\n\
+         \\renewcommand{{\\listalgorithmname}}{{{algorithm_list}}}\n",
+    )
+}
+
 fn normalized_class_options(model: &ProjectModel) -> Vec<String> {
     let cls = &model.latex_config.document_class;
     let typo = &model.latex_config.typography;
@@ -620,6 +658,10 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
     out.push_str("\\lstset{basicstyle=\\ttfamily\\footnotesize, frame=single, breaklines=true, tabsize=4, showstringspaces=false}\n");
     out.push_str("\\usepackage{algorithm}\n");
     out.push_str("\\usepackage{algpseudocode}\n");
+    // polyglossia traduce capítulo/figura/tabla, pero los paquetes `listings` y
+    // `algorithm` usan nombres en inglés ("Listing", "Algorithm") que ningún
+    // idioma reescribe. Localizamos sus captions y títulos de lista aquí.
+    out.push_str(&caption_name_localization(&model.metadata.language));
     out.push_str("\\usepackage{amsmath}\n");
     out.push_str("\\usepackage{amssymb}\n");
     out.push_str("\\usepackage{amsthm}\n");
