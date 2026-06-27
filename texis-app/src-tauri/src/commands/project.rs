@@ -1,5 +1,6 @@
 use serde_json::Value;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 use texis_core::{
     document::DocumentEngine,
@@ -82,25 +83,130 @@ where
     Ok(())
 }
 
-fn generate_new_document(
-    model: &ProjectModel,
-    project_dir: &std::path::Path,
-) -> Result<(), String> {
-    let build_dir = project_dir.join("build");
-    let mut engine = DocumentEngine::new().map_err(core_err)?;
-    engine
-        .generate(model, &build_dir, &EventBus::new())
-        .map_err(core_err)?;
-    engine.save_checksums(project_dir).map_err(core_err)
+fn unique_build_work_dir(project_dir: &Path, label: &str) -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    project_dir.join(format!(
+        ".texisstudio-{label}-{}-{nanos}",
+        std::process::id()
+    ))
 }
 
-fn sync_document(model: &ProjectModel, project_dir: &std::path::Path) -> Result<(), String> {
-    let build_dir = project_dir.join("build");
-    let mut engine = DocumentEngine::load(project_dir).map_err(core_err)?;
-    engine
-        .sync_preserving_external_edits(model, &build_dir, None, None, &EventBus::new())
-        .map_err(core_err)?;
-    engine.save_checksums(project_dir).map_err(core_err)
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    if !src.exists() {
+        return Ok(());
+    }
+    for entry in walkdir::WalkDir::new(src) {
+        let entry = entry.map_err(std::io::Error::other)?;
+        let rel = entry
+            .path()
+            .strip_prefix(src)
+            .map_err(std::io::Error::other)?;
+        let target = dst.join(rel);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&target)?;
+        } else {
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::copy(entry.path(), &target)?;
+        }
+    }
+    Ok(())
+}
+
+fn replace_build_from_staging<F>(
+    project_dir: &Path,
+    staging_dir: &Path,
+    after_promote: F,
+) -> Result<(), String>
+where
+    F: FnOnce() -> Result<(), String>,
+{
+    let live_build = project_dir.join("build");
+    let rollback_dir = unique_build_work_dir(project_dir, "build-rollback");
+
+    if rollback_dir.exists() {
+        std::fs::remove_dir_all(&rollback_dir).map_err(err)?;
+    }
+
+    let had_live_build = live_build.exists();
+    if had_live_build {
+        std::fs::rename(&live_build, &rollback_dir).map_err(err)?;
+    }
+
+    if let Err(e) = std::fs::rename(staging_dir, &live_build) {
+        if had_live_build {
+            let _ = std::fs::rename(&rollback_dir, &live_build);
+        }
+        return Err(e.to_string());
+    }
+
+    if let Err(e) = after_promote() {
+        let _ = std::fs::remove_dir_all(&live_build);
+        if had_live_build {
+            let _ = std::fs::rename(&rollback_dir, &live_build);
+        }
+        return Err(e);
+    }
+
+    if had_live_build {
+        std::fs::remove_dir_all(&rollback_dir).map_err(err)?;
+    }
+    Ok(())
+}
+
+fn regenerate_build_transactional<F>(project_dir: &Path, generate: F) -> Result<(), String>
+where
+    F: FnOnce(&Path) -> Result<DocumentEngine, String>,
+{
+    let staging_dir = unique_build_work_dir(project_dir, "build-staging");
+    if staging_dir.exists() {
+        std::fs::remove_dir_all(&staging_dir).map_err(err)?;
+    }
+
+    let live_build = project_dir.join("build");
+    if live_build.exists() {
+        copy_dir_recursive(&live_build, &staging_dir).map_err(err)?;
+    }
+
+    let engine = match generate(&staging_dir) {
+        Ok(engine) => engine,
+        Err(e) => {
+            let _ = std::fs::remove_dir_all(&staging_dir);
+            return Err(e);
+        }
+    };
+
+    let result = replace_build_from_staging(project_dir, &staging_dir, || {
+        engine.save_checksums(project_dir).map_err(core_err)
+    });
+    if result.is_err() {
+        let _ = std::fs::remove_dir_all(&staging_dir);
+    }
+    result
+}
+
+fn generate_new_document(model: &ProjectModel, project_dir: &Path) -> Result<(), String> {
+    regenerate_build_transactional(project_dir, |build_dir| {
+        let mut engine = DocumentEngine::new().map_err(core_err)?;
+        engine
+            .generate(model, build_dir, &EventBus::new())
+            .map_err(core_err)?;
+        Ok(engine)
+    })
+}
+
+fn sync_document(model: &ProjectModel, project_dir: &Path) -> Result<(), String> {
+    regenerate_build_transactional(project_dir, |build_dir| {
+        let mut engine = DocumentEngine::load(project_dir).map_err(core_err)?;
+        engine
+            .sync_preserving_external_edits(model, build_dir, None, None, &EventBus::new())
+            .map_err(core_err)?;
+        Ok(engine)
+    })
 }
 
 /// Crea un nuevo proyecto cargando el perfil real desde el directorio de perfiles.
@@ -1682,15 +1788,10 @@ pub fn detect_build_conflicts(project_path: String) -> Result<Value, String> {
 #[tauri::command]
 pub fn force_regenerate_build(project_path: String) -> Result<(), String> {
     let project_dir = PathBuf::from(&project_path);
-    let build_dir = project_dir.join("build");
     let model = ProjectLoader
         .load_from_file(&project_dir.join("tesis.project.yaml"))
         .map_err(err)?;
-    let mut engine = DocumentEngine::new().map_err(err)?;
-    engine
-        .generate(&model, &build_dir, &EventBus::new())
-        .map_err(err)?;
-    engine.save_checksums(&project_dir).map_err(err)
+    generate_new_document(&model, &project_dir)
 }
 
 /// Guarda una copia del archivo modificado externamente con sufijo .external-edit.tex,
@@ -1728,11 +1829,7 @@ pub fn save_external_copy_and_regenerate(
     let model = ProjectLoader
         .load_from_file(&project_dir.join("tesis.project.yaml"))
         .map_err(err)?;
-    let mut engine = DocumentEngine::new().map_err(err)?;
-    engine
-        .generate(&model, &build_dir, &EventBus::new())
-        .map_err(err)?;
-    engine.save_checksums(&project_dir).map_err(err)?;
+    generate_new_document(&model, &project_dir)?;
 
     Ok(serde_json::json!({ "copy_saved_as": copy_name }))
 }
@@ -1794,5 +1891,62 @@ fn collect_assets_recursive(
                 }));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_staging_failure_leaves_live_build_untouched() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let build = root.join("build");
+        std::fs::create_dir_all(&build).unwrap();
+        std::fs::write(build.join("main.tex"), "old").unwrap();
+
+        let result = regenerate_build_transactional(root, |staging| {
+            std::fs::create_dir_all(staging).unwrap();
+            std::fs::write(staging.join("main.tex"), "new-partial").unwrap();
+            Err("generation failed after partial write".to_string())
+        });
+
+        assert!(result.is_err());
+        assert_eq!(
+            std::fs::read_to_string(build.join("main.tex")).unwrap(),
+            "old"
+        );
+        assert!(
+            std::fs::read_dir(root)
+                .unwrap()
+                .filter_map(|entry| entry.ok())
+                .all(|entry| !entry
+                    .file_name()
+                    .to_string_lossy()
+                    .contains("build-staging")),
+            "staging directory should be cleaned on failure"
+        );
+    }
+
+    #[test]
+    fn promote_failure_restores_previous_build() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        let build = root.join("build");
+        let staging = root.join(".texisstudio-build-staging-test");
+        std::fs::create_dir_all(&build).unwrap();
+        std::fs::write(build.join("main.tex"), "old").unwrap();
+        std::fs::create_dir_all(&staging).unwrap();
+        std::fs::write(staging.join("main.tex"), "new").unwrap();
+
+        let result =
+            replace_build_from_staging(root, &staging, || Err("checksum write failed".to_string()));
+
+        assert!(result.is_err());
+        assert_eq!(
+            std::fs::read_to_string(build.join("main.tex")).unwrap(),
+            "old"
+        );
     }
 }

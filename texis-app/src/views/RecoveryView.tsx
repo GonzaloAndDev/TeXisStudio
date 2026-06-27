@@ -36,6 +36,10 @@ function formatNanos(nanos: string): string {
   }
 }
 
+function isTauriRuntime(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 function Section({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
@@ -96,7 +100,10 @@ export default function RecoveryView() {
       try {
         const model = await api.getProject(activeProjectPath);
         openProject(model, activeProjectPath);
-      } catch {
+      } catch (reloadError) {
+        if (isTauriRuntime()) {
+          throw reloadError;
+        }
         /* getProject puede no existir en modo browser; el refresh basta ahí. */
       }
       toast.success(t("recovery.restored", { count }));
