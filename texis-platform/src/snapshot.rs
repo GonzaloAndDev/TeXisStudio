@@ -85,13 +85,21 @@ pub fn list(root: &Path) -> Vec<SnapshotMeta> {
     metas
 }
 
-/// Restaura un snapshot: reescribe atómicamente los archivos guardados.
-pub fn restore(root: &Path, id: &str) -> io::Result<usize> {
-    let files_base = snapshot_dir(root, id).join("files");
+/// Carga el manifiesto de un snapshot por id.
+pub fn load(root: &Path, id: &str) -> io::Result<SnapshotMeta> {
     let manifest_path = snapshot_dir(root, id).join("manifest.json");
     let content = fs::read_to_string(&manifest_path)?;
-    let meta: SnapshotMeta = serde_json::from_str(&content)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    serde_json::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
+
+/// Restaura un snapshot: reescribe atómicamente los archivos guardados.
+///
+/// Nota: esta función es de bajo nivel y **no** crea un snapshot del estado
+/// actual antes de sobrescribir ni recalcula integridad. Para una restauración
+/// segura desde la app, usa [`crate::lifecycle::transactional_restore`].
+pub fn restore(root: &Path, id: &str) -> io::Result<usize> {
+    let files_base = snapshot_dir(root, id).join("files");
+    let meta = load(root, id)?;
 
     let mut restored = 0;
     for rel in &meta.files {

@@ -24,18 +24,28 @@ const SAVE_SNAPSHOT_RETENTION: usize = 20;
 /// Persiste el modelo del proyecto de forma **transaccional** vía `texis-platform`:
 /// toma el lock del proyecto, registra la operación en el journal, hace un snapshot
 /// del estado previo, escribe atómicamente y actualiza el manifiesto de integridad.
-/// Ante cualquier fallo de escritura hace rollback al estado previo.
+///
+/// `regenerate` se ejecuta **dentro** de la transacción y **bajo el mismo lock**,
+/// tras escribir el YAML (p. ej. regenerar `build/`). Si falla, se hace rollback
+/// del YAML al estado previo: nunca queda el YAML nuevo con `build/` viejo, ni se
+/// libera el lock entre el guardado y la regeneración (no hay carrera entre
+/// ventanas sobre los archivos generados). Pasa `|| Ok(())` si no hay derivados.
 ///
 /// Reemplaza la escritura directa de `ProjectSaver::save_to_file` en el flujo vivo
 /// de la app, de modo que las garantías de la plataforma protegen guardados reales.
-fn persist_model_transactional(
+fn persist_model_transactional<F>(
     project_dir: &std::path::Path,
     yaml_path: &std::path::Path,
     model: &ProjectModel,
-) -> Result<(), String> {
+    regenerate: F,
+) -> Result<(), String>
+where
+    F: FnOnce() -> Result<(), String>,
+{
     let yaml = ProjectSaver.to_yaml_string(model, yaml_path).map_err(core_err)?;
 
-    // El lock se libera automáticamente al salir del scope (Drop).
+    // El lock se libera automáticamente al salir del scope (Drop), tras incluir
+    // la regeneración derivada dentro de su vigencia.
     let _lock = texis_platform::ProjectLock::acquire(project_dir).map_err(|e| match e {
         texis_platform::LockError::Held(info) => format!(
             "El proyecto está en uso por otra ventana o proceso (pid {} en {}). \
@@ -52,12 +62,22 @@ fn persist_model_transactional(
         .map(|p| p.to_string_lossy().into_owned())
         .unwrap_or_else(|_| "tesis.project.yaml".to_string());
 
-    texis_platform::transactional_save(
+    // El error de `regenerate` (String) se transporta a través de io::Error y se
+    // recupera al final para no perder el mensaje original orientado al usuario.
+    let mut regen_err: Option<String> = None;
+    let regen_slot = &mut regen_err;
+    texis_platform::transactional_save_with(
         project_dir,
         &[(rel, yaml.into_bytes())],
         SAVE_SNAPSHOT_RETENTION,
+        || {
+            regenerate().map_err(|msg| {
+                *regen_slot = Some(msg);
+                std::io::Error::other("regeneración de artefactos derivados falló")
+            })
+        },
     )
-    .map_err(|e| format!("Guardado transaccional falló: {e}"))?;
+    .map_err(|e| regen_err.unwrap_or_else(|| format!("Guardado transaccional falló: {e}")))?;
 
     Ok(())
 }
@@ -129,9 +149,8 @@ pub fn create_project(
         &project_dir,
         &project_dir.join("tesis.project.yaml"),
         &model,
+        || generate_new_document(&model, &project_dir),
     )?;
-
-    generate_new_document(&model, &project_dir)?;
 
     Ok(serde_json::json!({
         "project_path": project_dir.to_string_lossy(),
@@ -250,9 +269,8 @@ pub fn import_tex_project(
         &project_dir,
         &project_dir.join("tesis.project.yaml"),
         &model,
+        || generate_new_document(&model, &project_dir),
     )?;
-
-    generate_new_document(&model, &project_dir)?;
 
     Ok(serde_json::json!({
         "project_path": project_dir.to_string_lossy(),
@@ -335,10 +353,11 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
     model.updated_at = now_iso8601();
 
     let project_dir = PathBuf::from(&project_path);
-    persist_model_transactional(&project_dir, &yaml_path, &model)?;
-
-    // Regenerar los archivos LaTeX de la sección modificada
-    sync_document(&model, &project_dir)?;
+    // La regeneración de los .tex de la sección entra en la transacción y bajo el
+    // mismo lock: si falla, el YAML vuelve al estado previo.
+    persist_model_transactional(&project_dir, &yaml_path, &model, || {
+        sync_document(&model, &project_dir)
+    })?;
 
     Ok(())
 }
@@ -350,9 +369,10 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
     let mut model: ProjectModel = serde_json::from_value(project).map_err(err)?;
     model.updated_at = now_iso8601();
     let project_dir = PathBuf::from(&project_path);
-    persist_model_transactional(&project_dir, &yaml_path, &model)?;
-    // Regenerar build/ con metadatos actualizados
-    sync_document(&model, &project_dir)?;
+    // Regenerar build/ dentro de la transacción y bajo el mismo lock.
+    persist_model_transactional(&project_dir, &yaml_path, &model, || {
+        sync_document(&model, &project_dir)
+    })?;
     Ok(())
 }
 
@@ -805,7 +825,7 @@ pub fn update_typography(
         margin_cm,
     };
 
-    persist_model_transactional(project_dir, &project_yaml, &model)
+    persist_model_transactional(project_dir, &project_yaml, &model, || Ok(()))
 }
 
 /// Payload para update_preamble_config. Agrupa los 11 campos en un struct
@@ -860,7 +880,7 @@ pub fn update_preamble_config(
         extra: payload.extra.filter(|s| !s.trim().is_empty()),
     };
 
-    persist_model_transactional(project_dir, &project_yaml, &model)
+    persist_model_transactional(project_dir, &project_yaml, &model, || Ok(()))
 }
 
 /// Actualiza el estado editorial y las notas internas de una sección.
@@ -909,7 +929,7 @@ pub fn update_section_meta(
         return Err(format!("Sección '{}' no encontrada", section_id));
     }
 
-    persist_model_transactional(path, &project_yaml, &model)
+    persist_model_transactional(path, &project_yaml, &model, || Ok(()))
 }
 
 /// Sanitiza la etiqueta de un snapshot para usarla como parte del nombre de archivo.

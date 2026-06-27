@@ -13,6 +13,7 @@ import {
 } from "../components/Icons";
 import { useConfirm } from "../components/ui/useConfirm";
 import { useToast } from "../components/ui/ToastProvider";
+import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
 import {
   isHealthy,
@@ -54,6 +55,7 @@ export default function RecoveryView() {
 
   const activeProject = useProjectStore((s) => s.activeProject);
   const activeProjectPath = useProjectStore((s) => s.activeProjectPath);
+  const openProject = useProjectStore((s) => s.openProject);
 
   const [report, setReport] = useState<RecoveryReport | null>(null);
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
@@ -89,6 +91,14 @@ export default function RecoveryView() {
     setBusyId(snap.id);
     try {
       const count = await restoreSnapshot(activeProjectPath, snap.id);
+      // Recargar el modelo restaurado a memoria: si no, el editor seguiría con el
+      // modelo viejo y al guardar pisaría el snapshot recién restaurado.
+      try {
+        const model = await api.getProject(activeProjectPath);
+        openProject(model, activeProjectPath);
+      } catch {
+        /* getProject puede no existir en modo browser; el refresh basta ahí. */
+      }
       toast.success(t("recovery.restored", { count }));
       await refresh(activeProjectPath);
     } catch (e) {
@@ -96,7 +106,7 @@ export default function RecoveryView() {
     } finally {
       setBusyId(null);
     }
-  }, [activeProjectPath, confirm, refresh, t, toast]);
+  }, [activeProjectPath, confirm, openProject, refresh, t, toast]);
 
   const handleVerify = useCallback(async () => {
     if (!activeProjectPath) return;

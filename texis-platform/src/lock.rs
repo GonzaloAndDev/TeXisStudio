@@ -8,8 +8,8 @@
 
 use crate::paths;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::io;
+use std::fs::{self, OpenOptions};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -75,18 +75,41 @@ impl ProjectLock {
     }
 
     /// Adquiere el lock. Falla con `Held` si ya hay un titular.
+    ///
+    /// La adquisición es **atómica**: se crea el archivo con `create_new`
+    /// (`O_EXCL`/`CREATE_NEW`), de modo que si dos procesos compiten solo uno
+    /// gana — no hay ventana check-then-write donde ambos crean que adquirieron.
     pub fn acquire(project_root: &Path) -> Result<ProjectLock, LockError> {
         let path = Self::lock_path(project_root);
-        if let Some(info) = Self::current(project_root) {
-            return Err(LockError::Held(info));
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(LockError::Io)?;
         }
         let info = LockInfo {
             pid: std::process::id(),
             host: hostname(),
             created_unix: now_unix(),
         };
-        Self::write(&path, &info).map_err(LockError::Io)?;
-        Ok(ProjectLock { path, info })
+        let json = serde_json::to_string_pretty(&info)
+            .map_err(|e| LockError::Io(io::Error::other(e)))?;
+
+        match OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(mut f) => {
+                f.write_all(json.as_bytes()).map_err(LockError::Io)?;
+                f.sync_all().map_err(LockError::Io)?;
+                Ok(ProjectLock { path, info })
+            }
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                // Otro proceso ganó la carrera (o hay un lock obsoleto). Reportar
+                // el titular para que la capa superior decida sobre `force_acquire`.
+                let held = Self::current(project_root).unwrap_or(LockInfo {
+                    pid: 0,
+                    host: "unknown".to_string(),
+                    created_unix: 0,
+                });
+                Err(LockError::Held(held))
+            }
+            Err(e) => Err(LockError::Io(e)),
+        }
     }
 
     /// Toma el lock por la fuerza (tras decidir que el titular es obsoleto).
@@ -165,6 +188,21 @@ mod tests {
             assert!(ProjectLock::current(dir.path()).is_some());
         }
         assert!(ProjectLock::current(dir.path()).is_none());
+    }
+
+    #[test]
+    fn stale_lock_file_blocks_acquire_atomically() {
+        // Simula un lock dejado por un proceso muerto (crash sin release): el
+        // archivo existe pero nadie lo sostiene. `acquire` no debe pisarlo.
+        let dir = tempfile::tempdir().unwrap();
+        let _held = ProjectLock::acquire(dir.path()).unwrap();
+        let path = ProjectLock::lock_path(dir.path());
+        assert!(path.exists());
+        // Un segundo intento ve el archivo y falla con Held (no crea uno nuevo).
+        match ProjectLock::acquire(dir.path()) {
+            Err(LockError::Held(_)) => {}
+            other => panic!("se esperaba Held por archivo existente, fue {other:?}"),
+        }
     }
 
     #[test]

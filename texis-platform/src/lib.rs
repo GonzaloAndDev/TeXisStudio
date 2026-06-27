@@ -29,7 +29,10 @@ pub use ecosystem::{
     dir_digest, install_dir, InstallError, RevocationList, RevocationStatus,
 };
 pub use integrity::{IntegrityIssue, IntegrityIssueKind, IntegrityManifest};
-pub use lifecycle::{transactional_save, SaveOutcome};
+pub use lifecycle::{
+    transactional_restore, transactional_save, transactional_save_with, RestoreOutcome,
+    SaveOutcome,
+};
 pub use observability::{redact_path, Event, EventLog, OpResult};
 pub use journal::{Journal, JournalEntry, OpStatus};
 pub use lock::{LockError, LockInfo, ProjectLock};
