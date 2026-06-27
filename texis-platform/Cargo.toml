@@ -9,7 +9,7 @@ description = "Plataforma de producto: persistencia transaccional, locks, journa
 [dependencies]
 serde      = { workspace = true }
 serde_json = { workspace = true }
-sha2       = "0.10"
+sha2       = "0.11"
 
 [dev-dependencies]
 tempfile = { workspace = true }
