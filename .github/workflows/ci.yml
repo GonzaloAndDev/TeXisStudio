@@ -12,7 +12,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -57,7 +57,7 @@ jobs:
         run: cargo test --workspace --test snapshots --test broken --test e2e
 
       - name: Checkout TeXisStudio-Profiles (para tests de perfiles)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: GonzaloAndDev/TeXisStudio-Profiles
           path: texis-profiles
@@ -104,7 +104,7 @@ jobs:
     name: Strict document certification
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -127,7 +127,7 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Node.js 20
         uses: actions/setup-node@v4
@@ -183,7 +183,7 @@ jobs:
     name: E2E — Playwright browser smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Node.js 20
         uses: actions/setup-node@v4
@@ -215,7 +215,7 @@ jobs:
     # Solo en main/master para no consumir minutos en PRs
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -241,7 +241,7 @@ jobs:
           tectonic --version
 
       - name: Checkout TeXisStudio-Profiles (sample project)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: GonzaloAndDev/TeXisStudio-Profiles
           path: texis-profiles
