@@ -17,9 +17,16 @@ mod fixtures;
 use std::path::Path;
 use std::process::Command;
 
+use texis_core::compiler::latexmk::LatexmkBackend;
+use texis_core::compiler::{CompilationBackend, CompilationOptions};
 use texis_core::document::DocumentEngine;
 use texis_core::events::EventBus;
 use texis_core::postflight::PdfChecker;
+use texis_core::profile::loader::ProfileLoader;
+use texis_core::profile::model::Profile;
+use texis_core::project::model::{
+    BibliographyBackend, CompilerKind, LatexEngine, PageLayout, PageMargins, ProjectModel,
+};
 use texis_core::quality::{self, QualityInputs};
 use texis_core::validator::Validator;
 
@@ -36,13 +43,25 @@ fn latex_available() -> bool {
 }
 
 fn log_tail(log: &str) -> String {
-    log.lines().rev().take(30).collect::<Vec<_>>().into_iter().rev().collect::<Vec<_>>().join("\n")
+    log.lines()
+        .rev()
+        .take(30)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Texto por página (separadas por form-feed de pdftotext). Vacío si la
 /// herramienta no está disponible.
 fn pdftotext_pages(pdf: &Path) -> Vec<String> {
-    let out = match Command::new("pdftotext").args(["-enc", "UTF-8"]).arg(pdf).arg("-").output() {
+    let out = match Command::new("pdftotext")
+        .args(["-enc", "UTF-8"])
+        .arg(pdf)
+        .arg("-")
+        .output()
+    {
         Ok(o) if o.status.success() => o,
         _ => return vec![],
     };
@@ -50,6 +69,37 @@ fn pdftotext_pages(pdf: &Path) -> Vec<String> {
         .split('\u{000c}')
         .map(|s| s.to_string())
         .collect()
+}
+
+fn apply_profile_to_model(model: &mut ProjectModel, profile: &Profile) {
+    model.profile_id = profile.id.clone();
+    model.latex_config.document_class.name = profile.document_class.name.clone();
+    model.latex_config.document_class.options = profile.document_class.options.clone();
+    model.latex_config.engine = match profile.latex_engine.as_str() {
+        "pdflatex" => LatexEngine::Pdflatex,
+        "lualatex" => LatexEngine::Lualatex,
+        _ => LatexEngine::Xelatex,
+    };
+    model.latex_config.compiler = match profile.compiler.as_str() {
+        "tectonic" => CompilerKind::Tectonic,
+        _ => CompilerKind::Latexmk,
+    };
+    model.latex_config.bibliography_backend = match profile.bibliography_backend.as_str() {
+        "bibtex" => BibliographyBackend::Bibtex,
+        _ => BibliographyBackend::Biber,
+    };
+    model.latex_config.bibliography_style = profile.bibliography_style.clone();
+    model.latex_config.packages_required = profile.packages.clone();
+    model.latex_config.page_layout = profile.page_layout.as_ref().map(|layout| PageLayout {
+        paper: layout.paper.clone(),
+        margins: layout.margins.as_ref().map(|margins| PageMargins {
+            top: margins.top.clone(),
+            bottom: margins.bottom.clone(),
+            left: margins.left.clone(),
+            right: margins.right.clone(),
+        }),
+        line_spacing: layout.line_spacing,
+    });
 }
 
 #[test]
@@ -71,11 +121,18 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
     // ── Generar build/ por el camino REAL del editor (ProjectModel) ─────────
     let build = root.join("build");
     let mut engine = DocumentEngine::new().expect("engine");
-    engine.generate(&model, &build, &EventBus::new()).expect("generar");
+    engine
+        .generate(&model, &build, &EventBus::new())
+        .expect("generar");
 
     // ── Compilar con los flags reales de la app ─────────────────────────────
     let out = Command::new("latexmk")
-        .args(["-xelatex", "-interaction=nonstopmode", "-file-line-error", "main.tex"])
+        .args([
+            "-xelatex",
+            "-interaction=nonstopmode",
+            "-file-line-error",
+            "main.tex",
+        ])
         .current_dir(&build)
         .output()
         .expect("latexmk");
@@ -90,7 +147,10 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
     );
 
     // ── Reglas estructurales sobre el log ───────────────────────────────────
-    assert!(!log.contains("LaTeX Error"), "el log contiene 'LaTeX Error'");
+    assert!(
+        !log.contains("LaTeX Error"),
+        "el log contiene 'LaTeX Error'"
+    );
     assert!(
         !log.contains("Undefined control sequence"),
         "comando LaTeX indefinido en el log"
@@ -104,7 +164,10 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
         "citas indefinidas en el log"
     );
     let overfull = log.matches("Overfull \\hbox").count();
-    assert!(overfull == 0, "se esperaban 0 overfull hboxes, hubo {overfull}");
+    assert!(
+        overfull == 0,
+        "se esperaban 0 overfull hboxes, hubo {overfull}"
+    );
 
     // ── Postflight: fuentes incrustadas ─────────────────────────────────────
     let postflight = PdfChecker::check(&pdf);
@@ -157,4 +220,87 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
             );
         }
     }
+}
+
+/// §4 — Compile-demo de los perfiles bundled con plantilla de portada propia.
+/// Compila el documento usando cada `title_page_template` real de los perfiles
+/// que envía la app, de modo que un error en una plantilla (variable inexistente,
+/// sintaxis MiniJinja o LaTeX roto) se detecte en CI. Habría cazado el bug del
+/// subtítulo. Se omite sin toolchain.
+#[test]
+fn bundled_profile_title_pages_compile() {
+    if !latex_available() {
+        eprintln!("omitido: sin latexmk+xelatex en PATH");
+        return;
+    }
+    // profiles/ vive en la raíz del workspace (padre de texis-core).
+    let profiles_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .join("profiles");
+    if !profiles_root.is_dir() {
+        eprintln!("omitido: no se encontró profiles/ en {profiles_root:?}");
+        return;
+    }
+
+    // Perfiles con title_page_template propio (los de mayor riesgo de plantilla).
+    let candidates = ["generic.thesis", "mx.ipn.esfm", "mx.unam.posgrado"];
+    let mut checked = 0;
+    for id in candidates {
+        let yaml = profiles_root.join(id).join("profile.yaml");
+        if !yaml.exists() {
+            continue;
+        }
+        let profile = ProfileLoader.load_from_file(&yaml).expect("cargar perfil");
+        let Some(tpl) = profile
+            .title_page_template
+            .as_ref()
+            .map(|t| t.template.clone())
+        else {
+            continue;
+        };
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let bib = root.join("content").join("bibliography");
+        std::fs::create_dir_all(&bib).unwrap();
+        std::fs::write(bib.join("references.bib"), fixtures::qa_delivery_bib()).unwrap();
+
+        let mut model = fixtures::qa_delivery_model();
+        apply_profile_to_model(&mut model, &profile);
+
+        let build = root.join("build");
+        let mut engine = DocumentEngine::new().expect("engine");
+        engine
+            .generate_with_profile(&model, &build, None, Some(&tpl), &EventBus::new())
+            .expect("generar con plantilla del perfil");
+
+        let compile = LatexmkBackend::new()
+            .compile(
+                &build,
+                &CompilationOptions {
+                    latex_engine: Some("xelatex".to_string()),
+                    bibliography_backend: Some("biber".to_string()),
+                    ..Default::default()
+                },
+            )
+            .expect("compilar con latexmk");
+        let log = if compile.log.trim().is_empty() {
+            std::fs::read_to_string(build.join("main.log")).unwrap_or_default()
+        } else {
+            compile.log.clone()
+        };
+        assert!(
+            compile.success && build.join("main.pdf").exists(),
+            "perfil '{id}': no compiló con éxito\nuser_errors={:?}\n{}",
+            compile.user_errors,
+            log_tail(&log)
+        );
+        assert!(
+            !log.contains("LaTeX Error"),
+            "perfil '{id}': 'LaTeX Error' en el log"
+        );
+        checked += 1;
+    }
+    assert!(checked > 0, "no se compiló ningún perfil bundled (¿rutas?)");
 }
