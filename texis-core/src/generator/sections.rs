@@ -874,6 +874,19 @@ fn render_title_page(model: &ProjectModel) -> String {
         "  {{\\LARGE\\bfseries {}\\par}}\n",
         latex_escape(&model.metadata.title)
     ));
+    if let Some(subtitle) = model
+        .metadata
+        .subtitle
+        .as_ref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        out.push_str("  \\vspace{0.35cm}\n");
+        out.push_str(&format!(
+            "  {{\\Large\\itshape {}\\par}}\n",
+            latex_escape(subtitle)
+        ));
+    }
     out.push_str("  \\vspace{0.85cm}\n");
     let kind_label = doc_kind_label(
         &model.metadata.document_kind,
