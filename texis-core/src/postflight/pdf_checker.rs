@@ -243,53 +243,16 @@ fn run_pdffonts(
     // -------------------- ---------- ---------- --- --- --- ---------
     // <data lines>
     for line in stdout.lines().skip(2) {
-        if line.trim().is_empty() {
+        let Some(font) = parse_pdffonts_line(line) else {
             continue;
-        }
-        // Split on whitespace — pdffonts columns are space-separated
-        // Columns: name, type, encoding, emb, sub, uni, object, ID
-        // Name can contain spaces but is always first; emb/sub/uni are "yes"/"no"
-        // We detect emb/sub/uni by looking from the right side of the line.
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 6 {
-            continue;
-        }
-
-        // emb, sub, uni are 3 fields before "object ID" (last 2 fields)
-        // So: parts[len-5] = emb, parts[len-4] = sub, parts[len-3] = uni
-        let n = parts.len();
-        if n < 5 {
-            continue;
-        }
-
-        let emb_str = parts[n - 5];
-        let sub_str = parts[n - 4];
-        let embedded = emb_str == "yes";
-        let subset = sub_str == "yes";
-
-        // Name is everything before the type field. Type is the 2nd-to-last group
-        // before encoding. This is complex; simpler heuristic: name ends before
-        // "Type 1" | "TrueType" | "CIDFont" etc.
-        // Use all parts except the last 6 (type enc emb sub uni obj id)
-        let name_parts: Vec<&str> = parts[..n.saturating_sub(6)].to_vec();
-        let name = if name_parts.is_empty() {
-            "[none]".to_string()
-        } else {
-            name_parts.join(" ")
         };
 
-        let font_type = if n >= 7 {
-            parts[n - 6].to_string()
-        } else {
-            "unknown".to_string()
-        };
-
-        if !embedded && name != "[none]" {
-            non_embedded.push(name.clone());
+        if !font.embedded && font.name != "[none]" {
+            non_embedded.push(font.name.clone());
             issues.push(PdfIssue {
                 severity: PdfIssueSeverity::Error,
                 code: "PF_FONT_NOT_EMBEDDED".to_string(),
-                message: format!("Fuente no incrustada: {name}"),
+                message: format!("Fuente no incrustada: {}", font.name),
                 suggestion: Some(
                     "Las instituciones de élite exigen fuentes incrustadas. \
                      Agrega \\usepackage{fontspec} con XeLaTeX o usa \\pdfmapfile{} con pdflatex."
@@ -298,16 +261,44 @@ fn run_pdffonts(
             });
         }
 
-        fonts.push(FontCheck {
-            name,
-            font_type,
-            embedded,
-            subset,
-        });
+        fonts.push(font);
     }
 
     let all_embedded = non_embedded.is_empty();
     (fonts, all_embedded, non_embedded)
+}
+
+/// Parsea una línea de datos de `pdffonts` a un [`FontCheck`].
+///
+/// Formato de columnas (las últimas 6, de derecha a izquierda, son fijas):
+/// `… encoding emb sub uni objNum objGen`. Antes va `<name> <type…>`, donde el
+/// tipo puede ser de varias palabras ("CID Type 0C", "Type 1C") y el nombre de
+/// fuente de pdffonts no contiene espacios. Devuelve `None` para líneas que no
+/// son filas de datos (separadores, vacías, malformadas).
+fn parse_pdffonts_line(line: &str) -> Option<FontCheck> {
+    if line.trim().is_empty() || line.trim_start().starts_with('-') {
+        return None;
+    }
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    let n = parts.len();
+    // Mínimo: name + emb sub uni objNum objGen = 6 (encoding/type pueden faltar).
+    if n < 6 {
+        return None;
+    }
+    let embedded = parts[n - 5] == "yes";
+    let subset = parts[n - 4] == "yes";
+    let name = parts[0].to_string();
+    let font_type = if n > 6 {
+        parts[1..n - 6].join(" ")
+    } else {
+        "unknown".to_string()
+    };
+    Some(FontCheck {
+        name,
+        font_type,
+        embedded,
+        subset,
+    })
 }
 
 fn run_text_quality_checks(pdf_path: &Path, issues: &mut Vec<PdfIssue>) {
@@ -528,6 +519,41 @@ fn extract_pdfa_flavour(s: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_pdffonts_tipo_multipalabra_cid() {
+        // Línea real de pdffonts (TeX Live 2026), tipo de 3 palabras "CID Type 0C".
+        let line = "DWNTRA+LMRomanCaps10-Regular-Identity-H CID Type 0C       Identity-H       yes yes yes      5  0";
+        let f = parse_pdffonts_line(line).expect("debe parsear");
+        assert_eq!(f.name, "DWNTRA+LMRomanCaps10-Regular-Identity-H");
+        assert_eq!(f.font_type, "CID Type 0C");
+        assert!(f.embedded);
+        assert!(f.subset);
+    }
+
+    #[test]
+    fn parse_pdffonts_tipo_simple_type1c() {
+        let line = "JLSYEZ+CMSY10                        Type 1C           Builtin          yes yes yes     42  0";
+        let f = parse_pdffonts_line(line).expect("debe parsear");
+        assert_eq!(f.name, "JLSYEZ+CMSY10");
+        assert_eq!(f.font_type, "Type 1C");
+        assert!(f.embedded);
+    }
+
+    #[test]
+    fn parse_pdffonts_fuente_no_embebida() {
+        // emb = no → debe reflejarse para disparar el gate PF_FONT_NOT_EMBEDDED.
+        let line = "Arial                                TrueType          WinAnsi          no  no  no       9  0";
+        let f = parse_pdffonts_line(line).expect("debe parsear");
+        assert_eq!(f.name, "Arial");
+        assert!(!f.embedded);
+    }
+
+    #[test]
+    fn parse_pdffonts_ignora_separadores() {
+        assert!(parse_pdffonts_line("---- ---- ---- --- --- --- ----").is_none());
+        assert!(parse_pdffonts_line("").is_none());
+    }
 
     #[test]
     fn text_quality_detecta_numeracion_y_portada_sospechosas() {
