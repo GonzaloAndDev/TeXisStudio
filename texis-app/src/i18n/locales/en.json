@@ -1217,7 +1217,13 @@
     "restore_confirm_body": "The current files will be overwritten with the state from {{when}}. This cannot be undone.",
     "statusbar_snapshots": "{{count}} snapshots",
     "statusbar_healthy": "Protected",
-    "statusbar_attention": "Needs attention"
+    "statusbar_attention": "Needs attention",
+    "banner_body": "This project may need recovery:",
+    "banner_incomplete": "{{count}} interrupted operation(s)",
+    "banner_temps": "{{count}} leftover file(s)",
+    "banner_integrity": "{{count}} integrity issue(s)",
+    "banner_dismiss": "Dismiss",
+    "banner_open": "Open Recovery Center"
   },
   "quality": {
     "title": "Delivery quality gate",

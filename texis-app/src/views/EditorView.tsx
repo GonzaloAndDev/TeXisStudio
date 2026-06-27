@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useConfirm } from "../components/ui/useConfirm";
 import { useToast } from "../components/ui/ToastProvider";
 import { ExternalConflictBanner } from "../components/ExternalConflictBanner";
+import { RecoveryBanner } from "../components/RecoveryBanner";
 import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrome";
 import { EditorMetaPanel } from "../components/EditorMetaPanel";
 import { SectionGuidancePanel } from "../components/SectionGuidancePanel";
@@ -1002,6 +1003,7 @@ export default function EditorView() {
       />
       {helpOpen && <HelpCenter onClose={closeHelp} initialSection={helpSection} />}
       <ExternalConflictBanner projectPath={activeProjectPath} />
+      <RecoveryBanner projectPath={activeProjectPath} />
 
       <div className="editor-shell">
       <div className={`editor-grid${leftCollapsed ? " editor-grid-left-collapsed" : ""}${metaCollapsed ? " editor-grid-meta-collapsed" : ""}`}>

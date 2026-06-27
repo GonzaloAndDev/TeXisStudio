@@ -1217,7 +1217,13 @@
     "restore_confirm_body": "Los archivos actuales se sobrescribirán con el estado del {{when}}. Esto no se puede deshacer.",
     "statusbar_snapshots": "{{count}} snapshots",
     "statusbar_healthy": "Protegido",
-    "statusbar_attention": "Requiere atención"
+    "statusbar_attention": "Requiere atención",
+    "banner_body": "Este proyecto podría necesitar recuperación:",
+    "banner_incomplete": "{{count}} operación(es) interrumpida(s)",
+    "banner_temps": "{{count}} archivo(s) sobrante(s)",
+    "banner_integrity": "{{count}} problema(s) de integridad",
+    "banner_dismiss": "Descartar",
+    "banner_open": "Abrir Centro de recuperación"
   },
   "quality": {
     "title": "Compuerta de calidad de entrega",
