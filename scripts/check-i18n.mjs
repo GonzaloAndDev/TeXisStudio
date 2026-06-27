@@ -183,6 +183,81 @@ if (failed.length) {
   }
 }
 
+const criticalSections = ["recovery", "quality"];
+const strictBundledLocales = ["de", "fr", "ja", "zh", "pt-BR"];
+const unchangedAllow = new Set([
+  "Editor",
+  "PDF",
+  "final",
+  "Final",
+  "Snapshots",
+]);
+
+function valueAtPath(obj, dotted) {
+  return dotted.split(".").reduce((acc, key) => (acc && typeof acc === "object" ? acc[key] : undefined), obj);
+}
+
+function criticalPaths(canonical) {
+  return criticalSections.flatMap((section) =>
+    flatten(canonical[section] ?? {}).map((key) => `${section}.${key}`),
+  );
+}
+
+function criticalUntranslated(localeId, data, reference) {
+  return criticalPaths(reference).filter((key) => {
+    const value = valueAtPath(data, key);
+    const refValue = valueAtPath(reference, key);
+    return typeof value === "string"
+      && value === refValue
+      && !unchangedAllow.has(value)
+      && !/\{\{[^}]+\}\}/.test(value);
+  }).map((key) => `${localeId}:${key}`);
+}
+
+const bundledCriticalErrors = [];
+const esData = readJson(join(bundledDir, "es.json"));
+for (const localeId of strictBundledLocales) {
+  const localePath = join(bundledDir, `${localeId}.json`);
+  if (!existsSync(localePath)) continue;
+  const data = readJson(localePath);
+  bundledCriticalErrors.push(...criticalUntranslated(localeId, data, canonicalData, "en"));
+  if (localeId === "pt-BR") {
+    bundledCriticalErrors.push(...criticalUntranslated(localeId, data, esData, "es"));
+  }
+}
+
+if (bundledCriticalErrors.length) {
+  console.error("\nCritical i18n strings still look untranslated:");
+  for (const item of bundledCriticalErrors.slice(0, 80)) console.error(`  ${item}`);
+}
+
+const latexRequiredKeys = [
+  "engine",
+  "font",
+  "polyglossia_name",
+  "chapter_name",
+  "bibliography_name",
+  "figure_name",
+  "table_name",
+  "abstract_name",
+  "contents_name",
+];
+const latexPackErrors = [];
+const latexPacksDir = join(languagesRepo, "packs");
+if (existsSync(latexPacksDir)) {
+  for (const id of readdirSync(latexPacksDir).sort()) {
+    const latexPath = join(latexPacksDir, id, "latex.json");
+    if (!existsSync(latexPath)) continue;
+    const data = readJson(latexPath);
+    const missing = latexRequiredKeys.filter((key) => !(key in data));
+    if (missing.length) latexPackErrors.push(`${id}: missing ${missing.join(", ")}`);
+  }
+}
+if (latexPackErrors.length) {
+  console.error("\nLanguage pack latex.json missing required keys:");
+  for (const item of latexPackErrors) console.error(`  ${item}`);
+}
+
 if (hardcoded.length) {
   console.error("\nHardcoded visible UI text:");
   for (const item of hardcoded) console.error(`  ${item}`);
@@ -198,5 +273,12 @@ const unchangedByGroup = checks.reduce((totals, check) => {
 }, {});
 console.log(`Unchanged strings (review only): ${Object.entries(unchangedByGroup).map(([group, count]) => `${group}=${count}`).join(", ")}`);
 
-if (failed.length || hardcoded.length || missingStaticKeys.length || idErrors.length) process.exit(1);
+if (
+  failed.length
+  || bundledCriticalErrors.length
+  || latexPackErrors.length
+  || hardcoded.length
+  || missingStaticKeys.length
+  || idErrors.length
+) process.exit(1);
 console.log(`i18n OK: ${checks.length} locale files; bundled/packs match ${canonicalKeys.length} keys.`);
