@@ -516,6 +516,17 @@ export interface ProfileVerification {
   ci_evidence?: string;
 }
 
+export type ProfileCertificationLevel = "certified" | "evidence" | "partial" | "uncertified";
+
+export interface ProfileCertificationSummary {
+  level: ProfileCertificationLevel;
+  score: number;
+  source_count: number;
+  has_review_date: boolean;
+  has_ci_evidence: boolean;
+  missing: string[];
+}
+
 export interface PdfaRequirement {
   required: boolean;
   level?: string;
@@ -554,6 +565,7 @@ export interface ProfileInfo {
   latex_engine?: string;
   status: ProfileStatus;
   verification?: ProfileVerification;
+  certification?: ProfileCertificationSummary;
   page_layout?: ProfilePageLayout;
   max_words?: number;
   max_abstract_words?: number;

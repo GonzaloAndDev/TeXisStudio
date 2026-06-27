@@ -3387,5 +3387,25 @@
     "title": "Live-Vorschau (ungefähr)",
     "empty": "Fügen Sie Daten oder eine Funktion hinzu, um eine Vorschau des Diagramms anzuzeigen.",
     "unsupported": "Live-Vorschau nicht verfügbar für: {{types}}. Kompilieren Sie, um das genaue Ergebnis zu sehen."
+  },
+  "profile_certification": {
+    "certified": "Zertifiziert {{score}}",
+    "evidence": "Nachweis {{score}}",
+    "partial": "Teilweise {{score}}",
+    "uncertified": "Nicht zertifiziert",
+    "certified_title": "Zertifiziertes Profil: offizielle Quellen, Datum, CI-Nachweis und geprüfte Kompilierung.",
+    "evidence_title": "Das Profil hat offizielle Nachweise und ein Prüfdatum, aber keine vollständige CI-Zertifizierung.",
+    "partial_title": "Das Profil hat unvollständige Zertifizierungsnachweise.",
+    "uncertified_title": "Das Profil hat noch keine belastbaren Zertifizierungsnachweise.",
+    "panel_title": "Zertifizierungsnachweise",
+    "sources": "{{count}} offizielle Quelle(n)",
+    "review_date_ok": "Prüfdatum vorhanden",
+    "review_date_missing": "Prüfdatum fehlt",
+    "ci_ok": "CI-Nachweis vorhanden",
+    "ci_missing": "CI-Nachweis fehlt",
+    "missing": "Fehlt",
+    "missing_official_sources": "offizielle Quellen",
+    "missing_review_date": "Prüfdatum",
+    "missing_ci_evidence": "CI-Nachweis"
   }
 }

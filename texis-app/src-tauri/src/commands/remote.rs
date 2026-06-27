@@ -6,7 +6,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::time::Duration;
 use tauri::Manager;
-use texis_core::profile::ProfileLoader;
+use texis_core::profile::{ProfileLoader, ProfileStatus};
 
 /// Tamaño máximo del ZIP descargado: 10 MB.
 const MAX_ZIP_BYTES: usize = 10 * 1024 * 1024;
@@ -124,12 +124,87 @@ fn profile_to_json(p: &texis_core::profile::Profile) -> Value {
             })
         })
         .collect();
+    let status_str = match p.status {
+        ProfileStatus::Experimental => "experimental",
+        ProfileStatus::Draft => "draft",
+        ProfileStatus::Reviewed => "reviewed",
+        ProfileStatus::Verified => "verified",
+        ProfileStatus::Stale => "stale",
+        ProfileStatus::Deprecated => "deprecated",
+    };
+    let verification = p.verification.as_ref().map(|v| {
+        serde_json::json!({
+            "verified_at": v.verified_at,
+            "verified_by": v.verified_by,
+            "reviewed_at": v.reviewed_at,
+            "reviewed_by": v.reviewed_by,
+            "source_urls": v.source_urls,
+            "review_interval_days": v.review_interval_days,
+            "ci_evidence": v.ci_evidence,
+        })
+    });
     serde_json::json!({
         "id": p.id, "name": p.name, "description": p.description,
         "meta": meta, "tags": p.tags, "sections_count": p.sections.len(),
         "sections": sections, "author": p.author, "version": p.version,
         "license": p.license, "document_class": p.document_class.name,
         "bibliography_style": p.bibliography_style, "latex_engine": p.latex_engine,
+        "status": status_str,
+        "verification": verification,
+        "certification": profile_certification_summary(p),
+    })
+}
+
+fn profile_certification_summary(p: &texis_core::profile::Profile) -> Value {
+    let verification = p.verification.as_ref();
+    let source_count = verification.map(|v| v.source_urls.len()).unwrap_or(0);
+    let has_review_date = verification
+        .and_then(|v| v.reviewed_at.as_ref().or(v.verified_at.as_ref()))
+        .is_some();
+    let has_ci = verification
+        .and_then(|v| v.ci_evidence.as_deref())
+        .map(|ci| ci.starts_with("https://"))
+        .unwrap_or(false);
+    let has_verified_date = verification.and_then(|v| v.verified_at.as_ref()).is_some();
+
+    let mut missing = Vec::new();
+    if source_count == 0 {
+        missing.push("official_sources");
+    }
+    if !has_review_date {
+        missing.push("review_date");
+    }
+    if p.status == ProfileStatus::Verified && !has_ci {
+        missing.push("ci_evidence");
+    }
+
+    let score = match p.status {
+        ProfileStatus::Verified if has_ci && has_verified_date && source_count > 0 => 100,
+        ProfileStatus::Verified => 82,
+        ProfileStatus::Reviewed if source_count > 0 && has_review_date => 78,
+        ProfileStatus::Reviewed => 58,
+        ProfileStatus::Draft => 35,
+        ProfileStatus::Experimental => 25,
+        ProfileStatus::Stale => 20,
+        ProfileStatus::Deprecated => 0,
+    };
+    let level = if score >= 95 {
+        "certified"
+    } else if score >= 75 {
+        "evidence"
+    } else if score >= 35 {
+        "partial"
+    } else {
+        "uncertified"
+    };
+
+    serde_json::json!({
+        "level": level,
+        "score": score,
+        "source_count": source_count,
+        "has_review_date": has_review_date,
+        "has_ci_evidence": has_ci,
+        "missing": missing,
     })
 }
 
@@ -240,11 +315,7 @@ pub async fn fetch_remote_profile(
         p.parent()
             .map(|d| {
                 let s = d.to_string_lossy().replace('\\', "/");
-                if s.is_empty() {
-                    s
-                } else {
-                    format!("{}/", s)
-                }
+                if s.is_empty() { s } else { format!("{}/", s) }
             })
             .unwrap_or_default()
     };

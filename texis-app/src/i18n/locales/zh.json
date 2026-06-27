@@ -3387,5 +3387,25 @@
     "title": "实时预览（大约）",
     "empty": "添加数据或函数来预览绘图。",
     "unsupported": "实时预览不适用于：{{types}}。编译看看具体的结果。"
+  },
+  "profile_certification": {
+    "certified": "已认证 {{score}}",
+    "evidence": "有证据 {{score}}",
+    "partial": "部分 {{score}}",
+    "uncertified": "未认证",
+    "certified_title": "已认证配置文件：包含官方来源、日期、CI 证据和已验证编译。",
+    "evidence_title": "配置文件有官方证据和审核日期，但没有完整 CI 认证。",
+    "partial_title": "配置文件的认证证据不完整。",
+    "uncertified_title": "配置文件尚无可辩护的认证证据。",
+    "panel_title": "认证证据",
+    "sources": "{{count}} 个官方来源",
+    "review_date_ok": "有审核日期",
+    "review_date_missing": "缺少审核日期",
+    "ci_ok": "有 CI 证据",
+    "ci_missing": "缺少 CI 证据",
+    "missing": "缺少",
+    "missing_official_sources": "官方来源",
+    "missing_review_date": "审核日期",
+    "missing_ci_evidence": "CI 证据"
   }
 }

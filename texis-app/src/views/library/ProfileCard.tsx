@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { IconBook, IconCheck } from "../../components/Icons";
 import type { ProfileInfo } from "../../types";
 import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
+import { ProfileCertificationBadge } from "../../components/ProfileCertificationBadge";
 
 // ── ProfileCard ───────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export function ProfileCard({ profile, selected, onClick }: {
         </div>
         <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           <ProfileStatusBadge status={profile.status} />
+          <ProfileCertificationBadge certification={profile.certification} />
           <span className={`chip ${selected ? "chip-accent" : "chip-ok"}`} style={{ fontSize: 10 }}>
             {selected ? <><IconCheck size={8} sw={2.5} /> {t("library.selected_chip")}</> : t("library.installed_chip")}
           </span>
@@ -59,4 +61,3 @@ export function ProfileCard({ profile, selected, onClick }: {
     </div>
   );
 }
-

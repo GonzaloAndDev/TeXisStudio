@@ -3387,5 +3387,25 @@
     "title": "ライブプレビュー (おおよそ)",
     "empty": "データまたは関数を追加してプロットをプレビューします。",
     "unsupported": "ライブ プレビューは {{types}} では利用できません。コンパイルして正確な結果を確認します。"
+  },
+  "profile_certification": {
+    "certified": "認証済み {{score}}",
+    "evidence": "証拠あり {{score}}",
+    "partial": "一部 {{score}}",
+    "uncertified": "未認証",
+    "certified_title": "認証済みプロファイル: 公式ソース、日付、CI証拠、検証済みコンパイルがあります。",
+    "evidence_title": "公式ソースとレビュー日がありますが、完全なCI認証ではありません。",
+    "partial_title": "認証証拠が不完全です。",
+    "uncertified_title": "まだ十分に説明できる認証証拠がありません。",
+    "panel_title": "認証証拠",
+    "sources": "公式ソース {{count}} 件",
+    "review_date_ok": "レビュー日あり",
+    "review_date_missing": "レビュー日なし",
+    "ci_ok": "CI証拠あり",
+    "ci_missing": "CI証拠なし",
+    "missing": "不足",
+    "missing_official_sources": "公式ソース",
+    "missing_review_date": "レビュー日",
+    "missing_ci_evidence": "CI証拠"
   }
 }

@@ -143,6 +143,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
       author: "Gonzalo Andrade Estrella",
       version: "0.1.0",
       status: "draft" as ProfileStatus,
+      certification: { level: "partial", score: 35, source_count: 0, has_review_date: false, has_ci_evidence: false, missing: ["official_sources", "review_date"] },
     },
     {
       id: "generic.tesina",
@@ -155,6 +156,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
       author: "Gonzalo Andrade Estrella",
       version: "0.1.0",
       status: "draft" as ProfileStatus,
+      certification: { level: "partial", score: 35, source_count: 0, has_review_date: false, has_ci_evidence: false, missing: ["official_sources", "review_date"] },
     },
   ] as ProfileInfo[],
   preview_bib_entry: "Smith, J. A., & Jones, M. B. (2024). Machine learning applications in academic writing. *Journal of Educational Technology*, *15*(3), 234–256. https://doi.org/10.1000/xyz123",

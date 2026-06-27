@@ -3387,5 +3387,25 @@
     "case_expr_placeholder": "expression",
     "case_cond_placeholder": "\\text{if } x > 0",
     "palette_no_target": "Click a field above to insert symbols there."
+  },
+  "profile_certification": {
+    "certified": "Certified {{score}}",
+    "evidence": "Evidence {{score}}",
+    "partial": "Partial {{score}}",
+    "uncertified": "Uncertified",
+    "certified_title": "Certified profile: official sources, date, CI evidence and verified compilation.",
+    "evidence_title": "Profile has official evidence and review date, but is not fully CI-certified.",
+    "partial_title": "Profile has incomplete certification evidence.",
+    "uncertified_title": "Profile has no defensible certification evidence yet.",
+    "panel_title": "Certification evidence",
+    "sources": "{{count}} official source(s)",
+    "review_date_ok": "review date present",
+    "review_date_missing": "review date missing",
+    "ci_ok": "CI evidence present",
+    "ci_missing": "CI evidence missing",
+    "missing": "Missing",
+    "missing_official_sources": "official sources",
+    "missing_review_date": "review date",
+    "missing_ci_evidence": "CI evidence"
   }
 }

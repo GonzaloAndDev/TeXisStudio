@@ -3387,5 +3387,25 @@
     "title": "Visualização ao vivo (aproximada)",
     "empty": "Adicione dados ou uma função para visualizar o gráfico.",
     "unsupported": "Visualização ao vivo não disponível para: {{types}}. Compile para ver o resultado exato."
+  },
+  "profile_certification": {
+    "certified": "Certificado {{score}}",
+    "evidence": "Evidência {{score}}",
+    "partial": "Parcial {{score}}",
+    "uncertified": "Não certificado",
+    "certified_title": "Perfil certificado: fontes oficiais, data, evidência CI e compilação verificada.",
+    "evidence_title": "O perfil tem fontes oficiais e data de revisão, mas não certificação CI completa.",
+    "partial_title": "O perfil tem evidência de certificação incompleta.",
+    "uncertified_title": "O perfil ainda não tem evidência de certificação defensável.",
+    "panel_title": "Evidência de certificação",
+    "sources": "{{count}} fonte(s) oficial(is)",
+    "review_date_ok": "data de revisão presente",
+    "review_date_missing": "falta data de revisão",
+    "ci_ok": "evidência CI presente",
+    "ci_missing": "falta evidência CI",
+    "missing": "Falta",
+    "missing_official_sources": "fontes oficiais",
+    "missing_review_date": "data de revisão",
+    "missing_ci_evidence": "evidência CI"
   }
 }

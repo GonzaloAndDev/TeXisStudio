@@ -3387,5 +3387,25 @@
     "title": "Aperçu en direct (approximatif)",
     "empty": "Ajoutez des données ou une fonction pour prévisualiser le tracé.",
     "unsupported": "L'aperçu en direct n'est pas disponible pour : {{types}}. Compilez pour voir le résultat exact."
+  },
+  "profile_certification": {
+    "certified": "Certifié {{score}}",
+    "evidence": "Preuves {{score}}",
+    "partial": "Partiel {{score}}",
+    "uncertified": "Non certifié",
+    "certified_title": "Profil certifié : sources officielles, date, preuve CI et compilation vérifiée.",
+    "evidence_title": "Le profil a des sources officielles et une date de révision, mais pas de certification CI complète.",
+    "partial_title": "Le profil a des preuves de certification incomplètes.",
+    "uncertified_title": "Le profil n’a pas encore de preuve de certification défendable.",
+    "panel_title": "Preuves de certification",
+    "sources": "{{count}} source(s) officielle(s)",
+    "review_date_ok": "date de révision présente",
+    "review_date_missing": "date de révision manquante",
+    "ci_ok": "preuve CI présente",
+    "ci_missing": "preuve CI manquante",
+    "missing": "Manque",
+    "missing_official_sources": "sources officielles",
+    "missing_review_date": "date de révision",
+    "missing_ci_evidence": "preuve CI"
   }
 }

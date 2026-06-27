@@ -4,6 +4,7 @@ import { IconDownload, IconEdit, IconPlus, IconTrash, IconX } from "../../compon
 import type { ProfileInfo, ProfileSectionInfo } from "../../types";
 import { PLACEMENT_COLOR } from "./constants";
 import { ProfileStatusBadge } from "../../components/ProfileStatusBadge";
+import { ProfileCertificationBadge } from "../../components/ProfileCertificationBadge";
 import { useSettingsStore } from "../../stores/settings";
 
 const DEGREE_TAGS = new Set(["licenciatura", "maestria", "doctorado", "especialidad", "posdoctorado"]);
@@ -56,6 +57,7 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 500, color: "var(--fg-strong)", flex: 1 }}>{profile.name}</div>
             <ProfileStatusBadge status={profile.status} />
+            <ProfileCertificationBadge certification={profile.certification} />
           </div>
           {userMode === "advanced" && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", marginBottom: 6 }}>{profile.id} · v{profile.version ?? "0.1.0"}</div>
@@ -114,6 +116,26 @@ export function ProfileDetailPanel({ profile, onClose, onEdit, onUse, onExport, 
                 <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ color: "var(--build-ok)", fontWeight: 700, fontSize: 10 }}>✓</span>
                   <span>{t("library.ci_evidence_available")}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {profile.certification && (
+            <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: "var(--r-md)", background: "var(--bg-app)", border: "1px solid var(--border-subtle)", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                <strong style={{ color: "var(--fg-strong)" }}>{t("profile_certification.panel_title")}</strong>
+                <span style={{ fontFamily: "var(--font-mono)" }}>{profile.certification.score}/100</span>
+              </div>
+              <div>
+                {t("profile_certification.sources", { count: profile.certification.source_count })}
+                {" · "}
+                {profile.certification.has_review_date ? t("profile_certification.review_date_ok") : t("profile_certification.review_date_missing")}
+                {" · "}
+                {profile.certification.has_ci_evidence ? t("profile_certification.ci_ok") : t("profile_certification.ci_missing")}
+              </div>
+              {profile.certification.missing.length > 0 && (
+                <div style={{ color: "var(--build-warn)", marginTop: 4 }}>
+                  {t("profile_certification.missing")}: {profile.certification.missing.map((m) => t(`profile_certification.missing_${m}`, { defaultValue: m })).join(", ")}
                 </div>
               )}
             </div>
