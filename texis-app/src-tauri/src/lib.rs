@@ -60,6 +60,7 @@ pub fn run() {
             commands::project::update_typography,
             commands::project::update_preamble_config,
             commands::project::export_delivery,
+            commands::project::delivery_quality_report,
             commands::export_platform::export_for_target,
             commands::import_project::import_from_source,
             commands::project::check_pdf_postflight,

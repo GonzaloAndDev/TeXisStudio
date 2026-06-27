@@ -191,6 +191,10 @@ Available in basic and advanced user modes. Risk-classified actions (5 levels): 
 
 Section-by-section progress view with editorial status, word count, and author notes. Readiness overview tracks setup checks (advisor, abstract, required sections) and delivery checks. Review report export for advisor review.
 
+#### Delivery quality gate
+
+A single source of truth — `DeliveryQualityReport` in `texis-core::quality` — combines every quality signal (model/profile validation, PDF postflight, LaTeX log diagnosis and profile trust) into one classified report with **per-mode gates**: `draft` (informational, never blocks), `review` (blocks content/compilation errors) and `final` (blocks any error, including postflight). `export_delivery` no longer reimplements its own gate — it asks the report, so the **Delivery quality** panel in the Compile view shows exactly what the export will require, with each blocking item explained and a suggested fix. Exposed to the UI via the `delivery_quality_report` command.
+
 #### Recovery Center and transactional saves
 
 Every save now goes through the `texis-platform` transactional pipeline: it acquires an **atomic** project lock (`O_EXCL`, so two windows can never both think they hold it), journals the operation, snapshots the previous state, writes atomically, regenerates `build/` **inside the same transaction and lock**, updates a SHA-256 integrity manifest, and **rolls back to the previous state if any write or regeneration fails** — so an interrupted save can never leave the project broken or the YAML out of sync with `build/`. Restoring a snapshot is itself transactional and reversible: it locks the project, snapshots the *current* state first (so the most recent work is never lost), restores, and recomputes integrity (so a restored project is not flagged as modified). The Recovery Center view (`/project/:id/recovery`, reachable from the editor toolbar) surfaces all of this: project health, the active lock holder, automatic snapshots with confirmed one-click restore, and an on-demand integrity check.
@@ -425,6 +429,10 @@ Backends: `latexmk`, Tectonic (sin instalación de TeX Live), `xelatex`, `pdflat
 #### Asistente de IA
 
 Modos básico y avanzado. Acciones clasificadas por riesgo (5 niveles): las ediciones de riesgo Medio o mayor requieren confirmación explícita del usuario. Contexto explícito para evitar cambios no intencionales.
+
+#### Compuerta única de calidad de entrega
+
+Una sola fuente de verdad —`DeliveryQualityReport` en `texis-core::quality`— combina todas las señales de calidad (validación del modelo/perfil, postflight del PDF, diagnóstico del log de LaTeX y confianza del perfil) en un reporte clasificado con **compuertas por modo**: `draft` (informativa, nunca bloquea), `review` (bloquea errores de contenido/compilación) y `final` (bloquea cualquier error, incluido el postflight). `export_delivery` ya no reimplementa su propio gate — consulta el reporte, de modo que el panel **Compuerta de calidad** en la vista de compilación muestra exactamente lo que la exportación va a exigir, con cada bloqueo explicado y su acción sugerida. Expuesto a la UI con el comando `delivery_quality_report`.
 
 #### Centro de recuperación y guardado transaccional
 

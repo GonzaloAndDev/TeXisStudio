@@ -807,53 +807,49 @@ pub fn export_delivery(
         check_critical_dependencies_for_export(&model, profile.as_ref())?;
     }
 
-    // ── Validación ───────────────────────────────────────────────
+    // ── Validación + postflight + compuerta única de calidad ─────
     let validation = Validator::new()
         .validate_with_profile(&model, &project_dir, profile.as_ref())
         .map_err(err)?;
 
-    let validation_errors: Vec<_> = validation
-        .issues
-        .iter()
-        .filter(|i| matches!(i.severity, texis_core::validator::IssueSeverity::Error))
-        .collect();
+    let postflight = PdfChecker::check(&pdf_path);
+    let log = std::fs::read_to_string(project_dir.join("build").join("main.log")).ok();
 
-    // ── Gate de modo review/final ─────────────────────────────────
-    if (mode == "review" || mode == "final") && !validation_errors.is_empty() {
-        let msgs: Vec<String> = validation_errors
+    // Fuente de verdad: el mismo DeliveryQualityReport que consume la UI. El gate
+    // de exportación ya no reimplementa su propia lógica — pregunta a la compuerta.
+    let quality = texis_core::quality::assess(texis_core::quality::QualityInputs {
+        validation: &validation,
+        postflight: if pdf_path.exists() { Some(&postflight) } else { None },
+        log: log.as_deref(),
+        profile: profile.as_ref(),
+    });
+
+    let gate = match mode {
+        "final" => &quality.final_gate,
+        "review" => &quality.review_gate,
+        _ => &quality.draft_gate,
+    };
+    if !gate.passed {
+        let msgs: Vec<String> = quality
+            .findings
             .iter()
-            .map(|i| i.message.clone())
+            .filter(|f| gate.blocking_codes.contains(&f.code))
+            .map(|f| match &f.suggestion {
+                Some(s) => format!("• {} → {}", f.message, s),
+                None => format!("• {}", f.message),
+            })
             .collect();
         return Err(format!(
-            "Exportación bloqueada — {} error(es) de validación:\n{}",
-            msgs.len(),
+            "Exportación «{}» bloqueada — {} problema(s) de calidad:\n{}",
+            mode,
+            gate.blocking_codes.len(),
             msgs.join("\n")
         ));
     }
-
-    // ── Postflight PDF ───────────────────────────────────────────
-    let postflight = PdfChecker::check(&pdf_path);
-
-    if mode == "final" {
-        let pf_errors: Vec<_> = postflight
-            .issues
-            .iter()
-            .filter(|i| matches!(i.severity, texis_core::postflight::PdfIssueSeverity::Error))
-            .collect();
-        if !pf_errors.is_empty() {
-            let msgs: Vec<String> = pf_errors.iter().map(|i| i.message.clone()).collect();
-            return Err(format!(
-                "Exportación final bloqueada — {} problema(s) en el PDF:\n{}",
-                msgs.len(),
-                msgs.join("\n")
-            ));
-        }
-        if !pdf_path.exists() {
-            return Err(
-                "Exportación final bloqueada — no existe PDF compilado. Compila primero."
-                    .to_string(),
-            );
-        }
+    if mode == "final" && !pdf_path.exists() {
+        return Err(
+            "Exportación final bloqueada — no existe PDF compilado. Compila primero.".to_string(),
+        );
     }
 
     // ── Delegar generación del ZIP al módulo compartido ──────────
@@ -882,6 +878,41 @@ pub fn export_delivery(
         "postflight_passed": result.postflight_passed,
         "all_fonts_embedded": result.all_fonts_embedded,
     }))
+}
+
+/// Compuerta única de calidad: devuelve el [`DeliveryQualityReport`] unificado
+/// (validación + postflight + log + confianza de perfil) como JSON. Es la misma
+/// fuente de verdad que usa `export_delivery` para bloquear, de modo que la UI
+/// muestra exactamente lo que la exportación va a exigir.
+#[tauri::command]
+pub fn delivery_quality_report(
+    app: tauri::AppHandle,
+    project_path: String,
+) -> Result<Value, String> {
+    let project_dir = PathBuf::from(&project_path);
+    let model = ProjectLoader
+        .load_from_file(&project_dir.join("tesis.project.yaml"))
+        .map_err(err)?;
+    let profile = load_profile_for_model(&app, &model);
+    let validation = Validator::new()
+        .validate_with_profile(&model, &project_dir, profile.as_ref())
+        .map_err(err)?;
+
+    let pdf_path = project_dir.join("build").join("main.pdf");
+    let postflight = if pdf_path.exists() {
+        Some(PdfChecker::check(&pdf_path))
+    } else {
+        None
+    };
+    let log = std::fs::read_to_string(project_dir.join("build").join("main.log")).ok();
+
+    let report = texis_core::quality::assess(texis_core::quality::QualityInputs {
+        validation: &validation,
+        postflight: postflight.as_ref(),
+        log: log.as_deref(),
+        profile: profile.as_ref(),
+    });
+    serde_json::to_value(&report).map_err(err)
 }
 
 /// Agrega recursivamente un directorio al ZIP, excluyendo archivos por nombre.

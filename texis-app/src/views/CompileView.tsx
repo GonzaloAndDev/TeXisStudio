@@ -21,6 +21,7 @@ type CompileState = "idle" | "compiling" | "success" | "error";
 import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, PostflightPanel, DependencyIssuesPanel, logColor, type Backend, type PendingAction } from "./compile/CompileWidgets";
 import { isCancellationError } from "../lib/compileErrors";
 import { ExportPlatformModal } from "../components/ExportPlatformModal";
+import { DeliveryQualityPanel } from "../components/DeliveryQualityPanel";
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -831,6 +832,10 @@ export default function CompileView() {
                       {postflightBusy ? t("compile.verifying") : t("compile.verify_pdf")}
                     </button>
                   </div>
+
+                  {/* Compuerta única de calidad — misma fuente de verdad que el gate de exportación */}
+                  <DeliveryQualityPanel projectPath={activeProjectPath} mode={exportMode} />
+
                   {exportError && (
                     <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "7px 10px", borderRadius: "var(--r-sm)" }}>
                       {exportError}

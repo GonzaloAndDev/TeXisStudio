@@ -18,6 +18,7 @@ pub mod plugin;
 pub mod postflight;
 pub mod profile;
 pub mod project;
+pub mod quality;
 pub mod reference;
 pub mod schema;
 pub mod security;
