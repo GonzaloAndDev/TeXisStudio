@@ -2789,7 +2789,13 @@
     "dim_profile_trust": "プロファイル",
     "profile_trust": "プロファイル: {{status}}",
     "profile_ok": "最終提出に適しています",
-    "profile_warn": "最終提出には推奨されません"
+    "profile_warn": "最終提出には推奨されません",
+    "score": "スコア: {{score}}/100",
+    "repair_actions": "推奨される修正",
+    "dim_visual_pdf": "PDF表示",
+    "history": "最近のチェック",
+    "history_ok": "合格",
+    "history_fail": "ブロック"
   },
   "readiness": {
     "panel_title": "プロジェクト進捗",

@@ -15,6 +15,7 @@ export type QualityDimension =
   | "bibliography"
   | "latex_log"
   | "postflight"
+  | "visual_pdf"
   | "profile_trust";
 
 export interface QualityFinding {
@@ -29,6 +30,7 @@ export interface QualityFinding {
 export interface GateStatus {
   passed: boolean;
   blocking_codes: string[];
+  score: number;
 }
 
 export interface ProfileTrustSummary {
@@ -37,11 +39,20 @@ export interface ProfileTrustSummary {
   note?: string;
 }
 
+export interface RepairAction {
+  code: string;
+  title: string;
+  action: string;
+  target?: string;
+}
+
 export interface DeliveryQualityReport {
   findings: QualityFinding[];
   error_count: number;
   warning_count: number;
   info_count: number;
+  score: number;
+  repair_actions: RepairAction[];
   draft_gate: GateStatus;
   review_gate: GateStatus;
   final_gate: GateStatus;

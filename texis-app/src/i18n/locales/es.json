@@ -1246,7 +1246,13 @@
     "dim_profile_trust": "Perfil",
     "profile_trust": "Perfil: {{status}}",
     "profile_ok": "apto para entrega final",
-    "profile_warn": "no recomendado para entrega final"
+    "profile_warn": "no recomendado para entrega final",
+    "score": "Puntaje: {{score}}/100",
+    "repair_actions": "Reparaciones recomendadas",
+    "dim_visual_pdf": "PDF visual",
+    "history": "Revisiones recientes",
+    "history_ok": "OK",
+    "history_fail": "bloqueada"
   },
   "readiness": {
     "panel_title": "Avance del proyecto",

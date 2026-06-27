@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
@@ -7,7 +7,7 @@ import { TxAppbar, TxBreadcrumb, TxLogo, TxStatusbar } from "../components/Chrom
 import { ReadinessOverview } from "../components/ReadinessOverview";
 import { IconBuild, IconChevronL, IconCheckCircle, IconErr, IconFile, IconMore, IconPlay, IconRefresh, IconX } from "../components/Icons";
 import { api } from "../lib/tauri";
-import { deriveProjectReadiness } from "../lib/projectReadiness";
+import { deriveProjectReadiness, mergeReadinessWithQualityReport } from "../lib/projectReadiness";
 import { useProjectStore } from "../stores/project";
 import { useSettingsStore } from "../stores/settings";
 import { getLatexConfig } from "../services/languagePacks";
@@ -22,6 +22,8 @@ import { ErrorCard, BackendChip, AiErrorHelper, DeliveryCheckModal, PdfViewer, P
 import { isCancellationError } from "../lib/compileErrors";
 import { ExportPlatformModal } from "../components/ExportPlatformModal";
 import { DeliveryQualityPanel } from "../components/DeliveryQualityPanel";
+import type { DeliveryQualityReport } from "../services/deliveryQuality";
+import { recordCompileHistory } from "../services/compileHistory";
 
 // ── Constantes ────────────────────────────────────────────────────
 
@@ -56,6 +58,7 @@ export default function CompileView() {
   const [showTechnicalLog, setShowTechnicalLog] = useState(userMode === "advanced");
   const [readinessAction, setReadinessAction] = useState<PendingAction | null>(null);
   const [showExportPlatform, setShowExportPlatform] = useState(false);
+  const [qualityReport, setQualityReport] = useState<DeliveryQualityReport | null>(null);
 
   const [checkReport, setCheckReport]       = useState<ValidationReport | null>(null);
   const [checkAction, setCheckAction]       = useState<PendingAction | null>(null);
@@ -81,8 +84,23 @@ export default function CompileView() {
   }, []);
 
   const projectName = activeProject?.metadata.title ?? t("progress.project_fallback");
-  const readiness = activeProject ? deriveProjectReadiness(activeProject) : null;
+  const baseReadiness = activeProject ? deriveProjectReadiness(activeProject) : null;
+  const readiness = baseReadiness ? mergeReadinessWithQualityReport(baseReadiness, qualityReport) : null;
   const projectRouteId = encodeURIComponent(activeProjectPath ?? encodedPath ?? "");
+
+  const handleQualityReport = useCallback((report: DeliveryQualityReport) => {
+    setQualityReport(report);
+    if (!activeProjectPath) return;
+    recordCompileHistory({
+      projectPath: activeProjectPath,
+      projectTitle: activeProject?.metadata.title,
+      profileId: activeProject?.profile_id,
+      success: report.final_gate.passed,
+      qualityScore: report.score,
+      finalGatePassed: report.final_gate.passed,
+      errorCodes: report.final_gate.blocking_codes,
+    });
+  }, [activeProject?.metadata.title, activeProject?.profile_id, activeProjectPath]);
 
   // Apply the user's default; the compile screen can still override it locally.
   useEffect(() => {
@@ -212,6 +230,16 @@ export default function CompileView() {
       const res = await api.compileProject(activeProjectPath, backend, draft, langConfig);
       if (!mountedRef.current) return;
       setResult(res);
+      recordCompileHistory({
+        projectPath: activeProjectPath,
+        projectTitle: activeProject?.metadata.title,
+        profileId: activeProject?.profile_id,
+        success: res.success,
+        durationMs: res.duration_ms ?? Math.round(performance.now() - startedAt),
+        backend: res.backend_used,
+        pdfPath: res.pdf_path,
+        errorCodes: res.user_errors.map((e) => e.message.slice(0, 80)),
+      });
       useWorkspaceStore.getState().setLastBuildSummary({
         success: res.success,
         pdf_path: res.pdf_path,
@@ -238,6 +266,14 @@ export default function CompileView() {
         useWorkspaceStore.getState().setLastBuildSummary({
           success: false,
           duration_ms: Math.round(performance.now() - startedAt),
+        });
+        recordCompileHistory({
+          projectPath: activeProjectPath,
+          projectTitle: activeProject?.metadata.title,
+          profileId: activeProject?.profile_id,
+          success: false,
+          durationMs: Math.round(performance.now() - startedAt),
+          errorCodes: [errMsg.slice(0, 80)],
         });
         setResult({
           success: false,
@@ -834,7 +870,11 @@ export default function CompileView() {
                   </div>
 
                   {/* Compuerta única de calidad — misma fuente de verdad que el gate de exportación */}
-                  <DeliveryQualityPanel projectPath={activeProjectPath} mode={exportMode} />
+                  <DeliveryQualityPanel
+                    projectPath={activeProjectPath}
+                    mode={exportMode}
+                    onReport={handleQualityReport}
+                  />
 
                   {exportError && (
                     <div style={{ marginTop: 8, fontSize: "var(--fs-xs)", color: "var(--build-err)", background: "var(--build-err-tint)", padding: "7px 10px", borderRadius: "var(--r-sm)" }}>

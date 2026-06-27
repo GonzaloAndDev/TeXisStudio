@@ -1246,7 +1246,13 @@
     "dim_profile_trust": "Profile",
     "profile_trust": "Profile: {{status}}",
     "profile_ok": "suitable for final delivery",
-    "profile_warn": "not recommended for final delivery"
+    "profile_warn": "not recommended for final delivery",
+    "score": "Score: {{score}}/100",
+    "repair_actions": "Recommended repairs",
+    "dim_visual_pdf": "Visual PDF",
+    "history": "Recent checks",
+    "history_ok": "OK",
+    "history_fail": "blocked"
   },
   "readiness": {
     "panel_title": "Project progress",

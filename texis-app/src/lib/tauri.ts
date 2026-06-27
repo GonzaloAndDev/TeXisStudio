@@ -67,9 +67,13 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     error_count: 0,
     warning_count: 1,
     info_count: 1,
-    draft_gate: { passed: true, blocking_codes: [] },
-    review_gate: { passed: true, blocking_codes: [] },
-    final_gate: { passed: true, blocking_codes: [] },
+    score: 87,
+    repair_actions: [
+      { code: "W_UNUSED_REFERENCE", title: "Repara bibliografía y citas", action: "Cítala en el texto o elimínala del .bib.", target: "references.bib" },
+    ],
+    draft_gate: { passed: true, blocking_codes: [], score: 87 },
+    review_gate: { passed: true, blocking_codes: [], score: 87 },
+    final_gate: { passed: true, blocking_codes: [], score: 87 },
     profile_trust: { status: "reviewed", recommended_for_final: true, note: undefined },
   },
   recovery_scan: {

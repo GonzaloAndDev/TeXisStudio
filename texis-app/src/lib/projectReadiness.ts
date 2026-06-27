@@ -1,4 +1,5 @@
 import type { ContentBlock, ProjectModel } from "../types";
+import type { DeliveryQualityReport } from "../services/deliveryQuality";
 
 export interface ProjectReadiness {
   setupCompletion: number;
@@ -175,5 +176,33 @@ export function deriveProjectReadiness(project: ProjectModel): ProjectReadiness 
     deliveryPending: deliveryChecks.filter((item) => !item.ok).map((item) => item.label),
     qualityPending: qualityChecks.filter((item) => !item.ok).map((item) => item.label),
     deliveryBlocked: deliveryReadiness < 100 || qualityCompletion < 100,
+  };
+}
+
+export function mergeReadinessWithQualityReport(
+  readiness: ProjectReadiness,
+  report: DeliveryQualityReport | null,
+): ProjectReadiness {
+  if (!report) return readiness;
+
+  const qualityPending = [
+    ...readiness.qualityPending,
+    ...report.repair_actions.slice(0, 6).map((action) => action.title),
+  ];
+  const qualityCompletion = Math.min(readiness.qualityCompletion, report.score);
+  const deliveryReadiness = report.final_gate.passed
+    ? Math.min(readiness.deliveryReadiness, report.final_gate.score)
+    : Math.min(readiness.deliveryReadiness, report.final_gate.score);
+  const overallCompletion = Math.round(
+    (readiness.setupCompletion + readiness.writingCompletion + deliveryReadiness + qualityCompletion) / 4,
+  );
+
+  return {
+    ...readiness,
+    deliveryReadiness,
+    qualityCompletion,
+    overallCompletion,
+    qualityPending: Array.from(new Set(qualityPending)),
+    deliveryBlocked: readiness.deliveryBlocked || !report.final_gate.passed,
   };
 }

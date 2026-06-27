@@ -2789,7 +2789,13 @@
     "dim_profile_trust": "Profil",
     "profile_trust": "Profil: {{status}}",
     "profile_ok": "für die finale Abgabe geeignet",
-    "profile_warn": "für die finale Abgabe nicht empfohlen"
+    "profile_warn": "für die finale Abgabe nicht empfohlen",
+    "score": "Bewertung: {{score}}/100",
+    "repair_actions": "Empfohlene Korrekturen",
+    "dim_visual_pdf": "Visuelles PDF",
+    "history": "Letzte Prüfungen",
+    "history_ok": "bestanden",
+    "history_fail": "blockiert"
   },
   "readiness": {
     "panel_title": "Projektfortschritt",

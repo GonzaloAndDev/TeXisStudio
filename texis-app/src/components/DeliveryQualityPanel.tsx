@@ -13,6 +13,7 @@ import {
   type QualityFinding,
   type QualitySeverity,
 } from "../services/deliveryQuality";
+import { loadCompileHistory } from "../services/compileHistory";
 
 const SEV_COLOR: Record<QualitySeverity, string> = {
   error: "var(--build-err)",
@@ -32,9 +33,11 @@ function Dot({ ok }: { ok: boolean }) {
 export function DeliveryQualityPanel({
   projectPath,
   mode,
+  onReport,
 }: {
   projectPath: string | null;
   mode: DeliveryMode;
+  onReport?: (report: DeliveryQualityReport) => void;
 }) {
   const { t } = useTranslation();
   const [report, setReport] = useState<DeliveryQualityReport | null>(null);
@@ -45,13 +48,15 @@ export function DeliveryQualityPanel({
     setLoading(true);
     setError(null);
     try {
-      setReport(await deliveryQualityReport(path));
+      const next = await deliveryQualityReport(path);
+      setReport(next);
+      onReport?.(next);
     } catch (e) {
       setError(String(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onReport]);
 
   useEffect(() => {
     if (projectPath) void refresh(projectPath);
@@ -60,6 +65,7 @@ export function DeliveryQualityPanel({
   if (!projectPath) return null;
 
   const gate = report ? gateForMode(report, mode) : null;
+  const history = projectPath ? loadCompileHistory(projectPath, 4) : [];
 
   return (
     <div style={{
@@ -101,11 +107,33 @@ export function DeliveryQualityPanel({
           </div>
 
           {/* Conteos */}
-          <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: "var(--fs-xs)" }}>
+          <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: "var(--fs-xs)", flexWrap: "wrap" }}>
+            <span style={{ color: "var(--fg-strong)", fontWeight: 700 }}>
+              {t("quality.score", { score: report.score })}
+            </span>
             <span style={{ color: SEV_COLOR.error }}>● {t("quality.errors", { count: report.error_count })}</span>
             <span style={{ color: SEV_COLOR.warning }}>● {t("quality.warnings", { count: report.warning_count })}</span>
             <span style={{ color: SEV_COLOR.info }}>● {t("quality.infos", { count: report.info_count })}</span>
           </div>
+
+          {report.repair_actions.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--fg-strong)", marginBottom: 6 }}>
+                {t("quality.repair_actions")}
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 5 }}>
+                {report.repair_actions.slice(0, 5).map((action, i) => (
+                  <li key={`${action.code}-${i}`} style={{ fontSize: "var(--fs-xs)", color: "var(--fg-default)", background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)", borderRadius: "var(--r-sm)", padding: "7px 9px" }}>
+                    <div style={{ fontWeight: 650, color: "var(--fg-strong)" }}>{action.title}</div>
+                    <div style={{ color: "var(--fg-muted)", marginTop: 2 }}>{action.action}</div>
+                    {action.target && (
+                      <div style={{ color: "var(--fg-faint)", marginTop: 2, fontFamily: "var(--font-mono)" }}>{action.target}</div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Hallazgos */}
           {report.findings.length === 0 ? (
@@ -141,6 +169,21 @@ export function DeliveryQualityPanel({
               ? ` — ${t("quality.profile_ok")}`
               : ` — ${t("quality.profile_warn")}`}
           </div>
+
+          {history.length > 0 && (
+            <div style={{ marginTop: 10, fontSize: "var(--fs-xs)", color: "var(--fg-muted)" }}>
+              <div style={{ fontWeight: 700, color: "var(--fg-strong)", marginBottom: 4 }}>
+                {t("quality.history")}
+              </div>
+              {history.map((entry) => (
+                <div key={entry.id} style={{ display: "flex", gap: 6, justifyContent: "space-between", borderTop: "1px solid var(--border-subtle)", paddingTop: 4, marginTop: 4 }}>
+                  <span>{new Date(entry.createdAt).toLocaleString()}</span>
+                  <span>{entry.success ? t("quality.history_ok") : t("quality.history_fail")}</span>
+                  {typeof entry.qualityScore === "number" && <span>{entry.qualityScore}/100</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

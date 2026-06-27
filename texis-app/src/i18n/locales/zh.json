@@ -2789,7 +2789,13 @@
     "dim_profile_trust": "配置文件",
     "profile_trust": "配置文件：{{status}}",
     "profile_ok": "适合最终交付",
-    "profile_warn": "不建议用于最终交付"
+    "profile_warn": "不建议用于最终交付",
+    "score": "评分：{{score}}/100",
+    "repair_actions": "建议修复",
+    "dim_visual_pdf": "PDF 视觉检查",
+    "history": "最近检查",
+    "history_ok": "通过",
+    "history_fail": "已阻止"
   },
   "readiness": {
     "panel_title": "项目进度",
