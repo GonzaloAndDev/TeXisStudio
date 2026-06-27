@@ -20,7 +20,7 @@ jobs:
     name: Windows (MSI · NSIS · portable)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -88,7 +88,7 @@ jobs:
     name: Linux (deb · rpm · AppImage)
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Dependencias del sistema
         run: |
@@ -150,7 +150,7 @@ jobs:
     name: macOS (DMG universal)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Rust stable + targets universales
         uses: dtolnay/rust-toolchain@stable
