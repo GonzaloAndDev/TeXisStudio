@@ -158,7 +158,16 @@ where
     Ok(())
 }
 
-fn regenerate_build_transactional<F>(project_dir: &Path, generate: F) -> Result<(), String>
+/// Regenera `build/` de forma transaccional: copia el build vivo a un staging,
+/// ejecuta `generate` sobre el staging, y solo entonces promueve el staging a
+/// `build/` (con rollback al estado previo si la promoción o el guardado de
+/// checksums falla). Así una regeneración a medias nunca deja `build/` roto.
+/// Compartido por el flujo de guardado y por la compilación para que ambos den
+/// la misma garantía.
+pub(crate) fn regenerate_build_transactional<F>(
+    project_dir: &Path,
+    generate: F,
+) -> Result<(), String>
 where
     F: FnOnce(&Path) -> Result<DocumentEngine, String>,
 {

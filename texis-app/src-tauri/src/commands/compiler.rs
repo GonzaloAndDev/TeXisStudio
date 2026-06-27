@@ -129,17 +129,23 @@ pub async fn compile_project(
         }
     }
 
-    let mut document_engine = DocumentEngine::load(&path).map_err(err)?;
-    document_engine
-        .sync_preserving_external_edits(
-            &model,
-            &build_dir,
-            lang_config.as_ref(),
-            title_page_template.as_deref(),
-            &EventBus::new(),
-        )
-        .map_err(err)?;
-    document_engine.save_checksums(&path).map_err(err)?;
+    // Regeneración transaccional de build/ (mismo wrapper que el guardado): si la
+    // generación falla a medias, build/ queda intacto en vez de medio escrito.
+    // `regenerate_build_transactional` se encarga del staging→promote→rollback y
+    // del save_checksums tras promover.
+    crate::commands::project::regenerate_build_transactional(&path, |staging_dir| {
+        let mut document_engine = DocumentEngine::load(&path).map_err(err)?;
+        document_engine
+            .sync_preserving_external_edits(
+                &model,
+                staging_dir,
+                lang_config.as_ref(),
+                title_page_template.as_deref(),
+                &EventBus::new(),
+            )
+            .map_err(err)?;
+        Ok(document_engine)
+    })?;
 
     // ── Paso 2: preflight — verificar entorno antes de compilar ──
     use texis_core::project::model::ContentBlock;
