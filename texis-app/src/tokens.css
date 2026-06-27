@@ -172,9 +172,12 @@ body {
 }
 
 /* ─── Focus global ─── */
+/* `!important` deliberado (WCAG 2.2 AA, 2.4.7/2.4.11): el anillo de foco de
+   teclado NUNCA debe ocultarse. Muchos componentes usan `outline: none` inline
+   (que de otro modo vencería a esta regla); el ring por teclado debe prevalecer. */
 *:focus { outline: none; }
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
   border-radius: var(--r-xs);
 }
