@@ -328,9 +328,15 @@ async function loadCatalogJson(url: string): Promise<unknown> {
     throw new Error(`HTTP ${res.status} al obtener catálogo de perfiles desde "${url}"`);
   }
 
-  // Validate content-type loosely (GitHub releases serve application/octet-stream)
+  // Validate content-type loosely (GitHub releases serve application/octet-stream;
+  // raw.githubusercontent.com can serve JSON files as text/plain).
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType && !contentType.includes("json") && !contentType.includes("octet-stream")) {
+  if (
+    contentType &&
+    !contentType.includes("json") &&
+    !contentType.includes("octet-stream") &&
+    !contentType.includes("text/plain")
+  ) {
     throw new Error(
       `Tipo de contenido inesperado: "${contentType}". Se esperaba JSON.`,
     );
