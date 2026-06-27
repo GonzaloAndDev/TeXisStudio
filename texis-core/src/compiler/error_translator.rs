@@ -38,10 +38,17 @@ pub fn translate_log(log: &str) -> Vec<UserError> {
 
 fn translate_line(line: &str) -> Option<UserError> {
     // Solo patrones de errores FATALES que impiden la compilación.
+    //
+    // IMPORTANTE: el compilador se invoca con `-file-line-error`, así que los
+    // errores salen como `archivo:línea: <mensaje>` SIN el prefijo `! ` clásico
+    // del modo interactivo (verificado contra XeTeX/TeX Live 2026). Por eso los
+    // patrones se buscan por el texto del mensaje, no por `! `. Las cadenas
+    // elegidas solo aparecen en errores fatales reales, nunca en compilaciones
+    // exitosas, de modo que no rompen la detección de éxito de latexmk.rs.
 
     // ── [Contenido] Archivo no encontrado (imagen, incluye, etc.) ─────────────
-    // Patrón: "! LaTeX Error: File 'X' not found."
-    if line.contains("! LaTeX Error: File") && line.contains("not found") {
+    // Patrón: "<file>:<line>: LaTeX Error: File 'X' not found." (o con `! `).
+    if line.contains("LaTeX Error: File") && line.contains("not found") {
         let file = extract_quoted(line).unwrap_or_else(|| "desconocido".to_string());
         let is_sty = file.ends_with(".sty") || file.ends_with(".cls");
         if is_sty {
@@ -71,8 +78,8 @@ fn translate_line(line: &str) -> Option<UserError> {
     }
 
     // ── [Contenido] Comando LaTeX desconocido ─────────────────────────────────
-    // Patrón: "! Undefined control sequence."
-    if line.contains("! Undefined control sequence") {
+    // Patrón: "<file>:<line>: Undefined control sequence." (o con `! `).
+    if line.contains("Undefined control sequence") {
         return Some(UserError {
             message: "[Contenido] Comando LaTeX desconocido.".to_string(),
             suggestion: Some(
@@ -85,8 +92,8 @@ fn translate_line(line: &str) -> Option<UserError> {
     }
 
     // ── [Contenido] Símbolo matemático fuera de entorno ──────────────────────
-    // Patrón: "! Missing $ inserted."
-    if line.contains("! Missing $ inserted") {
+    // Patrón: "<file>:<line>: Missing $ inserted." (o con `! `).
+    if line.contains("Missing $ inserted") {
         return Some(UserError {
             message: "[Contenido] Símbolo matemático fuera de un entorno de ecuación.".to_string(),
             suggestion: Some(
@@ -97,8 +104,8 @@ fn translate_line(line: &str) -> Option<UserError> {
     }
 
     // ── [Contenido] Entorno o argumento sin cerrar ────────────────────────────
-    // Patrón: "Runaway argument" / "! Emergency stop"
-    if line.contains("Runaway argument") || line.contains("! Emergency stop") {
+    // Patrón: "Runaway argument" / "Emergency stop" (con o sin `! `).
+    if line.contains("Runaway argument") || line.contains("Emergency stop") {
         return Some(UserError {
             message: "[Contenido] Argumento o entorno LaTeX sin cerrar.".to_string(),
             suggestion: Some(
@@ -129,9 +136,14 @@ fn translate_line(line: &str) -> Option<UserError> {
 }
 
 fn extract_quoted(line: &str) -> Option<String> {
-    let start = line.find('\'')?;
-    let end = line[start + 1..].find('\'')?;
-    Some(line[start + 1..start + 1 + end].to_string())
+    // TeX cita los nombres como `nombre' (backtick de apertura, comilla simple
+    // de cierre); algunos mensajes usan 'nombre'. Aceptamos ambas aperturas y
+    // cerramos en la primera comilla simple. Sin esto, los errores reales con
+    // backtick devolvían "desconocido" en vez del archivo culpable.
+    let start = line.find(['`', '\''])?;
+    let rest = &line[start + 1..];
+    let end = rest.find('\'')?;
+    Some(rest[..end].to_string())
 }
 
 #[cfg(test)]
@@ -217,6 +229,35 @@ mod tests {
         let log = "This is XeTeX, Version 3.141592\nOutput written on main.pdf (42 pages).";
         let errors = translate_log(log);
         assert!(errors.is_empty());
+    }
+
+    // ── Formato real `-file-line-error` (sin prefijo `! `) ───────────────────
+    // El compilador corre con -file-line-error; los errores salen como
+    // `archivo:línea: mensaje`. Estas cadenas son salida REAL de XeTeX/TeX Live.
+
+    #[test]
+    fn traduce_undefined_en_formato_file_line_error() {
+        let log = "./main.tex:3: Undefined control sequence.\nl.3 \\foobarbaz";
+        let errors = translate_log(log);
+        assert_eq!(errors.len(), 1, "debe traducir el error real: {errors:?}");
+        assert!(errors[0].message.contains("[Contenido]"));
+    }
+
+    #[test]
+    fn traduce_missing_dollar_en_formato_file_line_error() {
+        let log = "./main.tex:4: Missing $ inserted.";
+        let errors = translate_log(log);
+        assert_eq!(errors.len(), 1, "debe traducir el error real: {errors:?}");
+        assert!(errors[0].message.contains("matemático"));
+    }
+
+    #[test]
+    fn traduce_paquete_faltante_en_formato_file_line_error() {
+        let log = "./main.tex:2: LaTeX Error: File `fontspec.sty' not found.";
+        let errors = translate_log(log);
+        assert_eq!(errors.len(), 1, "debe traducir el error real: {errors:?}");
+        assert!(errors[0].message.contains("[Entorno]"));
+        assert!(errors[0].message.contains("fontspec"));
     }
 
     #[test]
