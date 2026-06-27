@@ -152,7 +152,12 @@ pub fn transactional_restore(
             return Err(e);
         }
     };
-    let touched = target.files.clone();
+    let touched: Vec<String> = target
+        .files
+        .iter()
+        .chain(target.missing_files.iter())
+        .cloned()
+        .collect();
 
     // Snapshot del estado ACTUAL antes de sobrescribir (deshacer la restauración).
     let pre_restore_snapshot = match snapshot::create(root, &touched, Some("pre-restore")) {
@@ -173,10 +178,14 @@ pub fn transactional_restore(
         }
     };
 
-    // Recalcular integridad de los archivos restaurados (estado bueno conocido).
-    if let Ok(manifest) = IntegrityManifest::compute_for(root, &touched) {
+    // Recalcular integridad de los archivos restaurados que existen y eliminar
+    // entradas de los que el snapshot restauró como ausentes.
+    if let Ok(manifest) = IntegrityManifest::compute_for(root, &target.files) {
         let mut merged = IntegrityManifest::load(root).unwrap_or_default();
         merged.files.extend(manifest.files);
+        for missing in &target.missing_files {
+            merged.files.remove(missing);
+        }
         let _ = merged.save(root);
     }
 
@@ -308,5 +317,44 @@ mod tests {
 
         // El journal cerró la operación de restore.
         assert!(Journal::open(root).incomplete().is_empty());
+    }
+
+    #[test]
+    fn rollback_removes_files_created_by_failed_save() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        assert!(!root.join("project.yaml").exists());
+
+        let result =
+            transactional_save_with(root, &[("project.yaml".into(), b"new".to_vec())], 5, || {
+                Err(io::Error::other("derived generation failed"))
+            });
+
+        assert!(result.is_err());
+        assert!(
+            !root.join("project.yaml").exists(),
+            "rollback must restore the original absence, not leave a new file"
+        );
+        assert!(Journal::open(root).incomplete().is_empty());
+    }
+
+    #[test]
+    fn transactional_restore_can_restore_absence_and_drop_integrity_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        let absent = snapshot::create(root, &["project.yaml".into()], Some("absent")).unwrap();
+        fs::write(root.join("project.yaml"), "created").unwrap();
+        IntegrityManifest::compute_for(root, &["project.yaml".into()])
+            .unwrap()
+            .save(root)
+            .unwrap();
+
+        transactional_restore(root, &absent.id, 10).unwrap();
+
+        assert!(!root.join("project.yaml").exists());
+        let manifest = IntegrityManifest::load(root).unwrap();
+        assert!(!manifest.files.contains_key("project.yaml"));
+        assert!(manifest.verify(root).is_empty());
     }
 }

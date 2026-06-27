@@ -2,7 +2,7 @@
 //! restauración. Un snapshot guarda las rutas indicadas bajo
 //! `.texisstudio/snapshots/<id>/files/` más un `manifest.json`.
 
-use crate::paths;
+use crate::{paths, safety};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
@@ -17,6 +17,12 @@ pub struct SnapshotMeta {
     pub created_unix_nanos: u128,
     /// Rutas relativas (al proyecto) incluidas en el snapshot.
     pub files: Vec<String>,
+    /// Rutas relativas que fueron solicitadas pero no existían al tomar el snapshot.
+    ///
+    /// Esto es crítico para rollback real: si una operación crea un archivo nuevo
+    /// y luego falla, restaurar el snapshot debe borrar ese archivo, no dejarlo vivo.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing_files: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
 }
@@ -34,19 +40,49 @@ fn snapshot_dir(root: &Path, id: &str) -> PathBuf {
     paths::snapshots_dir(root).join(id)
 }
 
+fn validate_snapshot_id(id: &str) -> io::Result<()> {
+    if id.is_empty() || !id.chars().all(|c| c.is_ascii_digit()) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "id de snapshot inválido",
+        ));
+    }
+    Ok(())
+}
+
+fn safe_project_path(root: &Path, rel: &str) -> io::Result<PathBuf> {
+    safety::resolve_within(root, Path::new(rel))
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))
+}
+
+fn safe_snapshot_file_path(files_base: &Path, rel: &str) -> io::Result<PathBuf> {
+    safety::resolve_within(files_base, Path::new(rel))
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))
+}
+
 /// Crea un snapshot de las rutas relativas indicadas.
 pub fn create(root: &Path, files: &[String], label: Option<&str>) -> io::Result<SnapshotMeta> {
     let id = new_id();
     let base = snapshot_dir(root, &id);
     let files_base = base.join("files");
+    fs::create_dir_all(&files_base)?;
 
     let mut included = Vec::new();
+    let mut missing_files = Vec::new();
     for rel in files {
-        let src = root.join(rel);
-        if !src.is_file() {
-            continue; // se omite lo ausente; el manifiesto refleja lo real
+        let src = safe_project_path(root, rel)?;
+        match fs::symlink_metadata(&src) {
+            Ok(_) => match fs::metadata(&src) {
+                Ok(meta) if meta.is_file() => {}
+                _ => continue,
+            },
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                missing_files.push(rel.clone());
+                continue;
+            }
+            Err(e) => return Err(e),
         }
-        let dst = files_base.join(rel);
+        let dst = safe_snapshot_file_path(&files_base, rel)?;
         if let Some(parent) = dst.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -58,10 +94,10 @@ pub fn create(root: &Path, files: &[String], label: Option<&str>) -> io::Result<
         id: id.clone(),
         created_unix_nanos: id.parse().unwrap_or(0),
         files: included,
+        missing_files,
         label: label.map(|s| s.to_string()),
     };
-    let json = serde_json::to_string_pretty(&meta)
-        .map_err(io::Error::other)?;
+    let json = serde_json::to_string_pretty(&meta).map_err(io::Error::other)?;
     crate::atomic::atomic_write_str(&base.join("manifest.json"), &json)?;
     Ok(meta)
 }
@@ -75,11 +111,7 @@ pub fn list(root: &Path) -> Vec<SnapshotMeta> {
     let mut metas: Vec<SnapshotMeta> = entries
         .filter_map(|e| e.ok())
         .filter(|e| e.path().is_dir())
-        .filter_map(|e| {
-            let manifest = e.path().join("manifest.json");
-            let content = fs::read_to_string(manifest).ok()?;
-            serde_json::from_str::<SnapshotMeta>(&content).ok()
-        })
+        .filter_map(|e| e.file_name().to_str().and_then(|id| load(root, id).ok()))
         .collect();
     metas.sort_by(|a, b| b.id.cmp(&a.id)); // descendente: más reciente primero
     metas
@@ -87,9 +119,26 @@ pub fn list(root: &Path) -> Vec<SnapshotMeta> {
 
 /// Carga el manifiesto de un snapshot por id.
 pub fn load(root: &Path, id: &str) -> io::Result<SnapshotMeta> {
+    validate_snapshot_id(id)?;
     let manifest_path = snapshot_dir(root, id).join("manifest.json");
     let content = fs::read_to_string(&manifest_path)?;
-    serde_json::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    let meta: SnapshotMeta = serde_json::from_str(&content)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    if meta.id != id {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "manifest de snapshot no coincide con el directorio",
+        ));
+    }
+    validate_snapshot_id(&meta.id)?;
+    for rel in &meta.files {
+        safe_project_path(root, rel)?;
+        safe_snapshot_file_path(&snapshot_dir(root, id).join("files"), rel)?;
+    }
+    for rel in &meta.missing_files {
+        safe_project_path(root, rel)?;
+    }
+    Ok(meta)
 }
 
 /// Restaura un snapshot: reescribe atómicamente los archivos guardados.
@@ -103,10 +152,25 @@ pub fn restore(root: &Path, id: &str) -> io::Result<usize> {
 
     let mut restored = 0;
     for rel in &meta.files {
-        let src = files_base.join(rel);
+        let src = safe_snapshot_file_path(&files_base, rel)?;
         let bytes = fs::read(&src)?;
-        crate::atomic::atomic_write(&root.join(rel), &bytes)?;
+        crate::atomic::atomic_write(&safe_project_path(root, rel)?, &bytes)?;
         restored += 1;
+    }
+    for rel in &meta.missing_files {
+        let target = safe_project_path(root, rel)?;
+        match fs::symlink_metadata(&target) {
+            Ok(meta) if meta.file_type().is_dir() && !meta.file_type().is_symlink() => {
+                fs::remove_dir_all(&target)?;
+                restored += 1;
+            }
+            Ok(_) => {
+                fs::remove_file(&target)?;
+                restored += 1;
+            }
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
     }
     Ok(restored)
 }
@@ -134,6 +198,7 @@ mod tests {
 
         let snap = create(root, &["project.yaml".into()], Some("antes")).unwrap();
         assert_eq!(snap.files, vec!["project.yaml".to_string()]);
+        assert!(snap.missing_files.is_empty());
 
         // Modificar y restaurar.
         fs::write(root.join("project.yaml"), "v2").unwrap();
@@ -165,5 +230,78 @@ mod tests {
         // Se conservaron los dos más recientes.
         assert_eq!(remaining[0].id, s3.id);
         assert_eq!(remaining[1].id, s2.id);
+    }
+
+    #[test]
+    fn restore_removes_files_that_were_absent_in_snapshot() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        let snap = create(root, &["new.yaml".into()], Some("before-create")).unwrap();
+        assert!(snap.files.is_empty());
+        assert_eq!(snap.missing_files, vec!["new.yaml".to_string()]);
+
+        fs::write(root.join("new.yaml"), "created later").unwrap();
+        let changed = restore(root, &snap.id).unwrap();
+        assert_eq!(changed, 1);
+        assert!(!root.join("new.yaml").exists());
+    }
+
+    #[test]
+    fn create_does_not_mark_existing_directories_as_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fs::create_dir(root.join("build")).unwrap();
+
+        let snap = create(root, &["build".into()], Some("dir")).unwrap();
+
+        assert!(snap.files.is_empty());
+        assert!(snap.missing_files.is_empty());
+        fs::write(root.join("build/created.txt"), "still here").unwrap();
+        restore(root, &snap.id).unwrap();
+        assert!(root.join("build/created.txt").exists());
+    }
+
+    #[test]
+    fn rejects_traversal_in_snapshot_id_and_manifest_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        assert!(load(root, "../escape").is_err());
+
+        let id = "000000000000000000000000000000000000001";
+        let base = snapshot_dir(root, id);
+        fs::create_dir_all(&base).unwrap();
+        let malicious = SnapshotMeta {
+            id: id.to_string(),
+            created_unix_nanos: 1,
+            files: vec!["../outside.txt".to_string()],
+            missing_files: vec![],
+            label: None,
+        };
+        fs::write(
+            base.join("manifest.json"),
+            serde_json::to_string(&malicious).unwrap(),
+        )
+        .unwrap();
+
+        assert!(load(root, id).is_err());
+        assert!(restore(root, id).is_err());
+
+        let mismatch_id = "000000000000000000000000000000000000002";
+        let mismatch_base = snapshot_dir(root, mismatch_id);
+        fs::create_dir_all(&mismatch_base).unwrap();
+        let mismatch = SnapshotMeta {
+            id: "000000000000000000000000000000000000003".to_string(),
+            created_unix_nanos: 1,
+            files: vec![],
+            missing_files: vec![],
+            label: None,
+        };
+        fs::write(
+            mismatch_base.join("manifest.json"),
+            serde_json::to_string(&mismatch).unwrap(),
+        )
+        .unwrap();
+        assert!(load(root, mismatch_id).is_err());
     }
 }
