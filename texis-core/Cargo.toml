@@ -18,7 +18,7 @@ lazy_static = { workspace = true }
 url         = { workspace = true }
 jsonschema  = { workspace = true }
 schemars    = { workspace = true }
-sha2        = "0.10"
+sha2        = "0.11"
 zip         = { workspace = true }
 
 [dev-dependencies]

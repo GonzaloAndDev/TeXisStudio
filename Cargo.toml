@@ -25,12 +25,12 @@ serde        = { version = "1", features = ["derive"] }
 serde_yaml   = "0.9"
 serde_json   = "1"
 minijinja    = { version = "2", features = ["loader"] }
-jsonschema   = "0.18"
-schemars     = { version = "0.8", features = ["preserve_order"] }
-thiserror    = "1"
+jsonschema   = "0.46"
+schemars     = { version = "1.2", features = ["preserve_order"] }
+thiserror    = "2"
 anyhow       = "1"
 walkdir      = "2"
-zip          = "2"
+zip          = "8"
 regex        = "1"
 chrono       = { version = "0.4", features = ["serde"] }
 uuid         = { version = "1", features = ["v4", "serde"] }
