@@ -14,7 +14,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::compiler::error_translator;
-use crate::postflight::model::{PdfIssueSeverity, PdfPostflightResult};
+use crate::postflight::model::{PdfIssue, PdfIssueSeverity, PdfPostflightResult};
 use crate::profile::model::{Profile, ProfileStatus};
 use crate::validator::report::{IssueSeverity, ValidationReport};
 
@@ -41,6 +41,8 @@ pub enum QualityDimension {
     LatexLog,
     /// Postflight del PDF generado (fuentes, metadatos, estructura).
     Postflight,
+    /// QA visual/estructural del PDF renderizado o extraído con Poppler.
+    VisualPdf,
     /// Confianza del perfil usado para la entrega.
     ProfileTrust,
 }
@@ -65,6 +67,8 @@ pub struct GateStatus {
     pub passed: bool,
     /// Códigos de los hallazgos que bloquean este modo (vacío si pasa).
     pub blocking_codes: Vec<String>,
+    /// Score efectivo para este modo. Draft informa, review/final capan si bloquean.
+    pub score: u8,
 }
 
 /// Resumen de la confianza del perfil para entrega final.
@@ -78,6 +82,16 @@ pub struct ProfileTrustSummary {
     pub note: Option<String>,
 }
 
+/// Acción concreta de reparación para que la UI no tenga que inferirla.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepairAction {
+    pub code: String,
+    pub title: String,
+    pub action: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
+}
+
 /// Reporte unificado de calidad de entrega: fuente de verdad de la compuerta.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeliveryQualityReport {
@@ -85,6 +99,10 @@ pub struct DeliveryQualityReport {
     pub error_count: usize,
     pub warning_count: usize,
     pub info_count: usize,
+    /// Score general 0-100 para mostrar progreso de entrega con semántica estable.
+    pub score: u8,
+    /// Reparaciones priorizadas, derivadas de los hallazgos del mismo reporte.
+    pub repair_actions: Vec<RepairAction>,
     /// Compuerta `draft`: informativa, nunca bloquea.
     pub draft_gate: GateStatus,
     /// Compuerta `review`: bloquea errores de contenido (validación/completitud/
@@ -100,6 +118,7 @@ pub struct DeliveryQualityReport {
 pub struct QualityInputs<'a> {
     pub validation: &'a ValidationReport,
     pub postflight: Option<&'a PdfPostflightResult>,
+    pub visual_pdf: Option<&'a [PdfIssue]>,
     pub log: Option<&'a str>,
     pub profile: Option<&'a Profile>,
 }
@@ -108,7 +127,11 @@ fn classify_validation_code(code: &str) -> QualityDimension {
     let c = code.to_ascii_uppercase();
     if c.contains("PLACEHOLDER") {
         QualityDimension::Completeness
-    } else if c.contains("BIB") || c.contains("REFERENCE") || c.contains("CITATION") || c.contains("CITED") {
+    } else if c.contains("BIB")
+        || c.contains("REFERENCE")
+        || c.contains("CITATION")
+        || c.contains("CITED")
+    {
         QualityDimension::Bibliography
     } else {
         QualityDimension::Validation
@@ -215,6 +238,20 @@ pub fn assess(inputs: QualityInputs) -> DeliveryQualityReport {
         }
     }
 
+    // ── QA visual/estructural del PDF ───────────────────────────────────────
+    if let Some(visual_issues) = inputs.visual_pdf {
+        for issue in visual_issues {
+            findings.push(QualityFinding {
+                dimension: QualityDimension::VisualPdf,
+                severity: map_postflight_severity(&issue.severity),
+                code: issue.code.clone(),
+                message: issue.message.clone(),
+                suggestion: issue.suggestion.clone(),
+                location: Some("PDF visual".into()),
+            });
+        }
+    }
+
     // ── Confianza del perfil ─────────────────────────────────────────────────
     let profile_trust = profile_trust_summary(inputs.profile);
     if !profile_trust.recommended_for_final {
@@ -232,26 +269,60 @@ pub fn assess(inputs: QualityInputs) -> DeliveryQualityReport {
     }
 
     // ── Conteos ──────────────────────────────────────────────────────────────
-    let error_count = findings.iter().filter(|f| f.severity == QualitySeverity::Error).count();
-    let warning_count = findings.iter().filter(|f| f.severity == QualitySeverity::Warning).count();
-    let info_count = findings.iter().filter(|f| f.severity == QualitySeverity::Info).count();
+    let error_count = findings
+        .iter()
+        .filter(|f| f.severity == QualitySeverity::Error)
+        .count();
+    let warning_count = findings
+        .iter()
+        .filter(|f| f.severity == QualitySeverity::Warning)
+        .count();
+    let info_count = findings
+        .iter()
+        .filter(|f| f.severity == QualitySeverity::Info)
+        .count();
 
     // ── Compuertas por modo ──────────────────────────────────────────────────
     // draft: informativa, nunca bloquea.
-    let draft_gate = GateStatus { passed: true, blocking_codes: vec![] };
+    let score = compute_score(&findings);
+    let repair_actions = repair_actions(&findings);
+
+    let draft_gate = GateStatus {
+        passed: true,
+        blocking_codes: vec![],
+        score,
+    };
 
     // review: bloquea errores de contenido y de compilación (no postflight).
     let review_blocking: Vec<String> = findings
         .iter()
         .filter(|f| {
             f.severity == QualitySeverity::Error
-                && !matches!(f.dimension, QualityDimension::Postflight | QualityDimension::ProfileTrust)
+                && !matches!(
+                    f.dimension,
+                    QualityDimension::Postflight
+                        | QualityDimension::VisualPdf
+                        | QualityDimension::ProfileTrust
+                )
         })
         .map(|f| f.code.clone())
         .collect();
     let review_gate = GateStatus {
         passed: review_blocking.is_empty(),
         blocking_codes: review_blocking,
+        score: if findings.iter().any(|f| {
+            f.severity == QualitySeverity::Error
+                && !matches!(
+                    f.dimension,
+                    QualityDimension::Postflight
+                        | QualityDimension::VisualPdf
+                        | QualityDimension::ProfileTrust
+                )
+        }) {
+            score.min(79)
+        } else {
+            score
+        },
     };
 
     // final: bloquea cualquier error (validación + compilación + postflight).
@@ -263,6 +334,14 @@ pub fn assess(inputs: QualityInputs) -> DeliveryQualityReport {
     let final_gate = GateStatus {
         passed: final_blocking.is_empty(),
         blocking_codes: final_blocking,
+        score: if findings
+            .iter()
+            .any(|f| f.severity == QualitySeverity::Error)
+        {
+            score.min(69)
+        } else {
+            score
+        },
     };
 
     DeliveryQualityReport {
@@ -270,10 +349,86 @@ pub fn assess(inputs: QualityInputs) -> DeliveryQualityReport {
         error_count,
         warning_count,
         info_count,
+        score,
+        repair_actions,
         draft_gate,
         review_gate,
         final_gate,
         profile_trust,
+    }
+}
+
+fn compute_score(findings: &[QualityFinding]) -> u8 {
+    let mut score: i16 = 100;
+    for finding in findings {
+        let penalty = match finding.severity {
+            QualitySeverity::Error => 25,
+            QualitySeverity::Warning => {
+                if finding.dimension == QualityDimension::ProfileTrust {
+                    5
+                } else {
+                    10
+                }
+            }
+            QualitySeverity::Info => 3,
+        };
+        score -= penalty;
+    }
+    score.clamp(0, 100) as u8
+}
+
+fn repair_actions(findings: &[QualityFinding]) -> Vec<RepairAction> {
+    let mut actions = Vec::new();
+    for finding in findings
+        .iter()
+        .filter(|f| f.severity != QualitySeverity::Info)
+    {
+        actions.push(RepairAction {
+            code: finding.code.clone(),
+            title: repair_title(finding),
+            action: finding
+                .suggestion
+                .clone()
+                .unwrap_or_else(|| repair_fallback(finding)),
+            target: finding.location.clone(),
+        });
+    }
+    actions.sort_by_key(|a| {
+        findings
+            .iter()
+            .find(|f| f.code == a.code)
+            .map(|f| match f.severity {
+                QualitySeverity::Error => 0,
+                QualitySeverity::Warning => 1,
+                QualitySeverity::Info => 2,
+            })
+            .unwrap_or(3)
+    });
+    actions.dedup_by(|a, b| a.code == b.code && a.target == b.target);
+    actions
+}
+
+fn repair_title(finding: &QualityFinding) -> String {
+    match finding.dimension {
+        QualityDimension::Completeness => "Completa los datos o secciones requeridas".into(),
+        QualityDimension::Validation => "Corrige la regla institucional incumplida".into(),
+        QualityDimension::Bibliography => "Repara bibliografía y citas".into(),
+        QualityDimension::LatexLog => "Corrige el error de compilación LaTeX".into(),
+        QualityDimension::Postflight => "Corrige el PDF generado".into(),
+        QualityDimension::VisualPdf => "Revisa la página renderizada del PDF".into(),
+        QualityDimension::ProfileTrust => "Usa un perfil revisado o verificado".into(),
+    }
+}
+
+fn repair_fallback(finding: &QualityFinding) -> String {
+    match finding.dimension {
+        QualityDimension::Completeness => "Abre el asistente del proyecto y reemplaza valores predeterminados antes de exportar.".into(),
+        QualityDimension::Validation => "Abre el reporte de validación, corrige este hallazgo y vuelve a ejecutar la compuerta.".into(),
+        QualityDimension::Bibliography => "Abre references.bib y deja cada cita con una referencia válida y cada referencia usada o justificada.".into(),
+        QualityDimension::LatexLog => "Abre el log de compilación, corrige la primera causa reportada y recompila antes de exportar.".into(),
+        QualityDimension::Postflight => "Recompila y ejecuta postflight; si persiste, revisa fuentes, metadatos y PDF/A.".into(),
+        QualityDimension::VisualPdf => "Abre el PDF, revisa la página indicada y ajusta portada, índices o contenido hasta que no haya páginas pobres.".into(),
+        QualityDimension::ProfileTrust => "Cambia a un perfil reviewed/verified o documenta el perfil custom antes de una entrega final.".into(),
     }
 }
 
@@ -288,10 +443,22 @@ mod tests {
 
     #[test]
     fn clasifica_dimensiones_por_codigo() {
-        assert_eq!(classify_validation_code("E_PLACEHOLDER_STUDENT_NAME"), QualityDimension::Completeness);
-        assert_eq!(classify_validation_code("W_UNUSED_REFERENCE"), QualityDimension::Bibliography);
-        assert_eq!(classify_validation_code("W_BIB_ARTICLE_NO_DOI"), QualityDimension::Bibliography);
-        assert_eq!(classify_validation_code("E_WORD_LIMIT_EXCEEDED"), QualityDimension::Validation);
+        assert_eq!(
+            classify_validation_code("E_PLACEHOLDER_STUDENT_NAME"),
+            QualityDimension::Completeness
+        );
+        assert_eq!(
+            classify_validation_code("W_UNUSED_REFERENCE"),
+            QualityDimension::Bibliography
+        );
+        assert_eq!(
+            classify_validation_code("W_BIB_ARTICLE_NO_DOI"),
+            QualityDimension::Bibliography
+        );
+        assert_eq!(
+            classify_validation_code("E_WORD_LIMIT_EXCEEDED"),
+            QualityDimension::Validation
+        );
     }
 
     #[test]
@@ -304,13 +471,17 @@ mod tests {
         let r = assess(QualityInputs {
             validation: &validation,
             postflight: None,
+            visual_pdf: None,
             log: None,
             profile: None,
         });
         assert!(r.draft_gate.passed, "draft nunca bloquea");
         assert!(!r.review_gate.passed, "review bloquea error de contenido");
         assert!(!r.final_gate.passed, "final bloquea error de contenido");
-        assert!(r.review_gate.blocking_codes.contains(&"E_PLACEHOLDER_STUDENT_NAME".to_string()));
+        assert!(r
+            .review_gate
+            .blocking_codes
+            .contains(&"E_PLACEHOLDER_STUDENT_NAME".to_string()));
         assert_eq!(r.error_count, 1);
     }
 
@@ -328,12 +499,16 @@ mod tests {
         let r = assess(QualityInputs {
             validation: &validation,
             postflight: Some(&pf),
+            visual_pdf: None,
             log: None,
             profile: None,
         });
         assert!(r.review_gate.passed, "review no se bloquea por postflight");
         assert!(!r.final_gate.passed, "final sí se bloquea por postflight");
-        assert!(r.final_gate.blocking_codes.contains(&"PF_FONT_NOT_EMBEDDED".to_string()));
+        assert!(r
+            .final_gate
+            .blocking_codes
+            .contains(&"PF_FONT_NOT_EMBEDDED".to_string()));
     }
 
     #[test]
@@ -343,12 +518,16 @@ mod tests {
         let r = assess(QualityInputs {
             validation: &validation,
             postflight: None,
+            visual_pdf: None,
             log: Some(log),
             profile: None,
         });
         assert!(!r.review_gate.passed);
         assert!(!r.final_gate.passed);
-        assert!(r.findings.iter().any(|f| f.dimension == QualityDimension::LatexLog));
+        assert!(r
+            .findings
+            .iter()
+            .any(|f| f.dimension == QualityDimension::LatexLog));
     }
 
     #[test]
@@ -357,6 +536,7 @@ mod tests {
         let r = assess(QualityInputs {
             validation: &validation,
             postflight: None,
+            visual_pdf: None,
             log: None,
             profile: None,
         });
@@ -364,6 +544,43 @@ mod tests {
         assert!(r.review_gate.passed);
         assert!(r.final_gate.passed);
         assert!(!r.profile_trust.recommended_for_final);
-        assert!(r.findings.iter().any(|f| f.code == "PROFILE_NOT_VERIFIED_FOR_FINAL"));
+        assert!(r
+            .findings
+            .iter()
+            .any(|f| f.code == "PROFILE_NOT_VERIFIED_FOR_FINAL"));
+    }
+
+    #[test]
+    fn score_y_acciones_salen_del_mismo_reporte() {
+        let validation = report_with(vec![ValidationIssue::simple(
+            IssueSeverity::Warning,
+            "W_UNUSED_REFERENCE",
+            "Referencia sin uso",
+        )]);
+        let visual = vec![PdfIssue {
+            severity: PdfIssueSeverity::Warning,
+            code: "PF_VISUAL_SPARSE_PAGE".into(),
+            message: "Página casi vacía".into(),
+            suggestion: None,
+        }];
+
+        let r = assess(QualityInputs {
+            validation: &validation,
+            postflight: None,
+            visual_pdf: Some(&visual),
+            log: None,
+            profile: None,
+        });
+
+        assert!(r.score < 100);
+        assert_eq!(r.draft_gate.score, r.score);
+        assert!(r
+            .findings
+            .iter()
+            .any(|f| f.dimension == QualityDimension::VisualPdf));
+        assert!(r
+            .repair_actions
+            .iter()
+            .any(|a| a.code == "PF_VISUAL_SPARSE_PAGE"));
     }
 }

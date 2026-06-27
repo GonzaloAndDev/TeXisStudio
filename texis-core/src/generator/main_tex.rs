@@ -7,6 +7,7 @@
 // 4. Compila con: cd build && latexmk -xelatex main.tex
 
 use crate::error::{CoreError, CoreResult};
+use crate::generator::frontmatter::{emit_generated_frontmatter, GeneratedListState};
 use crate::project::model::{
     BibliographyBackend, ContentBlock, ProjectModel, ProjectSection, SectionPlacement,
 };
@@ -151,6 +152,12 @@ pub fn render_to_string(
     let mut in_mainmatter = false;
     let mut appendix_started = false;
     let mut pending_backmatter = Vec::new();
+    let generated_lists = GeneratedListState {
+        figures: has_figures(model),
+        tables: has_tables(model),
+        algorithms: has_algorithms(model),
+        listings: has_listings(model),
+    };
 
     for section in &model.sections {
         if !section.enabled {
@@ -169,21 +176,12 @@ pub fn render_to_string(
                         out.push_str("\n\\frontmatter\n");
                         in_frontmatter = true;
                     }
-                    match section.element_id.as_str() {
-                        "table_of_contents" => out.push_str("\n\\tableofcontents\n"),
-                        "list_of_figures" if has_figures(model) => {
-                            out.push_str("\\listoffigures\n")
-                        }
-                        "list_of_tables" if has_tables(model) => out.push_str("\\listoftables\n"),
-                        "list_of_algorithms" if has_algorithms(model) => {
-                            out.push_str("\\listofalgorithms\n")
-                        }
-                        "list_of_listings" if has_listings(model) => {
-                            out.push_str("\\lstlistoflistings\n")
-                        }
-                        "list_of_figures" | "list_of_tables" | "list_of_algorithms"
-                        | "list_of_listings" => {}
-                        _ => out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id)),
+                    if !emit_generated_frontmatter(
+                        section.element_id.as_str(),
+                        generated_lists,
+                        &mut out,
+                    ) {
+                        out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id));
                     }
                 }
             }
@@ -283,8 +281,18 @@ fn caption_name_localization(language: &str) -> String {
         .to_lowercase();
     // (lstlistingname, lstlistlistingname, algorithm floatname, listalgorithmname)
     let names = match lang.as_str() {
-        "es" => ("Código", "Índice de listados", "Algoritmo", "Índice de algoritmos"),
-        "pt" => ("Código", "Lista de listagens", "Algoritmo", "Lista de algoritmos"),
+        "es" => (
+            "Código",
+            "Índice de listados",
+            "Algoritmo",
+            "Índice de algoritmos",
+        ),
+        "pt" => (
+            "Código",
+            "Lista de listagens",
+            "Algoritmo",
+            "Lista de algoritmos",
+        ),
         "fr" => (
             "Listing",
             "Liste des listings",

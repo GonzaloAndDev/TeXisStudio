@@ -18,6 +18,8 @@
 
 pub mod compile_gate;
 
+use texis_core::profile::loader::ProfileLoader;
+use texis_core::profile::model::{Profile, ProfileStatus};
 use texis_document_application::{AssembleDocumentUseCase, BuildMode};
 use texis_document_domain::ir::DocumentIR;
 use texis_document_domain::phase::DocumentPhase;
@@ -125,18 +127,16 @@ fn matrix() -> Vec<MatrixCase> {
 
     // Los siete estilos bibliográficos objetivo (§7.5).
     for style in fixtures::TARGET_BIB_STYLES {
-        cases.push(MatrixCase::new(
-            format!("style_{style}"),
-            move || fixtures::styled_thesis_ir(style),
-        ));
+        cases.push(MatrixCase::new(format!("style_{style}"), move || {
+            fixtures::styled_thesis_ir(style)
+        }));
     }
 
     // Tamaños sintéticos (aprox. 50/100/250 páginas).
     for chapters in [50usize, 100, 250] {
-        cases.push(MatrixCase::new(
-            format!("large_{chapters}ch"),
-            move || fixtures::large_thesis_ir(chapters),
-        ));
+        cases.push(MatrixCase::new(format!("large_{chapters}ch"), move || {
+            fixtures::large_thesis_ir(chapters)
+        }));
     }
 
     cases
@@ -145,6 +145,40 @@ fn matrix() -> Vec<MatrixCase> {
 /// Ejecuta la certificación estructural sobre toda la matriz.
 pub fn run_structural_certification() -> CertificationReport {
     run_certification(false, false, false)
+}
+
+/// Certificación de evidencia de perfiles bundled. No compila PDFs aquí; valida
+/// que los perfiles promovidos tengan fuente oficial, fecha trazable y estado
+/// coherente para que CI pueda reportar el riesgo antes de publicar catálogo.
+pub fn run_profile_evidence_certification() -> CertificationReport {
+    let profiles_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .join("profiles");
+    let mut cases = Vec::new();
+    let entries = match std::fs::read_dir(&profiles_dir) {
+        Ok(entries) => entries,
+        Err(err) => {
+            return CertificationReport {
+                cases: vec![CaseResult {
+                    name: "profiles_directory".to_string(),
+                    gates: vec![GateResult::fail("read_profiles", err.to_string())],
+                }],
+            };
+        }
+    };
+
+    for entry in entries.flatten() {
+        let profile_path = entry.path().join("profile.yaml");
+        if !profile_path.exists() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        cases.push(run_profile_evidence_case(&name, &profile_path));
+    }
+
+    cases.sort_by(|a, b| a.name.cmp(&b.name));
+    CertificationReport { cases }
 }
 
 /// Ejecuta la certificación. Con `include_compile`, añade un caso que compila un
@@ -195,14 +229,81 @@ fn run_compile_matrix(strict: bool) -> Vec<CaseResult> {
 }
 
 fn run_compile_case(strict: bool) -> CaseResult {
-    compile_case("compilable_thesis (PDF)", fixtures::compilable_thesis_ir(), strict)
+    compile_case(
+        "compilable_thesis (PDF)",
+        fixtures::compilable_thesis_ir(),
+        strict,
+    )
 }
 
-fn compile_case(
-    name: &str,
-    ir: texis_document_domain::ir::DocumentIR,
-    strict: bool,
-) -> CaseResult {
+fn run_profile_evidence_case(name: &str, profile_path: &std::path::Path) -> CaseResult {
+    let mut gates = Vec::new();
+    match ProfileLoader.load_from_file(profile_path) {
+        Ok(profile) => {
+            gates.push(GateResult::pass("load_profile"));
+            gates.extend(profile_evidence_gates(&profile));
+        }
+        Err(err) => gates.push(GateResult::fail("load_profile", err.to_string())),
+    }
+    CaseResult {
+        name: format!("profile_{name}"),
+        gates,
+    }
+}
+
+fn profile_evidence_gates(profile: &Profile) -> Vec<GateResult> {
+    let mut gates = Vec::new();
+    let verification = profile.verification.as_ref();
+    let promoted = matches!(
+        profile.status,
+        ProfileStatus::Reviewed | ProfileStatus::Verified
+    );
+
+    if promoted {
+        match verification {
+            Some(v) if !v.source_urls.is_empty() => {
+                gates.push(GateResult::pass("official_sources"))
+            }
+            Some(_) => gates.push(GateResult::fail("official_sources", "sin source_urls")),
+            None => gates.push(GateResult::fail(
+                "official_sources",
+                "sin bloque verification",
+            )),
+        }
+
+        let has_date = verification
+            .and_then(|v| v.reviewed_at.as_ref().or(v.verified_at.as_ref()))
+            .is_some();
+        if has_date {
+            gates.push(GateResult::pass("review_date"));
+        } else {
+            gates.push(GateResult::fail(
+                "review_date",
+                "sin reviewed_at/verified_at",
+            ));
+        }
+    } else {
+        gates.push(GateResult::pass("not_promoted"));
+    }
+
+    if profile.status == ProfileStatus::Verified {
+        match verification.and_then(|v| v.ci_evidence.as_ref()) {
+            Some(ci) if ci.starts_with("https://") => gates.push(GateResult::pass("ci_evidence")),
+            Some(_) => gates.push(GateResult::fail(
+                "ci_evidence",
+                "ci_evidence debe ser HTTPS",
+            )),
+            None => gates.push(GateResult::fail(
+                "ci_evidence",
+                "verified requiere ci_evidence",
+            )),
+        }
+    }
+
+    gates
+}
+
+fn compile_case(name: &str, ir: texis_document_domain::ir::DocumentIR, strict: bool) -> CaseResult {
     let mut gates = Vec::new();
     match compile_gate::compile(&ir) {
         Ok(o) if !o.attempted => {
@@ -405,5 +506,28 @@ mod tests {
         for engine in ["xelatex", "lualatex", "pdflatex"] {
             assert!(names.contains(&format!("compile_engine_{engine}")));
         }
+    }
+
+    #[test]
+    fn profile_evidence_certification_covers_promoted_profiles() {
+        let report = run_profile_evidence_certification();
+        assert!(
+            report
+                .cases
+                .iter()
+                .any(|c| c.name == "profile_generic.thesis"),
+            "debe cubrir perfiles bundled:\n{}",
+            report.summary()
+        );
+        let promoted_failures: Vec<_> = report
+            .cases
+            .iter()
+            .flat_map(|case| case.gates.iter().filter(|gate| !gate.passed))
+            .collect();
+        assert!(
+            promoted_failures.is_empty(),
+            "evidencia de perfiles insuficiente:\n{}",
+            report.summary()
+        );
     }
 }

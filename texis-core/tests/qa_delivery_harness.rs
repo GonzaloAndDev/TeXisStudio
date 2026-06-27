@@ -21,7 +21,7 @@ use texis_core::compiler::latexmk::LatexmkBackend;
 use texis_core::compiler::{CompilationBackend, CompilationOptions};
 use texis_core::document::DocumentEngine;
 use texis_core::events::EventBus;
-use texis_core::postflight::PdfChecker;
+use texis_core::postflight::{check_pdf_visual_quality, PdfChecker, PdfIssueSeverity};
 use texis_core::profile::loader::ProfileLoader;
 use texis_core::profile::model::Profile;
 use texis_core::project::model::{
@@ -176,6 +176,17 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
         "fuentes sin incrustar: {:?}",
         postflight.non_embedded_fonts
     );
+    let visual = check_pdf_visual_quality(&pdf);
+    let visual_blockers: Vec<_> = visual
+        .issues
+        .iter()
+        .filter(|issue| issue.severity == PdfIssueSeverity::Error)
+        .collect();
+    assert!(
+        visual_blockers.is_empty(),
+        "QA visual con errores: {:?}",
+        visual_blockers
+    );
 
     // ── Compuerta única de calidad como oráculo ─────────────────────────────
     let validation = Validator::new()
@@ -184,6 +195,7 @@ fn qa_delivery_thesis_compiles_clean_and_passes_quality_gate() {
     let report = quality::assess(QualityInputs {
         validation: &validation,
         postflight: Some(&postflight),
+        visual_pdf: Some(&visual.issues),
         log: Some(&log),
         profile: None,
     });

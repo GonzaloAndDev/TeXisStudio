@@ -5,7 +5,7 @@ use tauri::Manager;
 use texis_core::{
     document::DocumentEngine,
     events::EventBus,
-    postflight::PdfChecker,
+    postflight::{check_pdf_visual_quality, PdfChecker},
     profile::{model::Profile, ProfileRegistry},
     project::{loader::ProjectLoader, model::ProjectModel, saver::ProjectSaver},
     validator::Validator,
@@ -43,7 +43,9 @@ fn persist_model_transactional<F>(
 where
     F: FnOnce() -> Result<(), String>,
 {
-    let yaml = ProjectSaver.to_yaml_string(model, yaml_path).map_err(core_err)?;
+    let yaml = ProjectSaver
+        .to_yaml_string(model, yaml_path)
+        .map_err(core_err)?;
 
     // El lock se libera automáticamente al salir del scope (Drop), tras incluir
     // la regeneración derivada dentro de su vigencia.
@@ -813,13 +815,23 @@ pub fn export_delivery(
         .map_err(err)?;
 
     let postflight = PdfChecker::check(&pdf_path);
+    let visual_pdf = if pdf_path.exists() {
+        Some(check_pdf_visual_quality(&pdf_path))
+    } else {
+        None
+    };
     let log = std::fs::read_to_string(project_dir.join("build").join("main.log")).ok();
 
     // Fuente de verdad: el mismo DeliveryQualityReport que consume la UI. El gate
     // de exportación ya no reimplementa su propia lógica — pregunta a la compuerta.
     let quality = texis_core::quality::assess(texis_core::quality::QualityInputs {
         validation: &validation,
-        postflight: if pdf_path.exists() { Some(&postflight) } else { None },
+        postflight: if pdf_path.exists() {
+            Some(&postflight)
+        } else {
+            None
+        },
+        visual_pdf: visual_pdf.as_ref().map(|v| v.issues.as_slice()),
         log: log.as_deref(),
         profile: profile.as_ref(),
     });
@@ -904,11 +916,17 @@ pub fn delivery_quality_report(
     } else {
         None
     };
+    let visual_pdf = if pdf_path.exists() {
+        Some(check_pdf_visual_quality(&pdf_path))
+    } else {
+        None
+    };
     let log = std::fs::read_to_string(project_dir.join("build").join("main.log")).ok();
 
     let report = texis_core::quality::assess(texis_core::quality::QualityInputs {
         validation: &validation,
         postflight: postflight.as_ref(),
+        visual_pdf: visual_pdf.as_ref().map(|v| v.issues.as_slice()),
         log: log.as_deref(),
         profile: profile.as_ref(),
     });

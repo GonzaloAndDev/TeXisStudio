@@ -14,6 +14,7 @@ use crate::template::engine::TemplateEngine;
 use serde_json::Value;
 use std::path::Path;
 
+pub mod frontmatter;
 pub mod glossary_tex;
 pub mod labels;
 pub mod main_tex;
