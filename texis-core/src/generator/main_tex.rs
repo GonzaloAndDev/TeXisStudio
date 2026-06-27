@@ -7,7 +7,9 @@
 // 4. Compila con: cd build && latexmk -xelatex main.tex
 
 use crate::error::{CoreError, CoreResult};
-use crate::project::model::{BibliographyBackend, ContentBlock, ProjectModel, SectionPlacement};
+use crate::project::model::{
+    BibliographyBackend, ContentBlock, ProjectModel, ProjectSection, SectionPlacement,
+};
 use crate::template::engine::TemplateEngine;
 use crate::template::escape::latex_escape;
 use serde_json::Value;
@@ -118,19 +120,7 @@ pub fn render_to_string(
     // Clase del documento — aplicar overrides de tipografía del usuario
     let cls = &model.latex_config.document_class;
     let typo = &model.latex_config.typography;
-    let mut options: Vec<String> = cls
-        .options
-        .iter()
-        .filter(|o| {
-            // Filtrar las opciones que el usuario puede sobreescribir
-            let o = o.as_str();
-            let is_font_size = matches!(o, "10pt" | "11pt" | "12pt");
-            let is_paper_size = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
-            !(is_font_size && typo.font_size.is_some()
-                || is_paper_size && typo.paper_size.is_some())
-        })
-        .cloned()
-        .collect();
+    let mut options = normalized_class_options(model);
     if let Some(fs) = &typo.font_size {
         options.push(fs.clone());
     }
@@ -181,10 +171,18 @@ pub fn render_to_string(
                     }
                     match section.element_id.as_str() {
                         "table_of_contents" => out.push_str("\n\\tableofcontents\n"),
-                        "list_of_figures" => out.push_str("\\listoffigures\n"),
-                        "list_of_tables" => out.push_str("\\listoftables\n"),
-                        "list_of_algorithms" => out.push_str("\\listofalgorithms\n"),
-                        "list_of_listings" => out.push_str("\\lstlistoflistings\n"),
+                        "list_of_figures" if has_figures(model) => {
+                            out.push_str("\\listoffigures\n")
+                        }
+                        "list_of_tables" if has_tables(model) => out.push_str("\\listoftables\n"),
+                        "list_of_algorithms" if has_algorithms(model) => {
+                            out.push_str("\\listofalgorithms\n")
+                        }
+                        "list_of_listings" if has_listings(model) => {
+                            out.push_str("\\lstlistoflistings\n")
+                        }
+                        "list_of_figures" | "list_of_tables" | "list_of_algorithms"
+                        | "list_of_listings" => {}
                         _ => out.push_str(&format!("\\input{{preliminares/{}}}\n", section.id)),
                     }
                 }
@@ -271,6 +269,74 @@ fn render_geometry(model: &ProjectModel) -> String {
     // Margen uniforme del usuario o default
     let margin = model.latex_config.typography.margin_cm.unwrap_or(2.5);
     format!("\\usepackage[{paper},margin={margin}cm]{{geometry}}\n")
+}
+
+fn normalized_class_options(model: &ProjectModel) -> Vec<String> {
+    let cls = &model.latex_config.document_class;
+    let typo = &model.latex_config.typography;
+    let mut options: Vec<String> = cls
+        .options
+        .iter()
+        .filter(|o| {
+            // Filtrar las opciones que el usuario puede sobreescribir
+            let o = o.as_str();
+            let is_font_size = matches!(o, "10pt" | "11pt" | "12pt");
+            let is_paper_size = matches!(o, "a4paper" | "letterpaper" | "a5paper" | "b5paper");
+            !(is_font_size && typo.font_size.is_some()
+                || is_paper_size && typo.paper_size.is_some())
+        })
+        .cloned()
+        .collect();
+    if model.latex_config.document_class.name == "book"
+        && options.iter().any(|o| o == "oneside")
+        && !options.iter().any(|o| o == "openany" || o == "openright")
+    {
+        options.push("openany".to_string());
+    }
+    options
+}
+
+fn walk_sections<'a>(sections: &'a [ProjectSection], f: &mut impl FnMut(&'a ProjectSection)) {
+    for section in sections {
+        f(section);
+        walk_sections(&section.children, f);
+    }
+}
+
+fn any_block(model: &ProjectModel, pred: impl Fn(&ContentBlock) -> bool) -> bool {
+    let mut found = false;
+    walk_sections(&model.sections, &mut |section| {
+        if !found && section.enabled {
+            found = section.blocks.iter().any(&pred);
+        }
+    });
+    found
+}
+
+fn has_figures(model: &ProjectModel) -> bool {
+    any_block(model, |block| {
+        matches!(block, ContentBlock::Figure(f) if f.include_in_list)
+            || matches!(block, ContentBlock::Visual(v) if v.include_in_list)
+            || matches!(block, ContentBlock::PluginFigure(_))
+    })
+}
+
+fn has_tables(model: &ProjectModel) -> bool {
+    any_block(
+        model,
+        |block| matches!(block, ContentBlock::Table(t) if t.include_in_list),
+    )
+}
+
+fn has_algorithms(model: &ProjectModel) -> bool {
+    any_block(model, |block| matches!(block, ContentBlock::Algorithm(_)))
+}
+
+fn has_listings(model: &ProjectModel) -> bool {
+    any_block(
+        model,
+        |block| matches!(block, ContentBlock::Code(c) if c.caption.as_ref().is_some_and(|caption| !caption.trim().is_empty())),
+    )
 }
 
 /// Emite la configuración de fuente Cirílica para polyglossia russian.
@@ -849,4 +915,230 @@ fn render_datos_tesis(model: &ProjectModel) -> String {
     }
 
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::model::*;
+    use std::collections::HashMap;
+
+    fn front_list(id: &str, element_id: &str) -> ProjectSection {
+        ProjectSection {
+            id: id.to_string(),
+            element_id: element_id.to_string(),
+            title: Some(id.to_string()),
+            placement: SectionPlacement::FrontMatter,
+            required: false,
+            enabled: true,
+            label: None,
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks: vec![],
+            fields: HashMap::new(),
+            children: vec![],
+        }
+    }
+
+    fn body_section(blocks: Vec<ContentBlock>) -> ProjectSection {
+        ProjectSection {
+            id: "intro".to_string(),
+            element_id: "intro".to_string(),
+            title: Some("Introduccion".to_string()),
+            placement: SectionPlacement::Body,
+            required: true,
+            enabled: true,
+            label: None,
+            status: SectionStatus::Draft,
+            notes: None,
+            blocks,
+            fields: HashMap::new(),
+            children: vec![],
+        }
+    }
+
+    fn model_with_blocks(blocks: Vec<ContentBlock>) -> ProjectModel {
+        ProjectModel {
+            id: "test".to_string(),
+            schema_version: "1.0.0".to_string(),
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+            metadata: ProjectMetadata {
+                title: "Tesis".to_string(),
+                subtitle: None,
+                document_kind: DocumentKind::Tesis,
+                academic_level: AcademicLevel::Licenciatura,
+                language: "es".to_string(),
+                city: "CDMX".to_string(),
+                year: 2026,
+                keywords: vec![],
+                funding: None,
+            },
+            institution: InstitutionData {
+                name: "Universidad".to_string(),
+                faculty: None,
+                department: None,
+                logo_path: None,
+                country: "MX".to_string(),
+            },
+            student: StudentData {
+                full_name: "Autor".to_string(),
+                student_id: None,
+                email: None,
+                advisor: None,
+                advisors: vec![],
+                co_authors: vec![],
+                co_advisor: None,
+                committee: vec![],
+                orcid: None,
+            },
+            profile_id: "generic.thesis".to_string(),
+            latex_config: LatexConfig {
+                document_class: DocumentClassConfig {
+                    name: "book".to_string(),
+                    options: vec!["12pt".to_string(), "oneside".to_string()],
+                },
+                engine: LatexEngine::Xelatex,
+                compiler: CompilerKind::Latexmk,
+                bibliography_backend: BibliographyBackend::Biber,
+                bibliography_style: "numeric".to_string(),
+                packages_required: vec![],
+                packages_with_options: vec![],
+                typography: Default::default(),
+                page_layout: None,
+                preamble_config: Default::default(),
+            },
+            sections: vec![
+                front_list("toc", "table_of_contents"),
+                front_list("lof", "list_of_figures"),
+                front_list("lot", "list_of_tables"),
+                front_list("lol", "list_of_listings"),
+                body_section(blocks),
+            ],
+            file_states: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn skips_empty_generated_lists() {
+        let engine = TemplateEngine::new().unwrap();
+        let model = model_with_blocks(vec![ContentBlock::Paragraph(ParagraphBlock {
+            id: "p1".to_string(),
+            content: "Texto sin figuras ni tablas.".to_string(),
+            verbatim: false,
+        })]);
+
+        let out = render_to_string(&model, &engine, None).unwrap();
+
+        assert!(out.contains("\\tableofcontents"));
+        assert!(!out.contains("\\listoffigures"));
+        assert!(!out.contains("\\listoftables"));
+        assert!(!out.contains("\\lstlistoflistings"));
+    }
+
+    #[test]
+    fn emits_lists_when_matching_content_exists() {
+        let engine = TemplateEngine::new().unwrap();
+        let model = model_with_blocks(vec![
+            ContentBlock::Figure(FigureBlock {
+                id: "fig1".to_string(),
+                file: "figures/a.png".to_string(),
+                caption: "Figura".to_string(),
+                source: None,
+                width: FigureWidth::Half,
+                label: "fig:a".to_string(),
+                include_in_list: true,
+                verbatim_caption: false,
+            }),
+            ContentBlock::Table(TableBlock {
+                id: "tab1".to_string(),
+                caption: "Tabla".to_string(),
+                source: None,
+                label: "tab:a".to_string(),
+                include_in_list: true,
+                raw_headers: false,
+                raw_cells: false,
+                verbatim_caption: false,
+                headers: vec!["A".to_string()],
+                rows: vec![vec!["B".to_string()]],
+                table_style: TableStyle::Simple,
+            }),
+            ContentBlock::Code(CodeBlock {
+                id: "code1".to_string(),
+                language: "Python".to_string(),
+                caption: Some("Codigo".to_string()),
+                label: Some("lst:a".to_string()),
+                content: "print('ok')".to_string(),
+                show_line_numbers: false,
+            }),
+        ]);
+
+        let out = render_to_string(&model, &engine, None).unwrap();
+
+        assert!(out.contains("\\listoffigures"));
+        assert!(out.contains("\\listoftables"));
+        assert!(out.contains("\\lstlistoflistings"));
+    }
+
+    #[test]
+    fn skips_generated_lists_when_blocks_are_not_listable() {
+        let engine = TemplateEngine::new().unwrap();
+        let model = model_with_blocks(vec![
+            ContentBlock::Figure(FigureBlock {
+                id: "fig1".to_string(),
+                file: "figures/a.png".to_string(),
+                caption: "Figura".to_string(),
+                source: None,
+                width: FigureWidth::Half,
+                label: "fig:a".to_string(),
+                include_in_list: false,
+                verbatim_caption: false,
+            }),
+            ContentBlock::Table(TableBlock {
+                id: "tab1".to_string(),
+                caption: "Tabla".to_string(),
+                source: None,
+                label: "tab:a".to_string(),
+                include_in_list: false,
+                raw_headers: false,
+                raw_cells: false,
+                verbatim_caption: false,
+                headers: vec!["A".to_string()],
+                rows: vec![vec!["B".to_string()]],
+                table_style: TableStyle::Simple,
+            }),
+            ContentBlock::Code(CodeBlock {
+                id: "code1".to_string(),
+                language: "Python".to_string(),
+                caption: None,
+                label: None,
+                content: "print('ok')".to_string(),
+                show_line_numbers: false,
+            }),
+        ]);
+
+        let out = render_to_string(&model, &engine, None).unwrap();
+
+        assert!(!out.contains("\\listoffigures"));
+        assert!(!out.contains("\\listoftables"));
+        assert!(!out.contains("\\lstlistoflistings"));
+    }
+
+    #[test]
+    fn oneside_book_defaults_to_openany_unless_profile_requests_openright() {
+        let engine = TemplateEngine::new().unwrap();
+        let mut model = model_with_blocks(vec![]);
+
+        let out = render_to_string(&model, &engine, None).unwrap();
+        assert!(out.contains("\\documentclass[12pt,oneside,openany]{book}"));
+
+        model
+            .latex_config
+            .document_class
+            .options
+            .push("openright".to_string());
+        let out = render_to_string(&model, &engine, None).unwrap();
+        assert!(out.contains("\\documentclass[12pt,oneside,openright]{book}"));
+        assert!(!out.contains("openright,openany"));
+    }
 }

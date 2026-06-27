@@ -182,9 +182,11 @@ impl LaTeXGenerator {
 fn copy_bib_to_build(build_dir: &Path) -> CoreResult<()> {
     if let Some(project_root) = build_dir.parent() {
         let src = project_root.join("content/bibliography/references.bib");
+        let dst = build_dir.join("references.bib");
         if src.exists() {
-            let dst = build_dir.join("references.bib");
             std::fs::copy(&src, &dst).map_err(CoreError::Io)?;
+        } else {
+            std::fs::write(&dst, "").map_err(CoreError::Io)?;
         }
     }
     Ok(())
@@ -236,5 +238,38 @@ impl DriftReport {
 impl Default for LaTeXGenerator {
     fn default() -> Self {
         Self::new().expect("TemplateEngine::new() no debe fallar")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn copy_bib_to_build_creates_empty_references_when_source_is_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        let build = dir.path().join("build");
+        std::fs::create_dir_all(&build).unwrap();
+
+        copy_bib_to_build(&build).unwrap();
+
+        let dst = build.join("references.bib");
+        assert!(dst.exists());
+        assert_eq!(std::fs::read_to_string(dst).unwrap(), "");
+    }
+
+    #[test]
+    fn copy_bib_to_build_clears_stale_build_bib_when_source_is_absent() {
+        let dir = tempfile::tempdir().unwrap();
+        let build = dir.path().join("build");
+        std::fs::create_dir_all(&build).unwrap();
+        std::fs::write(build.join("references.bib"), "@book{x, title={X}}\n").unwrap();
+
+        copy_bib_to_build(&build).unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(build.join("references.bib")).unwrap(),
+            ""
+        );
     }
 }

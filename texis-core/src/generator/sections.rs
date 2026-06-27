@@ -606,7 +606,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
                 })
                 .collect();
             format!(
-                "\\begin{{table}}[htbp]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{tabular}}{{{col_spec}}}\n    \\hline\n    {header_row} \\\\\n    \\hline\n{rows}    \\hline\n  \\end{{tabular}}\n\\end{{table}}\n\n",
+                "\\begin{{table}}[H]\n  \\centering\n  \\caption{{{caption}}}\n  \\label{{{label}}}\n  \\begin{{tabular}}{{{col_spec}}}\n    \\hline\n    {header_row} \\\\\n    \\hline\n{rows}    \\hline\n  \\end{{tabular}}\n\\end{{table}}\n\n",
                 caption = caption,
                 label = label,
                 col_spec = col_spec,
@@ -689,7 +689,7 @@ fn render_table(t: &crate::project::model::TableBlock) -> String {
                 "    \\begin{{adjustbox}}{{max width=\\linewidth}}\n{tabular_body}\n    \\end{{adjustbox}}"
             );
             format!(
-                "\\begin{{table}}[htbp]\n    \\centering\n    \\caption{{{caption}}}\n    \\label{{{label}}}\n{inner}\n\\end{{table}}\n\n",
+                "\\begin{{table}}[H]\n    \\centering\n    \\caption{{{caption}}}\n    \\label{{{label}}}\n{inner}\n\\end{{table}}\n\n",
                 caption = caption,
                 label = label,
                 inner = inner,
@@ -1243,7 +1243,7 @@ mod tests {
     fn tabla_booktabs_usa_adjustbox_y_toprule() {
         use crate::project::model::TableStyle;
         let out = render_block(&make_table(TableStyle::Booktabs));
-        assert!(out.contains("\\begin{table}"), "debe ser entorno table");
+        assert!(out.contains("\\begin{table}[H]"), "debe fijar posicion");
         assert!(out.contains("\\toprule"), "debe tener toprule");
         assert!(out.contains("adjustbox"), "debe usar adjustbox");
         assert!(out.contains("tab:resultados"));
@@ -1253,6 +1253,7 @@ mod tests {
     fn tabla_simple_usa_hline_sin_adjustbox() {
         use crate::project::model::TableStyle;
         let out = render_block(&make_table(TableStyle::Simple));
+        assert!(out.contains("\\begin{table}[H]"), "debe fijar posicion");
         assert!(out.contains("\\hline"), "Simple usa \\hline");
         assert!(!out.contains("\\toprule"), "Simple NO usa toprule");
         assert!(!out.contains("adjustbox"), "Simple NO usa adjustbox");

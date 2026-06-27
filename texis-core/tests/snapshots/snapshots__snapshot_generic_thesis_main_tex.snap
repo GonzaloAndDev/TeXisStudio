@@ -15,7 +15,7 @@ expression: output
 %   cd build && latexmk -xelatex main.tex
 % ─────────────────────────────────────────────────────────────────
 
-\documentclass[12pt,letterpaper,oneside]{book}
+\documentclass[12pt,letterpaper,oneside,openany]{book}
 
 \input{configuracion/paquetes}
 \input{configuracion/estilo}
