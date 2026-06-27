@@ -18,6 +18,50 @@ fn core_err(e: texis_core::error::CoreError) -> String {
     crate::error_format::user_message(e)
 }
 
+/// Cuántos snapshots de plataforma se conservan por proyecto tras cada guardado.
+const SAVE_SNAPSHOT_RETENTION: usize = 20;
+
+/// Persiste el modelo del proyecto de forma **transaccional** vía `texis-platform`:
+/// toma el lock del proyecto, registra la operación en el journal, hace un snapshot
+/// del estado previo, escribe atómicamente y actualiza el manifiesto de integridad.
+/// Ante cualquier fallo de escritura hace rollback al estado previo.
+///
+/// Reemplaza la escritura directa de `ProjectSaver::save_to_file` en el flujo vivo
+/// de la app, de modo que las garantías de la plataforma protegen guardados reales.
+fn persist_model_transactional(
+    project_dir: &std::path::Path,
+    yaml_path: &std::path::Path,
+    model: &ProjectModel,
+) -> Result<(), String> {
+    let yaml = ProjectSaver.to_yaml_string(model, yaml_path).map_err(core_err)?;
+
+    // El lock se libera automáticamente al salir del scope (Drop).
+    let _lock = texis_platform::ProjectLock::acquire(project_dir).map_err(|e| match e {
+        texis_platform::LockError::Held(info) => format!(
+            "El proyecto está en uso por otra ventana o proceso (pid {} en {}). \
+             Cierra la otra instancia e inténtalo de nuevo.",
+            info.pid, info.host
+        ),
+        other => format!("No se pudo bloquear el proyecto: {other}"),
+    })?;
+
+    // Ruta relativa del yaml respecto a la raíz del proyecto (lo normal: el
+    // propio nombre del archivo, ya que vive en la raíz).
+    let rel = yaml_path
+        .strip_prefix(project_dir)
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| "tesis.project.yaml".to_string());
+
+    texis_platform::transactional_save(
+        project_dir,
+        &[(rel, yaml.into_bytes())],
+        SAVE_SNAPSHOT_RETENTION,
+    )
+    .map_err(|e| format!("Guardado transaccional falló: {e}"))?;
+
+    Ok(())
+}
+
 fn generate_new_document(
     model: &ProjectModel,
     project_dir: &std::path::Path,
@@ -81,10 +125,11 @@ pub fn create_project(
     std::fs::create_dir_all(project_dir.join("content").join("figures")).map_err(err)?;
 
     let model = build_model_from_profile(&name, &profile);
-    let saver = ProjectSaver;
-    saver
-        .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
-        .map_err(err)?;
+    persist_model_transactional(
+        &project_dir,
+        &project_dir.join("tesis.project.yaml"),
+        &model,
+    )?;
 
     generate_new_document(&model, &project_dir)?;
 
@@ -201,10 +246,11 @@ pub fn import_tex_project(
         );
     }
 
-    let saver = ProjectSaver;
-    saver
-        .save_to_file(&model, &project_dir.join("tesis.project.yaml"))
-        .map_err(err)?;
+    persist_model_transactional(
+        &project_dir,
+        &project_dir.join("tesis.project.yaml"),
+        &model,
+    )?;
 
     generate_new_document(&model, &project_dir)?;
 
@@ -288,11 +334,11 @@ pub fn save_section(project_path: String, section_id: String, blocks: Value) -> 
 
     model.updated_at = now_iso8601();
 
-    let saver = ProjectSaver;
-    saver.save_to_file(&model, &yaml_path).map_err(core_err)?;
+    let project_dir = PathBuf::from(&project_path);
+    persist_model_transactional(&project_dir, &yaml_path, &model)?;
 
     // Regenerar los archivos LaTeX de la sección modificada
-    sync_document(&model, &PathBuf::from(&project_path))?;
+    sync_document(&model, &project_dir)?;
 
     Ok(())
 }
@@ -303,10 +349,10 @@ pub fn save_project(project_path: String, project: Value) -> Result<(), String> 
     let yaml_path = PathBuf::from(&project_path).join("tesis.project.yaml");
     let mut model: ProjectModel = serde_json::from_value(project).map_err(err)?;
     model.updated_at = now_iso8601();
-    let saver = ProjectSaver;
-    saver.save_to_file(&model, &yaml_path).map_err(core_err)?;
+    let project_dir = PathBuf::from(&project_path);
+    persist_model_transactional(&project_dir, &yaml_path, &model)?;
     // Regenerar build/ con metadatos actualizados
-    sync_document(&model, &PathBuf::from(&project_path))?;
+    sync_document(&model, &project_dir)?;
     Ok(())
 }
 
@@ -748,7 +794,8 @@ pub fn update_typography(
 ) -> Result<(), String> {
     use texis_core::project::model::LatexTypography;
 
-    let project_yaml = std::path::Path::new(&project_path).join("tesis.project.yaml");
+    let project_dir = std::path::Path::new(&project_path);
+    let project_yaml = project_dir.join("tesis.project.yaml");
     let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
 
     model.latex_config.typography = LatexTypography {
@@ -758,9 +805,7 @@ pub fn update_typography(
         margin_cm,
     };
 
-    ProjectSaver
-        .save_to_file(&model, &project_yaml)
-        .map_err(err)
+    persist_model_transactional(project_dir, &project_yaml, &model)
 }
 
 /// Payload para update_preamble_config. Agrupa los 11 campos en un struct
@@ -789,7 +834,8 @@ pub fn update_preamble_config(
 ) -> Result<(), String> {
     use texis_core::project::model::{ExtraTheorem, MathOperator, PreambleConfig};
 
-    let project_yaml = std::path::Path::new(&project_path).join("tesis.project.yaml");
+    let project_dir = std::path::Path::new(&project_path);
+    let project_yaml = project_dir.join("tesis.project.yaml");
     let mut model = ProjectLoader.load_from_file(&project_yaml).map_err(err)?;
 
     let ops: Vec<MathOperator> = payload
@@ -814,9 +860,7 @@ pub fn update_preamble_config(
         extra: payload.extra.filter(|s| !s.trim().is_empty()),
     };
 
-    ProjectSaver
-        .save_to_file(&model, &project_yaml)
-        .map_err(err)
+    persist_model_transactional(project_dir, &project_yaml, &model)
 }
 
 /// Actualiza el estado editorial y las notas internas de una sección.
@@ -865,9 +909,7 @@ pub fn update_section_meta(
         return Err(format!("Sección '{}' no encontrada", section_id));
     }
 
-    ProjectSaver
-        .save_to_file(&model, &project_yaml)
-        .map_err(err)
+    persist_model_transactional(path, &project_yaml, &model)
 }
 
 /// Sanitiza la etiqueta de un snapshot para usarla como parte del nombre de archivo.

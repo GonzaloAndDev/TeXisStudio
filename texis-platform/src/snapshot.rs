@@ -13,6 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct SnapshotMeta {
     /// Id ordenable (nanos del instante de creación, en decimal con padding).
     pub id: String,
+    #[serde(with = "crate::serde_u128")]
     pub created_unix_nanos: u128,
     /// Rutas relativas (al proyecto) incluidas en el snapshot.
     pub files: Vec<String>,

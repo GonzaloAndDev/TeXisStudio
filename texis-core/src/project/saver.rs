@@ -184,16 +184,24 @@ use std::path::Path;
 pub struct ProjectSaver;
 
 impl ProjectSaver {
+    /// Serializa el modelo a YAML sin tocar disco. Útil para guardado
+    /// transaccional externo (p. ej. `texis-platform`), donde el escritor es
+    /// quien controla la atomicidad, el journal y los snapshots. El `path` solo
+    /// se usa para contextualizar errores.
+    pub fn to_yaml_string(&self, model: &ProjectModel, path: &Path) -> CoreResult<String> {
+        serde_yaml::to_string(model).map_err(|e| CoreError::YamlParse {
+            path: path.to_string_lossy().to_string(),
+            message: e.to_string(),
+        })
+    }
+
     /// Guarda el modelo con escritura segura:
     ///   1. Serializa a string
     ///   2. Escribe en archivo `.tmp` al lado del destino
     ///   3. Si el destino ya existe, copia a `.bak`
     ///   4. Renombra `.tmp` → destino (atómico en la mayoría de SO)
     pub fn save_to_file(&self, model: &ProjectModel, path: &Path) -> CoreResult<()> {
-        let content = serde_yaml::to_string(model).map_err(|e| CoreError::YamlParse {
-            path: path.to_string_lossy().to_string(),
-            message: e.to_string(),
-        })?;
+        let content = self.to_yaml_string(model, path)?;
 
         let tmp_path = path.with_extension("yaml.tmp");
         let bak_path = path.with_extension("yaml.bak");

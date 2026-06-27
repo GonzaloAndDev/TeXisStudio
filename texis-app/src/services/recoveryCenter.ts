@@ -2,13 +2,15 @@
 // de protección de datos de `texis-platform` expuestos por Tauri. No sobrescribe
 // nada salvo `restoreSnapshot`, que el usuario solicita explícitamente.
 
-import { invoke } from "@tauri-apps/api/core";
+import { invokeTauri } from "../lib/tauri";
 
 export interface JournalEntry {
-  seq: number;
+  /** u128 nanosegundos, serializado como string para no perder precisión en JS. */
+  seq: string;
   op: string;
   status: "begin" | "commit" | "abort";
-  unix_nanos: number;
+  /** u128 nanosegundos, serializado como string (excede Number.MAX_SAFE_INTEGER). */
+  unix_nanos: string;
   detail?: string;
 }
 
@@ -33,19 +35,20 @@ export interface RecoveryReport {
 
 export interface SnapshotMeta {
   id: string;
-  created_unix_nanos: number;
+  /** u128 nanosegundos, serializado como string (excede Number.MAX_SAFE_INTEGER). */
+  created_unix_nanos: string;
   files: string[];
   label?: string;
 }
 
 /** Escanea el proyecto y devuelve el reporte de recuperación. */
 export async function recoveryScan(projectDir: string): Promise<RecoveryReport> {
-  return invoke<RecoveryReport>("recovery_scan", { projectDir });
+  return invokeTauri<RecoveryReport>("recovery_scan", { projectDir });
 }
 
 /** Lista los snapshots de plataforma (más reciente primero). */
 export async function listSnapshots(projectDir: string): Promise<SnapshotMeta[]> {
-  return invoke<SnapshotMeta[]>("recovery_list_snapshots", { projectDir });
+  return invokeTauri<SnapshotMeta[]>("recovery_list_snapshots", { projectDir });
 }
 
 /** Restaura un snapshot de plataforma por id. Devuelve cuántos archivos se restauraron. */
@@ -53,14 +56,14 @@ export async function restoreSnapshot(
   projectDir: string,
   snapshotId: string,
 ): Promise<number> {
-  return invoke<number>("recovery_restore_snapshot", { projectDir, snapshotId });
+  return invokeTauri<number>("recovery_restore_snapshot", { projectDir, snapshotId });
 }
 
 /** Verifica la integridad del proyecto contra su manifiesto. */
 export async function verifyIntegrity(
   projectDir: string,
 ): Promise<IntegrityIssue[]> {
-  return invoke<IntegrityIssue[]>("verify_integrity", { projectDir });
+  return invokeTauri<IntegrityIssue[]>("verify_integrity", { projectDir });
 }
 
 /** `true` si el reporte no tiene nada que recuperar (el lock no cuenta). */

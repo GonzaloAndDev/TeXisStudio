@@ -24,6 +24,7 @@ const HomeView = lazy(() => import("./views/HomeView"));
 const LibraryView = lazy(() => import("./views/LibraryView"));
 const ProfileWizardView = lazy(() => import("./views/ProfileWizardView"));
 const ProgressView = lazy(() => import("./views/ProgressView"));
+const RecoveryView = lazy(() => import("./views/RecoveryView"));
 const SetupLatexView = lazy(() => import("./views/SetupLatexView"));
 const SettingsView = lazy(() => import("./views/SettingsView"));
 const WelcomeView = lazy(() => import("./views/WelcomeView"));
@@ -234,6 +235,7 @@ const router = createBrowserRouter(
       <Route path="/project/:id" element={<EditorView />} />
       <Route path="/project/:id/compile" element={<CompileView />} />
       <Route path="/project/:id/progress" element={<ProgressView />} />
+      <Route path="/project/:id/recovery" element={<RecoveryView />} />
       <Route path="/library" element={<LibraryView />} />
       <Route path="/new-profile" element={<ProfileWizardView />} />
       <Route path="/about" element={<AboutView />} />

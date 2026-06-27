@@ -22,6 +22,7 @@ pub mod paths;
 pub mod recovery;
 pub mod review;
 pub mod safety;
+pub mod serde_u128;
 pub mod snapshot;
 
 pub use ecosystem::{

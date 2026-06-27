@@ -20,10 +20,12 @@ pub enum OpStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JournalEntry {
     /// Identificador de la operación (enlaza Begin con Commit/Abort).
+    #[serde(with = "crate::serde_u128")]
     pub seq: u128,
     /// Nombre de la operación ("save", "migrate", "snapshot", ...).
     pub op: String,
     pub status: OpStatus,
+    #[serde(with = "crate::serde_u128")]
     pub unix_nanos: u128,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub detail: Option<String>,

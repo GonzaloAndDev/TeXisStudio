@@ -191,6 +191,10 @@ Available in basic and advanced user modes. Risk-classified actions (5 levels): 
 
 Section-by-section progress view with editorial status, word count, and author notes. Readiness overview tracks setup checks (advisor, abstract, required sections) and delivery checks. Review report export for advisor review.
 
+#### Recovery Center and transactional saves
+
+Every save now goes through the `texis-platform` transactional pipeline: it acquires a project lock, journals the operation, snapshots the previous state, writes atomically, updates a SHA-256 integrity manifest, and **rolls back to the previous state if any write fails** — so an interrupted save can never leave the project broken. The Recovery Center view (`/project/:id/recovery`, reachable from the editor toolbar) surfaces this: project health (interrupted operations, leftover temporaries, integrity issues), the active lock holder, automatic pre-save snapshots with confirmed one-click restore, and an on-demand integrity check.
+
 #### Snapshots and delivery export
 
 Manual snapshots with labels and timestamps. One-click restore. Delivery export (`export_delivery`) packages project, bibliography, and assets for final submission.
@@ -421,6 +425,10 @@ Backends: `latexmk`, Tectonic (sin instalación de TeX Live), `xelatex`, `pdflat
 #### Asistente de IA
 
 Modos básico y avanzado. Acciones clasificadas por riesgo (5 niveles): las ediciones de riesgo Medio o mayor requieren confirmación explícita del usuario. Contexto explícito para evitar cambios no intencionales.
+
+#### Centro de recuperación y guardado transaccional
+
+Cada guardado pasa ahora por el pipeline transaccional de `texis-platform`: toma un lock del proyecto, registra la operación en el journal, hace un snapshot del estado previo, escribe de forma atómica, actualiza un manifiesto de integridad SHA-256 y **hace rollback al estado previo si cualquier escritura falla** — de modo que un guardado interrumpido nunca deja el proyecto roto. El Centro de recuperación (`/project/:id/recovery`, accesible desde la barra del editor) lo expone: salud del proyecto (operaciones interrumpidas, temporales sobrantes, problemas de integridad), el titular del lock activo, snapshots automáticos previos a cada guardado con restauración confirmada en un clic, y una verificación de integridad bajo demanda.
 
 #### Progreso y entrega
 

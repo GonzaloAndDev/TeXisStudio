@@ -967,6 +967,9 @@ export default function EditorView() {
             <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/progress`)} title={t("editor.progress_title")}>
               {t("progress.tab_progress")}
             </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/recovery`)} title={t("recovery.title")}>
+              {t("recovery.tab_recovery")}
+            </button>
             <button className="btn btn-accent btn-sm" onClick={() => void goToCompile()}>
               <IconBuild size={13} /> {t("editor.compile")}
             </button>
