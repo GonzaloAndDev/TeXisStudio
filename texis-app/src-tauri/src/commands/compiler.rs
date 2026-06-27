@@ -512,7 +512,7 @@ fn run_compiler_streaming(
         "duration_ms": compile_start.elapsed().as_millis() as u64,
         "user_errors": user_errors_json,
         "warnings": Vec::<String>::new(),
-        "log_preview": &log[..log.len().min(8000)],
+        "log_preview": safe_truncate(&log, 8000),
         "backend_used": backend,
         "dependency_issues": Vec::<Value>::new(),
         "preflight_failed": false,
@@ -545,10 +545,46 @@ fn run_compiler_streaming(
     Ok(payload)
 }
 
+/// Trunca `s` a lo sumo a `max_bytes` **respetando los límites de carácter
+/// UTF-8**. Cortar un `&str` por índice de byte arbitrario panica si cae a mitad
+/// de un codepoint; los logs de LaTeX traen acentos y símbolos multibyte
+/// (✓, ⚠, →), así que un corte ingenuo tumbaba la compilación entera.
+fn safe_truncate(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 fn dev_profiles_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(|p| p.parent())
         .map(|root| root.join("profiles"))
         .unwrap_or_else(|| PathBuf::from("profiles"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::safe_truncate;
+
+    #[test]
+    fn safe_truncate_does_not_panic_on_multibyte_boundary() {
+        // "→" ocupa 3 bytes; cortar en un límite interior debe retroceder al
+        // límite de carácter más cercano en vez de panicar.
+        let s = "abc→def".repeat(2000); // > 8000 bytes con multibyte
+        let cut = safe_truncate(&s, 8000);
+        assert!(cut.len() <= 8000);
+        assert!(s.starts_with(cut)); // es un prefijo válido
+    }
+
+    #[test]
+    fn safe_truncate_returns_full_string_when_short() {
+        let s = "log corto con acento á y símbolo ✓";
+        assert_eq!(safe_truncate(s, 8000), s);
+    }
 }
