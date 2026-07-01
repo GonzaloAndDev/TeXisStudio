@@ -2882,7 +2882,15 @@
     "loading_more": "他の言語を読み込み中…",
     "catalog_error": "他の言語を読み込めませんでした。同梱の言語で続行できます。",
     "skip": "スキップ",
-    "install_error": "その言語をインストールできませんでした。接続を確認して、もう一度試してください。"
+    "install_error": "その言語をインストールできませんでした。接続を確認して、もう一度試してください。",
+    "mode_heading": "How do you want to work?",
+    "mode_subheading": "You can switch anytime in Settings.",
+    "mode_basic_title": "Beginner",
+    "mode_basic_desc": "Write without knowing LaTeX. Visual editors, curated templates, and safety nets guide you all the way to a finished PDF.",
+    "mode_advanced_title": "Expert",
+    "mode_advanced_desc": "Full control: LaTeX internals, technical logs, multiple engines, advanced plugins, and raw editing.",
+    "mode_recommended": "Recommended",
+    "back": "Back"
   },
   "toast": {
     "close_button": "通知を閉じる",

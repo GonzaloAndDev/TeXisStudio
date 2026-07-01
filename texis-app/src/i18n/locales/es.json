@@ -2896,7 +2896,15 @@
     "loading_more": "Cargando más idiomas…",
     "catalog_error": "No se pudieron cargar más idiomas. Puedes continuar con un idioma incluido.",
     "install_error": "No se pudo instalar ese idioma. Revisa tu conexión e inténtalo de nuevo.",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "mode_heading": "¿Cómo quieres trabajar?",
+    "mode_subheading": "Puedes cambiarlo cuando quieras en Ajustes.",
+    "mode_basic_title": "Principiante",
+    "mode_basic_desc": "Escribe sin saber LaTeX. Los editores visuales, las plantillas curadas y las redes de seguridad te llevan hasta un PDF terminado.",
+    "mode_advanced_title": "Experto",
+    "mode_advanced_desc": "Control total: interioridades de LaTeX, registros técnicos, varios motores, plugins avanzados y edición cruda.",
+    "mode_recommended": "Recomendado",
+    "back": "Atrás"
   },
   "toast": {
     "close_button": "Cerrar notificación",

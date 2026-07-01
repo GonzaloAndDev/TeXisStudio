@@ -2882,7 +2882,15 @@
     "loading_more": "Carregando mais idiomas…",
     "catalog_error": "Não foi possível carregar mais idiomas. Você pode continuar com um idioma incluído.",
     "skip": "Pular",
-    "install_error": "Não foi possível instalar esse idioma. Verifique sua conexão e tente novamente."
+    "install_error": "Não foi possível instalar esse idioma. Verifique sua conexão e tente novamente.",
+    "mode_heading": "How do you want to work?",
+    "mode_subheading": "You can switch anytime in Settings.",
+    "mode_basic_title": "Beginner",
+    "mode_basic_desc": "Write without knowing LaTeX. Visual editors, curated templates, and safety nets guide you all the way to a finished PDF.",
+    "mode_advanced_title": "Expert",
+    "mode_advanced_desc": "Full control: LaTeX internals, technical logs, multiple engines, advanced plugins, and raw editing.",
+    "mode_recommended": "Recommended",
+    "back": "Back"
   },
   "toast": {
     "close_button": "Fechar notificação",

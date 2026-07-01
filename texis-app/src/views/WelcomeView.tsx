@@ -16,10 +16,15 @@ import { WELCOME_SHOWN_KEY } from "../constants/welcome";
 export default function WelcomeView() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { setLang, setSpellLang } = useSettingsStore();
+  const { setLang, setSpellLang, setUserMode } = useSettingsStore();
   const { catalog, catalogLoading, catalogError, loadCatalog, install, installing } = useLangPacksStore();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [installError, setInstallError] = useState(false);
+  // Two-step onboarding: pick a language, then pick a working mode. Keeping both
+  // steps in one route (instead of a second /welcome-mode route) means the
+  // WELCOME_SHOWN_KEY guard in App.tsx stays a single gate — the flow is only
+  // "done" once a mode is chosen.
+  const [step, setStep] = useState<"lang" | "mode">("lang");
 
   useEffect(() => { loadCatalog(); }, [loadCatalog]);
 
@@ -51,16 +56,29 @@ export default function WelcomeView() {
     } else if (remote) {
       setSpellLang(null);
     }
+    // Language chosen — advance to the mode step instead of finishing.
+    setActiveId(null);
+    setStep("mode");
+  }
+
+  function finish(mode: "basic" | "advanced") {
+    setUserMode(mode);
     localStorage.setItem(WELCOME_SHOWN_KEY, "1");
     navigate("/", { replace: true });
   }
 
   function skip() {
+    // Skipping the language step keeps whatever mode default the store already
+    // has (basic). We still mark onboarding as shown so it doesn't reappear.
     localStorage.setItem(WELCOME_SHOWN_KEY, "1");
     navigate("/", { replace: true });
   }
 
   const isBusy = (code: string) => activeId === code || installing.has(code);
+
+  if (step === "mode") {
+    return <ModeStep t={t} onPick={finish} onBack={() => setStep("lang")} />;
+  }
 
   return (
     <div style={{
@@ -173,6 +191,137 @@ export default function WelcomeView() {
         {t("welcome.skip")}
       </button>
     </div>
+  );
+}
+
+interface ModeStepProps {
+  t: (key: string) => string;
+  onPick: (mode: "basic" | "advanced") => void;
+  onBack: () => void;
+}
+
+function ModeStep({ t, onPick, onBack }: ModeStepProps) {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "safe center",
+      background: "var(--bg-app)",
+      padding: "40px 24px",
+    }}>
+      <div style={{ marginBottom: 28 }}>
+        <TxLogo />
+      </div>
+
+      <h1 style={{
+        fontFamily: "var(--font-display)",
+        fontSize: "var(--fs-2xl)",
+        fontWeight: 400,
+        color: "var(--fg-strong)",
+        letterSpacing: "-0.015em",
+        textAlign: "center",
+        margin: "0 0 8px",
+      }}>
+        {t("welcome.mode_heading")}
+      </h1>
+      <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", textAlign: "center", margin: "0 0 36px" }}>
+        {t("welcome.mode_subheading")}
+      </p>
+
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: 14,
+        maxWidth: 620,
+        width: "100%",
+      }}>
+        <ModeCard
+          title={t("welcome.mode_basic_title")}
+          desc={t("welcome.mode_basic_desc")}
+          badge={t("welcome.mode_recommended")}
+          onClick={() => onPick("basic")}
+        />
+        <ModeCard
+          title={t("welcome.mode_advanced_title")}
+          desc={t("welcome.mode_advanced_desc")}
+          onClick={() => onPick("advanced")}
+        />
+      </div>
+
+      <button
+        className="btn btn-ghost btn-sm"
+        style={{ marginTop: 32, color: "var(--fg-faint)" }}
+        onClick={onBack}
+      >
+        {t("welcome.back")}
+      </button>
+    </div>
+  );
+}
+
+interface ModeCardProps {
+  title: string;
+  desc: string;
+  badge?: string;
+  onClick: () => void;
+}
+
+function ModeCard({ title, desc, badge, onClick }: ModeCardProps) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 8,
+        padding: "22px 20px",
+        background: "var(--bg-panel)",
+        border: "1px solid var(--border-soft)",
+        borderRadius: "var(--r-lg)",
+        cursor: "pointer",
+        transition: "border-color 0.12s, box-shadow 0.12s",
+        textAlign: "left",
+        position: "relative",
+        outline: "none",
+        minHeight: 150,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 2px var(--accent-soft)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-soft)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+        <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)", fontWeight: 600, color: "var(--fg-strong)" }}>
+          {title}
+        </span>
+        {badge && (
+          <span style={{
+            marginLeft: "auto",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            background: "var(--accent-tint)",
+            color: "var(--accent-deep)",
+            borderRadius: 3,
+            padding: "2px 6px",
+            textTransform: "uppercase",
+          }}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-muted)", lineHeight: 1.55 }}>
+        {desc}
+      </span>
+    </button>
   );
 }
 
