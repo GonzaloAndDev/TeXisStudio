@@ -148,23 +148,17 @@ pub async fn compile_project(
     })?;
 
     // ── Paso 2: preflight — verificar entorno antes de compilar ──
-    use texis_core::project::model::ContentBlock;
     let needs_biber = matches!(
         model.latex_config.bibliography_backend,
         BibliographyBackend::Biber
     );
-    let needs_glossary = model.sections.iter().any(|s| {
-        s.blocks.iter().any(|b| {
-            matches!(
-                b,
-                ContentBlock::GlossaryEntry(_) | ContentBlock::AcronymEntry(_)
-            )
-        })
-    });
+    // El glosario ahora se procesa con \makenoidxglossaries (dentro de LaTeX),
+    // así que NO se necesita la herramienta externa `makeglossaries` — ni con
+    // latexmk ni con Tectonic. El preflight ya no debe exigirla.
     let preflight_ctx = EnvContext {
         backend: backend_name.clone(),
         needs_biber,
-        needs_makeglossaries: needs_glossary,
+        needs_makeglossaries: false,
         platform: Platform::current(),
     };
     let preflight_report = PreflightChecker::check(&preflight_ctx);

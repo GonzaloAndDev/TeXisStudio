@@ -226,9 +226,13 @@ pub fn render_to_string(
                 "references" => {
                     out.push_str("\n\\printbibliography[heading=bibintoc]\n");
                 }
-                // Sección de glosario explícita → emitir \printglossaries
+                // Sección de glosario explícita → \printnoidxglossaries (pareja
+                // de \makenoidxglossaries: imprime el glosario procesado en LaTeX).
+                // \glsaddall incluye TODAS las entradas definidas, no solo las
+                // referenciadas con \gls en el texto: una sección de glosario debe
+                // listar todos los términos y acrónimos que el usuario definió.
                 "glossary" | "list_glossary" | "glossary_section" => {
-                    out.push_str("\n\\printglossaries\n");
+                    out.push_str("\n\\glsaddall\n\\printnoidxglossaries\n");
                 }
                 _ => out.push_str(&format!("\\input{{backmatter/{}}}\n", section.id)),
             }
@@ -587,11 +591,19 @@ fn render_paquetes(model: &ProjectModel, lang_config: Option<&Value>) -> String 
 
     // ── Glosario y acrónimos (auto-detectados del contenido) ──────────────────
     // glossaries debe cargarse DESPUÉS de hyperref para que los hipervínculos
-    // funcionen correctamente. \makeglossaries activa la indexación.
+    // funcionen correctamente. Se usa \makenoidxglossaries (no \makeglossaries):
+    // procesa el glosario DENTRO de LaTeX, sin la herramienta externa
+    // `makeglossaries`. Con \makeglossaries, si el pipeline (latexmk/Tectonic) no
+    // corre esa herramienta —lo habitual, y Tectonic nunca lo hace—, el glosario
+    // sale VACÍO y se pierden todas las entradas del usuario, además de dejar una
+    // página en blanco. noidx lo resuelve en pasadas normales de LaTeX.
     if crate::generator::glossary_tex::has_glossary_content(model) {
         out.push_str("\n% Glosario y acrónimos (detectados en el contenido del proyecto)\n");
-        out.push_str("\\usepackage[toc,acronym,nonumberlist]{glossaries}\n");
-        out.push_str("\\makeglossaries\n");
+        // `nopostdot`: no añadir un punto automático tras cada descripción. Las
+        // definiciones del usuario ya traen su propia puntuación; sin esta opción
+        // salían con doble punto ("compacto..").
+        out.push_str("\\usepackage[toc,acronym,nonumberlist,nopostdot]{glossaries}\n");
+        out.push_str("\\makenoidxglossaries\n");
     }
 
     // ── Paquetes requeridos por VisualBlocks y PluginFigureBlocks ────────────

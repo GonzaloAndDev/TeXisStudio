@@ -245,8 +245,8 @@ fn e2e_paquetes_incluye_glosario_cuando_hay_entradas() {
         "debe cargar glossaries"
     );
     assert!(
-        paquetes.contains("\\makeglossaries"),
-        "debe incluir makeglossaries"
+        paquetes.contains("\\makenoidxglossaries"),
+        "debe incluir makenoidxglossaries (glosario sin herramienta externa)"
     );
 }
 

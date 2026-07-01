@@ -1274,8 +1274,8 @@ fn stress_all_block_types_generate() {
         "glossaries: requerido por GlossaryEntry/AcronymEntry"
     );
     assert!(
-        pkg_content.contains("\\makeglossaries"),
-        "makeglossaries requerido"
+        pkg_content.contains("\\makenoidxglossaries"),
+        "makenoidxglossaries requerido (procesa el glosario dentro de LaTeX, sin herramienta externa)"
     );
 
     // ── Contenido del glosario ───────────────────────────────────────────────

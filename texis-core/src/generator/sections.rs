@@ -374,7 +374,25 @@ pub(crate) fn render_block(block: &ContentBlock) -> String {
             let items: String = l
                 .items
                 .iter()
-                .map(|item| format!("    \\item {}\n", latex_escape(item)))
+                .map(|item| {
+                    // En una lista `description`, la convención "Término: definición"
+                    // se emite como `\item[término] definición`; el entorno resalta
+                    // el término en negrita. Antes se emitía `\item texto` plano, lo
+                    // que perdía la semántica de descripción (término sin destacar).
+                    if matches!(l.list_type, ListType::Description) {
+                        if let Some((term, rest)) = item.split_once(':') {
+                            let (term, rest) = (term.trim(), rest.trim());
+                            if !term.is_empty() && !rest.is_empty() {
+                                return format!(
+                                    "    \\item[{}] {}\n",
+                                    latex_escape(term),
+                                    latex_escape(rest)
+                                );
+                            }
+                        }
+                    }
+                    format!("    \\item {}\n", latex_escape(item))
+                })
                 .collect();
             format!("\\begin{{{}}}\n{}\\end{{{}}}\n\n", env, items, env)
         }
