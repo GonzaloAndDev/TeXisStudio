@@ -965,6 +965,9 @@ export default function EditorView() {
             >
               <IconRefresh size={13} /> {t("editor.snapshots")}
             </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/status`)} title={t("status.title")}>
+              {t("status.tab_status")}
+            </button>
             <button className="btn btn-sm btn-ghost" onClick={() => navigate(`/project/${projectRouteId}/progress`)} title={t("editor.progress_title")}>
               {t("progress.tab_progress")}
             </button>

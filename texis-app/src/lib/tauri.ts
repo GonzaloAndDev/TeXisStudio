@@ -60,6 +60,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     preflight_failed: false,
   },
   delivery_quality_report: {
+    state: "ready_for_review",
     findings: [
       { dimension: "bibliography", severity: "warning", code: "W_UNUSED_REFERENCE", message: "La referencia 'goodfellow2016' está en references.bib pero no se cita.", suggestion: "Cítala en el texto o elimínala del .bib.", location: undefined },
       { dimension: "validation", severity: "info", code: "S_REVIEW_SECTIONS", message: "Marca las secciones principales como revisadas antes de entregar.", suggestion: undefined, location: undefined },
@@ -68,9 +69,7 @@ const BROWSER_MOCKS: Record<string, unknown> = {
     warning_count: 1,
     info_count: 1,
     score: 87,
-    repair_actions: [
-      { code: "W_UNUSED_REFERENCE", title: "Repara bibliografía y citas", action: "Cítala en el texto o elimínala del .bib.", target: "references.bib" },
-    ],
+    repair_actions: [],
     draft_gate: { passed: true, blocking_codes: [], score: 87 },
     review_gate: { passed: true, blocking_codes: [], score: 87 },
     final_gate: { passed: true, blocking_codes: [], score: 87 },

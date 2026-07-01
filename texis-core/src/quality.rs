@@ -92,9 +92,26 @@ pub struct RepairAction {
     pub target: Option<String>,
 }
 
+/// Estado narrativo del documento, la vista central del producto (Plan Fase 1).
+/// Deriva de las compuertas y da al usuario una sola respuesta a "¿cómo va mi
+/// tesis?": escribiendo → lista para revisión → lista para entrega.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeliveryState {
+    /// Hay errores de contenido/compilación: aún se está escribiendo/corrigiendo.
+    Writing,
+    /// Sin errores de contenido; lista para que el asesor la revise, pero todavía
+    /// no cumple todo lo exigido para la entrega final (p. ej. postflight).
+    ReadyForReview,
+    /// Cumple la compuerta final: lista para entregar.
+    ReadyForDelivery,
+}
+
 /// Reporte unificado de calidad de entrega: fuente de verdad de la compuerta.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeliveryQualityReport {
+    /// Estado narrativo (writing/ready_for_review/ready_for_delivery).
+    pub state: DeliveryState,
     pub findings: Vec<QualityFinding>,
     pub error_count: usize,
     pub warning_count: usize,
@@ -344,7 +361,18 @@ pub fn assess(inputs: QualityInputs) -> DeliveryQualityReport {
         },
     };
 
+    // Estado narrativo: deriva de las compuertas (misma lógica que la UI y el
+    // gate de exportación, para no divergir).
+    let state = if !review_gate.passed {
+        DeliveryState::Writing
+    } else if !final_gate.passed {
+        DeliveryState::ReadyForReview
+    } else {
+        DeliveryState::ReadyForDelivery
+    };
+
     DeliveryQualityReport {
+        state,
         findings,
         error_count,
         warning_count,
@@ -478,11 +506,44 @@ mod tests {
         assert!(r.draft_gate.passed, "draft nunca bloquea");
         assert!(!r.review_gate.passed, "review bloquea error de contenido");
         assert!(!r.final_gate.passed, "final bloquea error de contenido");
+        assert_eq!(r.state, DeliveryState::Writing, "con error de contenido → escribiendo");
         assert!(r
             .review_gate
             .blocking_codes
             .contains(&"E_PLACEHOLDER_STUDENT_NAME".to_string()));
         assert_eq!(r.error_count, 1);
+    }
+
+    #[test]
+    fn estado_deriva_de_las_compuertas() {
+        use crate::postflight::model::{PdfIssue, PdfPostflightResult};
+        // Sin hallazgos → lista para entrega.
+        let clean = report_with(vec![]);
+        let r = assess(QualityInputs {
+            validation: &clean,
+            postflight: None,
+            visual_pdf: None,
+            log: None,
+            profile: None,
+        });
+        assert_eq!(r.state, DeliveryState::ReadyForDelivery);
+
+        // Solo error de postflight → pasa review pero no final → lista para revisión.
+        let mut pf = PdfPostflightResult::pdf_not_found();
+        pf.issues = vec![PdfIssue {
+            severity: PdfIssueSeverity::Error,
+            code: "PF_FONT_NOT_EMBEDDED".into(),
+            message: "Fuente no incrustada".into(),
+            suggestion: None,
+        }];
+        let r2 = assess(QualityInputs {
+            validation: &clean,
+            postflight: Some(&pf),
+            visual_pdf: None,
+            log: None,
+            profile: None,
+        });
+        assert_eq!(r2.state, DeliveryState::ReadyForReview);
     }
 
     #[test]

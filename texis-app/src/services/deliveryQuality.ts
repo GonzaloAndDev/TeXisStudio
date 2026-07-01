@@ -46,7 +46,11 @@ export interface RepairAction {
   target?: string;
 }
 
+/** Estado narrativo del documento — la vista central del producto (Fase 1). */
+export type DeliveryState = "writing" | "ready_for_review" | "ready_for_delivery";
+
 export interface DeliveryQualityReport {
+  state: DeliveryState;
   findings: QualityFinding[];
   error_count: number;
   warning_count: number;
