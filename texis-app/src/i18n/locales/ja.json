@@ -450,7 +450,9 @@
           "インタラクティブなダッシュボードとビジュアライゼーション (PNG/PDF としてエクスポート)"
         ]
       }
-    }
+    },
+    "include_sample": "Include example content",
+    "include_sample_hint": "Seeds each section with a starting paragraph so your first PDF is a real document you can edit. Recommended for a quick start."
   },
   "editor": {
     "diag_title": "プロジェクト診断",

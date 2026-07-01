@@ -12,6 +12,7 @@ import { useSettingsStore } from "../stores/settings";
 import { useLangPacksStore } from "../stores/languagePacks";
 import { useVocabPacksStore } from "../stores/vocabularyPacks";
 import { ensureProfileLocale, localizeProfiles } from "../services/profile-i18n";
+import { seedSampleContent } from "../services/sampleContent";
 import type { AcademicLevel, CloudFolder, LangPackEntry, ProfileInfo, ProfileStatus, VocabPackEntry } from "../types";
 import { ProfileStatusBadge } from "../components/ProfileStatusBadge";
 
@@ -1103,6 +1104,10 @@ export default function WizardView() {
   const [coAuthors, setCoAuthors] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Seed the body sections with starter blocks so the first compile yields a
+  // real PDF the beginner can edit. On by default; easily unchecked by experts
+  // who prefer to start from an empty document.
+  const [includeSample, setIncludeSample] = useState(true);
   const [stepError, setStepError] = useState<string | null>(null);
   const [apiProfiles, setApiProfiles] = useState<ProfileInfo[] | null>(null);
   const [profileLocaleTick, setProfileLocaleTick] = useState(0);
@@ -1226,8 +1231,13 @@ export default function WizardView() {
         .map((c) => ({ full_name: c.trim() }));
       const seededKeywords = [form.discipline.trim(), form.program_name.trim()].filter(Boolean);
 
+      const seededSections = includeSample
+        ? seedSampleContent(model.sections, documentLanguage)
+        : model.sections;
+
       const enriched = {
         ...model,
+        sections: seededSections,
         metadata: {
           ...model.metadata,
           title: form.title.trim(),
@@ -1507,6 +1517,23 @@ export default function WizardView() {
                       {createError}
                     </div>
                   )}
+                  <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer", maxWidth: 340 }}>
+                    <input
+                      type="checkbox"
+                      checked={includeSample}
+                      onChange={(e) => setIncludeSample(e.target.checked)}
+                      disabled={creating}
+                      style={{ marginTop: 3, flexShrink: 0 }}
+                    />
+                    <span>
+                      <span style={{ fontSize: "var(--fs-sm)", color: "var(--fg-strong)", fontWeight: 500 }}>
+                        {t("wizard.include_sample")}
+                      </span>
+                      <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--fg-muted)", lineHeight: 1.5, marginTop: 2 }}>
+                        {t("wizard.include_sample_hint")}
+                      </span>
+                    </span>
+                  </label>
                   <button
                     className="btn btn-accent"
                     onClick={handleCreate}

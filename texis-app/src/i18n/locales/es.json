@@ -455,7 +455,9 @@
           "Dashboards y visualizaciones interactivas (exportar como PNG/PDF)"
         ]
       }
-    }
+    },
+    "include_sample": "Incluir contenido de ejemplo",
+    "include_sample_hint": "Siembra cada sección con un párrafo inicial para que tu primer PDF sea un documento real que puedas editar. Recomendado para empezar rápido."
   },
   "equation_preview": {
     "error_title": "La vista previa falló",
