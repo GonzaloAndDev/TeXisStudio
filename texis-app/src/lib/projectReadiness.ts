@@ -45,7 +45,7 @@ function blockText(block: ContentBlock): string {
   }
 }
 
-function countWords(blocks: ContentBlock[]): number {
+export function countWords(blocks: ContentBlock[]): number {
   return blocks.reduce((total, block) => {
     const text = blockText(block);
     return total + text.split(/\s+/).filter(Boolean).length;

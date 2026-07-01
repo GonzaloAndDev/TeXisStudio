@@ -1183,7 +1183,21 @@
     "report_empty_hint": "Haz clic en \"Generar reporte\" para crear el documento de revisión.",
     "generating_report": "Generando reporte…",
     "statusbar_sections": "{{count}} secciones",
-    "statusbar_approved": "{{count}} aprobadas"
+    "statusbar_approved": "{{count}} aprobadas",
+    "tab_changes": "Cambios",
+    "changes_title": "Cambios desde la última revisión",
+    "changes_subtitle": "Qué cambió desde que enviaste el documento a tu asesor por última vez.",
+    "mark_reviewed": "Marcar revisión ahora",
+    "changes_no_baseline": "Aún no hay un punto de revisión.",
+    "changes_no_baseline_hint": "Marca una revisión (o descarga el reporte para el asesor) para empezar a registrar los cambios desde ese momento.",
+    "changes_since": "Comparado con la revisión del {{when}}.",
+    "changes_none": "Sin cambios desde la última revisión.",
+    "change_added": "Nueva",
+    "change_grew": "Ampliada",
+    "change_shrank": "Reducida",
+    "change_status": "Estado",
+    "change_removed": "Eliminada",
+    "changes_words": "{{delta}} palabras"
   },
   "recovery": {
     "title": "Centro de recuperación",

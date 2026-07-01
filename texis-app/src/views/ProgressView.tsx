@@ -15,6 +15,12 @@ import {
 import { deriveProjectReadiness } from "../lib/projectReadiness";
 import { api } from "../lib/tauri";
 import { useProjectStore } from "../stores/project";
+import {
+  diffAgainstCheckpoint,
+  loadCheckpoint,
+  saveCheckpoint,
+  type ReviewDiff,
+} from "../services/reviewCheckpoint";
 import type { SectionProgress } from "../types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -217,7 +223,78 @@ function NotesPanel({ sections, t }: { sections: SectionProgress[]; t: TFunction
 
 // ── ProgressView ─────────────────────────────────────────────────────────────
 
-type Tab = "progress" | "notes" | "report";
+// ── Panel de cambios desde la última revisión ────────────────────────────────
+const CHANGE_META: Record<string, { color: string; bg: string; key: string }> = {
+  added:   { color: "#047857", bg: "#D1FAE5", key: "progress.change_added" },
+  grew:    { color: "#047857", bg: "#D1FAE5", key: "progress.change_grew" },
+  shrank:  { color: "#B45309", bg: "#FEF3C7", key: "progress.change_shrank" },
+  status:  { color: "#1D4ED8", bg: "#DBEAFE", key: "progress.change_status" },
+  removed: { color: "#B91C1C", bg: "#FEE2E2", key: "progress.change_removed" },
+};
+
+function ChangesPanel({ diff, t }: { diff: ReviewDiff | null; t: TFunction }) {
+  if (!diff || diff.since === null) {
+    return (
+      <div style={{ padding: "48px 0", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)", lineHeight: 1.7 }}>
+        {t("progress.changes_no_baseline")}<br />
+        <span style={{ fontSize: "var(--fs-xs)" }}>{t("progress.changes_no_baseline_hint")}</span>
+      </div>
+    );
+  }
+
+  const since = new Date(diff.since);
+  const sinceLabel = isNaN(since.getTime()) ? diff.since : since.toLocaleString();
+
+  return (
+    <>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", marginBottom: 16 }}>
+        {t("progress.changes_since", { when: sinceLabel })}
+      </div>
+      {!diff.hasChanges ? (
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--fg-faint)", fontSize: "var(--fs-sm)" }}>
+          {t("progress.changes_none")}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {diff.changes.map((c) => {
+            const meta = CHANGE_META[c.kind] ?? CHANGE_META.status;
+            const deltaLabel =
+              c.wordDelta > 0 ? `+${c.wordDelta}` : c.wordDelta < 0 ? `${c.wordDelta}` : "";
+            return (
+              <div key={c.id} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "12px 16px", borderRadius: "var(--r-md)",
+                background: "var(--bg-panel)", border: "1px solid var(--border-subtle)",
+              }}>
+                <span style={{
+                  fontSize: "var(--fs-xs)", fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                  color: meta.color, background: meta.bg, flexShrink: 0, whiteSpace: "nowrap",
+                }}>
+                  {t(meta.key)}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, color: "var(--fg-strong)", fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {c.title}
+                </span>
+                {c.kind === "status" && c.fromStatus && c.toStatus && (
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--fg-muted)", flexShrink: 0 }}>
+                    {t(STATUS_KEY[c.fromStatus] ?? c.fromStatus)} → {t(STATUS_KEY[c.toStatus] ?? c.toStatus)}
+                  </span>
+                )}
+                {deltaLabel && (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-xs)", color: meta.color, flexShrink: 0 }}>
+                    {t("progress.changes_words", { delta: deltaLabel })}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+type Tab = "progress" | "notes" | "changes" | "report";
 
 export default function ProgressView() {
   const { t } = useTranslation();
@@ -229,6 +306,19 @@ export default function ProgressView() {
   const [loading, setLoading] = useState(true);
   const [report, setReport]   = useState<string | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  // Bumped whenever a review is marked; forces a re-render so the memo-free
+  // diff below re-reads the freshly saved checkpoint from localStorage.
+  const [, setCheckpointTick] = useState(0);
+
+  const reviewDiff: ReviewDiff | null = activeProject
+    ? diffAgainstCheckpoint(activeProject, activeProjectPath ? loadCheckpoint(activeProjectPath) : null)
+    : null;
+
+  function markReviewed() {
+    if (!activeProjectPath || !activeProject) return;
+    saveCheckpoint(activeProjectPath, activeProject);
+    setCheckpointTick((n) => n + 1);
+  }
 
   useEffect(() => {
     if (!activeProjectPath) { setLoading(false); return; }
@@ -261,11 +351,15 @@ export default function ProgressView() {
     a.download = "revision_report.md";
     a.click();
     URL.revokeObjectURL(url);
+    // Downloading the report is the natural "sent to advisor" moment: capture a
+    // checkpoint so the next diff shows what changed since this hand-off.
+    markReviewed();
   }
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "progress", label: t("progress.tab_progress") },
     { id: "notes",    label: t("progress.tab_notes") },
+    { id: "changes",  label: t("progress.tab_changes") },
     { id: "report",   label: t("progress.tab_report") },
   ];
 
@@ -369,6 +463,26 @@ export default function ProgressView() {
               ) : (
                 <NotesPanel sections={sections} t={t} />
               )}
+            </>
+          )}
+
+          {/* ── Cambios desde la última revisión ── */}
+          {tab === "changes" && (
+            <>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16 }}>
+                <div>
+                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-2xl)", fontWeight: 400, margin: 0, color: "var(--fg-strong)", letterSpacing: "-0.015em" }}>
+                    {t("progress.changes_title")}
+                  </h1>
+                  <p style={{ color: "var(--fg-muted)", fontSize: "var(--fs-sm)", marginTop: 4 }}>
+                    {t("progress.changes_subtitle")}
+                  </p>
+                </div>
+                <button className="btn btn-accent btn-sm" onClick={markReviewed} disabled={!activeProject} style={{ flexShrink: 0 }}>
+                  {t("progress.mark_reviewed")}
+                </button>
+              </div>
+              <ChangesPanel diff={reviewDiff} t={t} />
             </>
           )}
 

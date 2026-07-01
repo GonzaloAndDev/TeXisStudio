@@ -1174,7 +1174,21 @@
     "report_empty_hint": "Cliquez sur « Générer le rapport » pour créer le document de révision.",
     "generating_report": "Génération du rapport…",
     "statusbar_sections": "Coupes {{count}}",
-    "statusbar_approved": "{{count}} approuvées"
+    "statusbar_approved": "{{count}} approuvées",
+    "tab_changes": "Changes",
+    "changes_title": "Changes since last review",
+    "changes_subtitle": "What changed since you last sent the document to your advisor.",
+    "mark_reviewed": "Mark reviewed now",
+    "changes_no_baseline": "No review checkpoint yet.",
+    "changes_no_baseline_hint": "Mark a review (or download the advisor report) to start tracking changes from that point.",
+    "changes_since": "Compared with the review from {{when}}.",
+    "changes_none": "No changes since the last review.",
+    "change_added": "New",
+    "change_grew": "Expanded",
+    "change_shrank": "Reduced",
+    "change_status": "Status",
+    "change_removed": "Removed",
+    "changes_words": "{{delta}} words"
   },
   "ai": {
     "panel_title": "Assistant IA",
